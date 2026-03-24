@@ -1,0 +1,18 @@
+{
+  "name": "mallora-monorepo",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:consumer": "pnpm --filter mobile-consumer start",
+    "dev:courier": "pnpm --filter mobile-courier start",
+    "build:web": "pnpm --filter web build",
+    "lint": "pnpm --filter '*' lint",
+    "types:generate": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/types/src/supabase.ts",
+    "db:push": "supabase db push",
+    "db:reset": "supabase db reset"
+  },
+  "devDependencies": {
+    "supabase": "^1.200.0",
+    "turbo": "^2.0.0"
+  }
+}

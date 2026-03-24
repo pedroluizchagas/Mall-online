@@ -1,0 +1,35 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@mallora/lib": "workspace:*",
+    "@mallora/types": "workspace:*",
+    "@supabase/ssr": "^0.4.0",
+    "@supabase/supabase-js": "^2.43.0",
+    "next": "14.2.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "stripe": "^15.0.0",
+    "react-hook-form": "^7.51.0",
+    "zod": "^3.23.0",
+    "@hookform/resolvers": "^3.3.0",
+    "zustand": "^4.5.0",
+    "date-fns": "^3.6.0",
+    "recharts": "^2.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "typescript": "^5",
+    "tailwindcss": "^3.4.0",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.0"
+  }
+}
