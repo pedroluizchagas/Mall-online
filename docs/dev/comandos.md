@@ -1,0 +1,1 @@
+Comando: npx supabase db push para migração supabase (Instala o CLI temporário apenas para migração)

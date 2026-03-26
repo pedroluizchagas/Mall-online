@@ -1,0 +1,1 @@
+Travamos no limit do claude, ele estava rodando o PROMPT — Fase 2.3: Dashboard — Financeiro e Assinatura.

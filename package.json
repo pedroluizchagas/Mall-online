@@ -14,5 +14,8 @@
   "devDependencies": {
     "supabase": "^1.200.0",
     "turbo": "^2.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.0"
   }
 }
