@@ -17,7 +17,10 @@
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usamos sua localização para coordenar as entregas.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Usamos sua localização em segundo plano durante entregas ativas.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
       }
     },
     "android": {
@@ -30,7 +33,12 @@
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
         "ACCESS_BACKGROUND_LOCATION",
-        "FOREGROUND_SERVICE"
+        "FOREGROUND_SERVICE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION"
       ]
     },
     "plugins": [
@@ -45,6 +53,13 @@
         }
       ]
     ],
-    "scheme": "mallora-courier"
+    "scheme": "mallora-courier",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2e1ec895-3230-4fc2-b373-60904bdb4dbd"
+      }
+    },
+    "owner": "pedrochagas"
   }
 }

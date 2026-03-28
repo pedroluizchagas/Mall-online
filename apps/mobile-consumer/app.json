@@ -26,7 +26,9 @@
       "package": "com.mallora.consumer",
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "plugins": [
@@ -46,6 +48,13 @@
         }
       ]
     ],
-    "scheme": "mallora-consumer"
+    "scheme": "mallora-consumer",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4345e7d8-f26a-43d1-93c2-9f9458eb8fb0"
+      }
+    },
+    "owner": "pedrochagas"
   }
 }

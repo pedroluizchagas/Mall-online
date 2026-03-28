@@ -44,3 +44,15 @@ Configurar URL de callback mallora-courier://auth/callback (modo dev criado).
 
 
 Checar: Habilitar Realtime para delivery_assignments e courier_locations.
+
+
+
+
+
+Adicionar EXPO_PUBLIC_PROJECT_ID no .env.local de cada app mobile (encontrado em expo.dev → projeto → ID).
+
+
+
+
+
+adicionar EXPO_PUBLIC_PROJECT_ID no .env de cada app mobile com o ID do projeto no Expo.
