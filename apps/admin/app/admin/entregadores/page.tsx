@@ -13,12 +13,9 @@ export default async function PaginaEntregadores({
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[#1A4D3A]">Entregadores</h1>
-        <span className="text-sm text-gray-400">
-          {entregadores.length} encontrado(s)
-        </span>
+        <span className="text-sm text-gray-400">{entregadores.length} encontrado(s)</span>
       </div>
 
-      {/* Filtros */}
       <div className="flex gap-2">
         {[
           { label: 'Pendentes', valor: 'pendente' },

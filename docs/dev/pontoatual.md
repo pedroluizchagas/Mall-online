@@ -1,1 +1,1 @@
-Já rodamos o PROMPT — Fase 6: Módulo de Estoque, Próximo passo seguir para GRUPO 8 — ADMIN E DEPLOY.
+Próximo passo: PROMPT — Fase 8: Deploy em Produção

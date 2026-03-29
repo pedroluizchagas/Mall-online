@@ -18,7 +18,6 @@ export default async function PaginaLojistas({
         <span className="text-sm text-gray-400">{tenants.length} encontrado(s)</span>
       </div>
 
-      {/* Filtros */}
       <div className="flex gap-2">
         {[
           { label: 'Todos', valor: '' },

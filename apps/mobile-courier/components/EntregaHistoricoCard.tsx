@@ -1,4 +1,5 @@
-import { View, Text } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
+import { router } from 'expo-router'
 import { formatarReais } from '@mallora/lib'
 
 const LABELS_STATUS: Record<string, string> = {
@@ -31,7 +32,11 @@ export function EntregaHistoricoCard({ entrega }: { entrega: Entrega }) {
   const data = entrega.entregue_em ?? entrega.criado_em
 
   return (
-    <View className="bg-white rounded-2xl px-4 py-3 flex-row items-center justify-between border border-gray-50">
+    <TouchableOpacity
+      onPress={() => router.push(`/entrega/${entrega.id}`)}
+      activeOpacity={0.75}
+      className="bg-white rounded-2xl px-4 py-3 flex-row items-center justify-between border border-gray-50"
+    >
       <View className="flex-1 mr-3">
         <Text
           className="text-sm font-semibold text-gray-800"
@@ -65,6 +70,6 @@ export function EntregaHistoricoCard({ entrega }: { entrega: Entrega }) {
           </Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }

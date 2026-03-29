@@ -9,7 +9,6 @@ export default async function PaginaPlanos() {
     <div className="p-6 space-y-6 max-w-3xl">
       <h1 className="text-2xl font-bold text-[#1A4D3A]">Planos</h1>
 
-      {/* Lista de planos */}
       <div className="space-y-3">
         {planos.map((plano: any) => (
           <div
@@ -29,9 +28,7 @@ export default async function PaginaPlanos() {
                 <p className="text-lg font-bold text-[#1A4D3A]">
                   {formatarReais(plano.preco_mensal)}/mês
                 </p>
-                {!plano.ativo && (
-                  <span className="text-xs text-gray-400">Inativo</span>
-                )}
+                {!plano.ativo && <span className="text-xs text-gray-400">Inativo</span>}
               </div>
             </div>
 
@@ -46,15 +43,12 @@ export default async function PaginaPlanos() {
             </div>
 
             {plano.stripe_price_id && (
-              <p className="text-xs text-gray-300 font-mono mt-2">
-                {plano.stripe_price_id}
-              </p>
+              <p className="text-xs text-gray-300 font-mono mt-2">{plano.stripe_price_id}</p>
             )}
           </div>
         ))}
       </div>
 
-      {/* Formulário de novo plano */}
       <div className="bg-white rounded-xl border border-gray-100 p-5">
         <h2 className="font-semibold text-[#1A4D3A] mb-4">Novo plano</h2>
         <FormularioPlano />

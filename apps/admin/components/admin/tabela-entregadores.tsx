@@ -3,29 +3,19 @@
 import { useTransition } from 'react'
 import { atualizarStatusEntregador } from '@/lib/actions/admin'
 
-export function TabelaEntregadores({
-  entregadores,
-}: {
-  entregadores: any[]
-}) {
+export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
   const [isPending, startTransition] = useTransition()
 
   function handleAprovar(id: string) {
-    startTransition(async () => {
-      await atualizarStatusEntregador(id, 'aprovado')
-    })
+    startTransition(async () => { await atualizarStatusEntregador(id, 'aprovado') })
   }
 
   function handleReprovar(id: string) {
-    startTransition(async () => {
-      await atualizarStatusEntregador(id, 'reprovado')
-    })
+    startTransition(async () => { await atualizarStatusEntregador(id, 'reprovado') })
   }
 
   function handleSuspender(id: string) {
-    startTransition(async () => {
-      await atualizarStatusEntregador(id, 'suspenso')
-    })
+    startTransition(async () => { await atualizarStatusEntregador(id, 'suspenso') })
   }
 
   if (entregadores.length === 0) {
@@ -41,33 +31,18 @@ export function TabelaEntregadores({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-100">
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Entregador
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Tipo
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Veículo
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              CNH
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Stripe
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Cadastro
-            </th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Entregador</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Tipo</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Veículo</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">CNH</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Stripe</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Cadastro</th>
             <th className="px-4 py-3"></th>
           </tr>
         </thead>
         <tbody>
           {entregadores.map((courier: any) => (
-            <tr
-              key={courier.id}
-              className="border-b border-gray-50 hover:bg-gray-50"
-            >
+            <tr key={courier.id} className="border-b border-gray-50 hover:bg-gray-50">
               <td className="px-4 py-3">
                 <p className="font-medium text-gray-800">{courier.nome}</p>
                 <p className="text-xs text-gray-400 mt-0.5">{courier.telefone}</p>
@@ -79,13 +54,11 @@ export function TabelaEntregadores({
               </td>
 
               <td className="px-4 py-3">
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    courier.tipo === 'autonomo'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-blue-100 text-blue-700'
-                  }`}
-                >
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  courier.tipo === 'autonomo'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'bg-blue-100 text-blue-700'
+                }`}>
                   {courier.tipo === 'autonomo' ? 'Autônomo' : 'Próprio'}
                 </span>
               </td>
@@ -93,9 +66,7 @@ export function TabelaEntregadores({
               <td className="px-4 py-3 text-gray-600 capitalize">
                 {courier.veiculo_tipo?.replace('_', ' ') ?? '—'}
                 {courier.veiculo_placa && (
-                  <span className="text-gray-400 ml-1">
-                    ({courier.veiculo_placa})
-                  </span>
+                  <span className="text-gray-400 ml-1">({courier.veiculo_placa})</span>
                 )}
               </td>
 
@@ -115,13 +86,9 @@ export function TabelaEntregadores({
               </td>
 
               <td className="px-4 py-3">
-                <span
-                  className={`text-xs font-medium ${
-                    courier.stripe_onboarding_ok
-                      ? 'text-green-600'
-                      : 'text-amber-500'
-                  }`}
-                >
+                <span className={`text-xs font-medium ${
+                  courier.stripe_onboarding_ok ? 'text-green-600' : 'text-amber-500'
+                }`}>
                   {courier.stripe_onboarding_ok ? 'OK' : 'Pendente'}
                 </span>
               </td>

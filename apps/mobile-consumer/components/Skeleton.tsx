@@ -1,10 +1,5 @@
-import { useEffect } from 'react'
-import Animated, {
-  useSharedValue,
-  withRepeat,
-  withTiming,
-  useAnimatedStyle,
-} from 'react-native-reanimated'
+import { useEffect, useRef } from 'react'
+import { Animated } from 'react-native'
 
 interface Props {
   largura?: number | string
@@ -17,20 +12,21 @@ export function Skeleton({
   altura = 16,
   arredondado = false,
 }: Props) {
-  const opacidade = useSharedValue(1)
+  const opacidade = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
-    opacidade.value = withRepeat(withTiming(0.3, { duration: 800 }), -1, true)
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacidade, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+        Animated.timing(opacidade, { toValue: 1, duration: 800, useNativeDriver: true }),
+      ])
+    ).start()
   }, [])
-
-  const estilo = useAnimatedStyle(() => ({
-    opacity: opacidade.value,
-  }))
 
   return (
     <Animated.View
       style={[
-        estilo,
+        { opacity: opacidade },
         {
           width: largura as number,
           height: altura,

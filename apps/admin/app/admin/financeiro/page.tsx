@@ -15,11 +15,7 @@ export default async function PaginaFinanceiroAdmin({
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#1A4D3A]">
-          Conciliação financeira
-        </h1>
-
-        {/* Seletor de mês */}
+        <h1 className="text-2xl font-bold text-[#1A4D3A]">Conciliação financeira</h1>
         <input
           type="month"
           defaultValue={mes}
@@ -31,16 +27,11 @@ export default async function PaginaFinanceiroAdmin({
         />
       </div>
 
-      {/* Resumo do mês */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white rounded-xl border border-gray-100 p-5">
           <p className="text-xs text-gray-500 mb-1">GMV do período</p>
-          <p className="text-2xl font-bold text-[#1A4D3A]">
-            {formatarReais(dados.gmv_total)}
-          </p>
-          <p className="text-xs text-gray-400 mt-1">
-            {dados.total_pedidos} pedidos entregues
-          </p>
+          <p className="text-2xl font-bold text-[#1A4D3A]">{formatarReais(dados.gmv_total)}</p>
+          <p className="text-xs text-gray-400 mt-1">{dados.total_pedidos} pedidos entregues</p>
         </div>
 
         <div className="bg-[#1A4D3A] rounded-xl p-5">
@@ -57,7 +48,6 @@ export default async function PaginaFinanceiroAdmin({
         </div>
       </div>
 
-      {/* Repasses */}
       <div className="bg-white rounded-xl border border-gray-100 p-5">
         <h2 className="font-semibold text-[#1A4D3A] mb-4">Repasses</h2>
         <div className="space-y-3">

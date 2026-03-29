@@ -41,21 +41,11 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-100">
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Lojista
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Plano
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Assinatura
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Stripe KYC
-            </th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Cadastro
-            </th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Lojista</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Plano</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Assinatura</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Stripe KYC</th>
+            <th className="text-left px-4 py-3 text-gray-500 font-medium">Cadastro</th>
             <th className="px-4 py-3"></th>
           </tr>
         </thead>
@@ -65,27 +55,16 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
             const plano = sub?.plans
 
             return (
-              <tr
-                key={tenant.id}
-                className="border-b border-gray-50 hover:bg-gray-50"
-              >
+              <tr key={tenant.id} className="border-b border-gray-50 hover:bg-gray-50">
                 <td className="px-4 py-3">
-                  <p className="font-medium text-gray-800">
-                    {tenant.nome_responsavel}
-                  </p>
+                  <p className="font-medium text-gray-800">{tenant.nome_responsavel}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{tenant.email}</p>
                   {tenant.stores?.[0] && (
-                    <p className="text-xs text-gray-400">
-                      {tenant.stores[0].nome}
-                    </p>
+                    <p className="text-xs text-gray-400">{tenant.stores[0].nome}</p>
                   )}
                 </td>
 
-                <td className="px-4 py-3">
-                  <span className="text-gray-700">
-                    {plano?.nome ?? '—'}
-                  </span>
-                </td>
+                <td className="px-4 py-3 text-gray-700">{plano?.nome ?? '—'}</td>
 
                 <td className="px-4 py-3">
                   {sub ? (
@@ -101,13 +80,9 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
                 </td>
 
                 <td className="px-4 py-3">
-                  <span
-                    className={`text-xs font-medium ${
-                      tenant.stripe_onboarding_ok
-                        ? 'text-green-600'
-                        : 'text-amber-500'
-                    }`}
-                  >
+                  <span className={`text-xs font-medium ${
+                    tenant.stripe_onboarding_ok ? 'text-green-600' : 'text-amber-500'
+                  }`}>
                     {tenant.stripe_onboarding_ok ? 'Verificado' : 'Pendente'}
                   </span>
                 </td>

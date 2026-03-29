@@ -3,9 +3,11 @@
   "private": true,
   "scripts": {
     "dev:web": "pnpm --filter web dev",
+    "dev:admin": "pnpm --filter admin dev",
     "dev:consumer": "pnpm --filter mobile-consumer start",
     "dev:courier": "pnpm --filter mobile-courier start",
     "build:web": "pnpm --filter web build",
+    "build:admin": "pnpm --filter admin build",
     "lint": "pnpm --filter '*' lint",
     "types:generate": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/types/src/supabase.ts",
     "db:push": "supabase db push",

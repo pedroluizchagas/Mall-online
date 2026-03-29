@@ -14,7 +14,6 @@ export function FormularioPlano() {
     setSucesso(false)
 
     const formData = new FormData(e.currentTarget)
-
     startTransition(async () => {
       const resultado = await criarPlano(formData)
       if (resultado?.erro) {
@@ -60,9 +59,7 @@ export function FormularioPlano() {
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          Descrição
-        </label>
+        <label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label>
         <input
           name="descricao"
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
@@ -73,9 +70,7 @@ export function FormularioPlano() {
 
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Máx. lojas
-          </label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Máx. lojas</label>
           <input
             name="max_lojas"
             type="number"
@@ -86,11 +81,8 @@ export function FormularioPlano() {
               focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
           />
         </div>
-
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Máx. produtos
-          </label>
+          <label className="block text-xs font-medium text-gray-600 mb-1">Máx. produtos</label>
           <input
             name="max_produtos"
             type="number"
@@ -101,7 +93,6 @@ export function FormularioPlano() {
               focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
           />
         </div>
-
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
             Máx. entregadores
@@ -137,14 +128,11 @@ export function FormularioPlano() {
       </div>
 
       {erro && (
-        <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">
-          {erro}
-        </p>
+        <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>
       )}
-
       {sucesso && (
         <p className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
-          Plano criado com sucesso e sincronizado no Stripe.
+          Plano criado e sincronizado no Stripe.
         </p>
       )}
 

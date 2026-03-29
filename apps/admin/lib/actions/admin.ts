@@ -9,7 +9,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-04-10',
 })
 
-// Verificar se o usuário é admin
 async function verificarAdmin(supabase: any): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || user.user_metadata?.role !== 'admin') {
@@ -17,14 +16,12 @@ async function verificarAdmin(supabase: any): Promise<void> {
   }
 }
 
-// Métricas globais da plataforma
 export async function getMetricasGlobais() {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
 
   const hoje = new Date()
   hoje.setHours(0, 0, 0, 0)
-
   const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
 
   const [
@@ -35,39 +32,33 @@ export async function getMetricasGlobais() {
     resRepasses,
     resAssinaturas,
   ] = await Promise.all([
-    // Tenants ativos
     supabase
       .from('tenants')
       .select('id', { count: 'exact', head: true })
       .eq('ativo', true),
 
-    // Pedidos hoje
     supabase
       .from('orders')
       .select('id, total, platform_fee_amount', { count: 'exact' })
       .gte('criado_em', hoje.toISOString())
       .eq('status', 'entregue'),
 
-    // Pedidos do mês
     supabase
       .from('orders')
       .select('id, total, platform_fee_amount', { count: 'exact' })
       .gte('criado_em', inicioMes.toISOString())
       .eq('status', 'entregue'),
 
-    // Entregadores aprovados
     supabase
       .from('couriers')
       .select('id', { count: 'exact', head: true })
       .eq('status', 'aprovado'),
 
-    // Repasses pendentes (total a distribuir)
     supabase
       .from('payouts')
       .select('valor_liquido')
       .in('status', ['agendado', 'processando']),
 
-    // Assinaturas ativas
     supabase
       .from('tenant_subscriptions')
       .select('id', { count: 'exact', head: true })
@@ -77,39 +68,27 @@ export async function getMetricasGlobais() {
   const pedidosHoje = resPedidosHoje.data ?? []
   const pedidosMes = resPedidosMes.data ?? []
 
-  const gmvHoje = pedidosHoje.reduce((acc: number, p: any) => acc + p.total, 0)
-  const gmvMes = pedidosMes.reduce((acc: number, p: any) => acc + p.total, 0)
-
-  const receitaComissaoHoje = pedidosHoje.reduce(
-    (acc: number, p: any) => acc + p.platform_fee_amount, 0
-  )
-  const receitaComissaoMes = pedidosMes.reduce(
-    (acc: number, p: any) => acc + p.platform_fee_amount, 0
-  )
-
-  const totalRepassesPendentes = (resRepasses.data ?? []).reduce(
-    (acc: number, r: any) => acc + r.valor_liquido, 0
-  )
-
   return {
     lojistas_ativos: resTenants.count ?? 0,
     entregadores_aprovados: resEntregadores.count ?? 0,
     assinaturas_ativas: resAssinaturas.count ?? 0,
     pedidos_hoje: resPedidosHoje.count ?? 0,
     pedidos_mes: resPedidosMes.count ?? 0,
-    gmv_hoje: gmvHoje,
-    gmv_mes: gmvMes,
-    receita_comissao_hoje: receitaComissaoHoje,
-    receita_comissao_mes: receitaComissaoMes,
-    repasses_pendentes: totalRepassesPendentes,
+    gmv_hoje: pedidosHoje.reduce((acc: number, p: any) => acc + p.total, 0),
+    gmv_mes: pedidosMes.reduce((acc: number, p: any) => acc + p.total, 0),
+    receita_comissao_hoje: pedidosHoje.reduce(
+      (acc: number, p: any) => acc + p.platform_fee_amount, 0
+    ),
+    receita_comissao_mes: pedidosMes.reduce(
+      (acc: number, p: any) => acc + p.platform_fee_amount, 0
+    ),
+    repasses_pendentes: (resRepasses.data ?? []).reduce(
+      (acc: number, r: any) => acc + r.valor_liquido, 0
+    ),
   }
 }
 
-// Listar tenants com detalhes de assinatura
-export async function getTenants(filtro?: {
-  billing_status?: string
-  busca?: string
-}) {
+export async function getTenants(filtro?: { billing_status?: string; busca?: string }) {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
 
@@ -135,7 +114,6 @@ export async function getTenants(filtro?: {
   const { data, error } = await query.limit(100)
   if (error) return []
 
-  // Filtrar por billing_status no cliente (join nested)
   if (filtro?.billing_status) {
     return (data ?? []).filter(
       (t: any) =>
@@ -146,11 +124,7 @@ export async function getTenants(filtro?: {
   return data ?? []
 }
 
-// Ativar ou suspender tenant
-export async function atualizarStatusTenant(
-  tenant_id: string,
-  ativo: boolean
-) {
+export async function atualizarStatusTenant(tenant_id: string, ativo: boolean) {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
 
@@ -161,7 +135,6 @@ export async function atualizarStatusTenant(
 
   if (error) return { erro: error.message }
 
-  // Se suspender, marcar assinatura como suspensa
   if (!ativo) {
     await supabase
       .from('tenant_subscriptions')
@@ -173,11 +146,7 @@ export async function atualizarStatusTenant(
   return { sucesso: true }
 }
 
-// Listar entregadores com filtro por status
-export async function getEntregadores(filtro?: {
-  status?: string
-  tipo?: string
-}) {
+export async function getEntregadores(filtro?: { status?: string; tipo?: string }) {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
 
@@ -199,7 +168,6 @@ export async function getEntregadores(filtro?: {
   return data ?? []
 }
 
-// Aprovar ou reprovar entregador
 export async function atualizarStatusEntregador(
   courier_id: string,
   status: 'aprovado' | 'reprovado' | 'suspenso'
@@ -208,7 +176,6 @@ export async function atualizarStatusEntregador(
   await verificarAdmin(supabase)
 
   const { data: { user } } = await supabase.auth.getUser()
-
   const atualizacao: Record<string, any> = { status }
 
   if (status === 'aprovado') {
@@ -227,7 +194,6 @@ export async function atualizarStatusEntregador(
   return { sucesso: true }
 }
 
-// Listar planos com sincronização Stripe
 export async function getPlanos() {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
@@ -254,7 +220,6 @@ const schemaPlano = z.object({
   ativo: z.boolean(),
 })
 
-// Criar plano com sincronização no Stripe
 export async function criarPlano(formData: FormData) {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
@@ -276,14 +241,12 @@ export async function criarPlano(formData: FormData) {
 
   if (!dados.success) return { erro: dados.error.errors[0].message }
 
-  // Criar Product no Stripe
   const stripeProduct = await stripe.products.create({
     name: dados.data.nome,
     description: dados.data.descricao,
     metadata: { plataforma: 'mallora' },
   })
 
-  // Criar Price recorrente no Stripe
   let stripePrice = null
   if (dados.data.preco_mensal > 0) {
     stripePrice = await stripe.prices.create({
@@ -294,7 +257,6 @@ export async function criarPlano(formData: FormData) {
     })
   }
 
-  // Inserir no banco
   const { error } = await supabase.from('plans').insert({
     ...dados.data,
     stripe_product_id: stripeProduct.id,
@@ -307,12 +269,10 @@ export async function criarPlano(formData: FormData) {
   return { sucesso: true }
 }
 
-// Conciliação financeira
 export async function getConciliacaoFinanceira(mes: string) {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
 
-  // mes no formato 'YYYY-MM'
   const inicio = new Date(`${mes}-01T00:00:00.000Z`)
   const fim = new Date(inicio)
   fim.setMonth(fim.getMonth() + 1)
@@ -335,30 +295,21 @@ export async function getConciliacaoFinanceira(mes: string) {
   const pedidos = resPedidos.data ?? []
   const payouts = resPayouts.data ?? []
 
-  const gmv_total = pedidos.reduce((acc: number, p: any) => acc + p.total, 0)
-  const receita_comissao = pedidos.reduce(
-    (acc: number, p: any) => acc + p.platform_fee_amount, 0
-  )
-
-  const total_repassado_lojistas = payouts
-    .filter((p: any) => p.tipo === 'lojista' && p.status === 'concluido')
-    .reduce((acc: number, p: any) => acc + p.valor_liquido, 0)
-
-  const total_repassado_entregadores = payouts
-    .filter((p: any) => p.tipo === 'entregador' && p.status === 'concluido')
-    .reduce((acc: number, p: any) => acc + p.valor_liquido, 0)
-
-  const receita_antecipacao = payouts
-    .filter((p: any) => p.antecipado && p.status === 'concluido')
-    .reduce((acc: number, p: any) => acc + p.taxa_antecipacao, 0)
-
   return {
-    gmv_total,
-    receita_comissao,
-    receita_antecipacao,
+    gmv_total: pedidos.reduce((acc: number, p: any) => acc + p.total, 0),
+    receita_comissao: pedidos.reduce(
+      (acc: number, p: any) => acc + p.platform_fee_amount, 0
+    ),
+    receita_antecipacao: payouts
+      .filter((p: any) => p.antecipado && p.status === 'concluido')
+      .reduce((acc: number, p: any) => acc + p.taxa_antecipacao, 0),
     total_pedidos: pedidos.length,
-    total_repassado_lojistas,
-    total_repassado_entregadores,
+    total_repassado_lojistas: payouts
+      .filter((p: any) => p.tipo === 'lojista' && p.status === 'concluido')
+      .reduce((acc: number, p: any) => acc + p.valor_liquido, 0),
+    total_repassado_entregadores: payouts
+      .filter((p: any) => p.tipo === 'entregador' && p.status === 'concluido')
+      .reduce((acc: number, p: any) => acc + p.valor_liquido, 0),
     payouts_pendentes: payouts
       .filter((p: any) => ['agendado', 'processando'].includes(p.status))
       .reduce((acc: number, p: any) => acc + p.valor_liquido, 0),
