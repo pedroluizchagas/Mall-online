@@ -2,12 +2,30 @@ import { useEffect, useRef, useState } from 'react'
 import { View, ScrollView, Dimensions, Text } from 'react-native'
 
 const { width } = Dimensions.get('window')
-const LARGURA_BANNER = width - 40 // padding de 20 em cada lado
+const LARGURA_BANNER = width - 40
 
 const BANNERS = [
-  { id: '1', cor: '#1A4D3A', titulo: 'Frete grátis no primeiro pedido', subtitulo: 'Use o código BEMVINDO' },
-  { id: '2', cor: '#4CAF82', titulo: 'Novos restaurantes esta semana', subtitulo: 'Confira as novidades' },
-  { id: '3', cor: '#F5A623', titulo: 'Pague com PIX e economize', subtitulo: 'Aceito em todas as lojas' },
+  {
+    id: '1',
+    cor: '#1A4D3A',
+    tag: 'Novidade',
+    titulo: 'Frete grátis no primeiro pedido',
+    subtitulo: 'Use o código BEMVINDO',
+  },
+  {
+    id: '2',
+    cor: '#1E3A5F',
+    tag: 'Novos',
+    titulo: 'Novos restaurantes esta semana',
+    subtitulo: 'Confira as novidades',
+  },
+  {
+    id: '3',
+    cor: '#7C3D0F',
+    tag: 'Promoção',
+    titulo: 'Pague com PIX e economize',
+    subtitulo: 'Aceito em todas as lojas',
+  },
 ]
 
 export function BannerCarousel() {
@@ -49,29 +67,93 @@ export function BannerCarousel() {
             style={{
               width: LARGURA_BANNER,
               backgroundColor: banner.cor,
-              borderRadius: 16,
+              borderRadius: 20,
               padding: 20,
-              height: 110,
-              justifyContent: 'flex-end',
+              height: 132,
+              justifyContent: 'space-between',
+              overflow: 'hidden',
             }}
           >
-            <Text className="text-white font-bold text-base">
-              {banner.titulo}
-            </Text>
-            <Text className="text-white/70 text-sm mt-0.5">
-              {banner.subtitulo}
-            </Text>
+            {/* Círculos decorativos */}
+            <View
+              style={{
+                position: 'absolute',
+                right: -28,
+                top: -28,
+                width: 130,
+                height: 130,
+                borderRadius: 65,
+                backgroundColor: 'rgba(255,255,255,0.07)',
+              }}
+            />
+            <View
+              style={{
+                position: 'absolute',
+                right: 40,
+                bottom: -44,
+                width: 110,
+                height: 110,
+                borderRadius: 55,
+                backgroundColor: 'rgba(255,255,255,0.04)',
+              }}
+            />
+
+            {/* Tag */}
+            <View
+              style={{
+                alignSelf: 'flex-start',
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                borderRadius: 20,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+              }}
+            >
+              <Text
+                style={{
+                  color: 'rgba(255,255,255,0.9)',
+                  fontSize: 11,
+                  fontWeight: '600',
+                  letterSpacing: 0.6,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {banner.tag}
+              </Text>
+            </View>
+
+            {/* Conteúdo */}
+            <View style={{ maxWidth: '78%' }}>
+              <Text
+                style={{
+                  color: '#ffffff',
+                  fontSize: 17,
+                  fontWeight: '700',
+                  lineHeight: 22,
+                }}
+              >
+                {banner.titulo}
+              </Text>
+              <Text
+                style={{
+                  color: 'rgba(255,255,255,0.6)',
+                  fontSize: 13,
+                  marginTop: 4,
+                }}
+              >
+                {banner.subtitulo}
+              </Text>
+            </View>
           </View>
         ))}
       </ScrollView>
 
       {/* Indicadores */}
-      <View className="flex-row justify-center gap-1.5 mt-3">
+      <View className="flex-row justify-center items-center gap-1.5 mt-3">
         {BANNERS.map((_, i) => (
           <View
             key={i}
             style={{
-              width: i === indice ? 16 : 6,
+              width: i === indice ? 20 : 6,
               height: 6,
               borderRadius: 3,
               backgroundColor: i === indice ? '#1A4D3A' : '#D1D5DB',

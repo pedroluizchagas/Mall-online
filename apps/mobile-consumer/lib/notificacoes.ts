@@ -6,11 +6,14 @@ import { router } from 'expo-router'
 import { supabase } from './supabase'
 
 // Configurar comportamento quando notificação chega com app aberto
+// SDK 53+: shouldShowBanner e shouldShowList substituem shouldShowAlert
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 })
 
@@ -67,7 +70,26 @@ export async function registrarPushToken(
     .upsert(registro, { onConflict: 'token' })
 
   if (error) {
-    console.error('Erro ao salvar push token:', error.message)
+    // Fallback: se a constraint ainda não existir no banco remoto,
+    // tenta insert; se duplicado, faz update.
+    if (error.code === '42P10') {
+      const { data: existente } = await supabase
+        .from('push_tokens')
+        .select('id')
+        .eq('token', token)
+        .maybeSingle()
+
+      if (existente) {
+        await supabase
+          .from('push_tokens')
+          .update({ ativo: true, atualizado_em: new Date().toISOString() })
+          .eq('token', token)
+      } else {
+        await supabase.from('push_tokens').insert(registro)
+      }
+    } else {
+      console.error('Erro ao salvar push token:', error.message)
+    }
   }
 }
 
@@ -79,27 +101,27 @@ export async function desativarPushToken(token: string): Promise<void> {
 }
 
 export function useNotificacaoListener() {
-  const notificacaoRecebida = useRef<Notifications.Subscription>()
-  const notificacaoRespondida = useRef<Notifications.Subscription>()
+  const notificacaoRecebida = useRef<{ remove: () => void } | null>(null)
+  const notificacaoRespondida = useRef<{ remove: () => void } | null>(null)
 
   useEffect(() => {
-    notificacaoRecebida.current =
-      Notifications.addNotificationReceivedListener((notificacao) => {
+    notificacaoRecebida.current = Notifications.addNotificationReceivedListener(
+      (notificacao) => {
         console.log('Notificação recebida:', notificacao.request.content.data)
-      })
+      }
+    ) as unknown as { remove: () => void }
 
     notificacaoRespondida.current =
       Notifications.addNotificationResponseReceivedListener((resposta) => {
-        const data = resposta.notification.request.content.data as Record<string, string>
+        const data = resposta.notification.request.content.data as Record<
+          string,
+          string
+        >
 
-        switch (data?.tipo) {
-          case 'status_pedido':
-            if (data.order_id) {
-              router.push(`/pedido/${data.order_id}`)
-            }
-            break
+        if (data?.tipo === 'status_pedido' && data.order_id) {
+          router.push(`/pedido/${data.order_id}`)
         }
-      })
+      }) as unknown as { remove: () => void }
 
     return () => {
       notificacaoRecebida.current?.remove()

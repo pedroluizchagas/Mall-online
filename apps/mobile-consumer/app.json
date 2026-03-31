@@ -46,7 +46,8 @@
           "merchantIdentifier": "merchant.com.mallora.consumer",
           "enableGooglePay": true
         }
-      ]
+      ],
+      "expo-video"
     ],
     "scheme": "mallora-consumer",
     "extra": {

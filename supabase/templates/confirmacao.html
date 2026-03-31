@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Confirme sua conta – Mallora</title>
+</head>
+<body style="margin:0;padding:0;background-color:#F5F0E8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F5F0E8;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+
+          <!-- Logo / cabeçalho -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <div style="display:inline-block;background-color:#1A4D3A;border-radius:16px;padding:12px 28px;">
+                <span style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.5px;">Mallora</span>
+              </div>
+            </td>
+          </tr>
+
+          <!-- Card principal -->
+          <tr>
+            <td style="background-color:#ffffff;border-radius:20px;padding:40px 36px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+
+              <!-- Ícone -->
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td align="center" style="padding-bottom:24px;">
+                    <div style="width:64px;height:64px;background-color:#E8F4EF;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:64px;font-size:28px;">
+                      ✉️
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Título -->
+                <tr>
+                  <td align="center" style="padding-bottom:12px;">
+                    <h1 style="margin:0;font-size:22px;font-weight:700;color:#1A4D3A;">
+                      Confirme sua conta
+                    </h1>
+                  </td>
+                </tr>
+
+                <!-- Texto -->
+                <tr>
+                  <td align="center" style="padding-bottom:32px;">
+                    <p style="margin:0;font-size:15px;color:#6B7280;line-height:1.6;max-width:380px;">
+                      Obrigado por se cadastrar na Mallora! Clique no botão abaixo para confirmar seu email e acessar o app.
+                    </p>
+                  </td>
+                </tr>
+
+                <!-- Botão -->
+                <tr>
+                  <td align="center" style="padding-bottom:32px;">
+                    <a href="{{ .ConfirmationURL }}"
+                       style="display:inline-block;background-color:#1A4D3A;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 36px;border-radius:14px;letter-spacing:0.3px;">
+                      Confirmar meu email
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- Aviso link alternativo -->
+                <tr>
+                  <td align="center" style="padding-bottom:8px;">
+                    <p style="margin:0;font-size:13px;color:#9CA3AF;line-height:1.5;">
+                      Se o botão não funcionar, copie e cole o link abaixo no seu navegador:
+                    </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td align="center">
+                    <p style="margin:0;font-size:12px;color:#4CAF82;word-break:break-all;">
+                      {{ .ConfirmationURL }}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Rodapé -->
+          <tr>
+            <td align="center" style="padding-top:28px;">
+              <p style="margin:0;font-size:12px;color:#9CA3AF;line-height:1.6;">
+                Se você não criou uma conta na Mallora, pode ignorar este email com segurança.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

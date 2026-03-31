@@ -1,49 +1,56 @@
-import { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity } from 'react-native'
+import { useState } from 'react'
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 
 export default function TelaVerificar() {
   const { email } = useLocalSearchParams<{ email: string }>()
-  const [segundos, setSegundos] = useState(60)
+  const [codigo, setCodigo] = useState('')
+  const [carregando, setCarregando] = useState(false)
   const [reenviando, setReenviando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
 
-  // Countdown para reenvio
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setSegundos((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer)
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
+  async function handleVerificar() {
+    if (codigo.length !== 6) {
+      setErro('Digite os 6 dígitos do código.')
+      return
+    }
 
-  // Escutar quando o usuário confirmar o Magic Link
-  useEffect(() => {
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
-        router.replace('/(tabs)')
-      }
+    setCarregando(true)
+    setErro(null)
+
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: codigo,
+      type: 'email',
     })
-    return () => subscription.unsubscribe()
-  }, [])
+
+    setCarregando(false)
+
+    if (error) {
+      setErro('Código inválido ou expirado. Tente novamente.')
+      return
+    }
+
+    router.replace('/(tabs)')
+  }
 
   async function handleReenviar() {
-    if (segundos > 0 || !email) return
-
+    if (!email) return
     setReenviando(true)
+    setErro(null)
     await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: 'mallora-consumer://auth/callback' },
+      options: { shouldCreateUser: true },
     })
     setReenviando(false)
-    setSegundos(60)
+    setCodigo('')
   }
 
   return (
@@ -57,33 +64,51 @@ export default function TelaVerificar() {
           Verifique seu email
         </Text>
         <Text className="text-gray-500 text-center leading-6">
-          Enviamos um link de acesso para{'\n'}
+          Enviamos um código de 6 dígitos para{'\n'}
           <Text className="font-medium text-gray-700">{email}</Text>
         </Text>
       </View>
 
-      <View className="bg-white rounded-2xl p-5 mb-6">
-        <Text className="text-sm text-gray-600 leading-6">
-          1. Abra o email no seu celular{'\n'}
-          2. Toque no botão "Entrar na Mallora"{'\n'}
-          3. Você será redirecionado automaticamente
+      <View className="mb-6">
+        <Text className="text-sm font-medium text-gray-700 mb-1.5">
+          Código de verificação
         </Text>
+        <TextInput
+          value={codigo}
+          onChangeText={(t) => {
+            setCodigo(t.replace(/\D/g, '').slice(0, 6))
+            setErro(null)
+          }}
+          placeholder="000000"
+          keyboardType="number-pad"
+          maxLength={6}
+          className="border border-gray-200 rounded-xl px-4 py-3.5 text-2xl text-center tracking-widest text-gray-800 bg-white"
+          placeholderTextColor="#9CA3AF"
+        />
+        {erro && <Text className="text-red-500 text-sm mt-2">{erro}</Text>}
       </View>
 
       <TouchableOpacity
+        onPress={handleVerificar}
+        disabled={carregando || codigo.length !== 6}
+        className="bg-verde-profundo py-4 rounded-2xl items-center mb-4"
+        activeOpacity={0.85}
+      >
+        {carregando ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text className="text-white font-semibold text-base">Confirmar</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
         onPress={handleReenviar}
-        disabled={segundos > 0 || reenviando}
+        disabled={reenviando}
         className="py-3 items-center"
         activeOpacity={0.7}
       >
-        <Text
-          className={`text-sm ${segundos > 0 ? 'text-gray-400' : 'text-verde-medio'}`}
-        >
-          {segundos > 0
-            ? `Reenviar em ${segundos}s`
-            : reenviando
-              ? 'Reenviando...'
-              : 'Reenviar link'}
+        <Text className="text-sm text-verde-medio">
+          {reenviando ? 'Reenviando...' : 'Reenviar código'}
         </Text>
       </TouchableOpacity>
 
