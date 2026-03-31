@@ -2,7 +2,9 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import {
   View,
   Text,
+  TextInput,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   Dimensions,
   StatusBar,
@@ -10,8 +12,14 @@ import {
   Platform,
   Animated,
   Easing,
+  StyleSheet,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import {
+  PinchGestureHandler,
+  GestureHandlerRootView,
+  State,
+} from 'react-native-gesture-handler'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import {
   Heart,
@@ -21,6 +29,7 @@ import {
   Volume2,
   VolumeX,
   Search,
+  Play,
 } from 'lucide-react-native'
 import { router } from 'expo-router'
 
@@ -156,16 +165,19 @@ function ReelItem({
   mutado,
   onToggleMute,
   tabBarHeight,
+  overlayVisivel,
+  onToggleOverlay,
 }: {
   reel: Reel
   isActive: boolean
   mutado: boolean
   onToggleMute: () => void
   tabBarHeight: number
+  overlayVisivel: boolean
+  onToggleOverlay: () => void
 }) {
   const [curtido, setCurtido] = useState(false)
   const [curtidas, setCurtidas] = useState(reel.curtidas)
-  const [overlayVisivel, setOverlayVisivel] = useState(true)
 
   // ── Valores animados (RN Animated — compatível com Expo Go) ──
   const overlayOpacity = useRef(new Animated.Value(1)).current
@@ -254,7 +266,7 @@ function ReelItem({
       {/* Vídeo — toque alterna visibilidade do overlay */}
       <TouchableOpacity
         activeOpacity={1}
-        onPress={() => setOverlayVisivel((v) => !v)}
+        onPress={onToggleOverlay}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
       >
         <VideoView
@@ -519,16 +531,298 @@ function ReelItem({
 }
 
 // ─────────────────────────────────────────────────────────
+// Galeria (visão reduzida — pinch out)
+// ─────────────────────────────────────────────────────────
+const CELL_W = (W - 3) / 3   // 3 colunas com gap de 1.5px entre cada
+const CELL_H = CELL_W * 1.72 // proporção 9:16 comprimida
+
+function GaleriaGrid({
+  ativo,
+  onSelect,
+  insets,
+  visivel,
+}: {
+  ativo: number
+  onSelect: (i: number) => void
+  insets: { top: number; bottom: number }
+  visivel: boolean
+}) {
+  const [busca, setBusca] = useState('')
+  const inputRef = useRef<TextInput>(null)
+
+  useEffect(() => {
+    if (visivel) {
+      const t = setTimeout(() => inputRef.current?.focus(), 180)
+      return () => clearTimeout(t)
+    } else {
+      inputRef.current?.blur()
+      setBusca('')
+    }
+  }, [visivel])
+
+  const reelsFiltrados = busca.trim()
+    ? REELS.filter((r) => {
+        const termo = busca.toLowerCase()
+        return (
+          r.loja_nome.toLowerCase().includes(termo) ||
+          r.tags.some((t) => t.toLowerCase().includes(termo)) ||
+          r.descricao.toLowerCase().includes(termo)
+        )
+      })
+    : REELS
+
+  return (
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: (insets.bottom || 16) + 60 }}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {/* Barra de busca */}
+      <View
+        style={{
+          paddingTop: insets.top + 14,
+          paddingHorizontal: 16,
+          paddingBottom: 14,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            backgroundColor: 'rgba(255,255,255,0.1)',
+            borderRadius: 100,
+            paddingHorizontal: 16,
+            paddingVertical: 11,
+            borderWidth: 1,
+            borderColor: busca ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.08)',
+          }}
+        >
+          <Search size={15} color="rgba(255,255,255,0.45)" />
+          <TextInput
+            ref={inputRef}
+            value={busca}
+            onChangeText={setBusca}
+            placeholder="Pesquisar"
+            placeholderTextColor="rgba(255,255,255,0.35)"
+            style={{
+              flex: 1,
+              fontSize: 14,
+              color: '#FFF',
+              fontWeight: '500',
+              padding: 0,
+            }}
+            returnKeyType="search"
+            autoCorrect={false}
+          />
+          {busca.length > 0 && (
+            <TouchableOpacity onPress={() => setBusca('')} activeOpacity={0.7}>
+              <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 18, lineHeight: 20 }}>×</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
+      {/* Grade de células */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 1.5 }}>
+        {reelsFiltrados.length === 0 ? (
+          <View style={{ width: W, paddingVertical: 48, alignItems: 'center' }}>
+            <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>
+              Nenhum vídeo encontrado
+            </Text>
+          </View>
+        ) : reelsFiltrados.map((reel) => {
+          const originalIndex = REELS.indexOf(reel)
+          const isAtivo = originalIndex === ativo
+          return (
+            <TouchableOpacity
+              key={reel.id}
+              onPress={() => onSelect(originalIndex)}
+              activeOpacity={0.88}
+              style={{
+                width: CELL_W,
+                height: CELL_H,
+                backgroundColor: reel.loja_cor,
+                overflow: 'hidden',
+                borderWidth: isAtivo ? 2.5 : 0,
+                borderColor: '#D4A04A',
+              }}
+            >
+              {/* Letra de fundo (decorativa) */}
+              <Text
+                style={{
+                  position: 'absolute',
+                  bottom: -8,
+                  right: -4,
+                  fontSize: 80,
+                  fontWeight: '900',
+                  color: 'rgba(0,0,0,0.18)',
+                  lineHeight: 88,
+                }}
+              >
+                {reel.loja_inicial}
+              </Text>
+
+              {/* Ícone de play centralizado */}
+              <View
+                style={{
+                  flex: 1,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 18,
+                    backgroundColor: 'rgba(0,0,0,0.35)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Play size={16} color="#FFF" fill="#FFF" />
+                </View>
+              </View>
+
+              {/* Info da loja */}
+              <View
+                style={{
+                  padding: 8,
+                  backgroundColor: 'rgba(0,0,0,0.38)',
+                }}
+              >
+                <Text
+                  style={{
+                    color: '#FFF',
+                    fontSize: 10.5,
+                    fontWeight: '700',
+                    letterSpacing: 0.1,
+                  }}
+                  numberOfLines={1}
+                >
+                  {reel.loja_nome}
+                </Text>
+                <Text
+                  style={{
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: 9.5,
+                    marginTop: 1,
+                  }}
+                  numberOfLines={1}
+                >
+                  {reel.tags[0]}
+                </Text>
+              </View>
+
+              {/* Indicador "em reprodução" */}
+              {isAtivo && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    top: 6,
+                    right: 6,
+                    paddingHorizontal: 6,
+                    paddingVertical: 3,
+                    borderRadius: 4,
+                    backgroundColor: '#D4A04A',
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: '#1C1C19',
+                      fontSize: 8,
+                      fontWeight: '800',
+                      letterSpacing: 0.5,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Atual
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+    </ScrollView>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
 // Tela principal
 // ─────────────────────────────────────────────────────────
 export default function TelaExplorar() {
   const [ativo, setAtivo] = useState(0)
   const [mutado, setMutado] = useState(false)
+  const [modoGaleria, setModoGaleria] = useState(false)
+  const [overlayVisivel, setOverlayVisivel] = useState(true)
   const insets = useSafeAreaInsets()
+  const flatListRef = useRef<FlatList>(null)
 
-  // Altura aproximada da tab bar (safe area bottom + barra)
   const tabBarHeight = (insets.bottom || 16) + 52
 
+  // Anima o header junto com o overlay
+  const headerOpacity = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    Animated.timing(headerOpacity, {
+      toValue: overlayVisivel ? 1 : 0,
+      duration: 220,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start()
+  }, [overlayVisivel])
+
+  // ── Animação feed ↔ galeria ───────────────────────────────
+  const galeriaAnim = useRef(new Animated.Value(0)).current
+
+  const feedOpacity = galeriaAnim.interpolate({
+    inputRange: [0, 1], outputRange: [1, 0],
+  })
+  const feedScale = galeriaAnim.interpolate({
+    inputRange: [0, 1], outputRange: [1, 0.88],
+  })
+  const galeriaOpacity = galeriaAnim.interpolate({
+    inputRange: [0, 0.35, 1], outputRange: [0, 0, 1],
+  })
+  const galeriaSlide = galeriaAnim.interpolate({
+    inputRange: [0, 1], outputRange: [H * 0.06, 0],
+  })
+
+  function entrarGaleria() {
+    setModoGaleria(true)
+    Animated.timing(galeriaAnim, {
+      toValue: 1,
+      duration: 320,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start()
+  }
+
+  function selecionarReel(index: number) {
+    Animated.timing(galeriaAnim, {
+      toValue: 0,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      setModoGaleria(false)
+      setAtivo(index)
+      flatListRef.current?.scrollToIndex({ index, animated: false })
+    })
+  }
+
+  // ── Pinch handler ─────────────────────────────────────────
+  const onPinchStateChange = ({ nativeEvent }: any) => {
+    if (nativeEvent.oldState === State.ACTIVE && !modoGaleria) {
+      if (nativeEvent.scale < 0.78) {
+        entrarGaleria()
+      }
+    }
+  }
+
+  // ── Feed viewability ──────────────────────────────────────
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].index !== null) {
@@ -543,113 +837,137 @@ export default function TelaExplorar() {
   }).current
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#080806' }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#080806' }}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
 
-      {/* Header flutuante */}
-      <View
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 20,
-          paddingTop: insets.top + 10,
-          paddingHorizontal: 22,
-          paddingBottom: 10,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-        pointerEvents="box-none"
-      >
-        <View>
-          <Text
+      <PinchGestureHandler onHandlerStateChange={onPinchStateChange}>
+        <Animated.View style={{ flex: 1 }}>
+
+          {/* ── Feed full-screen ── */}
+          <Animated.View
             style={{
-              fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
-              fontSize: 22,
-              fontWeight: '600',
-              color: '#FFF',
-              letterSpacing: 0.2,
-              textShadowColor: 'rgba(0,0,0,0.4)',
-              textShadowRadius: 8,
-              textShadowOffset: { width: 0, height: 1 },
+              ...StyleSheet.absoluteFillObject,
+              opacity: feedOpacity,
+              transform: [{ scale: feedScale }],
             }}
+            pointerEvents={modoGaleria ? 'none' : 'auto'}
           >
-            Explorar
-          </Text>
-        </View>
+            {/* Header flutuante */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                top: 0, left: 0, right: 0,
+                zIndex: 20,
+                paddingTop: insets.top + 10,
+                paddingHorizontal: 22,
+                opacity: headerOpacity,
+                paddingBottom: 10,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+              pointerEvents="box-none"
+            >
+              <Text
+                style={{
+                  fontFamily: 'serif',
+                  fontSize: 22,
+                  fontWeight: '600',
+                  color: '#FFFFFF',
+                  textShadowColor: 'rgba(0,0,0,0.35)',
+                  textShadowRadius: 8,
+                  textShadowOffset: { width: 0, height: 1 },
+                }}
+              >
+                Explorar
+              </Text>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={{
+                  width: 38, height: 38, borderRadius: 19,
+                  backgroundColor: 'rgba(0,0,0,0.35)',
+                  borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+                onPress={entrarGaleria}
+              >
+                <Search size={17} color="rgba(255,255,255,0.85)" />
+              </TouchableOpacity>
+            </Animated.View>
 
-        <TouchableOpacity
-          activeOpacity={0.8}
-          style={{
-            width: 38,
-            height: 38,
-            borderRadius: 19,
-            backgroundColor: 'rgba(0,0,0,0.35)',
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.15)',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-          onPress={() => router.push('/(tabs)/buscar')}
-        >
-          <Search size={17} color="rgba(255,255,255,0.85)" />
-        </TouchableOpacity>
-      </View>
+            {/* Feed */}
+            <FlatList
+              ref={flatListRef}
+              data={REELS}
+              keyExtractor={(item) => item.id}
+              pagingEnabled
+              showsVerticalScrollIndicator={false}
+              decelerationRate="fast"
+              snapToInterval={H}
+              snapToAlignment="start"
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewabilityConfig}
+              getItemLayout={(_, index) => ({
+                length: H, offset: H * index, index,
+              })}
+              renderItem={({ item, index }) => (
+                <ReelItem
+                  reel={item}
+                  isActive={index === ativo}
+                  mutado={mutado}
+                  onToggleMute={() => setMutado((m) => !m)}
+                  tabBarHeight={tabBarHeight}
+                  overlayVisivel={overlayVisivel}
+                  onToggleOverlay={() => setOverlayVisivel((v) => !v)}
+                />
+              )}
+            />
 
-      {/* Feed de vídeos */}
-      <FlatList
-        data={REELS}
-        keyExtractor={(item) => item.id}
-        pagingEnabled
-        showsVerticalScrollIndicator={false}
-        decelerationRate="fast"
-        snapToInterval={H}
-        snapToAlignment="start"
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        getItemLayout={(_, index) => ({
-          length: H,
-          offset: H * index,
-          index,
-        })}
-        renderItem={({ item, index }) => (
-          <ReelItem
-            reel={item}
-            isActive={index === ativo}
-            mutado={mutado}
-            onToggleMute={() => setMutado((m) => !m)}
-            tabBarHeight={tabBarHeight}
-          />
-        )}
-      />
+            {/* Indicador de posição */}
+            <View
+              style={{
+                position: 'absolute', right: 6, top: '50%',
+                transform: [{ translateY: -(REELS.length * 10) / 2 }],
+                gap: 5, zIndex: 10,
+              }}
+              pointerEvents="none"
+            >
+              {REELS.map((_, i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: 3,
+                    height: i === ativo ? 18 : 5,
+                    borderRadius: 2,
+                    backgroundColor: i === ativo ? '#FFF' : 'rgba(255,255,255,0.28)',
+                  }}
+                />
+              ))}
+            </View>
+          </Animated.View>
 
-      {/* Indicador de posição (lado direito, estilo stories) */}
-      <View
-        style={{
-          position: 'absolute',
-          right: 6,
-          top: '50%',
-          transform: [{ translateY: -(REELS.length * 10) / 2 }],
-          gap: 5,
-          zIndex: 10,
-        }}
-        pointerEvents="none"
-      >
-        {REELS.map((_, i) => (
-          <View
-            key={i}
-            style={{
-              width: 3,
-              height: i === ativo ? 18 : 5,
-              borderRadius: 2,
-              backgroundColor:
-                i === ativo ? '#FFF' : 'rgba(255,255,255,0.28)',
-            }}
-          />
-        ))}
-      </View>
-    </View>
+          {/* ── Galeria (overlay animado) ── */}
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFillObject,
+              {
+                backgroundColor: '#080806',
+                opacity: galeriaOpacity,
+                transform: [{ translateY: galeriaSlide }],
+              },
+            ]}
+            pointerEvents={modoGaleria ? 'auto' : 'none'}
+          >
+            <GaleriaGrid
+              ativo={ativo}
+              onSelect={selecionarReel}
+              insets={insets}
+              visivel={modoGaleria}
+            />
+          </Animated.View>
+
+        </Animated.View>
+      </PinchGestureHandler>
+    </GestureHandlerRootView>
   )
 }

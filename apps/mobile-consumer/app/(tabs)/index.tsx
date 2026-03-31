@@ -19,6 +19,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { BannerCarousel } from '@/components/BannerCarousel'
 import { LojaCardH } from '@/components/LojaCardH'
+import { NotificacoesPopup, NOTIFICACOES_NAO_LIDAS } from '@/components/NotificacoesPopup'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
@@ -303,6 +304,7 @@ export default function TelaHome() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [carregando, setCarregando] = useState(true)
   const [atualizando, setAtualizando] = useState(false)
+  const [notificacoesAbertas, setNotificacoesAbertas] = useState(false)
 
   const insets = useSafeAreaInsets()
   const totalItens = useCartStore((s) => s.totalItens())
@@ -427,6 +429,7 @@ export default function TelaHome() {
           </View>
 
           <TouchableOpacity
+            onPress={() => setNotificacoesAbertas(true)}
             activeOpacity={0.7}
             style={{
               width: 42,
@@ -445,6 +448,21 @@ export default function TelaHome() {
             }}
           >
             <Bell size={19} color="#3D3D36" strokeWidth={1.8} />
+            {NOTIFICACOES_NAO_LIDAS > 0 && (
+              <View
+                style={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 9,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: '#C75B3A',
+                  borderWidth: 1.5,
+                  borderColor: '#FFFFFF',
+                }}
+              />
+            )}
           </TouchableOpacity>
         </View>
 
@@ -910,6 +928,14 @@ export default function TelaHome() {
           </Text>
         </View>
       </ScrollView>
+
+      {/* ══════════════════════════════
+          NOTIFICAÇÕES
+      ══════════════════════════════ */}
+      <NotificacoesPopup
+        visivel={notificacoesAbertas}
+        onFechar={() => setNotificacoesAbertas(false)}
+      />
 
       {/* ══════════════════════════════
           CARRINHO FLUTUANTE
