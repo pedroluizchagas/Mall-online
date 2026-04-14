@@ -119,6 +119,7 @@ Deno.serve(async (req) => {
         nome: nome_loja,
         slug: `${slug}-${Date.now()}`,
         endereco,
+        global_category_id: categoria_id || null,
       })
       .select('id')
       .single()

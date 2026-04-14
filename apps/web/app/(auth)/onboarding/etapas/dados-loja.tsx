@@ -104,37 +104,37 @@ export function EtapaDadosLoja({ dadosIniciais, onAvancar, onVoltar }: Props) {
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-[#1A4D3A] mb-1">
-        Dados da loja
-      </h2>
-      <p className="text-gray-500 text-sm mb-6">
-        Configure as informações do seu estabelecimento
-      </p>
+      <div className="mb-7">
+        <h2 className="text-2xl font-bold text-brand-800 tracking-tight">
+          Dados da loja
+        </h2>
+        <p className="text-gray-400 text-sm mt-1.5">
+          Configure as informações do seu estabelecimento
+        </p>
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Nome + Categoria */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Nome da loja
-          </label>
+          <label className="label">Nome da loja</label>
           <input
             name="nome_loja"
             type="text"
             defaultValue={dadosIniciais.nome_loja}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+            placeholder="Ex: Pizzaria do João"
+            className="input-field"
           />
           {erros.nome_loja && (
-            <p className="text-sm text-red-600 mt-1">{erros.nome_loja}</p>
+            <p className="text-xs text-red-500 mt-1.5">{erros.nome_loja}</p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Categoria
-          </label>
+          <label className="label">Categoria</label>
           <select
             name="categoria_id"
             defaultValue={dadosIniciais.categoria_id}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82] bg-white"
+            className="input-field"
           >
             <option value="">Selecione uma categoria</option>
             {categorias.map(cat => (
@@ -144,138 +144,137 @@ export function EtapaDadosLoja({ dadosIniciais, onAvancar, onVoltar }: Props) {
             ))}
           </select>
           {erros.categoria_id && (
-            <p className="text-sm text-red-600 mt-1">{erros.categoria_id}</p>
+            <p className="text-xs text-red-500 mt-1.5">{erros.categoria_id}</p>
           )}
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            CEP
-          </label>
-          <input
-            name="cep"
-            type="text"
-            defaultValue={dadosIniciais.endereco?.cep}
-            onBlur={handleCepBlur}
-            placeholder="00000-000"
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-          />
-          {buscandoCep && (
-            <p className="text-sm text-gray-400 mt-1">Buscando endereço...</p>
-          )}
-          {erros['endereco.cep'] && (
-            <p className="text-sm text-red-600 mt-1">{erros['endereco.cep']}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Rua
-          </label>
-          <input
-            name="rua"
-            type="text"
-            value={endereco.rua}
-            onChange={e => setEndereco(prev => ({ ...prev, rua: e.target.value }))}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-          />
-          {erros['endereco.rua'] && (
-            <p className="text-sm text-red-600 mt-1">{erros['endereco.rua']}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Número
-            </label>
-            <input
-              name="numero"
-              type="text"
-              defaultValue={dadosIniciais.endereco?.numero}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-            />
-            {erros['endereco.numero'] && (
-              <p className="text-sm text-red-600 mt-1">{erros['endereco.numero']}</p>
-            )}
+        {/* Bloco de endereço */}
+        <div className="pt-2">
+          <div className="flex items-center gap-3 mb-4">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Endereço</p>
+            <div className="flex-1 h-px bg-gray-100" />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Complemento
-            </label>
-            <input
-              name="complemento"
-              type="text"
-              defaultValue={dadosIniciais.endereco?.complemento}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="label">CEP</label>
+              <div className="relative">
+                <input
+                  name="cep"
+                  type="text"
+                  defaultValue={dadosIniciais.endereco?.cep}
+                  onBlur={handleCepBlur}
+                  placeholder="00000-000"
+                  className="input-field"
+                />
+                {buscandoCep && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <svg className="animate-spin text-brand-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {erros['endereco.cep'] && (
+                <p className="text-xs text-red-500 mt-1.5">{erros['endereco.cep']}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="label">Rua</label>
+              <input
+                name="rua"
+                type="text"
+                value={endereco.rua}
+                onChange={e => setEndereco(prev => ({ ...prev, rua: e.target.value }))}
+                className="input-field"
+              />
+              {erros['endereco.rua'] && (
+                <p className="text-xs text-red-500 mt-1.5">{erros['endereco.rua']}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Número</label>
+                <input
+                  name="numero"
+                  type="text"
+                  defaultValue={dadosIniciais.endereco?.numero}
+                  className="input-field"
+                />
+                {erros['endereco.numero'] && (
+                  <p className="text-xs text-red-500 mt-1.5">{erros['endereco.numero']}</p>
+                )}
+              </div>
+              <div>
+                <label className="label">Complemento</label>
+                <input
+                  name="complemento"
+                  type="text"
+                  defaultValue={dadosIniciais.endereco?.complemento}
+                  placeholder="Apto, sala..."
+                  className="input-field"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="label">Bairro</label>
+              <input
+                name="bairro"
+                type="text"
+                value={endereco.bairro}
+                onChange={e => setEndereco(prev => ({ ...prev, bairro: e.target.value }))}
+                className="input-field"
+              />
+              {erros['endereco.bairro'] && (
+                <p className="text-xs text-red-500 mt-1.5">{erros['endereco.bairro']}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label">Cidade</label>
+                <input
+                  name="cidade"
+                  type="text"
+                  value={endereco.cidade}
+                  onChange={e => setEndereco(prev => ({ ...prev, cidade: e.target.value }))}
+                  className="input-field"
+                />
+                {erros['endereco.cidade'] && (
+                  <p className="text-xs text-red-500 mt-1.5">{erros['endereco.cidade']}</p>
+                )}
+              </div>
+              <div>
+                <label className="label">Estado</label>
+                <input
+                  name="estado"
+                  type="text"
+                  value={endereco.estado}
+                  onChange={e => setEndereco(prev => ({ ...prev, estado: e.target.value }))}
+                  maxLength={2}
+                  placeholder="MG"
+                  className="input-field uppercase"
+                />
+                {erros['endereco.estado'] && (
+                  <p className="text-xs text-red-500 mt-1.5">{erros['endereco.estado']}</p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Bairro
-          </label>
-          <input
-            name="bairro"
-            type="text"
-            value={endereco.bairro}
-            onChange={e => setEndereco(prev => ({ ...prev, bairro: e.target.value }))}
-            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-          />
-          {erros['endereco.bairro'] && (
-            <p className="text-sm text-red-600 mt-1">{erros['endereco.bairro']}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Cidade
-            </label>
-            <input
-              name="cidade"
-              type="text"
-              value={endereco.cidade}
-              onChange={e => setEndereco(prev => ({ ...prev, cidade: e.target.value }))}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-            />
-            {erros['endereco.cidade'] && (
-              <p className="text-sm text-red-600 mt-1">{erros['endereco.cidade']}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Estado
-            </label>
-            <input
-              name="estado"
-              type="text"
-              value={endereco.estado}
-              onChange={e => setEndereco(prev => ({ ...prev, estado: e.target.value }))}
-              maxLength={2}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-            />
-            {erros['endereco.estado'] && (
-              <p className="text-sm text-red-600 mt-1">{erros['endereco.estado']}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-3 pt-2">
           <button
             type="button"
             onClick={onVoltar}
-            className="flex-1 border border-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+            className="flex-1 border border-gray-200 text-gray-500 py-3 rounded-xl font-medium hover:bg-gray-50 active:scale-[0.98] transition-all duration-150 text-sm"
           >
             Voltar
           </button>
-          <button
-            type="submit"
-            className="flex-1 bg-[#1A4D3A] text-white py-3 rounded-lg font-medium hover:bg-[#163d2e] transition-colors"
-          >
+          <button type="submit" className="flex-1 btn-primary">
             Continuar
           </button>
         </div>

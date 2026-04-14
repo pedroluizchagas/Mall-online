@@ -22,6 +22,14 @@ interface Plano {
   tem_antecipacao: boolean
 }
 
+function IconCheck() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  )
+}
+
 export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props) {
   const [planos, setPlanos] = useState<Plano[]>([])
   const [planoSelecionado, setPlanoSelecionado] = useState(dadosIniciais.plan_id ?? '')
@@ -50,63 +58,97 @@ export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props)
 
   return (
     <div>
-      <h2 className="text-xl font-semibold text-[#1A4D3A] mb-1">
-        Escolha seu plano
-      </h2>
-      <p className="text-gray-500 text-sm mb-6">
-        Selecione o plano que melhor atende seu negócio
-      </p>
+      <div className="mb-7">
+        <h2 className="text-2xl font-bold text-brand-800 tracking-tight">
+          Escolha seu plano
+        </h2>
+        <p className="text-gray-400 text-sm mt-1.5">
+          Selecione o plano que melhor atende seu negócio. Você pode mudar depois.
+        </p>
+      </div>
 
-      <div className="space-y-4">
-        {planos.map(plano => (
-          <button
-            key={plano.id}
-            type="button"
-            onClick={() => {
-              setPlanoSelecionado(plano.id)
-              setErro('')
-            }}
-            className={`w-full text-left p-5 rounded-xl border-2 transition-colors ${
-              planoSelecionado === plano.id
-                ? 'border-[#4CAF82] bg-green-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="font-semibold text-[#1A4D3A]">{plano.nome}</h3>
-              <span className="text-lg font-bold text-[#1A4D3A]">
-                {formatarReais(plano.preco_mensal)}
-                <span className="text-sm font-normal text-gray-400">/mês</span>
-              </span>
-            </div>
+      <div className="space-y-3">
+        {planos.map(plano => {
+          const selecionado = planoSelecionado === plano.id
+          return (
+            <button
+              key={plano.id}
+              type="button"
+              onClick={() => {
+                setPlanoSelecionado(plano.id)
+                setErro('')
+              }}
+              className="w-full text-left rounded-xl transition-all duration-150"
+              style={{
+                padding: '16px 18px',
+                border: selecionado ? '2px solid #4CAF82' : '2px solid #f0f0f0',
+                background: selecionado ? 'rgba(76,175,130,0.04)' : '#fafafa',
+              }}
+            >
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex items-center gap-2.5">
+                  {/* Radio visual */}
+                  <div
+                    className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+                    style={{
+                      border: selecionado ? '2px solid #4CAF82' : '2px solid #d1d5db',
+                    }}
+                  >
+                    {selecionado && (
+                      <div className="w-2 h-2 rounded-full" style={{ background: '#4CAF82' }} />
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-sm text-brand-800">{plano.nome}</h3>
+                </div>
+                <div className="text-right">
+                  <span className="text-lg font-bold text-brand-800">
+                    {formatarReais(plano.preco_mensal)}
+                  </span>
+                  <span className="text-xs text-gray-400 block">/mês</span>
+                </div>
+              </div>
 
-            <ul className="space-y-1 text-sm text-gray-600">
-              <li>Até {plano.max_lojas} {plano.max_lojas === 1 ? 'loja' : 'lojas'}</li>
-              <li>Até {plano.max_produtos} produtos</li>
-              {plano.tem_estoque && <li>Controle de estoque</li>}
-              {plano.tem_relatorios && <li>Relatórios avançados</li>}
-              {plano.tem_antecipacao && <li>Antecipação de recebíveis</li>}
-            </ul>
-          </button>
-        ))}
+              <ul className="space-y-1.5 ml-6">
+                {[
+                  `Até ${plano.max_lojas} ${plano.max_lojas === 1 ? 'loja' : 'lojas'}`,
+                  `Até ${plano.max_produtos} produtos`,
+                  ...(plano.tem_estoque ? ['Controle de estoque'] : []),
+                  ...(plano.tem_relatorios ? ['Relatórios avançados'] : []),
+                  ...(plano.tem_antecipacao ? ['Antecipação de recebíveis'] : []),
+                ].map(item => (
+                  <li
+                    key={item}
+                    className="flex items-center gap-2 text-xs"
+                    style={{ color: selecionado ? '#266f4e' : '#9ca3af' }}
+                  >
+                    <span style={{ color: selecionado ? '#4CAF82' : '#d1d5db' }}>
+                      <IconCheck />
+                    </span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </button>
+          )
+        })}
       </div>
 
       {erro && (
-        <p className="text-sm text-red-600 mt-4">{erro}</p>
+        <p className="text-xs text-red-500 mt-3">{erro}</p>
       )}
 
       <div className="flex gap-3 mt-6">
         <button
           type="button"
           onClick={onVoltar}
-          className="flex-1 border border-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+          className="flex-1 border border-gray-200 text-gray-500 py-3 rounded-xl font-medium hover:bg-gray-50 active:scale-[0.98] transition-all duration-150 text-sm"
         >
           Voltar
         </button>
         <button
           type="button"
           onClick={handleSubmit}
-          className="flex-1 bg-[#1A4D3A] text-white py-3 rounded-lg font-medium hover:bg-[#163d2e] transition-colors"
+          className="flex-1 btn-primary"
         >
           Continuar
         </button>

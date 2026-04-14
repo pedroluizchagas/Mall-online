@@ -8,64 +8,62 @@ interface Props {
   onVoltar: () => void
 }
 
+const passos = [
+  {
+    titulo: 'Redirecionamento para a Stripe',
+    descricao: 'Você será redirecionado para a Stripe, nossa parceira de pagamentos, para configurar seus dados bancários.',
+  },
+  {
+    titulo: 'Processo rápido',
+    descricao: 'O processo leva cerca de 5 minutos. Tenha em mãos seus dados bancários e documentos.',
+  },
+  {
+    titulo: 'Segurança garantida',
+    descricao: 'Seus dados bancários são armazenados com segurança pela Stripe. Não temos acesso a eles.',
+  },
+  {
+    titulo: 'Pronto para vender',
+    descricao: 'Após a configuração, você estará pronto para receber pagamentos dos seus clientes.',
+  },
+]
+
 export function EtapaConfigurarRecebimentos({ carregando, onFinalizar, onVoltar }: Props) {
   return (
     <div>
-      <h2 className="text-xl font-semibold text-[#1A4D3A] mb-1">
-        Configurar recebimentos
-      </h2>
-      <p className="text-gray-500 text-sm mb-6">
-        Configure sua conta para receber pagamentos
-      </p>
+      <div className="mb-7">
+        <h2 className="text-2xl font-bold text-brand-800 tracking-tight">
+          Configurar recebimentos
+        </h2>
+        <p className="text-gray-400 text-sm mt-1.5">
+          Último passo — configure sua conta para receber pagamentos
+        </p>
+      </div>
 
-      <div className="bg-white rounded-xl p-6 border border-gray-200 space-y-4 mb-6">
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#4CAF82]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-[#4CAF82] text-sm font-bold">1</span>
+      {/* Passos Stripe */}
+      <div className="rounded-xl bg-gray-50 border border-gray-100 p-5 mb-5 space-y-5">
+        {passos.map((passo, i) => (
+          <div key={passo.titulo} className="flex items-start gap-4">
+            <div
+              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold mt-0.5"
+              style={{ background: 'rgba(76,175,130,0.10)', color: '#2d8a60' }}
+            >
+              {i + 1}
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700 text-sm leading-none mb-1">{passo.titulo}</p>
+              <p className="text-sm text-gray-400 leading-relaxed">{passo.descricao}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-medium text-gray-800">Redirecionamento para a Stripe</p>
-            <p className="text-sm text-gray-500">
-              Você será redirecionado para a Stripe, nossa parceira de pagamentos, para configurar seus dados bancários.
-            </p>
-          </div>
-        </div>
+        ))}
+      </div>
 
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#4CAF82]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-[#4CAF82] text-sm font-bold">2</span>
-          </div>
-          <div>
-            <p className="font-medium text-gray-800">Processo rápido</p>
-            <p className="text-sm text-gray-500">
-              O processo leva cerca de 5 minutos. Tenha em mãos seus dados bancários e documentos.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#4CAF82]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-[#4CAF82] text-sm font-bold">3</span>
-          </div>
-          <div>
-            <p className="font-medium text-gray-800">Segurança garantida</p>
-            <p className="text-sm text-gray-500">
-              Seus dados bancários são armazenados com segurança pela Stripe. Não temos acesso a eles.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-start gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#4CAF82]/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <span className="text-[#4CAF82] text-sm font-bold">4</span>
-          </div>
-          <div>
-            <p className="font-medium text-gray-800">Pronto para vender</p>
-            <p className="text-sm text-gray-500">
-              Após a configuração, você estará pronto para receber pagamentos dos seus clientes.
-            </p>
-          </div>
-        </div>
+      {/* Selo segurança */}
+      <div className="flex items-center justify-center gap-2 mb-6">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span className="text-xs text-gray-400">Processado com segurança via Stripe</span>
       </div>
 
       <div className="flex gap-3">
@@ -73,7 +71,7 @@ export function EtapaConfigurarRecebimentos({ carregando, onFinalizar, onVoltar 
           type="button"
           onClick={onVoltar}
           disabled={carregando}
-          className="flex-1 border border-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+          className="flex-1 border border-gray-200 text-gray-500 py-3 rounded-xl font-medium hover:bg-gray-50 active:scale-[0.98] transition-all duration-150 disabled:opacity-50 text-sm"
         >
           Voltar
         </button>
@@ -81,9 +79,16 @@ export function EtapaConfigurarRecebimentos({ carregando, onFinalizar, onVoltar 
           type="button"
           onClick={() => onFinalizar({})}
           disabled={carregando}
-          className="flex-1 bg-[#1A4D3A] text-white py-3 rounded-lg font-medium hover:bg-[#163d2e] transition-colors disabled:opacity-50"
+          className="flex-1 btn-primary flex items-center justify-center gap-2"
         >
-          {carregando ? 'Configurando...' : 'Configurar conta de recebimentos'}
+          {carregando ? (
+            <>
+              <svg className="animate-spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+              </svg>
+              Configurando...
+            </>
+          ) : 'Configurar conta de recebimentos'}
         </button>
       </div>
     </div>

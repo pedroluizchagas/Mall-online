@@ -46,7 +46,7 @@ export async function login(formData: FormData) {
     redirect('/onboarding')
   }
 
-  redirect('/dashboard')
+  redirect('/pedidos')
 }
 
 export async function cadastro(formData: FormData) {
