@@ -9,7 +9,7 @@ export default async function PaginaDetalhesPedido({
 }: {
   params: { id: string }
 }) {
-  const resultado = await getPedidoPorId(params.id)
+  const resultado = (await getPedidoPorId(params.id)) as any
 
   if (resultado.erro || !resultado.pedido) {
     notFound()

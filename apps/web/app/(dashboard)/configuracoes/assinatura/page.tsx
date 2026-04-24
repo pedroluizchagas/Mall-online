@@ -18,13 +18,14 @@ const CORES_BILLING: Record<string, string> = {
 }
 
 export default async function PaginaAssinatura() {
-  const [{ assinatura }, faturas, linkPortal] = await Promise.all([
+  const [dadosAssinatura, faturas, linkPortal] = await Promise.all([
     getDadosAssinatura(),
     getFaturas(),
     getLinkPortalAssinatura(),
   ])
 
-  const plano = assinatura?.plans as any
+  const assinatura = dadosAssinatura.assinatura as any
+  const plano = assinatura?.plans
 
   return (
     <div className="p-6 max-w-2xl space-y-6">

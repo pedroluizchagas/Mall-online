@@ -23,11 +23,13 @@ export default async function PaginaHistoricoEstoque({
 }) {
   const supabase = createSupabaseServer()
 
-  const { data: produto } = await supabase
+  const { data: produtoResult } = await supabase
     .from('products')
     .select('id, nome, stock_quantity, stock_minimo, track_stock')
     .eq('id', params.id)
     .single()
+
+  const produto = produtoResult as any
 
   if (!produto) redirect('/dashboard/produtos')
 

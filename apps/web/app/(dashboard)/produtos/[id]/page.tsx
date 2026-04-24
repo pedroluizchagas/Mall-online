@@ -11,14 +11,15 @@ interface Props {
 export default async function PaginaEditarProduto({ params }: Props) {
   const supabase = createSupabaseServer()
 
-  const { data: tenant } = await supabase
+  const { data: tenantResult } = await supabase
     .from('tenants')
     .select('id')
     .single()
 
+  const tenant = tenantResult as any
   if (!tenant) redirect('/dashboard/produtos')
 
-  const { data: produto } = await supabase
+  const { data: produtoResult } = await supabase
     .from('products')
     .select(`
       id, nome, descricao, preco, preco_promocional,
@@ -28,6 +29,8 @@ export default async function PaginaEditarProduto({ params }: Props) {
     .eq('id', params.id)
     .eq('tenant_id', tenant.id)
     .single()
+
+  const produto = produtoResult as any
 
   if (!produto) notFound()
 

@@ -45,7 +45,7 @@ export default async function PaginaProdutos() {
         />
       )}
 
-      <ListaProdutos produtos={produtos} storeId={store.id} />
+      <ListaProdutos produtos={produtos as any} storeId={store.id} />
     </div>
   )
 }

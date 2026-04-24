@@ -7,11 +7,12 @@ import { ProdutoForm } from '@/components/dashboard/produto-form'
 export default async function PaginaNovoProduto() {
   const supabase = createSupabaseServer()
 
-  const { data: store } = await supabase
+  const { data: storeResult } = await supabase
     .from('stores')
     .select('id')
     .single()
 
+  const store = storeResult as any
   if (!store) redirect('/dashboard/produtos')
 
   const { categorias } = await getCategorias()
