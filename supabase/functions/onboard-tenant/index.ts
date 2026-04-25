@@ -120,7 +120,10 @@ Deno.serve(async (req) => {
         type: 'express',
         country: 'BR',
         email,
-        capabilities: { transfers: { requested: true } },
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
         metadata: { user_id: userId },
       })
       stripeAccountId = stripeAccount.id
