@@ -78,34 +78,29 @@ export default function PaginaOnboarding() {
     const supabase = createSupabaseClient()
 
     try {
-      // A Edge Function cria o usuário server-side via admin SDK (sem enviar e-mail)
-      // e devolve apenas { tenant_id, store_id } após criar toda a estrutura.
-      const resposta = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/onboard-tenant`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          },
-          body: JSON.stringify(dadosCompletos),
-        }
+      // Usa supabase.functions.invoke() que envia Authorization: Bearer <anon_key>
+      // automaticamente — o gateway do Supabase aceita e a função roda sem JWT de usuário.
+      const { data: resultado, error: funcError } = await supabase.functions.invoke(
+        'onboard-tenant',
+        { body: dadosCompletos }
       )
 
-      const resultado = await resposta.json()
+      if (funcError) {
+        throw new Error(funcError.message || 'Erro ao criar conta. Tente novamente.')
+      }
 
-      if (!resposta.ok) {
+      if (resultado?.error) {
         throw new Error(resultado.error)
       }
 
-      // Usuário criado — agora faz login com senha (não dispara e-mail)
+      // Usuário criado via admin SDK — agora faz login com senha (não dispara e-mail)
       const { error: loginError } = await supabase.auth.signInWithPassword({
         email: dadosCompletos.email!,
         password: dadosCompletos.senha!,
       })
 
       if (loginError) {
-        throw new Error('Conta criada, mas não foi possível fazer login automático. Tente acessar pela página de login.')
+        throw new Error('Conta criada! Acesse a página de login para entrar.')
       }
 
       setContaCriada(true)
@@ -113,7 +108,7 @@ export default function PaginaOnboarding() {
         window.location.href = '/?welcome=1'
       }, 2400)
     } catch (erro: unknown) {
-      const message = erro instanceof Error ? erro.message : 'Erro inesperado'
+      const message = erro instanceof Error ? erro.message : 'Erro inesperado. Tente novamente.'
       alert(message)
       setCarregando(false)
     }
