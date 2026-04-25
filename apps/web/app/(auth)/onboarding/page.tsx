@@ -78,42 +78,15 @@ export default function PaginaOnboarding() {
     const supabase = createSupabaseClient()
 
     try {
-      let { data: { session } } = await supabase.auth.getSession()
-
-      // Se não há sessão, o usuário precisa ser registrado
-      if (!session && dadosCompletos.email && dadosCompletos.senha) {
-        const { data, error } = await supabase.auth.signUp({
-          email: dadosCompletos.email,
-          password: dadosCompletos.senha,
-          options: {
-            data: {
-              nome: dadosCompletos.nome_responsavel,
-              role: 'tenant',
-            },
-          },
-        })
-        
-        if (error) {
-          if (error.message.includes('already registered')) {
-             throw new Error('Este email já está cadastrado. Faça login na plataforma.')
-          }
-          throw error
-        }
-        
-        session = data.session
-      }
-
-      if (!session) {
-         throw new Error('Não foi possível autenticar o usuário para criar a loja.')
-      }
-
+      // A Edge Function cria o usuário server-side via admin SDK (sem enviar e-mail)
+      // e devolve apenas { tenant_id, store_id } após criar toda a estrutura.
       const resposta = await fetch(
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/onboard-tenant`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session?.access_token}`,
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           },
           body: JSON.stringify(dadosCompletos),
         }
@@ -125,8 +98,17 @@ export default function PaginaOnboarding() {
         throw new Error(resultado.error)
       }
 
+      // Usuário criado — agora faz login com senha (não dispara e-mail)
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: dadosCompletos.email!,
+        password: dadosCompletos.senha!,
+      })
+
+      if (loginError) {
+        throw new Error('Conta criada, mas não foi possível fazer login automático. Tente acessar pela página de login.')
+      }
+
       setContaCriada(true)
-      // Pequeno delay para o usuário ver a tela de sucesso antes do redirect
       setTimeout(() => {
         window.location.href = '/?welcome=1'
       }, 2400)

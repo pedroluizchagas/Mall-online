@@ -1,6 +1,6 @@
 // supabase/functions/onboard-tenant/index.ts
 import Stripe from 'https://esm.sh/stripe@14'
-import { getSupabaseAdmin, getAuthenticatedUser, corsHeaders } from '../helpers/auth.ts'
+import { getSupabaseAdmin, corsHeaders } from '../helpers/auth.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-04-10',
@@ -12,26 +12,56 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const user = await getAuthenticatedUser(req)
     const body = await req.json()
     const {
       nome_responsavel,
       cpf_cnpj,
       telefone,
       email,
+      senha,
       nome_loja,
       categoria_id,
       endereco,
       plan_id,
     } = body
 
+    if (!email || !senha) {
+      return new Response(
+        JSON.stringify({ error: 'Email e senha são obrigatórios' }),
+        { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
+      )
+    }
+
     const supabase = getSupabaseAdmin()
 
-    // Verificar se tenant já existe para este usuário
+    // Criar usuário via admin SDK — sem enviar e-mail de confirmação
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password: senha,
+      email_confirm: true,
+      user_metadata: {
+        nome: nome_responsavel,
+        role: 'tenant',
+      },
+    })
+
+    if (authError) {
+      if (authError.message.includes('already been registered') || authError.message.includes('already registered')) {
+        return new Response(
+          JSON.stringify({ error: 'Este e-mail já está cadastrado. Faça login na plataforma.' }),
+          { status: 409, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
+        )
+      }
+      throw authError
+    }
+
+    const userId = authData.user.id
+
+    // Garantir que não existe tenant duplicado para este usuário
     const { data: tenantExistente } = await supabase
       .from('tenants')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
 
     if (tenantExistente) {
@@ -58,7 +88,7 @@ Deno.serve(async (req) => {
       email,
       name: nome_responsavel,
       phone: telefone,
-      metadata: { user_id: user.id },
+      metadata: { user_id: userId },
     })
 
     // Criar Express Account (para receber repasses)
@@ -69,21 +99,21 @@ Deno.serve(async (req) => {
       capabilities: {
         transfers: { requested: true },
       },
-      metadata: { user_id: user.id },
+      metadata: { user_id: userId },
     })
 
-    // Criar tenant
+    // Gerar slug da loja
     const slug = nome_loja
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[̀-ͯ]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
 
     const { data: tenant, error: tenantError } = await supabase
       .from('tenants')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         nome_responsavel,
         cpf_cnpj,
         telefone,
@@ -98,8 +128,6 @@ Deno.serve(async (req) => {
 
     if (tenantError) throw tenantError
 
-    // Criar assinatura (trial) — subscription criada em create-subscription
-    // após KYC do Stripe ser concluído
     const trialTerminaEm = new Date()
     trialTerminaEm.setDate(trialTerminaEm.getDate() + 15)
 
@@ -117,27 +145,19 @@ Deno.serve(async (req) => {
       .insert({
         tenant_id: tenant.id,
         nome: nome_loja,
-        slug: `${slug}-${Date.now()}`,
+        slug: `${slug}-store-${Date.now()}`,
         endereco,
+        categoria_id: categoria_id ?? null,
       })
       .select('id')
       .single()
 
     if (storeError) throw storeError
 
-    // Gerar link de onboarding da Express Account
-    const accountLink = await stripe.accountLinks.create({
-      account: stripeAccount.id,
-      refresh_url: `${Deno.env.get('APP_URL')}/onboarding/stripe/retry`,
-      return_url: `${Deno.env.get('APP_URL')}/onboarding/stripe/callback`,
-      type: 'account_onboarding',
-    })
-
     return new Response(
       JSON.stringify({
         tenant_id: tenant.id,
         store_id: store.id,
-        stripe_onboarding_url: accountLink.url,
       }),
       { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
