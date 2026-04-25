@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { formatarReais } from '@mallora/lib'
 import type { DadosOnboarding } from '../page'
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 
 interface Props {
   dadosIniciais: Partial<DadosOnboarding>
@@ -49,66 +50,122 @@ export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props)
   }
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold text-[#1A4D3A] mb-1">
-        Escolha seu plano
-      </h2>
-      <p className="text-gray-500 text-sm mb-6">
-        Selecione o plano que melhor atende seu negócio
-      </p>
+    <div className="w-full">
+      <div className="mb-10 text-center lg:text-left">
+        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 mb-3">
+          Escolha seu Plano
+        </h2>
+        <p className="text-zinc-500 text-lg">
+          Selecione o plano ideal para escalar o seu negócio.
+        </p>
+      </div>
 
-      <div className="space-y-4">
-        {planos.map(plano => (
-          <button
-            key={plano.id}
-            type="button"
-            onClick={() => {
-              setPlanoSelecionado(plano.id)
-              setErro('')
-            }}
-            className={`w-full text-left p-5 rounded-xl border-2 transition-colors ${
-              planoSelecionado === plano.id
-                ? 'border-[#4CAF82] bg-green-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <div className="flex justify-between items-start mb-3">
-              <h3 className="font-semibold text-[#1A4D3A]">{plano.nome}</h3>
-              <span className="text-lg font-bold text-[#1A4D3A]">
-                {formatarReais(plano.preco_mensal)}
-                <span className="text-sm font-normal text-gray-400">/mês</span>
-              </span>
-            </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        {planos.map(plano => {
+          const isSelected = planoSelecionado === plano.id
+          const isPremium = plano.preco_mensal > 50 // Just a simple logic to highlight a plan
 
-            <ul className="space-y-1 text-sm text-gray-600">
-              <li>Até {plano.max_lojas} {plano.max_lojas === 1 ? 'loja' : 'lojas'}</li>
-              <li>Até {plano.max_produtos} produtos</li>
-              {plano.tem_estoque && <li>Controle de estoque</li>}
-              {plano.tem_relatorios && <li>Relatórios avançados</li>}
-              {plano.tem_antecipacao && <li>Antecipação de recebíveis</li>}
-            </ul>
-          </button>
-        ))}
+          return (
+            <button
+              key={plano.id}
+              type="button"
+              onClick={() => {
+                setPlanoSelecionado(plano.id)
+                setErro('')
+              }}
+              className={`relative w-full text-left p-6 rounded-2xl border-2 transition-all duration-300 ${
+                isSelected
+                  ? 'border-[#C1F148] bg-[#C1F148]/[0.05] shadow-[0_8px_30px_rgba(193,241,72,0.15)] scale-[1.02]'
+                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white'
+              }`}
+            >
+              {isPremium && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-zinc-900 text-[#C1F148] px-3 py-1 text-xs font-semibold rounded-full tracking-wide">
+                  MAIS POPULAR
+                </div>
+              )}
+              
+              <div className="mb-6">
+                <h3 className={`font-semibold text-lg mb-2 ${isSelected ? 'text-zinc-900' : 'text-zinc-900'}`}>
+                  {plano.nome}
+                </h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-bold text-zinc-900">
+                    {formatarReais(plano.preco_mensal)}
+                  </span>
+                  <span className="text-zinc-500 font-medium">/mês</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-zinc-600 text-sm">
+                    Até <strong className="font-semibold text-zinc-900">{plano.max_lojas}</strong> {plano.max_lojas === 1 ? 'loja' : 'lojas'}
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-zinc-600 text-sm">
+                    Até <strong className="font-semibold text-zinc-900">{plano.max_produtos}</strong> produtos
+                  </span>
+                </div>
+                {plano.tem_estoque && (
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-zinc-600 text-sm">Controle de estoque</span>
+                  </div>
+                )}
+                {plano.tem_relatorios && (
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-zinc-600 text-sm">Relatórios avançados</span>
+                  </div>
+                )}
+                {plano.tem_antecipacao && (
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-zinc-600 text-sm">Antecipação de recebíveis</span>
+                  </div>
+                )}
+              </div>
+            </button>
+          )
+        })}
       </div>
 
       {erro && (
-        <p className="text-sm text-red-600 mt-4">{erro}</p>
+        <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 text-sm font-medium text-center border border-red-100">
+          {erro}
+        </div>
       )}
 
-      <div className="flex gap-3 mt-6">
+      <div className="pt-4 flex items-center justify-between gap-4">
         <button
           type="button"
           onClick={onVoltar}
-          className="flex-1 border border-gray-200 text-gray-700 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+          className="flex items-center gap-2 px-6 py-4 rounded-xl font-medium text-zinc-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
         >
+          <ArrowLeft className="w-5 h-5" />
           Voltar
         </button>
         <button
           type="button"
           onClick={handleSubmit}
-          className="flex-1 bg-[#1A4D3A] text-white py-3 rounded-lg font-medium hover:bg-[#163d2e] transition-colors"
+          className="flex items-center gap-2 bg-[#C1F148] text-zinc-900 px-8 py-4 rounded-xl font-semibold hover:bg-[#aee623] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#C1F148]/20"
         >
-          Continuar
+          Configurar Conta
+          <ArrowRight className="w-5 h-5" />
         </button>
       </div>
     </div>

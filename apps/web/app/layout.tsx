@@ -1,3 +1,5 @@
+import './globals.css'
+
 export const metadata = {
   title: 'Mallora — Dashboard',
   description: 'Plataforma de delivery de Divinópolis',

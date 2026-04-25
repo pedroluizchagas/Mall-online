@@ -12,6 +12,7 @@ export const schemaDadosResponsavel = z.object({
     .min(10, 'Telefone inválido')
     .max(15, 'Telefone inválido'),
   email: z.string().email('Email inválido'),
+  senha: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres'),
 })
 
 export const schemaDadosLoja = z.object({

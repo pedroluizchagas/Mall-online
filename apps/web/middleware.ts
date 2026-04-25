@@ -1,8 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const rotasPublicas = ['/entrar', '/cadastro']
-const rotasAuth = ['/onboarding']
+const rotasPublicas = ['/entrar', '/onboarding']
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
@@ -30,7 +29,7 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  // Rotas públicas: se logado, redireciona para dashboard
+  // Rotas públicas: se logado, redireciona para dashboard ou onboarding se não finalizou
   if (rotasPublicas.some(rota => pathname.startsWith(rota))) {
     if (user) {
       const { data: tenant } = await supabase
@@ -39,17 +38,12 @@ export async function middleware(request: NextRequest) {
         .single()
 
       if (!tenant || !tenant.stripe_onboarding_ok) {
+        if (pathname.startsWith('/onboarding')) {
+           return response // let them finish onboarding
+        }
         return NextResponse.redirect(new URL('/onboarding', request.url))
       }
       return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    return response
-  }
-
-  // Rotas de auth (onboarding): precisa estar logado
-  if (rotasAuth.some(rota => pathname.startsWith(rota))) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/entrar', request.url))
     }
     return response
   }
