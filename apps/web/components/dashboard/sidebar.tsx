@@ -2,23 +2,46 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { logout } from '@/lib/actions/auth'
 import {
-  LayoutDashboard,
+  Home,
   ShoppingBag,
   Package,
   DollarSign,
-  Settings,
-  LogOut,
   Store,
+  Bike,
+  BarChart3,
+  Settings,
+  Bell,
+  Star,
+  HelpCircle,
+  Search,
+  LogOut,
+  type LucideIcon,
 } from 'lucide-react'
+import { logout } from '@/lib/actions/auth'
 
-const nav = [
-  { href: '/', icon: LayoutDashboard, label: 'Início' },
-  { href: '/pedidos', icon: ShoppingBag, label: 'Pedidos' },
-  { href: '/produtos', icon: Package, label: 'Produtos' },
-  { href: '/financeiro', icon: DollarSign, label: 'Financeiro' },
-  { href: '/configuracoes', icon: Settings, label: 'Configurações' },
+interface NavItem {
+  href: string
+  label: string
+  icon: LucideIcon
+  badge?: number
+}
+
+const mainItems: NavItem[] = [
+  { href: '/', label: 'Início', icon: Home },
+  { href: '/pedidos', label: 'Pedidos', icon: ShoppingBag, badge: 2 },
+  { href: '/produtos', label: 'Produtos', icon: Package },
+  { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
+  { href: '/minha-loja', label: 'Minha Loja', icon: Store },
+  { href: '/entregadores', label: 'Entregadores', icon: Bike },
+  { href: '/relatorios', label: 'Relatórios', icon: BarChart3 },
+]
+
+const configItems: NavItem[] = [
+  { href: '/mensagens', label: 'Mensagens', icon: Bell },
+  { href: '/avaliacoes', label: 'Avaliações', icon: Star },
+  { href: '/configuracoes', label: 'Configurações', icon: Settings },
+  { href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
 ]
 
 interface Props {
@@ -29,64 +52,187 @@ export function SidebarDashboard({ nomeLoja }: Props) {
   const pathname = usePathname()
 
   return (
-    <aside className="w-[220px] flex-shrink-0 flex flex-col bg-[#18181B] h-screen sticky top-0 border-r border-white/[0.04]">
-      {/* Logo */}
-      <div className="px-5 h-[64px] flex items-center gap-3 border-b border-white/[0.04]">
-        <div className="w-8 h-8 rounded-lg bg-[#C1F148] flex items-center justify-center">
-          <span className="font-bold text-[#18181B] text-base leading-none">M</span>
+    <aside
+      className="flex flex-col flex-shrink-0 sticky top-0"
+      style={{
+        width: 236,
+        height: '100vh',
+        background: 'var(--sidebar)',
+        color: 'var(--sidebar-ink)',
+        padding: '20px 14px',
+      }}
+    >
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-2 pb-[18px] pt-1">
+        <div
+          className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center font-extrabold text-base tracking-tight"
+          style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+        >
+          M
         </div>
-        <span className="font-semibold text-white tracking-tight text-[15px]">Mallevo</span>
-      </div>
-
-      {/* Store badge */}
-      <div className="px-3 pt-4 pb-2">
-        <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl bg-white/[0.04]">
-          <div className="w-5 h-5 rounded-md bg-white/[0.08] flex items-center justify-center flex-shrink-0">
-            <Store className="w-3 h-3 text-zinc-400" />
+        <div>
+          <div className="text-[15px] font-bold tracking-tight">Mallevo</div>
+          <div className="text-[10px]" style={{ color: 'var(--sidebar-ink-3)' }}>
+            shopping de Divinópolis
           </div>
-          <span className="text-[13px] text-zinc-400 font-medium truncate">{nomeLoja}</span>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 pt-2 space-y-0.5 overflow-y-auto">
-        {nav.map(({ href, icon: Icon, label }) => {
-          const active =
-            pathname === href || (href !== '/' && pathname.startsWith(href))
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-all duration-150 ${
-                active
-                  ? 'bg-white/[0.07] text-[#C1F148]'
-                  : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.04]'
-              }`}
-            >
-              <Icon
-                className={`w-4 h-4 flex-shrink-0 ${active ? 'text-[#C1F148]' : ''}`}
-              />
-              {label}
-              {active && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#C1F148]" />
-              )}
-            </Link>
-          )
-        })}
+      {/* Search */}
+      <div
+        className="flex items-center gap-2 mb-5 rounded-[10px]"
+        style={{
+          padding: '8px 12px',
+          background: 'var(--sidebar-2)',
+          border: '1px solid var(--sidebar-line)',
+        }}
+      >
+        <Search className="w-3.5 h-3.5" style={{ color: 'var(--sidebar-ink-3)' }} />
+        <input
+          placeholder="Buscar..."
+          className="bg-transparent outline-none border-none flex-1 text-[12px]"
+          style={{ color: 'var(--sidebar-ink)' }}
+        />
+        <span
+          className="font-mono text-[9px] px-1.5 py-0.5 rounded"
+          style={{ color: 'var(--sidebar-ink-3)', background: 'rgba(255,255,255,0.05)' }}
+        >
+          ⌘K
+        </span>
+      </div>
+
+      <SectionLabel>Menu principal</SectionLabel>
+      <nav className="flex flex-col gap-0.5">
+        {mainItems.map((item) => (
+          <NavLink key={item.href} item={item} pathname={pathname} />
+        ))}
       </nav>
 
-      {/* Logout */}
-      <div className="p-3 border-t border-white/[0.04]">
-        <form action={logout}>
-          <button
-            type="submit"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium text-zinc-600 hover:text-zinc-300 hover:bg-white/[0.04] transition-all w-full"
-          >
-            <LogOut className="w-4 h-4" />
-            Sair da conta
-          </button>
-        </form>
+      <div className="pt-[22px]">
+        <SectionLabel>Configurações</SectionLabel>
+      </div>
+      <nav className="flex flex-col gap-0.5">
+        {configItems.map((item) => (
+          <NavLink key={item.href} item={item} pathname={pathname} />
+        ))}
+      </nav>
+
+      {/* Próximo evento */}
+      <div
+        className="mt-auto rounded-[14px]"
+        style={{
+          padding: 14,
+          background: 'var(--sidebar-2)',
+          border: '1px solid var(--sidebar-line)',
+        }}
+      >
+        <div
+          className="text-[9px] uppercase font-semibold mb-1.5"
+          style={{ color: 'var(--sidebar-ink-3)', letterSpacing: '0.14em' }}
+        >
+          Próximo evento
+        </div>
+        <div className="text-[13px] font-bold tracking-tight">Feira Central</div>
+        <div className="font-mono text-[10px] mt-0.5" style={{ color: 'var(--sidebar-ink-2)' }}>
+          20 abr · 17h—20h
+        </div>
+        <div className="flex gap-1 mt-2.5">
+          <Chip variant="muted">Lojistas</Chip>
+          <Chip variant="brick">Reunião</Chip>
+        </div>
+      </div>
+
+      <form action={logout} className="pt-3">
+        <button
+          type="submit"
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[12.5px] font-medium w-full transition-all"
+          style={{ color: 'var(--sidebar-ink-3)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--sidebar-ink)'
+            e.currentTarget.style.background = 'var(--sidebar-2)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--sidebar-ink-3)'
+            e.currentTarget.style.background = 'transparent'
+          }}
+        >
+          <LogOut className="w-4 h-4" />
+          Sair da conta
+        </button>
+      </form>
+
+      <div className="text-[10px] mt-1 px-2" style={{ color: 'var(--sidebar-ink-3)' }}>
+        {nomeLoja}
       </div>
     </aside>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="text-[10px] uppercase font-semibold px-2 pb-2"
+      style={{ color: 'var(--sidebar-ink-3)', letterSpacing: '0.14em' }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+  const Icon = item.icon
+
+  return (
+    <Link
+      href={item.href}
+      className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] transition-all"
+      style={{
+        background: active ? 'var(--brick)' : 'transparent',
+        color: active ? 'var(--brick-ink)' : 'var(--sidebar-ink-2)',
+        fontWeight: active ? 700 : 500,
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = 'var(--sidebar-2)'
+          e.currentTarget.style.color = 'var(--sidebar-ink)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = 'transparent'
+          e.currentTarget.style.color = 'var(--sidebar-ink-2)'
+        }
+      }}
+    >
+      <Icon className="w-4 h-4" strokeWidth={1.75} />
+      <span className="flex-1">{item.label}</span>
+      {item.badge && (
+        <span
+          className="px-1.5 py-px rounded-full text-[10px] font-bold"
+          style={{
+            background: active ? 'var(--ink)' : 'var(--brick)',
+            color: active ? 'var(--brick)' : 'var(--brick-ink)',
+          }}
+        >
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  )
+}
+
+function Chip({ children, variant }: { children: React.ReactNode; variant: 'muted' | 'brick' }) {
+  const styles =
+    variant === 'brick'
+      ? { background: 'var(--brick)', color: 'var(--brick-ink)' }
+      : { background: 'rgba(255,255,255,0.08)', color: 'var(--sidebar-ink)' }
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold"
+      style={styles}
+    >
+      {children}
+    </span>
   )
 }
