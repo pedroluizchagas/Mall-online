@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { EtapaDadosResponsavel } from './etapas/dados-responsavel'
 import { EtapaDadosLoja } from './etapas/dados-loja'
@@ -41,6 +41,28 @@ export default function PaginaOnboarding() {
   const [etapa, setEtapa] = useState(1)
   const [dados, setDados] = useState<Partial<DadosOnboarding>>({})
   const [carregando, setCarregando] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
+  const [splashPhase, setSplashPhase] = useState<number>(0)
+
+  useEffect(() => {
+    if (!showSplash) return
+
+    if (splashPhase === 0) {
+      setTimeout(() => setSplashPhase(1), 200)
+    } else if (splashPhase === 1) { // Logo transform & show
+      setTimeout(() => setSplashPhase(2), 1600)
+    } else if (splashPhase === 2) { // Logo exits
+      setTimeout(() => setSplashPhase(3), 800)
+    } else if (splashPhase === 3) { // Phrase 1
+      setTimeout(() => setSplashPhase(4), 1600)
+    } else if (splashPhase === 4) { // Phrase 2
+      setTimeout(() => setSplashPhase(5), 1600)
+    } else if (splashPhase === 5) { // Phrase 3
+      setTimeout(() => setSplashPhase(6), 1800)
+    } else if (splashPhase === 6) { // Flash out
+      setTimeout(() => setShowSplash(false), 800)
+    }
+  }, [splashPhase, showSplash])
 
   function avancar(novosDados: Partial<DadosOnboarding>) {
     setDados(prev => ({ ...prev, ...novosDados }))
@@ -113,8 +135,105 @@ export default function PaginaOnboarding() {
   }
 
   return (
-    <div className="min-h-screen flex w-full bg-[#18181B] font-sans">
-      {/* Left Column - Branding & Progress */}
+    <>
+      <AnimatePresence mode="wait">
+      {showSplash ? (
+        <motion.div
+          key="splash"
+          exit={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#09090B] overflow-hidden"
+        >
+          {/* Luz intensa no final (Fade out effect with glow) */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ 
+              opacity: splashPhase === 6 ? 1 : 0, 
+              scale: splashPhase === 6 ? 40 : 0 
+            }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className="absolute w-[150px] h-[150px] bg-[#C1F148] rounded-full blur-[60px] z-20 pointer-events-none"
+          />
+          
+          <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
+            {/* Logo morphing animation */}
+            <AnimatePresence>
+              {splashPhase === 1 && (
+                <motion.div
+                  key="logo"
+                  initial={{ scale: 0, borderRadius: "100%", rotate: 180 }}
+                  animate={{ scale: 1, borderRadius: "32px", rotate: 0 }}
+                  exit={{ scale: 0, opacity: 0, filter: 'blur(10px)', rotate: -45 }}
+                  transition={{ duration: 1, type: "spring", bounce: 0.4 }}
+                  className="absolute w-32 h-32 md:w-40 md:h-40 bg-[#C1F148] flex items-center justify-center shadow-[0_0_100px_rgba(193,241,72,0.4)]"
+                >
+                  <motion.span 
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4, duration: 0.6, type: "spring" }}
+                    className="text-[#09090B] font-bold text-7xl md:text-8xl"
+                  >
+                    M
+                  </motion.span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Scrolling Huge Phrases */}
+            <div className="relative flex items-center justify-center w-full h-full px-6">
+              <AnimatePresence>
+                {splashPhase === 3 && (
+                  <motion.h2
+                    key="phrase1"
+                    initial={{ opacity: 0, y: 150, filter: 'blur(20px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: -150, filter: 'blur(20px)', scale: 0.95 }}
+                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute text-5xl md:text-7xl lg:text-8xl font-semibold text-white text-center tracking-tight leading-[1.1]"
+                  >
+                    A nova era do <br/>
+                    <span className="text-zinc-500">comércio digital</span>
+                  </motion.h2>
+                )}
+                {splashPhase === 4 && (
+                  <motion.h2
+                    key="phrase2"
+                    initial={{ opacity: 0, y: 150, filter: 'blur(20px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: -150, filter: 'blur(20px)', scale: 0.95 }}
+                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute text-5xl md:text-7xl lg:text-8xl font-semibold text-white text-center tracking-tight leading-[1.1]"
+                  >
+                    Construindo o seu <br/>
+                    <span className="text-[#C1F148]">ecossistema</span>
+                  </motion.h2>
+                )}
+                {splashPhase === 5 && (
+                  <motion.h2
+                    key="phrase3"
+                    initial={{ opacity: 0, y: 150, filter: 'blur(20px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    exit={{ opacity: 0, y: -150, filter: 'blur(20px)', scale: 0.95 }}
+                    transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute text-5xl md:text-7xl lg:text-8xl font-semibold text-white text-center tracking-tight leading-[1.1]"
+                  >
+                    Prepare-se para <br/>
+                    <span className="text-white italic">crescer.</span>
+                  </motion.h2>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </motion.div>
+      ) : (
+        <motion.div
+          key="onboarding"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, ease: "easeOut" }}
+          className="min-h-screen flex w-full bg-[#18181B] font-sans"
+        >
+          {/* Left Column - Branding & Progress */}
       <div className="hidden lg:flex w-[400px] xl:w-[460px] flex-col justify-between p-8 text-zinc-50 relative shrink-0">
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-12">
@@ -250,6 +369,9 @@ export default function PaginaOnboarding() {
           </div>
         </div>
       </div>
-    </div>
+      </motion.div>
+      )}
+      </AnimatePresence>
+    </>
   )
 }
