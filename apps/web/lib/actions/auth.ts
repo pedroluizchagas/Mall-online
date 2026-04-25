@@ -36,17 +36,18 @@ export async function login(formData: FormData) {
     return { erro: 'Email ou senha incorretos' }
   }
 
-  // Verificar se tenant existe e onboarding está completo
+  // Verifica se já existe lojista cadastrado. A configuração de Stripe é opcional pós-login
+  // e fica disponível dentro do dashboard (Configurações → Conta Stripe).
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, stripe_onboarding_ok')
+    .select('id')
     .single()
 
   if (!tenant) {
     redirect('/onboarding')
   }
 
-  redirect('/dashboard')
+  redirect('/')
 }
 
 export async function cadastro(formData: FormData) {

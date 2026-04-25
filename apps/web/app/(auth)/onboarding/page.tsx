@@ -5,9 +5,8 @@ import { createSupabaseClient } from '@/lib/supabase/client'
 import { EtapaDadosResponsavel } from './etapas/dados-responsavel'
 import { EtapaDadosLoja } from './etapas/dados-loja'
 import { EtapaEscolhaPlano } from './etapas/escolha-plano'
-import { EtapaConfigurarRecebimentos } from './etapas/configurar-recebimentos'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Store, User, CreditCard, CheckCircle2, ArrowRight } from 'lucide-react'
+import { Store, User, CreditCard, ArrowRight, CheckCircle2, Sparkles } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
 
 export interface DadosOnboarding {
@@ -34,7 +33,6 @@ const STEPS = [
   { id: 1, title: 'Responsável', description: 'Seus dados pessoais', icon: User },
   { id: 2, title: 'Loja', description: 'Detalhes do negócio', icon: Store },
   { id: 3, title: 'Plano', description: 'Escolha a assinatura', icon: CreditCard },
-  { id: 4, title: 'Recebimentos', description: 'Conta bancária', icon: CheckCircle2 },
 ]
 
 export default function PaginaOnboarding() {
@@ -43,6 +41,7 @@ export default function PaginaOnboarding() {
   const [carregando, setCarregando] = useState(false)
   const [showSplash, setShowSplash] = useState(true)
   const [splashPhase, setSplashPhase] = useState<number>(0)
+  const [contaCriada, setContaCriada] = useState(false)
 
   useEffect(() => {
     if (!showSplash) return
@@ -126,7 +125,11 @@ export default function PaginaOnboarding() {
         throw new Error(resultado.error)
       }
 
-      window.location.href = resultado.stripe_onboarding_url
+      setContaCriada(true)
+      // Pequeno delay para o usuário ver a tela de sucesso antes do redirect
+      setTimeout(() => {
+        window.location.href = '/?welcome=1'
+      }, 2400)
     } catch (erro: unknown) {
       const message = erro instanceof Error ? erro.message : 'Erro inesperado'
       alert(message)
@@ -137,7 +140,75 @@ export default function PaginaOnboarding() {
   return (
     <>
       <AnimatePresence mode="wait">
-      {showSplash ? (
+      {contaCriada ? (
+        <motion.div
+          key="sucesso"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#09090B] via-[#18181B] to-[#1A4D3A] overflow-hidden p-6"
+        >
+          <motion.div
+            initial={{ opacity: 0.4, scale: 0 }}
+            animate={{ opacity: [0.4, 0.6, 0.5], scale: [0, 5, 6] }}
+            transition={{ duration: 2, ease: 'easeOut' }}
+            className="absolute w-[200px] h-[200px] bg-[#C1F148] rounded-full blur-[100px] pointer-events-none"
+          />
+
+          <div className="relative z-10 flex flex-col items-center text-center max-w-lg">
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ duration: 0.8, type: 'spring', bounce: 0.5 }}
+              className="w-24 h-24 md:w-28 md:h-28 rounded-3xl bg-[#C1F148] flex items-center justify-center mb-8 shadow-[0_0_80px_rgba(193,241,72,0.5)]"
+            >
+              <CheckCircle2 className="w-12 h-12 md:w-14 md:h-14 text-[#09090B]" strokeWidth={2.5} />
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="flex items-center gap-2 mb-4"
+            >
+              <Sparkles className="w-5 h-5 text-[#F5A623]" />
+              <span className="text-sm font-semibold text-[#F5A623] tracking-wider uppercase">
+                Sua conta está pronta
+              </span>
+              <Sparkles className="w-5 h-5 text-[#F5A623]" />
+            </motion.div>
+
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.7 }}
+              className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4 leading-tight"
+            >
+              Bem-vindo à <span className="text-[#C1F148]">Mallora</span>
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7, duration: 0.7 }}
+              className="text-zinc-400 text-lg leading-relaxed mb-10"
+            >
+              Estamos abrindo seu painel e tudo que você precisa para configurar o seu negócio.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1, duration: 0.5 }}
+              className="flex items-center gap-3 text-zinc-500 text-sm"
+            >
+              <div className="w-4 h-4 border-2 border-[#C1F148] border-t-transparent rounded-full animate-spin" />
+              <span>Preparando seu dashboard…</span>
+            </motion.div>
+          </div>
+        </motion.div>
+      ) : showSplash ? (
         <motion.div
           key="splash"
           exit={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
@@ -322,7 +393,7 @@ export default function PaginaOnboarding() {
         <div className="h-1 bg-gray-100 lg:hidden sticky top-[73px] z-20">
           <div
             className="h-full bg-[#C1F148] transition-all duration-500 ease-out"
-            style={{ width: `${(etapa / 4) * 100}%` }}
+            style={{ width: `${(etapa / 3) * 100}%` }}
           />
         </div>
 
@@ -353,14 +424,8 @@ export default function PaginaOnboarding() {
                 {etapa === 3 && (
                   <EtapaEscolhaPlano
                     dadosIniciais={dados}
-                    onAvancar={avancar}
-                    onVoltar={voltar}
-                  />
-                )}
-                {etapa === 4 && (
-                  <EtapaConfigurarRecebimentos
                     carregando={carregando}
-                    onFinalizar={finalizarOnboarding}
+                    onAvancar={finalizarOnboarding}
                     onVoltar={voltar}
                   />
                 )}

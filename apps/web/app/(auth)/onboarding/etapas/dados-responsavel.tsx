@@ -22,6 +22,7 @@ export function EtapaDadosResponsavel({ dadosIniciais, onAvancar }: Props) {
       cpf_cnpj: formData.get('cpf_cnpj') as string,
       telefone: formData.get('telefone') as string,
       email: formData.get('email') as string,
+      senha: formData.get('senha') as string,
     }
 
     const resultado = schemaDadosResponsavel.safeParse(dados)

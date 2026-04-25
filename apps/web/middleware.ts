@@ -29,29 +29,27 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  // Rotas públicas: se logado, redireciona para dashboard ou onboarding se não finalizou
+  // Rotas públicas: usuário logado com conta criada (tenant existe) já é mandado para o dashboard.
+  // A configuração de recebimentos (Stripe Express) é opcional pós-conta — não bloqueia mais aqui.
   if (rotasPublicas.some(rota => pathname.startsWith(rota))) {
     if (user) {
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('id, stripe_onboarding_ok')
+        .select('id')
         .single()
 
-      if (!tenant || !tenant.stripe_onboarding_ok) {
+      if (!tenant) {
         if (pathname.startsWith('/onboarding')) {
-           return response // let them finish onboarding
+          return response
         }
         return NextResponse.redirect(new URL('/onboarding', request.url))
       }
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    return response
-  }
 
-  // Rotas do dashboard: precisa estar logado e com tenant
-  if (pathname.startsWith('/dashboard')) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/entrar', request.url))
+      if (pathname.startsWith('/onboarding/stripe')) {
+        return response // permite voltar para finalizar Stripe quando o usuário escolher
+      }
+
+      return NextResponse.redirect(new URL('/', request.url))
     }
     return response
   }

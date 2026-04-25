@@ -30,6 +30,48 @@ async function buscarCep(cep: string) {
   }
 }
 
+const InputWrapper = ({ 
+  name, 
+  type = 'text', 
+  defaultValue, 
+  placeholder, 
+  error, 
+  onChange, 
+  onBlur, 
+  maxLength, 
+  icon: Icon 
+}: {
+  name: string
+  type?: string
+  defaultValue?: string
+  placeholder?: string
+  error?: string
+  onChange?: React.ChangeEventHandler<HTMLInputElement>
+  onBlur?: React.FocusEventHandler<HTMLInputElement>
+  maxLength?: number
+  icon: React.ElementType
+}) => (
+  <div className="relative">
+    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+      <Icon className="h-5 w-5 text-zinc-400" />
+    </div>
+    <input
+      name={name}
+      type={type}
+      defaultValue={defaultValue}
+      placeholder={placeholder}
+      onChange={onChange}
+      onBlur={onBlur}
+      maxLength={maxLength}
+      className={`w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border-2 rounded-xl text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:bg-white transition-all duration-200 ${
+        error 
+          ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' 
+          : 'border-transparent focus:border-[#C1F148] focus:ring-4 focus:ring-[#C1F148]/20 hover:border-gray-200'
+      }`}
+    />
+  </div>
+)
+
 export function EtapaDadosLoja({ dadosIniciais, onAvancar, onVoltar }: Props) {
   const [erros, setErros] = useState<Record<string, string>>({})
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -77,7 +119,7 @@ export function EtapaDadosLoja({ dadosIniciais, onAvancar, onVoltar }: Props) {
       nome_loja: formData.get('nome_loja') as string,
       categoria_id: formData.get('categoria_id') as string,
       endereco: {
-        cep: (formData.get('cep') as string).replace(/\D/g, ''),
+        cep: (formData.get('cep') as string || '').replace(/\D/g, ''),
         rua: formData.get('rua') as string,
         numero: formData.get('numero') as string,
         complemento: (formData.get('complemento') as string) || undefined,
@@ -103,47 +145,7 @@ export function EtapaDadosLoja({ dadosIniciais, onAvancar, onVoltar }: Props) {
     onAvancar(dados)
   }
 
-  const InputWrapper = ({ 
-    name, 
-    type = 'text', 
-    defaultValue, 
-    placeholder, 
-    error, 
-    onChange, 
-    onBlur, 
-    maxLength, 
-    icon: Icon 
-  }: {
-    name: string
-    type?: string
-    defaultValue?: string
-    placeholder?: string
-    error?: string
-    onChange?: React.ChangeEventHandler<HTMLInputElement>
-    onBlur?: React.FocusEventHandler<HTMLInputElement>
-    maxLength?: number
-    icon: React.ElementType
-  }) => (
-    <div className="relative">
-      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-        <Icon className="h-5 w-5 text-zinc-400" />
-      </div>
-      <input
-        name={name}
-        type={type}
-        defaultValue={defaultValue}
-        placeholder={placeholder}
-        onChange={onChange}
-        onBlur={onBlur}
-        maxLength={maxLength}
-        className={`w-full pl-12 pr-4 py-3.5 bg-gray-50/50 border-2 rounded-xl text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:bg-white transition-all duration-200 ${
-          error 
-            ? 'border-red-300 focus:border-red-500 focus:ring-4 focus:ring-red-500/10' 
-            : 'border-transparent focus:border-[#C1F148] focus:ring-4 focus:ring-[#C1F148]/20 hover:border-gray-200'
-        }`}
-      />
-    </div>
-  )
+
 
   return (
     <div className="w-full">

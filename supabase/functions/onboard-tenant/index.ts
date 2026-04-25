@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     // Criar assinatura (trial) — subscription criada em create-subscription
     // após KYC do Stripe ser concluído
     const trialTerminaEm = new Date()
-    trialTerminaEm.setDate(trialTerminaEm.getDate() + 14)
+    trialTerminaEm.setDate(trialTerminaEm.getDate() + 15)
 
     await supabase.from('tenant_subscriptions').insert({
       tenant_id: tenant.id,

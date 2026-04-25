@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 
 interface Props {
   dadosIniciais: Partial<DadosOnboarding>
+  carregando: boolean
   onAvancar: (dados: Partial<DadosOnboarding>) => void
   onVoltar: () => void
 }
@@ -23,7 +24,7 @@ interface Plano {
   tem_antecipacao: boolean
 }
 
-export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props) {
+export function EtapaEscolhaPlano({ dadosIniciais, carregando, onAvancar, onVoltar }: Props) {
   const [planos, setPlanos] = useState<Plano[]>([])
   const [planoSelecionado, setPlanoSelecionado] = useState(dadosIniciais.plan_id ?? '')
   const [erro, setErro] = useState('')
@@ -91,9 +92,9 @@ export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props)
                 </h3>
                 <div className="flex items-baseline gap-1">
                   <span className="text-3xl font-bold text-zinc-900">
-                    {formatarReais(plano.preco_mensal)}
+                    {plano.preco_mensal === 0 ? 'Sob Consulta' : formatarReais(plano.preco_mensal)}
                   </span>
-                  <span className="text-zinc-500 font-medium">/mês</span>
+                  {plano.preco_mensal > 0 && <span className="text-zinc-500 font-medium">/mês</span>}
                 </div>
               </div>
 
@@ -162,10 +163,20 @@ export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props)
         <button
           type="button"
           onClick={handleSubmit}
-          className="flex items-center gap-2 bg-[#C1F148] text-zinc-900 px-8 py-4 rounded-xl font-semibold hover:bg-[#aee623] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#C1F148]/20"
+          disabled={carregando}
+          className="flex items-center gap-2 bg-[#C1F148] text-zinc-900 px-8 py-4 rounded-xl font-semibold hover:bg-[#aee623] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#C1F148]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
-          Configurar Conta
-          <ArrowRight className="w-5 h-5" />
+          {carregando ? (
+            <>
+              Criando conta...
+              <div className="w-5 h-5 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+            </>
+          ) : (
+            <>
+              Configurar Conta
+              <ArrowRight className="w-5 h-5" />
+            </>
+          )}
         </button>
       </div>
     </div>
