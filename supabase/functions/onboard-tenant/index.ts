@@ -34,41 +34,61 @@ Deno.serve(async (req) => {
 
     const supabase = getSupabaseAdmin()
 
-    // Criar usuário via admin SDK — sem enviar e-mail de confirmação
+    let userId: string
+    let isNewUser = false
+
+    // Tentar criar o usuário via admin SDK — sem enviar e-mail de confirmação
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password: senha,
       email_confirm: true,
-      user_metadata: {
-        nome: nome_responsavel,
-        role: 'tenant',
-      },
+      user_metadata: { nome: nome_responsavel, role: 'tenant' },
     })
 
     if (authError) {
-      if (authError.message.includes('already been registered') || authError.message.includes('already registered')) {
-        return new Response(
-          JSON.stringify({ error: 'Este e-mail já está cadastrado. Faça login na plataforma.' }),
-          { status: 409, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
+      if (
+        authError.message.includes('already been registered') ||
+        authError.message.includes('already registered')
+      ) {
+        // E-mail já existe em auth.users — verificar se é um usuário órfão (sem tenant)
+        const { data: existingUserId, error: rpcError } = await supabase.rpc(
+          'get_user_id_by_email',
+          { p_email: email }
         )
+
+        if (rpcError || !existingUserId) {
+          return new Response(
+            JSON.stringify({ error: 'Este e-mail já está cadastrado. Faça login na plataforma.' }),
+            { status: 409, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
+          )
+        }
+
+        const { data: tenantExistente } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('user_id', existingUserId)
+          .single()
+
+        if (tenantExistente) {
+          return new Response(
+            JSON.stringify({ error: 'Este e-mail já está cadastrado. Faça login na plataforma.' }),
+            { status: 409, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
+          )
+        }
+
+        // Usuário órfão: auth criado mas tenant não. Atualizar senha e continuar.
+        await supabase.auth.admin.updateUserById(existingUserId, {
+          password: senha,
+          user_metadata: { nome: nome_responsavel, role: 'tenant' },
+        })
+        userId = existingUserId
+        isNewUser = false
+      } else {
+        throw authError
       }
-      throw authError
-    }
-
-    const userId = authData.user.id
-
-    // Garantir que não existe tenant duplicado para este usuário
-    const { data: tenantExistente } = await supabase
-      .from('tenants')
-      .select('id')
-      .eq('user_id', userId)
-      .single()
-
-    if (tenantExistente) {
-      return new Response(
-        JSON.stringify({ error: 'Lojista já cadastrado' }),
-        { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
-      )
+    } else {
+      userId = authData.user.id
+      isNewUser = true
     }
 
     // Buscar plano selecionado
@@ -80,33 +100,40 @@ Deno.serve(async (req) => {
       .single()
 
     if (planoError || !plano) {
+      if (isNewUser) await supabase.auth.admin.deleteUser(userId)
       throw new Error('Plano não encontrado ou inativo')
     }
 
-    // Criar Stripe Customer (para Billing — assinatura mensal)
-    const stripeCustomer = await stripe.customers.create({
-      email,
-      name: nome_responsavel,
-      phone: telefone,
-      metadata: { user_id: userId },
-    })
+    // Criar Stripe Customer (para billing) e Express Account (para repasses)
+    let stripeCustomerId: string
+    let stripeAccountId: string
+    try {
+      const stripeCustomer = await stripe.customers.create({
+        email,
+        name: nome_responsavel,
+        phone: telefone,
+        metadata: { user_id: userId },
+      })
+      stripeCustomerId = stripeCustomer.id
 
-    // Criar Express Account (para receber repasses)
-    const stripeAccount = await stripe.accounts.create({
-      type: 'express',
-      country: 'BR',
-      email,
-      capabilities: {
-        transfers: { requested: true },
-      },
-      metadata: { user_id: userId },
-    })
+      const stripeAccount = await stripe.accounts.create({
+        type: 'express',
+        country: 'BR',
+        email,
+        capabilities: { transfers: { requested: true } },
+        metadata: { user_id: userId },
+      })
+      stripeAccountId = stripeAccount.id
+    } catch (stripeError) {
+      if (isNewUser) await supabase.auth.admin.deleteUser(userId)
+      throw stripeError
+    }
 
     // Gerar slug da loja
     const slug = nome_loja
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
 
@@ -119,14 +146,17 @@ Deno.serve(async (req) => {
         telefone,
         email,
         slug: `${slug}-${Date.now()}`,
-        stripe_customer_id: stripeCustomer.id,
-        stripe_account_id: stripeAccount.id,
+        stripe_customer_id: stripeCustomerId,
+        stripe_account_id: stripeAccountId,
         stripe_onboarding_ok: false,
       })
       .select('id')
       .single()
 
-    if (tenantError) throw tenantError
+    if (tenantError) {
+      if (isNewUser) await supabase.auth.admin.deleteUser(userId)
+      throw tenantError
+    }
 
     const trialTerminaEm = new Date()
     trialTerminaEm.setDate(trialTerminaEm.getDate() + 15)
@@ -139,7 +169,6 @@ Deno.serve(async (req) => {
       stripe_price_id: plano.stripe_price_id,
     })
 
-    // Criar primeira loja (bypassa o trigger de limite via service_role)
     const { data: store, error: storeError } = await supabase
       .from('stores')
       .insert({
@@ -155,10 +184,7 @@ Deno.serve(async (req) => {
     if (storeError) throw storeError
 
     return new Response(
-      JSON.stringify({
-        tenant_id: tenant.id,
-        store_id: store.id,
-      }),
+      JSON.stringify({ tenant_id: tenant.id, store_id: store.id }),
       { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
   } catch (error) {

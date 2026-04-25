@@ -78,19 +78,24 @@ export default function PaginaOnboarding() {
     const supabase = createSupabaseClient()
 
     try {
-      // Usa supabase.functions.invoke() que envia Authorization: Bearer <anon_key>
-      // automaticamente — o gateway do Supabase aceita e a função roda sem JWT de usuário.
-      const { data: resultado, error: funcError } = await supabase.functions.invoke(
-        'onboard-tenant',
-        { body: dadosCompletos }
+      // Usa fetch direto para poder extrair o corpo do erro em respostas não-2xx.
+      // supabase.functions.invoke() descarta o body e retorna apenas "non-2xx status code".
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/onboard-tenant`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify(dadosCompletos),
+        }
       )
 
-      if (funcError) {
-        throw new Error(funcError.message || 'Erro ao criar conta. Tente novamente.')
-      }
+      const resultado = await res.json()
 
-      if (resultado?.error) {
-        throw new Error(resultado.error)
+      if (!res.ok) {
+        throw new Error(resultado?.error || 'Erro ao criar conta. Tente novamente.')
       }
 
       // Usuário criado via admin SDK — agora faz login com senha (não dispara e-mail)
