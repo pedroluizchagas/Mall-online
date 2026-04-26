@@ -7,14 +7,17 @@ import {
   registrarAjusteEstoque,
 } from '@/lib/actions/estoque'
 
+const inputClass =
+  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+
 function BotaoSubmit({ label }: { label: string }) {
   const { pending } = useFormStatus()
   return (
     <button
       type="submit"
       disabled={pending}
-      className="flex-1 bg-[#1A4D3A] text-white py-2.5 rounded-lg
-        text-sm font-medium disabled:opacity-50"
+      className="flex-1 py-2.5 rounded-full text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity"
+      style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
     >
       {pending ? 'Salvando...' : label}
     </button>
@@ -28,8 +31,7 @@ interface Props {
 }
 
 export function ModalMovimentacao({ produto, tipo, onFechar }: Props) {
-  const action =
-    tipo === 'entrada' ? registrarEntradaEstoque : registrarAjusteEstoque
+  const action = tipo === 'entrada' ? registrarEntradaEstoque : registrarAjusteEstoque
   const [estado, dispatch] = useActionState(action, null)
 
   if (estado?.sucesso) {
@@ -37,13 +39,16 @@ export function ModalMovimentacao({ produto, tipo, onFechar }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-        <h3 className="font-semibold text-[#1A4D3A] mb-1">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div
+        className="w-full max-w-sm rounded-2xl p-6"
+        style={{ background: 'var(--bg)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+      >
+        <h3 className="font-semibold text-ink mb-1">
           {tipo === 'entrada' ? 'Entrada de estoque' : 'Ajuste de estoque'}
         </h3>
-        <p className="text-sm text-gray-500 mb-4">{produto.nome}</p>
-        <p className="text-xs text-gray-400 mb-4">
+        <p className="text-sm text-ink-3 mb-1">{produto.nome}</p>
+        <p className="text-xs text-ink-3 mb-4">
           Estoque atual: {produto.stock_quantity ?? 0} unidades
         </p>
 
@@ -52,40 +57,32 @@ export function ModalMovimentacao({ produto, tipo, onFechar }: Props) {
 
           {tipo === 'ajuste' && (
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">
-                Tipo de ajuste
-              </label>
+              <label className="block text-xs font-medium text-ink-2 mb-1">Tipo de ajuste</label>
               <select
                 name="tipo"
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5
-                  text-sm focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+                className={inputClass}
+                style={{ borderColor: 'var(--line)' }}
               >
-                <option value="ajuste_positivo">
-                  Adicionar (contagem, correção)
-                </option>
-                <option value="ajuste_negativo">
-                  Remover (perda, vencimento, etc.)
-                </option>
+                <option value="ajuste_positivo">Adicionar (contagem, correção)</option>
+                <option value="ajuste_negativo">Remover (perda, vencimento, etc.)</option>
               </select>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
-              Quantidade
-            </label>
+            <label className="block text-xs font-medium text-ink-2 mb-1">Quantidade</label>
             <input
               name="quantidade"
               type="number"
               min="1"
               required
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5
-                text-sm focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+              className={inputClass}
+              style={{ borderColor: 'var(--line)' }}
             />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">
+            <label className="block text-xs font-medium text-ink-2 mb-1">
               {tipo === 'ajuste' ? 'Motivo (obrigatório)' : 'Motivo (opcional)'}
             </label>
             <input
@@ -93,17 +90,15 @@ export function ModalMovimentacao({ produto, tipo, onFechar }: Props) {
               type="text"
               required={tipo === 'ajuste'}
               placeholder={
-                tipo === 'entrada'
-                  ? 'Ex: Compra do fornecedor'
-                  : 'Ex: Produto vencido, contagem física'
+                tipo === 'entrada' ? 'Ex: Compra do fornecedor' : 'Ex: Produto vencido, contagem física'
               }
-              className="w-full border border-gray-200 rounded-xl px-4 py-2.5
-                text-sm focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+              className={inputClass}
+              style={{ borderColor: 'var(--line)' }}
             />
           </div>
 
           {estado?.erro && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
               {estado.erro}
             </p>
           )}
@@ -112,16 +107,12 @@ export function ModalMovimentacao({ produto, tipo, onFechar }: Props) {
             <button
               type="button"
               onClick={onFechar}
-              className="flex-1 border border-gray-200 py-2.5 rounded-lg
-                text-sm text-gray-600"
+              className="flex-1 py-2.5 rounded-full text-sm font-medium"
+              style={{ border: '1px solid var(--line)', color: 'var(--ink-2)' }}
             >
               Cancelar
             </button>
-            <BotaoSubmit
-              label={
-                tipo === 'entrada' ? 'Registrar entrada' : 'Registrar ajuste'
-              }
-            />
+            <BotaoSubmit label={tipo === 'entrada' ? 'Registrar entrada' : 'Registrar ajuste'} />
           </div>
         </form>
       </div>

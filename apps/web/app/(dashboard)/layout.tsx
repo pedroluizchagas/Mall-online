@@ -49,14 +49,16 @@ export default async function LayoutDashboard({
     >
       <SidebarDashboard nomeLoja={loja?.nome ?? 'Minha loja'} />
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div
+        className="flex-1 flex flex-col min-w-0"
+        style={{ padding: '12px 12px 12px 0' }}
+      >
         <div
-          className="flex-1 flex flex-col min-w-0 overflow-hidden"
+          className="flex-1 flex flex-col min-w-0 overflow-hidden rounded-[24px]"
           style={{
             background: 'var(--bg)',
-            borderTopLeftRadius: 32,
-            boxShadow: '-8px 0 24px -12px rgba(0,0,0,0.4)',
-            minHeight: '100vh',
+            boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 24px -8px rgba(0,0,0,0.35)',
+            minHeight: 'calc(100vh - 24px)',
           }}
         >
           {/* Banners no topo do conteúdo */}
@@ -66,7 +68,6 @@ export default async function LayoutDashboard({
               style={{
                 background: '#fef3c7',
                 borderColor: '#fde68a',
-                borderTopLeftRadius: 32,
               }}
             >
               <p className="text-sm" style={{ color: '#92400e' }}>

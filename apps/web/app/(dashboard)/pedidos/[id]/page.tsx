@@ -20,15 +20,16 @@ export default async function PaginaDetalhesPedido({
   const courierId = assignment?.couriers?.id as string | undefined
 
   return (
-    <div className="p-6 max-w-2xl mx-auto space-y-4">
+    <div className="p-9 max-w-2xl mx-auto space-y-4">
       <Link
-        href="/dashboard/pedidos"
-        className="text-sm text-[#4CAF82] hover:underline"
+        href="/pedidos"
+        className="text-sm font-medium hover:underline"
+        style={{ color: 'var(--brick-dk)' }}
       >
         &larr; Voltar para pedidos
       </Link>
 
-      <h1 className="text-2xl font-bold text-[#1A4D3A]">
+      <h1 className="font-display text-[28px] leading-tight text-ink">
         Pedido #{pedido.id.slice(-6).toUpperCase()}
       </h1>
 

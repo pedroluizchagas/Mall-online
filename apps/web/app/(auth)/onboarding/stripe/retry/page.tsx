@@ -42,23 +42,24 @@ export default function PaginaStripeRetry() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFF8ED]">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--sidebar)' }}>
       <div className="text-center max-w-sm px-4">
-        <h2 className="text-xl font-semibold text-[#1A4D3A] mb-2">
+        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--bg)' }}>
           Link expirado
         </h2>
-        <p className="text-gray-500 mb-6">
+        <p className="mb-6" style={{ color: 'rgba(255,255,255,0.5)' }}>
           O link de configuração da Stripe expirou. Clique abaixo para gerar um novo link e continuar a configuração.
         </p>
 
         {erro && (
-          <p className="text-sm text-red-600 mb-4">{erro}</p>
+          <p className="text-sm mb-4" style={{ color: 'var(--err)' }}>{erro}</p>
         )}
 
         <button
           onClick={handleRetry}
           disabled={carregando}
-          className="w-full bg-[#1A4D3A] text-white py-3 rounded-lg font-medium hover:bg-[#163d2e] transition-colors disabled:opacity-50"
+          className="w-full py-3 rounded-full font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
+          style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
         >
           {carregando ? 'Gerando novo link...' : 'Tentar novamente'}
         </button>

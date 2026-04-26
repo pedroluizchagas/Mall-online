@@ -22,11 +22,12 @@ export function FiltroPedidos({
         <button
           key={op.valor}
           onClick={() => onChange(op.valor)}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${
+          className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors"
+          style={
             filtroAtivo === op.valor
-              ? 'bg-[#1A4D3A] text-white'
-              : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-300'
-          }`}
+              ? { background: 'var(--ink)', color: 'var(--bg)' }
+              : { background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--ink-2)' }
+          }
         >
           {op.label}
         </button>

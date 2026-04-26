@@ -35,10 +35,7 @@ export function MapaEntregadorMini({ courierId }: Props) {
           filter: `courier_id=eq.${courierId}`,
         },
         (payload) => {
-          setLoc({
-            latitude: payload.new.latitude,
-            longitude: payload.new.longitude,
-          })
+          setLoc({ latitude: payload.new.latitude, longitude: payload.new.longitude })
         }
       )
       .subscribe()
@@ -48,8 +45,11 @@ export function MapaEntregadorMini({ courierId }: Props) {
 
   if (!loc) {
     return (
-      <div className="bg-gray-100 rounded-xl h-20 flex items-center justify-center">
-        <p className="text-sm text-gray-400">Aguardando localização...</p>
+      <div
+        className="rounded-xl h-20 flex items-center justify-center"
+        style={{ background: 'var(--bg-2)' }}
+      >
+        <p className="text-sm text-ink-3">Aguardando localização...</p>
       </div>
     )
   }
@@ -57,11 +57,17 @@ export function MapaEntregadorMini({ courierId }: Props) {
   const linkMaps = `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`
 
   return (
-    <div className="bg-white border border-gray-100 rounded-xl p-4">
+    <div
+      className="rounded-xl p-4"
+      style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+    >
       <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-gray-700">Entregador em rota</p>
-        <span className="flex items-center gap-1 text-xs text-green-600">
-          <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+        <p className="text-sm font-medium text-ink">Entregador em rota</p>
+        <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--ok)' }}>
+          <span
+            className="w-1.5 h-1.5 rounded-full animate-pulse"
+            style={{ background: 'var(--ok)' }}
+          />
           Ao vivo
         </span>
       </div>
@@ -69,7 +75,8 @@ export function MapaEntregadorMini({ courierId }: Props) {
         href={linkMaps}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm text-[#4CAF82] underline"
+        className="text-sm font-medium underline"
+        style={{ color: 'var(--brick-dk)' }}
       >
         Ver no Google Maps
       </a>

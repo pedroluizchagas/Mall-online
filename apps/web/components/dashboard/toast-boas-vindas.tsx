@@ -35,17 +35,26 @@ export function ToastBoasVindas() {
           transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
           className="fixed top-6 right-6 z-50 max-w-sm"
         >
-          <div className="bg-white rounded-2xl shadow-2xl border border-emerald-100 p-5 flex items-start gap-4 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#C1F148]/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 relative">
-              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+          <div
+            className="rounded-2xl shadow-2xl p-5 flex items-start gap-4 relative overflow-hidden"
+            style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+          >
+            <div
+              className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none"
+              style={{ background: 'var(--brick)', opacity: 0.1, filter: 'blur(40px)' }}
+            />
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 relative"
+              style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+            >
+              <CheckCircle2 className="w-6 h-6" />
             </div>
             <div className="relative">
               <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-zinc-900">Conta criada com sucesso</h3>
-                <Sparkles className="w-4 h-4 text-[#F5A623]" />
+                <h3 className="font-semibold text-ink">Conta criada com sucesso</h3>
+                <Sparkles className="w-4 h-4" style={{ color: 'var(--brick)' }} />
               </div>
-              <p className="text-sm text-zinc-500 leading-relaxed">
+              <p className="text-sm text-ink-3 leading-relaxed">
                 Bem-vindo à Mallora! Sua loja está pronta. Configure os detalhes do seu negócio quando quiser.
               </p>
             </div>

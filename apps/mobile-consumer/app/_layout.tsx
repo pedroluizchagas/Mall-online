@@ -1,14 +1,16 @@
 import '../global.css'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useAuthStore } from '@/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 import { registrarPushToken, useNotificacaoListener } from '@/lib/notificacoes'
+import { SplashAnimado } from '@/components/SplashAnimado'
 
 export default function LayoutRaiz() {
   const { setUser, setCarregando } = useAuthStore()
+  const [splashVisivel, setSplashVisivel] = useState(true)
 
   useNotificacaoListener()
 
@@ -35,6 +37,9 @@ export default function LayoutRaiz() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false }} />
       <StatusBar style="dark" />
+      {splashVisivel && (
+        <SplashAnimado onFim={() => setSplashVisivel(false)} />
+      )}
     </GestureHandlerRootView>
   )
 }

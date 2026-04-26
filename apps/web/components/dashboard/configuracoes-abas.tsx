@@ -26,17 +26,20 @@ export function ConfiguracoesAbas({ loja, tenant, linkExpress }: Props) {
 
   return (
     <div>
-      {/* Navegação por abas */}
-      <div className="flex gap-1 border-b border-gray-100 mb-6 overflow-x-auto">
+      <div
+        className="flex gap-1 mb-6 overflow-x-auto"
+        style={{ borderBottom: '1px solid var(--line)' }}
+      >
         {ABAS.map((aba) => (
           <button
             key={aba.id}
             onClick={() => setAbaAtiva(aba.id)}
-            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+            className="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
+            style={
               abaAtiva === aba.id
-                ? 'border-[#1A4D3A] text-[#1A4D3A]'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
+                ? { borderColor: 'var(--brick)', color: 'var(--ink)' }
+                : { borderColor: 'transparent', color: 'var(--ink-3)' }
+            }
           >
             {aba.label}
           </button>

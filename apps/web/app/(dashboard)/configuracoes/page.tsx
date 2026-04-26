@@ -17,8 +17,8 @@ export default async function PaginaConfiguracoes() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-bold text-[#1A4D3A] mb-6">
+    <div className="p-9 max-w-2xl">
+      <h1 className="font-display text-[32px] leading-tight text-ink mb-6">
         Configurações
       </h1>
       <ConfiguracoesAbas

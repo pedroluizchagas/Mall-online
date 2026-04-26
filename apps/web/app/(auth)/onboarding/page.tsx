@@ -129,7 +129,7 @@ export default function PaginaOnboarding() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-[#09090B] via-[#18181B] to-[#1A4D3A] overflow-hidden p-6"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#09090B] overflow-hidden p-6"
         >
           <motion.div
             initial={{ opacity: 0.4, scale: 0 }}
@@ -154,11 +154,11 @@ export default function PaginaOnboarding() {
               transition={{ delay: 0.4, duration: 0.6 }}
               className="flex items-center gap-2 mb-4"
             >
-              <Sparkles className="w-5 h-5 text-[#F5A623]" />
-              <span className="text-sm font-semibold text-[#F5A623] tracking-wider uppercase">
+              <Sparkles className="w-5 h-5 text-brick" />
+              <span className="text-sm font-semibold text-brick tracking-wider uppercase">
                 Sua conta está pronta
               </span>
-              <Sparkles className="w-5 h-5 text-[#F5A623]" />
+              <Sparkles className="w-5 h-5 text-brick" />
             </motion.div>
 
             <motion.h2
