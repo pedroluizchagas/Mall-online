@@ -439,6 +439,37 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 -----
 
+### GRUPO 12 — ESCALABILIDADE & ARQUITETURA
+
+**`30` — Blueprint Completo do Projeto**
+
+- Visão geral e proposta de valor do Mallora
+- Os quatro atores e modelo de negócio (3 fontes de receita)
+- Arquitetura técnica com diagrama completo
+- Stack completa com versões (Next.js 14, Expo SDK 54, Supabase, Stripe)
+- Schema do banco de dados com todas as tabelas, índices e ENUMs
+- Matriz de acesso RLS por ator
+- Autenticação e fluxos de onboarding
+- Arquitetura de pagamentos Stripe (Separate Charges and Transfers)
+- Ciclo de vida completo de um pedido
+- Realtime, push notifications e cron de repasses
+- Estrutura do monorepo e histórico de migrations
+- Deploy e infraestrutura por ambiente
+- *Referência: 27/04/2026*
+
+**`31` — Análise de Escalabilidade**
+
+- Meta: 5.000 lojistas · 100.000 usuários (Divinópolis, MG)
+- Resumo executivo com tabela de riscos por categoria
+- 🔴 Gargalos críticos: zero caching, ausência de paginação, sem rate limiting, connection pooling desabilitado
+- 🟠 Alta prioridade: busca ILIKE sem índice, realtime em escala, notificações síncronas, spike do cron de payouts, sem monitoramento
+- 🟡 Médio prazo: CI/CD, CDN de imagens, timeout de sessão, testes de carga
+- Roadmap de 16 ações organizadas em 3 fases (0–6 meses)
+- O que já está bem e não precisa mudar
+- *Referência: 27/04/2026*
+
+-----
+
 ## VISÃO GERAL
 
 |Item                     |Valor                                                         |
