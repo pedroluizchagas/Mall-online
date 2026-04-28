@@ -2,12 +2,16 @@ import { useState } from 'react'
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ScrollView,
-  TextInput,
+  StatusBar,
 } from 'react-native'
 import { router } from 'expo-router'
 import { useCadastroStore } from '@/store/useCadastroStore'
+import { CourierIcon } from '@/components/CourierIcon'
+import { courierDesign } from '@/lib/courier-design'
+import { EtapaBar, ErroBanner, labelStyle } from './credenciais'
 
 const TIPOS_VEICULO = [
   { id: 'moto', label: 'Moto' },
@@ -21,12 +25,13 @@ export default function EtapaVeiculo() {
   const [tipo, setTipo] = useState(dados.veiculo_tipo ?? '')
   const [placa, setPlaca] = useState(dados.veiculo_placa ?? '')
   const [erro, setErro] = useState<string | null>(null)
+  const [focadoPlaca, setFocadoPlaca] = useState(false)
+  const { colors, radius } = courierDesign
 
   function handleAvancar() {
     if (!tipo) { setErro('Selecione o tipo de veículo.'); return }
     if (['moto', 'carro'].includes(tipo) && !placa.trim()) {
-      setErro('Informe a placa do veículo.')
-      return
+      setErro('Informe a placa do veículo.'); return
     }
     setDados({ veiculo_tipo: tipo, veiculo_placa: placa.trim() || undefined })
     router.push('/(auth)/cadastro/documentos')
@@ -34,81 +39,97 @@ export default function EtapaVeiculo() {
 
   return (
     <ScrollView
-      className="flex-1 bg-[#FFF8ED]"
-      contentContainerStyle={{ padding: 24, paddingTop: 60 }}
+      style={{ flex: 1, backgroundColor: colors.surfaceDark }}
+      contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 48 }}
+      showsVerticalScrollIndicator={false}
     >
-      <Text className="text-sm text-gray-400 mb-1">Etapa 2 de 3</Text>
-      <Text className="text-2xl font-bold text-[#1A4D3A] mb-1">
+      <StatusBar barStyle="light-content" />
+
+      <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={{ marginBottom: 32 }}>
+        <CourierIcon name="back" size={24} color={colors.white} />
+      </TouchableOpacity>
+
+      <EtapaBar atual={3} total={4} />
+
+      <Text style={{ fontSize: 26, fontWeight: '800', color: colors.white, letterSpacing: -0.4, marginBottom: 8 }}>
         Seu veículo
       </Text>
-      <Text className="text-gray-500 text-sm mb-8">
+      <Text style={{ fontSize: 15, color: '#A4A7AD', lineHeight: 22, marginBottom: 32 }}>
         Informe como você fará as entregas.
       </Text>
 
-      {erro && (
-        <Text className="text-red-500 text-sm mb-4 bg-red-50
-          px-3 py-2 rounded-xl">
-          {erro}
-        </Text>
-      )}
+      {erro && <ErroBanner mensagem={erro} />}
 
-      <Text className="text-xs font-medium text-gray-600 mb-2">
-        Tipo de veículo
-      </Text>
-      <View className="flex-row flex-wrap gap-2 mb-6">
-        {TIPOS_VEICULO.map((v) => (
-          <TouchableOpacity
-            key={v.id}
-            onPress={() => setTipo(v.id)}
-            className={`px-5 py-3 rounded-xl border ${
-              tipo === v.id
-                ? 'bg-[#1A4D3A] border-[#1A4D3A]'
-                : 'bg-white border-gray-200'
-            }`}
-            activeOpacity={0.75}
-          >
-            <Text
-              className={`text-sm font-medium ${
-                tipo === v.id ? 'text-white' : 'text-gray-700'
-              }`}
+      <Text style={labelStyle}>Tipo de veículo</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 28 }}>
+        {TIPOS_VEICULO.map((v) => {
+          const selecionado = tipo === v.id
+          return (
+            <TouchableOpacity
+              key={v.id}
+              onPress={() => { setTipo(v.id); setErro(null) }}
+              activeOpacity={0.75}
+              style={{
+                paddingHorizontal: 22,
+                paddingVertical: 13,
+                borderRadius: radius.md,
+                borderWidth: 1.5,
+                backgroundColor: selecionado ? colors.accentSoft : colors.surfaceDarkSoft,
+                borderColor: selecionado ? colors.accent : colors.lineDark,
+              }}
             >
-              {v.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text style={{
+                fontSize: 14,
+                fontWeight: '600',
+                color: selecionado ? colors.accent : colors.inkSoft,
+              }}>
+                {v.label}
+              </Text>
+            </TouchableOpacity>
+          )
+        })}
       </View>
 
       {['moto', 'carro'].includes(tipo) && (
-        <View className="mb-6">
-          <Text className="text-xs font-medium text-gray-600 mb-1">Placa</Text>
+        <>
+          <Text style={labelStyle}>Placa</Text>
           <TextInput
             value={placa}
-            onChangeText={setPlaca}
+            onChangeText={(t) => { setPlaca(t); setErro(null) }}
+            onFocus={() => setFocadoPlaca(true)}
+            onBlur={() => setFocadoPlaca(false)}
             placeholder="ABC-1234"
             autoCapitalize="characters"
-            placeholderTextColor="#9CA3AF"
-            className="border border-gray-200 rounded-xl px-4 py-3
-              text-sm text-gray-800 bg-white"
+            placeholderTextColor={colors.inkSoft}
+            style={{
+              height: 54,
+              borderRadius: radius.md,
+              paddingHorizontal: 18,
+              fontSize: 16,
+              color: colors.white,
+              backgroundColor: colors.surfaceDarkSoft,
+              borderWidth: 1.5,
+              borderColor: focadoPlaca ? colors.accent : colors.lineDark,
+              marginBottom: 28,
+            }}
           />
-        </View>
+        </>
       )}
 
-      <View className="flex-row gap-3 mt-4">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="flex-1 border border-gray-200 py-4 rounded-2xl items-center"
-          activeOpacity={0.7}
-        >
-          <Text className="text-gray-500 font-medium">Voltar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleAvancar}
-          className="flex-1 bg-[#1A4D3A] py-4 rounded-2xl items-center"
-          activeOpacity={0.85}
-        >
-          <Text className="text-white font-bold">Próximo</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        onPress={handleAvancar}
+        activeOpacity={0.85}
+        style={{
+          height: 56,
+          borderRadius: radius.pill,
+          backgroundColor: colors.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: 8,
+        }}
+      >
+        <Text style={{ color: colors.ink, fontWeight: '800', fontSize: 16 }}>Próximo</Text>
+      </TouchableOpacity>
     </ScrollView>
   )
 }

@@ -8,12 +8,16 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  StatusBar,
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useCadastroStore } from '@/store/useCadastroStore'
+import { CourierIcon } from '@/components/CourierIcon'
+import { courierDesign } from '@/lib/courier-design'
+import { EtapaBar, ErroBanner, labelStyle } from './credenciais'
 
 export default function EtapaDocumentos() {
   const { dados, limpar } = useCadastroStore()
@@ -23,21 +27,24 @@ export default function EtapaDocumentos() {
   const [fotoCnh, setFotoCnh] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const [focadoCnh, setFocadoCnh] = useState(false)
+  const { colors, radius } = courierDesign
 
-  async function escolherImagem(setter: (uri: string) => void) {
+  async function escolherImagem(
+    setter: (uri: string) => void,
+    aspecto: [number, number] = [1, 1],
+  ) {
     const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permissao.granted) {
       Alert.alert('Permissão necessária', 'Permita acesso à galeria para continuar.')
       return
     }
-
     const resultado = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [1, 1],
+      aspect: aspecto,
       quality: 0.8,
     })
-
     if (!resultado.canceled && resultado.assets[0]) {
       setter(resultado.assets[0].uri)
     }
@@ -47,21 +54,11 @@ export default function EtapaDocumentos() {
     try {
       const resposta = await fetch(uri)
       const blob = await resposta.blob()
-      const arrayBuffer = await blob.arrayBuffer()
-
       const { error } = await supabase.storage
         .from('courier-docs')
-        .upload(caminho, arrayBuffer, {
-          contentType: 'image/jpeg',
-          upsert: true,
-        })
-
+        .upload(caminho, blob, { contentType: 'image/jpeg', upsert: true })
       if (error) return null
-
-      const { data } = supabase.storage
-        .from('courier-docs')
-        .getPublicUrl(caminho)
-
+      const { data } = supabase.storage.from('courier-docs').getPublicUrl(caminho)
       return data.publicUrl
     } catch {
       return null
@@ -83,11 +80,8 @@ export default function EtapaDocumentos() {
     }
 
     const fotoPerfilUrl = await uploadImagem(fotoPerfil, `${user.id}/perfil.jpg`)
-
     let fotoCnhUrl: string | null = null
-    if (fotoCnh) {
-      fotoCnhUrl = await uploadImagem(fotoCnh, `${user.id}/cnh.jpg`)
-    }
+    if (fotoCnh) fotoCnhUrl = await uploadImagem(fotoCnh, `${user.id}/cnh.jpg`)
 
     if (!fotoPerfilUrl) {
       setErro('Erro ao fazer upload da foto. Tente novamente.')
@@ -129,113 +123,127 @@ export default function EtapaDocumentos() {
 
   return (
     <ScrollView
-      className="flex-1 bg-[#FFF8ED]"
-      contentContainerStyle={{ padding: 24, paddingTop: 60, paddingBottom: 40 }}
+      style={{ flex: 1, backgroundColor: colors.surfaceDark }}
+      contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 48 }}
+      showsVerticalScrollIndicator={false}
     >
-      <Text className="text-sm text-gray-400 mb-1">Etapa 3 de 3</Text>
-      <Text className="text-2xl font-bold text-[#1A4D3A] mb-1">
+      <StatusBar barStyle="light-content" />
+
+      <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={{ marginBottom: 32 }}>
+        <CourierIcon name="back" size={24} color={colors.white} />
+      </TouchableOpacity>
+
+      <EtapaBar atual={4} total={4} />
+
+      <Text style={{ fontSize: 26, fontWeight: '800', color: colors.white, letterSpacing: -0.4, marginBottom: 8 }}>
         Documentos e foto
       </Text>
-      <Text className="text-gray-500 text-sm mb-8">
+      <Text style={{ fontSize: 15, color: '#A4A7AD', lineHeight: 22, marginBottom: 32 }}>
         Necessários para verificar sua identidade e aprovar seu cadastro.
       </Text>
 
-      {erro && (
-        <Text className="text-red-500 text-sm mb-4 bg-red-50
-          px-3 py-2 rounded-xl">
-          {erro}
-        </Text>
-      )}
+      {erro && <ErroBanner mensagem={erro} />}
 
       {/* Foto de perfil */}
-      <View className="mb-5">
-        <Text className="text-xs font-medium text-gray-600 mb-2">
-          Foto de perfil
-        </Text>
-        <TouchableOpacity
-          onPress={() => escolherImagem(setFotoPerfil)}
-          className={`h-24 w-24 rounded-full border-2 border-dashed
-            items-center justify-center overflow-hidden ${
-            fotoPerfil ? 'border-[#4CAF82]' : 'border-gray-300'
-          }`}
-          activeOpacity={0.75}
-        >
-          {fotoPerfil ? (
-            <Image
-              source={{ uri: fotoPerfil }}
-              className="h-24 w-24 rounded-full"
-            />
-          ) : (
-            <Text className="text-gray-400 text-xs text-center px-2">
-              Toque para adicionar
+      <Text style={labelStyle}>Foto de perfil</Text>
+      <TouchableOpacity
+        onPress={() => escolherImagem(setFotoPerfil)}
+        activeOpacity={0.75}
+        style={{
+          width: 88,
+          height: 88,
+          borderRadius: 44,
+          borderWidth: 2,
+          borderStyle: 'dashed',
+          borderColor: fotoPerfil ? colors.accent : colors.lineDark,
+          alignItems: 'center',
+          justifyContent: 'center',
+          overflow: 'hidden',
+          marginBottom: 28,
+        }}
+      >
+        {fotoPerfil ? (
+          <Image source={{ uri: fotoPerfil }} style={{ width: 88, height: 88, borderRadius: 44 }} />
+        ) : (
+          <View style={{ alignItems: 'center', gap: 6 }}>
+            <CourierIcon name="user" size={22} color={colors.inkSoft} />
+            <Text style={{ color: colors.inkSoft, fontSize: 10, textAlign: 'center' }}>
+              Adicionar
             </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+          </View>
+        )}
+      </TouchableOpacity>
 
       {/* Número da CNH */}
-      <View className="mb-5">
-        <Text className="text-xs font-medium text-gray-600 mb-1">
-          Número da CNH
-        </Text>
-        <TextInput
-          value={cnh}
-          onChangeText={setCnh}
-          placeholder="00000000000"
-          keyboardType="numeric"
-          maxLength={11}
-          placeholderTextColor="#9CA3AF"
-          className="border border-gray-200 rounded-xl px-4 py-3
-            text-sm text-gray-800 bg-white"
-        />
-      </View>
+      <Text style={labelStyle}>Número da CNH</Text>
+      <TextInput
+        value={cnh}
+        onChangeText={(t) => { setCnh(t); setErro(null) }}
+        onFocus={() => setFocadoCnh(true)}
+        onBlur={() => setFocadoCnh(false)}
+        placeholder="00000000000"
+        keyboardType="numeric"
+        maxLength={11}
+        placeholderTextColor={colors.inkSoft}
+        style={{
+          height: 54,
+          borderRadius: radius.md,
+          paddingHorizontal: 18,
+          fontSize: 16,
+          color: colors.white,
+          backgroundColor: colors.surfaceDarkSoft,
+          borderWidth: 1.5,
+          borderColor: focadoCnh ? colors.accent : colors.lineDark,
+          marginBottom: 16,
+        }}
+      />
 
-      {/* Foto da CNH (opcional) */}
-      <View className="mb-8">
-        <Text className="text-xs font-medium text-gray-600 mb-1">
-          Foto da CNH (opcional, mas recomendado)
+      {/* Foto da CNH */}
+      <Text style={[labelStyle, { marginBottom: 4 }]}>
+        Foto da CNH
+        <Text style={{ color: colors.inkSoft, fontSize: 11, fontWeight: '400', letterSpacing: 0, textTransform: 'none' }}>
+          {'  '}opcional
         </Text>
-        <TouchableOpacity
-          onPress={() => escolherImagem(setFotoCnh)}
-          className={`h-12 border border-dashed rounded-xl items-center
-            justify-center ${
-            fotoCnh ? 'border-[#4CAF82] bg-green-50' : 'border-gray-300'
-          }`}
-          activeOpacity={0.75}
-        >
-          <Text
-            className={`text-sm ${
-              fotoCnh ? 'text-[#4CAF82]' : 'text-gray-400'
-            }`}
-          >
-            {fotoCnh ? 'Foto da CNH adicionada' : 'Toque para adicionar foto da CNH'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      </Text>
+      <TouchableOpacity
+        onPress={() => escolherImagem(setFotoCnh, [16, 10])}
+        activeOpacity={0.75}
+        style={{
+          height: 52,
+          borderRadius: radius.md,
+          borderWidth: 1.5,
+          borderStyle: 'dashed',
+          borderColor: fotoCnh ? colors.accent : colors.lineDark,
+          backgroundColor: fotoCnh ? colors.accentSoft : colors.surfaceDarkSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 36,
+          marginTop: 8,
+        }}
+      >
+        <Text style={{ color: fotoCnh ? colors.accent : colors.inkSoft, fontSize: 14, fontWeight: '600' }}>
+          {fotoCnh ? 'Foto adicionada ✓' : 'Toque para adicionar'}
+        </Text>
+      </TouchableOpacity>
 
-      <View className="flex-row gap-3">
-        <TouchableOpacity
-          onPress={() => router.back()}
-          disabled={salvando}
-          className="flex-1 border border-gray-200 py-4 rounded-2xl items-center"
-          activeOpacity={0.7}
-        >
-          <Text className="text-gray-500 font-medium">Voltar</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleConcluir}
-          disabled={salvando}
-          className="flex-1 bg-[#1A4D3A] py-4 rounded-2xl items-center
-            disabled:opacity-50"
-          activeOpacity={0.85}
-        >
-          {salvando ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white font-bold">Enviar cadastro</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        onPress={handleConcluir}
+        disabled={salvando}
+        activeOpacity={0.85}
+        style={{
+          height: 56,
+          borderRadius: radius.pill,
+          backgroundColor: salvando ? colors.accentStrong : colors.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: salvando ? 0.8 : 1,
+        }}
+      >
+        {salvando
+          ? <ActivityIndicator color={colors.ink} />
+          : <Text style={{ color: colors.ink, fontWeight: '800', fontSize: 16 }}>Enviar cadastro</Text>
+        }
+      </TouchableOpacity>
     </ScrollView>
   )
 }

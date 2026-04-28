@@ -1,14 +1,19 @@
 import { Tabs, Redirect } from 'expo-router'
 import { View, ActivityIndicator } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
 import { useAuthStore } from '@/store/useAuthStore'
+import { CourierIcon } from '@/components/CourierIcon'
+import { courierDesign } from '@/lib/courier-design'
 
 export default function LayoutTabs() {
   const { user, courier, carregando } = useAuthStore()
+  const { colors, radius } = courierDesign
 
   if (carregando) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#1A4D3A]">
-        <ActivityIndicator color="#4CAF82" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceDark }}>
+        <StatusBar style="light" />
+        <ActivityIndicator color={colors.accent} />
       </View>
     )
   }
@@ -23,37 +28,94 @@ export default function LayoutTabs() {
   }
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: '#4CAF82',
-        tabBarInactiveTintColor: '#6B7280',
-        tabBarStyle: {
-          backgroundColor: '#1A4D3A',
-          borderTopColor: '#163d2e',
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{ title: 'Entregas' }}
-      />
-      <Tabs.Screen
-        name="ativa"
-        options={{ title: 'Em rota' }}
-      />
-      <Tabs.Screen
-        name="ganhos"
-        options={{ title: 'Ganhos' }}
-      />
-      <Tabs.Screen
-        name="perfil"
-        options={{ title: 'Perfil' }}
-      />
-    </Tabs>
+    <>
+      <StatusBar style="dark" />
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: { backgroundColor: colors.canvas },
+          tabBarActiveTintColor: colors.ink,
+          tabBarInactiveTintColor: '#B9BCC2',
+          tabBarShowLabel: true,
+          tabBarStyle: {
+            position: 'absolute',
+            left: 16,
+            right: 16,
+            bottom: 16,
+            height: 74,
+            paddingHorizontal: 8,
+            paddingTop: 10,
+            paddingBottom: 12,
+            backgroundColor: colors.ink,
+            borderTopWidth: 0,
+            borderRadius: radius.lg,
+            elevation: 0,
+          },
+          tabBarItemStyle: {
+            borderRadius: radius.pill,
+            marginHorizontal: 4,
+          },
+          tabBarActiveBackgroundColor: colors.accent,
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '700',
+            marginTop: 2,
+          },
+        }}
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color, focused }) => (
+              <CourierIcon
+                name="home"
+                size={20}
+                color={focused ? colors.ink : color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="ativa"
+          options={{
+            title: 'Rota',
+            tabBarIcon: ({ color, focused }) => (
+              <CourierIcon
+                name="route"
+                size={20}
+                color={focused ? colors.ink : color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="ganhos"
+          options={{
+            title: 'Ganhos',
+            tabBarIcon: ({ color, focused }) => (
+              <CourierIcon
+                name="wallet"
+                size={20}
+                color={focused ? colors.ink : color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="perfil"
+          options={{
+            title: 'Perfil',
+            tabBarIcon: ({ color, focused }) => (
+              <CourierIcon
+                name="user"
+                size={20}
+                color={focused ? colors.ink : color}
+              />
+            ),
+          }}
+        />
+      </Tabs>
+    </>
   )
 }

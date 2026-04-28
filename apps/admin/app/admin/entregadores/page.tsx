@@ -1,5 +1,13 @@
 import { getEntregadores } from '@/lib/actions/admin'
 import { TabelaEntregadores } from '@/components/admin/tabela-entregadores'
+import { Bike } from 'lucide-react'
+
+const FILTROS = [
+  { label: 'Pendentes', valor: 'pendente' },
+  { label: 'Aprovados', valor: 'aprovado' },
+  { label: 'Reprovados', valor: 'reprovado' },
+  { label: 'Suspensos', valor: 'suspenso' },
+]
 
 export default async function PaginaEntregadores({
   searchParams,
@@ -10,26 +18,30 @@ export default async function PaginaEntregadores({
   const entregadores = await getEntregadores({ status })
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-6 space-y-5 max-w-[1400px]">
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#1A4D3A]">Entregadores</h1>
-        <span className="text-sm text-gray-400">{entregadores.length} encontrado(s)</span>
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
+            <Bike size={17} className="text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Entregadores</h1>
+            <p className="text-xs text-gray-400">{entregadores.length} encontrado(s)</p>
+          </div>
+        </div>
       </div>
 
+      {/* Filtros */}
       <div className="flex gap-2">
-        {[
-          { label: 'Pendentes', valor: 'pendente' },
-          { label: 'Aprovados', valor: 'aprovado' },
-          { label: 'Reprovados', valor: 'reprovado' },
-          { label: 'Suspensos', valor: 'suspenso' },
-        ].map((f) => (
+        {FILTROS.map((f) => (
           <a
             key={f.valor}
             href={`/admin/entregadores?status=${f.valor}`}
-            className={`px-3 py-1.5 rounded-full text-sm border transition-colors ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
               status === f.valor
-                ? 'bg-[#1A4D3A] text-white border-[#1A4D3A]'
-                : 'bg-white text-gray-600 border-gray-200'
+                ? 'bg-[#1A4D3A] text-white border-[#1A4D3A] shadow-sm'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
             }`}
           >
             {f.label}

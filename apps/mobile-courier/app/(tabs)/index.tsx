@@ -1,35 +1,43 @@
-import { useEffect, useState, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   View,
   Text,
-  FlatList,
   Switch,
   Alert,
   ActivityIndicator,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
 } from 'react-native'
 import { router } from 'expo-router'
+import { formatarReais } from '@mallora/lib'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useEntregaStore } from '@/store/useEntregaStore'
 import { EntregaDisponivelCard } from '@/components/EntregaDisponivelCard'
 import { HistoricoEntregasDia } from '@/components/HistoricoEntregasDia'
+import { CourierIcon } from '@/components/CourierIcon'
+import {
+  abreviarNome,
+  courierDesign,
+  saudacaoPorHorario,
+} from '@/lib/courier-design'
 
 export default function TelaEntregas() {
   const { courier, setOnline } = useAuthStore()
   const { disponiveis, setDisponiveis, ativa } = useEntregaStore()
   const [toggleCarregando, setToggleCarregando] = useState(false)
+  const [atualizando, setAtualizando] = useState(false)
   const recusasRef = useRef<Record<string, number>>({})
+  const { colors } = courierDesign
 
-  // Se há entrega ativa, redirecionar para tela de entrega ativa
   useEffect(() => {
-    if (ativa) {
-      router.replace('/(tabs)/ativa')
+    if (!courier?.id) return
+
+    if (!courier.online) {
+      setDisponiveis([])
+      return
     }
-  }, [ativa])
-
-  // Ao ficar online, escutar novos pedidos via Realtime
-  useEffect(() => {
-    if (!courier?.online || !courier?.id) return
 
     carregarEntregasDisponiveis()
 
@@ -63,11 +71,22 @@ export default function TelaEntregas() {
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(canal) }
-  }, [courier?.online, courier?.id])
+    return () => {
+      supabase.removeChannel(canal)
+    }
+  }, [courier?.id, courier?.online, setDisponiveis])
+
+  const onRefresh = useCallback(async () => {
+    setAtualizando(true)
+    await carregarEntregasDisponiveis()
+    setAtualizando(false)
+  }, [courier?.id, courier?.online])
 
   async function carregarEntregasDisponiveis() {
-    if (!courier?.id) return
+    if (!courier?.id || !courier.online) {
+      setDisponiveis([])
+      return
+    }
 
     const { data } = await supabase
       .from('delivery_assignments')
@@ -229,90 +248,267 @@ export default function TelaEntregas() {
   }
 
   return (
-    <View className="flex-1 bg-[#1A4D3A]">
-      {/* Header com toggle online/offline */}
-      <View className="px-5 pt-14 pb-5">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-white text-xl font-bold">
-              {courier?.online ? 'Você está online' : 'Você está offline'}
-            </Text>
-            <Text className="text-green-300 text-sm mt-0.5">
-              {courier?.online
-                ? 'Aguardando novos pedidos...'
-                : 'Ative para receber pedidos'}
-            </Text>
+    <ScrollView
+      className="flex-1"
+      style={{ backgroundColor: colors.canvas }}
+      contentContainerStyle={{ paddingBottom: 116 }}
+      refreshControl={
+        <RefreshControl
+          refreshing={atualizando}
+          onRefresh={onRefresh}
+          tintColor={colors.ink}
+        />
+      }
+    >
+      <View className="px-5 pt-14 pb-6">
+        <View className="flex-row items-center justify-between mb-6">
+          <View className="flex-row items-center gap-3 flex-1">
+            <View
+              className="w-14 h-14 rounded-full items-center justify-center"
+              style={{ backgroundColor: '#E6E7E1' }}
+            >
+              <Text className="text-lg font-bold" style={{ color: colors.ink }}>
+                {(courier?.nome?.charAt(0) ?? 'E').toUpperCase()}
+              </Text>
+            </View>
+
+            <View>
+              <Text className="text-sm" style={{ color: colors.inkMuted }}>
+                {saudacaoPorHorario()}
+              </Text>
+              <Text className="text-2xl font-bold" style={{ color: colors.ink }}>
+                {abreviarNome(courier?.nome)}
+              </Text>
+              <Text className="text-sm mt-0.5" style={{ color: colors.inkSoft }}>
+                {courier?.online ? 'Disponivel para novas rotas' : 'Modo offline'}
+              </Text>
+            </View>
           </View>
 
-          {toggleCarregando ? (
-            <ActivityIndicator color="#4CAF82" />
-          ) : (
-            <Switch
-              value={courier?.online ?? false}
-              onValueChange={handleToggleOnline}
-              trackColor={{ false: '#374151', true: '#4CAF82' }}
-              thumbColor="#FFFFFF"
-              ios_backgroundColor="#374151"
+          <View
+            className="w-11 h-11 rounded-full items-center justify-center"
+            style={{ backgroundColor: colors.surface }}
+          >
+            <CourierIcon
+              name={courier?.online ? 'spark' : 'power'}
+              color={courier?.online ? colors.ink : colors.inkSoft}
             />
-          )}
+          </View>
+        </View>
+
+        <View
+          className="rounded-full px-4 py-3 flex-row items-center justify-between mb-5"
+          style={{ backgroundColor: colors.surfaceMuted }}
+        >
+          <View className="flex-row items-center gap-3 flex-1">
+            <CourierIcon name="search" color={colors.inkSoft} size={18} />
+            <Text style={{ color: colors.inkSoft }}>
+              {ativa ? 'Acompanhar entrega atual' : 'Buscar ID da entrega'}
+            </Text>
+          </View>
+          <View
+            className="w-9 h-9 rounded-full items-center justify-center"
+            style={{ backgroundColor: colors.accent }}
+          >
+            <CourierIcon name="package" color={colors.ink} size={18} />
+          </View>
+        </View>
+
+        <View
+          className="rounded-[30px] p-5"
+          style={{ backgroundColor: colors.surfaceDark }}
+        >
+          <View className="flex-row items-center justify-between">
+            <View className="flex-1 pr-4">
+              <Text className="text-xs uppercase font-semibold mb-1" style={{ color: '#A4A7AD' }}>
+                Current Tracking
+              </Text>
+              <Text className="text-white text-xl font-bold">
+                {ativa ? `#${ativa.order_id.slice(0, 8).toUpperCase()}` : 'Sem rota ativa'}
+              </Text>
+              <Text className="text-sm mt-2" style={{ color: '#C9CCD1' }}>
+                {ativa
+                  ? `${ativa.status === 'aceita' ? 'Coleta em' : 'Entrega para'} ${
+                      ativa.status === 'aceita' ? ativa.store_nome : ativa.consumer_nome
+                    }`
+                  : courier?.online
+                    ? 'Voce esta pronto para receber uma nova coleta.'
+                    : 'Ative o modo online para voltar a operar.'}
+              </Text>
+            </View>
+
+            <View className="items-end">
+              {toggleCarregando ? (
+                <ActivityIndicator color={colors.accent} />
+              ) : (
+                <Switch
+                  value={courier?.online ?? false}
+                  onValueChange={handleToggleOnline}
+                  trackColor={{ false: '#4C4F55', true: colors.accentStrong }}
+                  thumbColor="#FFFFFF"
+                  ios_backgroundColor="#4C4F55"
+                />
+              )}
+              <Text className="text-xs mt-2 font-semibold" style={{ color: colors.accent }}>
+                {courier?.online ? 'ONLINE' : 'OFFLINE'}
+              </Text>
+            </View>
+          </View>
+
+          <View
+            className="mt-5 rounded-[24px] px-4 py-4"
+            style={{ backgroundColor: colors.surfaceDarkSoft }}
+          >
+            <View className="flex-row items-center justify-between mb-3">
+              <View className="flex-row items-center gap-2">
+                <View className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: colors.accent }} />
+                <Text className="text-sm font-semibold text-white">
+                  {ativa ? 'Em andamento' : 'Operacao'}
+                </Text>
+              </View>
+              <Text className="text-xs" style={{ color: '#A9ADB4' }}>
+                {ativa ? formatarReais(ativa.valor_entrega) : `${disponiveis.length} disponiveis`}
+              </Text>
+            </View>
+            <Text className="text-sm" style={{ color: '#D5D7DB' }}>
+              {ativa
+                ? `${ativa.store_nome} -> ${ativa.consumer_nome}`
+                : courier?.online
+                  ? 'Assim que um pedido for atribuido ele aparece aqui com acesso rapido para a rota.'
+                  : 'Seu painel acompanha online/offline, entregas disponiveis e historico do turno.'}
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => router.push(ativa ? '/(tabs)/ativa' : '/(tabs)/ganhos')}
+              className="mt-4 rounded-full py-3 items-center"
+              style={{ backgroundColor: colors.accent }}
+              activeOpacity={0.85}
+            >
+              <Text className="font-bold" style={{ color: colors.ink }}>
+                {ativa ? 'Abrir Tracking Detail' : 'Ver desempenho do dia'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
 
-      {/* Lista de entregas disponíveis */}
-      <View className="flex-1 bg-[#FFF8ED] rounded-t-3xl overflow-hidden">
-        <FlatList
-          data={disponiveis}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{
-            padding: 20,
-            paddingTop: 24,
-            paddingBottom: 100,
-          }}
-          ListHeaderComponent={
-            disponiveis.length > 0 ? (
-              <Text className="text-sm font-semibold text-gray-500 uppercase mb-4">
-                {disponiveis.length} entrega{disponiveis.length !== 1 ? 's' : ''} disponível
-              </Text>
-            ) : null
-          }
-          ListEmptyComponent={
-            <View className="py-16 items-center">
-              {!courier?.online ? (
-                <>
-                  <HistoricoEntregasDia />
-                  <Text className="text-gray-400 text-base font-medium mb-1 mt-4">
-                    Você está offline
-                  </Text>
-                  <Text className="text-gray-300 text-sm text-center">
-                    Ative o botão acima para começar a receber pedidos
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text className="text-gray-400 text-base font-medium mb-1">
-                    Nenhum pedido no momento
-                  </Text>
-                  <Text className="text-gray-300 text-sm text-center">
-                    Fique online para receber notificações de novos pedidos
-                  </Text>
-                </>
-              )}
+      <View className="px-5">
+        <Text className="text-base font-semibold mb-4" style={{ color: colors.ink }}>
+          Feature
+        </Text>
+        <View className="flex-row justify-between mb-6">
+          <QuickAction
+            icon="power"
+            label="Operacao"
+            value={courier?.online ? 'Online' : 'Offline'}
+            onPress={() => handleToggleOnline(!(courier?.online ?? false))}
+          />
+          <QuickAction
+            icon="route"
+            label="Rota"
+            value={ativa ? 'Ativa' : 'Livre'}
+            onPress={() => router.push('/(tabs)/ativa')}
+          />
+          <QuickAction
+            icon="wallet"
+            label="Ganhos"
+            value="Painel"
+            onPress={() => router.push('/(tabs)/ganhos')}
+          />
+          <QuickAction
+            icon="user"
+            label="Perfil"
+            value="Conta"
+            onPress={() => router.push('/(tabs)/perfil')}
+          />
+        </View>
+
+        <HistoricoEntregasDia />
+
+        <View className="flex-row items-center justify-between mb-4 mt-1">
+          <Text className="text-base font-semibold" style={{ color: colors.ink }}>
+            Entregas Disponiveis
+          </Text>
+          <Text className="text-sm" style={{ color: colors.inkSoft }}>
+            {courier?.online ? `${disponiveis.length} no radar` : 'Modo pausado'}
+          </Text>
+        </View>
+
+        {disponiveis.length === 0 ? (
+          <View
+            className="rounded-[28px] px-5 py-8 mb-3"
+            style={{ backgroundColor: colors.surface }}
+          >
+            <View
+              className="w-12 h-12 rounded-full items-center justify-center mb-4"
+              style={{ backgroundColor: colors.accentSoft }}
+            >
+              <CourierIcon
+                name={courier?.online ? 'clock' : 'power'}
+                color={colors.ink}
+              />
             </View>
-          }
-          renderItem={({ item }) => (
+            <Text className="text-lg font-bold mb-1" style={{ color: colors.ink }}>
+              {courier?.online ? 'Nenhuma entrega neste momento' : 'Voce esta offline'}
+            </Text>
+            <Text style={{ color: colors.inkMuted }}>
+              {courier?.online
+                ? 'Continue disponivel. As novas atribuicoes entram automaticamente nesta lista.'
+                : 'Ative o modo online para voltar a receber novas corridas.'}
+            </Text>
+          </View>
+        ) : (
+          disponiveis.map((item) => (
             <EntregaDisponivelCard
+              key={item.id}
               entrega={item}
               onAceitar={() => handleAceitar(item)}
               onRecusar={() => handleRecusar(item)}
             />
-          )}
-        />
+          ))
+        )}
       </View>
-    </View>
+    </ScrollView>
+  )
+}
+
+function QuickAction({
+  icon,
+  label,
+  value,
+  onPress,
+}: {
+  icon: Parameters<typeof CourierIcon>[0]['name']
+  label: string
+  value: string
+  onPress: () => void
+}) {
+  const { colors } = courierDesign
+
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      className="items-center"
+      style={{ width: '23%' }}
+    >
+      <View
+        className="w-14 h-14 rounded-full items-center justify-center mb-2"
+        style={{ backgroundColor: colors.surface }}
+      >
+        <CourierIcon name={icon} size={18} color={colors.ink} />
+      </View>
+      <Text className="text-xs font-semibold" style={{ color: colors.ink }}>
+        {label}
+      </Text>
+      <Text className="text-[11px]" style={{ color: colors.inkSoft }}>
+        {value}
+      </Text>
+    </TouchableOpacity>
   )
 }
 
 function formatarEndereco(end: any): string {
-  if (!end) return 'Endereço não disponível'
-  return `${end.rua ?? ''}, ${end.numero ?? ''} — ${end.bairro ?? ''}`
+  if (!end) return 'Endereco nao disponivel'
+  return `${end.rua ?? ''}, ${end.numero ?? ''} - ${end.bairro ?? ''}`
 }

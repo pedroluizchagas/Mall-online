@@ -36,6 +36,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.43.0
         version: 2.100.0
+      lucide-react:
+        specifier: ^1.11.0
+        version: 1.11.0(react@18.3.1)
       next:
         specifier: 14.2.0
         version: 14.2.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -233,6 +236,9 @@ importers:
       expo-status-bar:
         specifier: ~3.0.9
         version: 3.0.9(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@13.6.4)(@react-native/metro-config@0.84.1(@babel/core@7.29.0))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      lottie-react-native:
+        specifier: ~7.3.6
+        version: 7.3.6(react-native@0.81.5(@babel/core@7.29.0)(@react-native-community/cli@13.6.4)(@react-native/metro-config@0.84.1(@babel/core@7.29.0))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       nativewind:
         specifier: ^4.2.3
         version: 4.2.3(68b80ce50023191aa7851fa0f5038ff4)

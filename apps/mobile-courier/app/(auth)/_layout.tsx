@@ -1,14 +1,16 @@
 import { Redirect, Stack } from 'expo-router'
 import { View, ActivityIndicator } from 'react-native'
 import { useAuthStore } from '@/store/useAuthStore'
+import { courierDesign } from '@/lib/courier-design'
 
 export default function LayoutAuth() {
   const { user, courier, carregando } = useAuthStore()
+  const { colors } = courierDesign
 
   if (carregando) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#1A4D3A]">
-        <ActivityIndicator color="#4CAF82" />
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceDark }}>
+        <ActivityIndicator color={colors.accent} />
       </View>
     )
   }
@@ -26,10 +28,8 @@ export default function LayoutAuth() {
     }
   }
 
-  if (user && !courier) {
-    // Usuário logado mas sem cadastro de courier — ir para cadastro
-    return <Redirect href="/(auth)/cadastro" />
-  }
-
+  // user && !courier: usuário está no fluxo de cadastro — não redirecionar,
+  // pois /(auth)/cadastro já está dentro deste grupo e causaria loop.
+  // O index.tsx raiz trata esse caso ao abrir o app.
   return <Stack screenOptions={{ headerShown: false }} />
 }
