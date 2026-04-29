@@ -56,7 +56,7 @@ export default function TelaPerfil() {
       formData.append('file', { uri, name: 'perfil.jpg', type: 'image/jpeg' } as any)
 
       const res = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/courier-docs/${caminho}`,
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/courier-avatars/${caminho}`,
         {
           method: 'POST',
           headers: {
@@ -70,7 +70,7 @@ export default function TelaPerfil() {
 
       if (!res.ok) throw new Error('Upload falhou')
 
-      const { data } = supabase.storage.from('courier-docs').getPublicUrl(caminho)
+      const { data } = supabase.storage.from('courier-avatars').getPublicUrl(caminho)
       const novaUrl = `${data.publicUrl}?t=${Date.now()}`
 
       await supabase.from('couriers').update({ foto_url: novaUrl }).eq('id', courier.id)

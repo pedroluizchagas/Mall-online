@@ -2,6 +2,7 @@ import { View, Text, TouchableOpacity } from 'react-native'
 import { formatarReais } from '@mallora/lib'
 import { CourierIcon } from '@/components/CourierIcon'
 import { courierDesign } from '@/lib/courier-design'
+import { RotaIlustrada } from '@/components/RotaIlustrada'
 
 interface Props {
   entrega: {
@@ -20,91 +21,211 @@ export function EntregaDisponivelCard({ entrega, onAceitar, onRecusar }: Props) 
 
   return (
     <View
-      className="rounded-[28px] p-4 mb-3"
-      style={{ backgroundColor: colors.surface }}
+      style={{
+        backgroundColor: colors.surfaceDark,
+        borderRadius: 28,
+        padding: 16,
+        marginBottom: 12,
+      }}
     >
-      <View className="flex-row items-center justify-between mb-4">
+      {/* Header — preço + prioridade */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 14,
+          paddingHorizontal: 4,
+          paddingTop: 4,
+        }}
+      >
         <View>
-          <Text className="text-xs font-semibold uppercase mb-1" style={{ color: colors.inkSoft }}>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: '700',
+              letterSpacing: 0.7,
+              textTransform: 'uppercase',
+              color: '#A4A7AD',
+              marginBottom: 4,
+            }}
+          >
             Oferta de entrega
           </Text>
-          <Text className="text-2xl font-bold" style={{ color: colors.ink }}>
+          <Text
+            style={{
+              fontSize: 26,
+              fontWeight: '800',
+              color: '#FFFFFF',
+              letterSpacing: -0.5,
+            }}
+          >
             {formatarReais(entrega.valor_entrega)}
           </Text>
         </View>
+
         <View
-          className="px-3 py-2 rounded-full flex-row items-center gap-2"
-          style={{ backgroundColor: colors.accentSoft }}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+            paddingHorizontal: 12,
+            paddingVertical: 7,
+            borderRadius: 999,
+            backgroundColor: colors.accent,
+          }}
         >
-          <CourierIcon name="spark" size={14} color={colors.ink} />
-          <Text className="text-xs font-semibold" style={{ color: colors.ink }}>
-            Prioritaria
+          <CourierIcon name="spark" size={13} color={colors.ink} />
+          <Text style={{ fontSize: 11, fontWeight: '700', color: colors.ink, letterSpacing: 0.2 }}>
+            Prioritária
           </Text>
         </View>
       </View>
 
+      {/* Painel do mapa + endereços */}
       <View
-        className="rounded-[22px] p-4 mb-4"
-        style={{ backgroundColor: colors.canvas }}
+        style={{
+          backgroundColor: colors.surfaceDarkSoft,
+          borderRadius: 22,
+          marginBottom: 14,
+          overflow: 'hidden',
+          position: 'relative',
+          minHeight: 152,
+        }}
       >
-        <View className="flex-row items-start gap-3">
-          <View
-            className="w-10 h-10 rounded-full items-center justify-center mt-0.5"
-            style={{ backgroundColor: colors.surface }}
-          >
-            <CourierIcon name="store" size={18} color={colors.ink} />
-          </View>
-          <View className="flex-1">
-            <Text className="text-xs font-semibold uppercase" style={{ color: colors.inkSoft }}>
-              Coletar em
-            </Text>
-            <Text className="text-sm font-semibold mt-1" style={{ color: colors.ink }}>
-              {entrega.store_nome}
-            </Text>
-            <Text className="text-xs mt-1" style={{ color: colors.inkMuted }} numberOfLines={1}>
-              {entrega.store_endereco}
-            </Text>
-          </View>
+        <View
+          pointerEvents="none"
+          style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: '60%' }}
+        >
+          <RotaIlustrada />
         </View>
 
-        <View className="ml-5 my-3 w-px h-6" style={{ backgroundColor: colors.line }} />
-
-        <View className="flex-row items-start gap-3">
-          <View
-            className="w-10 h-10 rounded-full items-center justify-center mt-0.5"
-            style={{ backgroundColor: colors.surface }}
-          >
-            <CourierIcon name="pin" size={18} color={colors.ink} />
+        <View style={{ padding: 16, paddingRight: 96 }}>
+          {/* Coletar em */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 2,
+              }}
+            >
+              <CourierIcon name="store" size={16} color="#FFFFFF" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: '700',
+                  letterSpacing: 0.6,
+                  textTransform: 'uppercase',
+                  color: '#7C7F86',
+                }}
+              >
+                Coletar em
+              </Text>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  color: '#FFFFFF',
+                  marginTop: 3,
+                }}
+                numberOfLines={1}
+              >
+                {entrega.store_nome}
+              </Text>
+              <Text
+                style={{ fontSize: 11.5, color: '#A4A7AD', marginTop: 2 }}
+                numberOfLines={1}
+              >
+                {entrega.store_endereco}
+              </Text>
+            </View>
           </View>
-          <View className="flex-1">
-            <Text className="text-xs font-semibold uppercase" style={{ color: colors.inkSoft }}>
-              Entregar em
-            </Text>
-            <Text className="text-sm mt-1" style={{ color: colors.inkMuted }} numberOfLines={2}>
-              {entrega.consumer_endereco}
-            </Text>
+
+          {/* Conector vertical */}
+          <View
+            style={{
+              marginLeft: 17,
+              marginVertical: 8,
+              width: 2,
+              height: 18,
+              borderRadius: 1,
+              backgroundColor: 'rgba(255,255,255,0.10)',
+            }}
+          />
+
+          {/* Entregar em */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: colors.accent,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 2,
+              }}
+            >
+              <CourierIcon name="pin" size={16} color={colors.ink} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontWeight: '700',
+                  letterSpacing: 0.6,
+                  textTransform: 'uppercase',
+                  color: '#7C7F86',
+                }}
+              >
+                Entregar em
+              </Text>
+              <Text
+                style={{ fontSize: 12.5, color: '#D5D7DB', marginTop: 3, lineHeight: 17 }}
+                numberOfLines={2}
+              >
+                {entrega.consumer_endereco}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
 
-      <View className="flex-row gap-3">
+      {/* Ações */}
+      <View style={{ flexDirection: 'row', gap: 10 }}>
         <TouchableOpacity
           onPress={onRecusar}
-          className="flex-1 py-3 rounded-full items-center"
-          style={{ backgroundColor: colors.surfaceMuted }}
           activeOpacity={0.75}
+          style={{
+            flex: 1,
+            paddingVertical: 13,
+            borderRadius: 999,
+            alignItems: 'center',
+            backgroundColor: 'rgba(255,255,255,0.08)',
+          }}
         >
-          <Text className="text-sm font-semibold" style={{ color: colors.inkMuted }}>
-            Recusar
-          </Text>
+          <Text style={{ fontSize: 13, fontWeight: '600', color: '#A4A7AD' }}>Recusar</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={onAceitar}
-          className="py-3 px-6 rounded-full items-center"
-          style={{ backgroundColor: colors.ink, flex: 1.4 }}
           activeOpacity={0.85}
+          style={{
+            flex: 1.4,
+            paddingVertical: 13,
+            paddingHorizontal: 20,
+            borderRadius: 999,
+            alignItems: 'center',
+            backgroundColor: colors.accent,
+          }}
         >
-          <Text className="text-sm font-bold" style={{ color: colors.accent }}>
+          <Text style={{ fontSize: 13, fontWeight: '800', color: colors.ink, letterSpacing: 0.2 }}>
             Aceitar entrega
           </Text>
         </TouchableOpacity>

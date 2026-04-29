@@ -19,6 +19,7 @@ import { useEntregaStore } from '@/store/useEntregaStore'
 import { EntregaDisponivelCard } from '@/components/EntregaDisponivelCard'
 import { HistoricoEntregasDia } from '@/components/HistoricoEntregasDia'
 import { CourierIcon } from '@/components/CourierIcon'
+import { RotaIlustrada } from '@/components/RotaIlustrada'
 import {
   abreviarNome,
   courierDesign,
@@ -33,6 +34,8 @@ export default function TelaEntregas() {
   const recusasRef = useRef<Record<string, number>>({})
   const { colors } = courierDesign
   const insets = useSafeAreaInsets()
+
+  useEffect(() => { setAvatarErro(false) }, [courier?.foto_url])
 
   useEffect(() => {
     if (!courier?.id) return
@@ -455,26 +458,82 @@ export default function TelaEntregas() {
 
         {disponiveis.length === 0 ? (
           <View
-            className="rounded-[28px] px-5 py-8 mb-3"
-            style={{ backgroundColor: colors.surface }}
+            style={{
+              borderRadius: 28,
+              overflow: 'hidden',
+              backgroundColor: colors.surfaceDark,
+              marginBottom: 12,
+            }}
           >
-            <View
-              className="w-12 h-12 rounded-full items-center justify-center mb-4"
-              style={{ backgroundColor: colors.accentSoft }}
-            >
-              <CourierIcon
-                name={courier?.online ? 'clock' : 'power'}
-                color={colors.ink}
-              />
+            {/* Linha superior: status badge */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+              paddingTop: 20,
+              paddingBottom: 16,
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{
+                  width: 8, height: 8, borderRadius: 4,
+                  backgroundColor: courier?.online ? colors.success : '#4C4F55',
+                }} />
+                <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: '#A4A7AD', textTransform: 'uppercase' }}>
+                  {courier?.online ? 'Em espera' : 'Offline'}
+                </Text>
+              </View>
+              <View style={{
+                paddingHorizontal: 10, paddingVertical: 4,
+                borderRadius: 20,
+                backgroundColor: courier?.online ? 'rgba(142,209,79,0.12)' : 'rgba(255,255,255,0.06)',
+              }}>
+                <Text style={{ fontSize: 11, fontWeight: '600', color: courier?.online ? colors.success : '#6B6E75' }}>
+                  {courier?.online ? 'Aguardando rota' : 'Modo pausado'}
+                </Text>
+              </View>
             </View>
-            <Text className="text-lg font-bold mb-1" style={{ color: colors.ink }}>
-              {courier?.online ? 'Nenhuma entrega neste momento' : 'Voce esta offline'}
-            </Text>
-            <Text style={{ color: colors.inkMuted }}>
-              {courier?.online
-                ? 'Continue disponivel. As novas atribuicoes entram automaticamente nesta lista.'
-                : 'Ative o modo online para voltar a receber novas corridas.'}
-            </Text>
+
+            {/* Corpo: info + ilustração */}
+            <View style={{
+              flexDirection: 'row',
+              alignItems: 'flex-end',
+              paddingHorizontal: 20,
+              paddingBottom: 20,
+              gap: 16,
+            }}>
+              <View style={{ flex: 1, gap: 12 }}>
+                <View style={{ gap: 4 }}>
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B6E75', textTransform: 'uppercase', letterSpacing: 0.6 }}>
+                    Próxima entrega
+                  </Text>
+                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.5 }}>
+                    {courier?.online ? 'Buscando...' : 'Sem rota'}
+                  </Text>
+                </View>
+
+                <View style={{ gap: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <CourierIcon name="pin" size={13} color="#6B6E75" />
+                    <Text style={{ fontSize: 12, color: '#A4A7AD' }} numberOfLines={1}>
+                      {courier?.online
+                        ? 'Monitorando pedidos na sua área'
+                        : 'Ative o modo online para operar'}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <CourierIcon name="clock" size={13} color="#6B6E75" />
+                    <Text style={{ fontSize: 12, color: '#A4A7AD' }}>
+                      {courier?.online
+                        ? 'Atribuições chegam em tempo real'
+                        : 'Seu histórico do turno está salvo'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <RotaIlustrada width={100} height={120} />
+            </View>
           </View>
         ) : (
           disponiveis.map((item) => (

@@ -50,7 +50,7 @@ export default function EtapaDocumentos() {
     }
   }
 
-  async function uploadImagem(uri: string, caminho: string): Promise<string | null> {
+  async function uploadImagem(uri: string, caminho: string, bucket: string): Promise<string | null> {
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return null
@@ -67,7 +67,7 @@ export default function EtapaDocumentos() {
       } as any)
 
       const res = await fetch(
-        `${supabaseUrl}/storage/v1/object/courier-docs/${caminho}`,
+        `${supabaseUrl}/storage/v1/object/${bucket}/${caminho}`,
         {
           method: 'POST',
           headers: {
@@ -81,7 +81,7 @@ export default function EtapaDocumentos() {
 
       if (!res.ok) return null
 
-      const { data } = supabase.storage.from('courier-docs').getPublicUrl(caminho)
+      const { data } = supabase.storage.from(bucket).getPublicUrl(caminho)
       return data.publicUrl
     } catch {
       return null
@@ -102,9 +102,9 @@ export default function EtapaDocumentos() {
       return
     }
 
-    const fotoPerfilUrl = await uploadImagem(fotoPerfil, `${user.id}/perfil.jpg`)
+    const fotoPerfilUrl = await uploadImagem(fotoPerfil, `${user.id}/perfil.jpg`, 'courier-avatars')
     let fotoCnhUrl: string | null = null
-    if (fotoCnh) fotoCnhUrl = await uploadImagem(fotoCnh, `${user.id}/cnh.jpg`)
+    if (fotoCnh) fotoCnhUrl = await uploadImagem(fotoCnh, `${user.id}/cnh.jpg`, 'courier-docs')
 
     if (!fotoPerfilUrl) {
       setErro('Erro ao fazer upload da foto. Tente novamente.')
