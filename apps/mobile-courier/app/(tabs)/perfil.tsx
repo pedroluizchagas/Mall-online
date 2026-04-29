@@ -2,26 +2,90 @@ import { useState } from 'react'
 import {
   View,
   Text,
+  Image,
   ScrollView,
   TouchableOpacity,
   Alert,
   Linking,
+  ActivityIndicator,
 } from 'react-native'
 import { router } from 'expo-router'
+import * as ImagePicker from 'expo-image-picker'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useEntregaStore } from '@/store/useEntregaStore'
 import { useLocalizacaoStore } from '@/store/useLocalizacaoStore'
+import { CourierIcon } from '@/components/CourierIcon'
+import { courierDesign } from '@/lib/courier-design'
 
 export default function TelaPerfil() {
-  const { courier, user, limpar: limparAuth } = useAuthStore()
+  const { courier, user, setCourier, limpar: limparAuth } = useAuthStore()
   const { setAtiva } = useEntregaStore()
   const { limpar: limparLoc } = useLocalizacaoStore()
   const [abrindoStripe, setAbrindoStripe] = useState(false)
+  const [atualizandoFoto, setAtualizandoFoto] = useState(false)
+  const [avatarErro, setAvatarErro] = useState(false)
+  const { colors, radius } = courierDesign
+
+  async function handleAtualizarFoto() {
+    const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permissao.granted) {
+      Alert.alert('Permissão necessária', 'Permita o acesso à galeria para alterar a foto.')
+      return
+    }
+
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+
+    if (resultado.canceled || !resultado.assets[0]) return
+
+    setAtualizandoFoto(true)
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session || !courier?.id) return
+
+      const uri = resultado.assets[0].uri
+      const caminho = `${session.user.id}/perfil.jpg`
+
+      const formData = new FormData()
+      formData.append('file', { uri, name: 'perfil.jpg', type: 'image/jpeg' } as any)
+
+      const res = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/object/courier-docs/${caminho}`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
+            Authorization: `Bearer ${session.access_token}`,
+            'x-upsert': 'true',
+          },
+          body: formData,
+        }
+      )
+
+      if (!res.ok) throw new Error('Upload falhou')
+
+      const { data } = supabase.storage.from('courier-docs').getPublicUrl(caminho)
+      const novaUrl = `${data.publicUrl}?t=${Date.now()}`
+
+      await supabase.from('couriers').update({ foto_url: novaUrl }).eq('id', courier.id)
+
+      setCourier({ ...courier, foto_url: novaUrl })
+      setAvatarErro(false)
+    } catch {
+      Alert.alert('Erro', 'Não foi possível atualizar a foto. Tente novamente.')
+    } finally {
+      setAtualizandoFoto(false)
+    }
+  }
 
   async function handleAbrirStripe() {
     if (!courier?.stripe_account_id) return
-
     setAbrindoStripe(true)
 
     const { data: { session } } = await supabase.auth.getSession()
@@ -31,30 +95,22 @@ export default function TelaPerfil() {
       `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/courier-stripe-info`,
       { headers: { Authorization: `Bearer ${session.access_token}` } }
     )
-
     const dados = await resposta.json()
     setAbrindoStripe(false)
 
-    if (dados.link_express) {
-      Linking.openURL(dados.link_express)
-    }
+    if (dados.link_express) Linking.openURL(dados.link_express)
   }
 
   async function handleSair() {
-    Alert.alert('Sair', 'Deseja realmente sair da conta?', [
+    Alert.alert('Sair da conta', 'Deseja realmente sair?', [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Sair',
         style: 'destructive',
         onPress: async () => {
-          // Garantir que está offline antes de sair
           if (courier?.id) {
-            await supabase
-              .from('couriers')
-              .update({ online: false })
-              .eq('id', courier.id)
+            await supabase.from('couriers').update({ online: false }).eq('id', courier.id)
           }
-
           await supabase.auth.signOut()
           limparAuth()
           setAtiva(null)
@@ -65,139 +121,317 @@ export default function TelaPerfil() {
     ])
   }
 
-  const primeiraLetra = courier?.nome?.charAt(0).toUpperCase() ?? '?'
+  const inicial = courier?.nome?.charAt(0).toUpperCase() ?? '?'
+  const stripeOk = courier?.stripe_onboarding_ok ?? false
 
   return (
     <ScrollView
-      className="flex-1 bg-[#FFF8ED]"
-      contentContainerStyle={{ paddingBottom: 100 }}
+      style={{ flex: 1, backgroundColor: colors.canvas }}
+      contentContainerStyle={{ paddingBottom: 110 }}
+      showsVerticalScrollIndicator={false}
     >
-      <View className="px-5 pt-14 pb-4">
-        <Text className="text-2xl font-bold text-[#1A4D3A]">Perfil</Text>
+      {/* Cabeçalho */}
+      <View style={{
+        paddingHorizontal: 20,
+        paddingTop: 60,
+        paddingBottom: 20,
+      }}>
+        <Text style={{
+          fontSize: 28,
+          fontWeight: '800',
+          color: colors.ink,
+          letterSpacing: -0.5,
+        }}>
+          Perfil
+        </Text>
       </View>
 
-      {/* Avatar e dados */}
-      <View className="bg-white px-5 py-5 flex-row items-center gap-4 mb-4">
-        <View className="w-16 h-16 rounded-full bg-[#1A4D3A] items-center justify-center">
-          <Text className="text-white text-2xl font-bold">{primeiraLetra}</Text>
-        </View>
-        <View className="flex-1">
-          <Text className="text-base font-bold text-gray-800">
+      {/* Card do entregador */}
+      <View style={{
+        marginHorizontal: 16,
+        backgroundColor: colors.surface,
+        borderRadius: radius.lg,
+        padding: 18,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        marginBottom: 12,
+      }}>
+        {/* Avatar */}
+        <TouchableOpacity onPress={handleAtualizarFoto} activeOpacity={0.8} disabled={atualizandoFoto}>
+          <View style={{ width: 56, height: 56 }}>
+            {courier?.foto_url && !avatarErro ? (
+              <Image
+                source={{ uri: courier.foto_url }}
+                style={{ width: 56, height: 56, borderRadius: 28 }}
+                onError={() => setAvatarErro(true)}
+              />
+            ) : (
+              <View style={{
+                width: 56, height: 56, borderRadius: 28,
+                backgroundColor: colors.accent,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 22, fontWeight: '800', color: colors.ink }}>
+                  {inicial}
+                </Text>
+              </View>
+            )}
+            <View style={{
+              position: 'absolute', bottom: 0, right: 0,
+              width: 20, height: 20, borderRadius: 10,
+              backgroundColor: colors.ink,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+              {atualizandoFoto
+                ? <ActivityIndicator size="small" color={colors.accent} style={{ transform: [{ scale: 0.6 }] }} />
+                : <CourierIcon name="camera" size={11} color={colors.accent} strokeWidth={2} />
+              }
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Info */}
+        <View style={{ flex: 1 }}>
+          <Text style={{
+            fontSize: 16,
+            fontWeight: '700',
+            color: colors.ink,
+            marginBottom: 2,
+          }}>
             {courier?.nome ?? 'Entregador'}
           </Text>
-          <Text className="text-sm text-gray-400 mt-0.5">
+          <Text style={{
+            fontSize: 13,
+            color: colors.inkSoft,
+            marginBottom: 6,
+          }}>
             {user?.email ?? ''}
           </Text>
-          <View className="flex-row items-center gap-2 mt-1">
-            <View
-              className={`w-2 h-2 rounded-full ${
-                courier?.online ? 'bg-[#4CAF82]' : 'bg-gray-300'
-              }`}
-            />
-            <Text className="text-xs text-gray-400">
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{
+              width: 7,
+              height: 7,
+              borderRadius: 4,
+              backgroundColor: courier?.online ? colors.success : colors.line,
+            }} />
+            <Text style={{ fontSize: 12, color: colors.inkSoft }}>
               {courier?.online ? 'Online' : 'Offline'}
             </Text>
-            <Text className="text-xs text-gray-300">·</Text>
-            <Text className="text-xs text-gray-400">
+            <Text style={{ fontSize: 12, color: colors.line }}>·</Text>
+            <Text style={{ fontSize: 12, color: colors.inkSoft }}>
               {courier?.tipo === 'proprio' ? 'Entregador próprio' : 'Autônomo'}
             </Text>
           </View>
         </View>
       </View>
 
-      {/* Status do KYC e conta Stripe */}
-      <View className="bg-white mx-5 mb-4 rounded-2xl p-4 border border-gray-100">
-        <Text className="text-sm font-semibold text-gray-700 mb-3">
-          Conta de recebimentos
+      {/* Conta de recebimentos */}
+      <View style={{
+        marginHorizontal: 16,
+        backgroundColor: colors.surface,
+        borderRadius: radius.lg,
+        padding: 18,
+        marginBottom: 12,
+      }}>
+        <Text style={{
+          fontSize: 11,
+          fontWeight: '700',
+          color: colors.inkSoft,
+          letterSpacing: 0.7,
+          textTransform: 'uppercase',
+          marginBottom: 14,
+        }}>
+          Recebimentos
         </Text>
 
-        <View className="flex-row items-center gap-3 mb-3">
-          <View
-            className={`w-3 h-3 rounded-full flex-shrink-0 ${
-              courier?.stripe_onboarding_ok ? 'bg-[#4CAF82]' : 'bg-amber-400'
-            }`}
-          />
-          <Text className="text-sm text-gray-700">
-            {courier?.stripe_onboarding_ok
-              ? 'Conta verificada e ativa'
-              : 'Verificação pendente'}
-          </Text>
+        {/* Status */}
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          marginBottom: 14,
+        }}>
+          <View style={{
+            width: 34,
+            height: 34,
+            borderRadius: radius.sm,
+            backgroundColor: stripeOk
+              ? 'rgba(142,209,79,0.12)'
+              : 'rgba(242,184,75,0.12)',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <CourierIcon
+              name={stripeOk ? 'check' : 'wallet'}
+              size={16}
+              color={stripeOk ? colors.success : colors.warning}
+              strokeWidth={stripeOk ? 2.4 : 1.8}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}>
+              {stripeOk ? 'Conta verificada e ativa' : 'Configuração pendente'}
+            </Text>
+            <Text style={{ fontSize: 12, color: colors.inkSoft, marginTop: 1 }}>
+              {stripeOk
+                ? 'Pagamentos serão transferidos automaticamente'
+                : 'Configure para receber seus pagamentos'}
+            </Text>
+          </View>
         </View>
 
-        {courier?.stripe_onboarding_ok ? (
+        {/* Botão de ação */}
+        {stripeOk ? (
           <TouchableOpacity
             onPress={handleAbrirStripe}
             disabled={abrindoStripe}
-            className="border border-[#4CAF82] py-2.5 rounded-xl items-center disabled:opacity-50"
             activeOpacity={0.75}
+            style={{
+              height: 44,
+              borderRadius: radius.pill,
+              borderWidth: 1.5,
+              borderColor: colors.line,
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: abrindoStripe ? 0.6 : 1,
+            }}
           >
-            <Text className="text-[#4CAF82] text-sm font-semibold">
-              {abrindoStripe ? 'Abrindo...' : 'Acessar conta Stripe'}
-            </Text>
+            {abrindoStripe ? (
+              <ActivityIndicator size="small" color={colors.inkMuted} />
+            ) : (
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.inkMuted }}>
+                Acessar painel Stripe
+              </Text>
+            )}
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
             onPress={() => router.push('/stripe-onboarding')}
-            className="bg-[#F5A623] py-2.5 rounded-xl items-center"
             activeOpacity={0.85}
+            style={{
+              height: 44,
+              borderRadius: radius.pill,
+              backgroundColor: colors.accent,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
           >
-            <Text className="text-white text-sm font-semibold">
-              Completar verificação
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.ink }}>
+              Configurar recebimentos
             </Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Dados do veículo */}
+      {/* Veículo */}
       {courier?.veiculo_tipo && (
-        <View className="bg-white mx-5 mb-4 rounded-2xl p-4 border border-gray-100">
-          <Text className="text-sm font-semibold text-gray-700 mb-2">
+        <View style={{
+          marginHorizontal: 16,
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          padding: 18,
+          marginBottom: 12,
+        }}>
+          <Text style={{
+            fontSize: 11,
+            fontWeight: '700',
+            color: colors.inkSoft,
+            letterSpacing: 0.7,
+            textTransform: 'uppercase',
+            marginBottom: 10,
+          }}>
             Veículo
           </Text>
-          <Text className="text-sm text-gray-600 capitalize">
-            {courier.veiculo_tipo.replace('_', ' ')}
-            {courier.veiculo_placa ? ` — ${courier.veiculo_placa}` : ''}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{
+              width: 34,
+              height: 34,
+              borderRadius: radius.sm,
+              backgroundColor: colors.canvasAlt,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <CourierIcon name="route" size={16} color={colors.inkMuted} strokeWidth={1.8} />
+            </View>
+            <Text style={{ fontSize: 14, color: colors.ink }}>
+              {courier.veiculo_tipo.replace('_', ' ')}
+              {courier.veiculo_placa ? `  ·  ${courier.veiculo_placa.toUpperCase()}` : ''}
+            </Text>
+          </View>
         </View>
       )}
 
       {/* Opções */}
-      <View className="bg-white mx-5 mb-4 rounded-2xl border border-gray-100">
-        <TouchableOpacity
-          className="flex-row items-center justify-between px-4 py-4 border-b border-gray-50"
-          activeOpacity={0.75}
-          onPress={() => {}}
-        >
-          <Text className="text-sm font-medium text-gray-700">
-            Termos de uso
-          </Text>
-          <Text className="text-gray-300">›</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          className="flex-row items-center justify-between px-4 py-4"
-          activeOpacity={0.75}
-          onPress={() => {}}
-        >
-          <Text className="text-sm font-medium text-gray-700">
-            Suporte
-          </Text>
-          <Text className="text-gray-300">›</Text>
-        </TouchableOpacity>
+      <View style={{
+        marginHorizontal: 16,
+        backgroundColor: colors.surface,
+        borderRadius: radius.lg,
+        marginBottom: 12,
+        overflow: 'hidden',
+      }}>
+        {[
+          { label: 'Termos de uso', icon: 'shield' as const },
+          { label: 'Suporte',       icon: 'phone'  as const },
+        ].map(({ label, icon }, i) => (
+          <TouchableOpacity
+            key={label}
+            activeOpacity={0.7}
+            onPress={() => {}}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 14,
+              paddingHorizontal: 18,
+              paddingVertical: 16,
+              borderTopWidth: i > 0 ? 1 : 0,
+              borderTopColor: colors.line,
+            }}
+          >
+            <View style={{
+              width: 34,
+              height: 34,
+              borderRadius: radius.sm,
+              backgroundColor: colors.canvasAlt,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <CourierIcon name={icon} size={16} color={colors.inkMuted} strokeWidth={1.8} />
+            </View>
+            <Text style={{ flex: 1, fontSize: 14, fontWeight: '500', color: colors.ink }}>
+              {label}
+            </Text>
+            <CourierIcon name="back" size={16} color={colors.inkSoft} strokeWidth={2}
+              // espelha o chevron → rotate via wrapper
+            />
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Sair */}
       <TouchableOpacity
         onPress={handleSair}
-        className="mx-5 border border-red-200 py-4 rounded-2xl items-center"
         activeOpacity={0.75}
+        style={{
+          marginHorizontal: 16,
+          height: 52,
+          borderRadius: radius.pill,
+          borderWidth: 1.5,
+          borderColor: 'rgba(255,109,94,0.3)',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'row',
+          gap: 8,
+          marginBottom: 16,
+        }}
       >
-        <Text className="text-red-500 font-semibold text-sm">
+        <CourierIcon name="logout" size={16} color={colors.danger} strokeWidth={1.8} />
+        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.danger }}>
           Sair da conta
         </Text>
       </TouchableOpacity>
 
-      <Text className="text-xs text-gray-300 text-center mt-4">
+      <Text style={{ fontSize: 12, color: colors.inkSoft, textAlign: 'center' }}>
         Versão 1.0.0
       </Text>
     </ScrollView>

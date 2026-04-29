@@ -21,6 +21,7 @@ type IconName =
   | 'spark'
   | 'eye'
   | 'eye-off'
+  | 'camera'
 
 interface Props {
   name: IconName
@@ -183,6 +184,13 @@ function renderIcon(name: IconName, color: string, strokeWidth: number) {
         <>
           <Path {...common} d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
           <Path {...common} d="M1 1l22 22" />
+        </>
+      )
+    case 'camera':
+      return (
+        <>
+          <Path {...common} d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+          <Circle {...common} cx="12" cy="13" r="4" />
         </>
       )
     default:

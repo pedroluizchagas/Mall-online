@@ -12,6 +12,7 @@ import { formatarReais } from '@mallora/lib'
 import { Skeleton } from '@/components/Skeleton'
 import { CardSaldoStripe } from '@/components/CardSaldoStripe'
 import { EntregaHistoricoCard } from '@/components/EntregaHistoricoCard'
+import { courierDesign } from '@/lib/courier-design'
 
 type Periodo = 'hoje' | 'semana' | 'mes'
 
@@ -48,22 +49,30 @@ interface Repasse {
   total_pedidos: number
 }
 
-const STATUS_REPASSE_CORES: Record<string, string> = {
-  agendado: '#F59E0B',
-  processando: '#3B82F6',
-  concluido: '#10B981',
-  falhou: '#EF4444',
+const PERIODOS: { key: Periodo; label: string }[] = [
+  { key: 'hoje',   label: 'Hoje'   },
+  { key: 'semana', label: '7 dias' },
+  { key: 'mes',    label: 'Mês'    },
+]
+
+const STATUS_CORES: Record<string, string> = {
+  agendado:    courierDesign.colors.warning,
+  processando: courierDesign.colors.accent,
+  concluido:   courierDesign.colors.success,
+  falhou:      courierDesign.colors.danger,
 }
 
-const STATUS_REPASSE_LABELS: Record<string, string> = {
-  agendado: 'Agendado',
+const STATUS_LABELS: Record<string, string> = {
+  agendado:    'Agendado',
   processando: 'Processando',
-  concluido: 'Recebido',
-  falhou: 'Falhou',
+  concluido:   'Recebido',
+  falhou:      'Falhou',
 }
 
 export default function TelaGanhos() {
   const { courier } = useAuthStore()
+  const { colors, radius } = courierDesign
+
   const [periodo, setPeriodo] = useState<Periodo>('semana')
   const [resumo, setResumo] = useState<Resumo | null>(null)
   const [historico, setHistorico] = useState<EntregaHistorico[]>([])
@@ -93,15 +102,8 @@ export default function TelaGanhos() {
       supabase
         .from('delivery_assignments')
         .select(`
-          id,
-          order_id,
-          valor_entrega,
-          status,
-          entregue_em,
-          criado_em,
-          orders!inner (
-            stores!inner (nome)
-          )
+          id, order_id, valor_entrega, status, entregue_em, criado_em,
+          orders!inner ( stores!inner (nome) )
         `)
         .eq('courier_id', courier.id)
         .gte('criado_em', dataInicio.toISOString())
@@ -123,17 +125,15 @@ export default function TelaGanhos() {
         .limit(10),
     ])
 
-    const entregas: EntregaHistorico[] = (resEntregas.data ?? []).map(
-      (a: any) => ({
-        id: a.id,
-        order_id: a.order_id,
-        valor_entrega: a.valor_entrega,
-        status: a.status,
-        entregue_em: a.entregue_em,
-        criado_em: a.criado_em,
-        store_nome: a.orders.stores.nome,
-      })
-    )
+    const entregas: EntregaHistorico[] = (resEntregas.data ?? []).map((a: any) => ({
+      id: a.id,
+      order_id: a.order_id,
+      valor_entrega: a.valor_entrega,
+      status: a.status,
+      entregue_em: a.entregue_em,
+      criado_em: a.criado_em,
+      store_nome: a.orders.stores.nome,
+    }))
 
     const concluidas = entregas.filter((e) => e.status === 'entregue')
     const ganhos = concluidas.reduce((acc, e) => acc + e.valor_entrega, 0)
@@ -148,7 +148,6 @@ export default function TelaGanhos() {
       proximo_repasse: proximo?.valor_liquido ?? 0,
       data_proximo_repasse: proximo?.data_prevista ?? null,
     })
-
     setCarregando(false)
   }
 
@@ -161,24 +160,20 @@ export default function TelaGanhos() {
     try {
       const resposta = await fetch(
         `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/courier-stripe-info`,
-        {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${session.access_token}` } }
       )
-
       if (resposta.ok) {
         const dados = await resposta.json()
         setSaldoStripe(dados.saldo)
         setLinkExpress(dados.link_express)
       }
     } catch {
-      // Ignorar erros de conectividade — saldo não é crítico
+      // saldo não é crítico — ignora erros de conectividade
     }
   }
 
   useEffect(() => {
+    setCarregando(true)
     Promise.all([carregarDados(), carregarSaldoStripe()])
   }, [periodo])
 
@@ -188,114 +183,200 @@ export default function TelaGanhos() {
     setAtualizando(false)
   }, [periodo])
 
+  // ── Estado de carregamento ──────────────────────────────────────────────────
   if (carregando) {
     return (
-      <View className="flex-1 bg-[#FFF8ED] px-5 pt-14">
-        <Skeleton largura="40%" altura={28} />
-        <View className="mt-5 gap-3">
+      <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 60 }}>
+        <Skeleton largura="38%" altura={28} />
+        <View style={{ marginTop: 20, gap: 10 }}>
+          <Skeleton largura="100%" altura={100} />
+          <Skeleton largura="100%" altura={60} />
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <Skeleton largura="48%" altura={76} />
+            <Skeleton largura="48%" altura={76} />
+          </View>
           {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} largura="100%" altura={80} />
+            <Skeleton key={i} largura="100%" altura={64} />
           ))}
         </View>
       </View>
     )
   }
 
+  const mediaEntrega = resumo && resumo.entregas_concluidas > 0
+    ? Math.round(resumo.ganhos_brutos / resumo.entregas_concluidas)
+    : null
+
   return (
     <ScrollView
-      className="flex-1 bg-[#FFF8ED]"
-      contentContainerStyle={{ paddingBottom: 100 }}
+      style={{ flex: 1 }}
+      contentContainerStyle={{ paddingBottom: 110 }}
+      showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
           refreshing={atualizando}
           onRefresh={onRefresh}
-          tintColor="#1A4D3A"
+          tintColor={colors.inkMuted}
         />
       }
     >
-      {/* Header */}
-      <View className="px-5 pt-14 pb-4">
-        <Text className="text-2xl font-bold text-[#1A4D3A]">Ganhos</Text>
+      {/* Cabeçalho */}
+      <View style={{ paddingHorizontal: 16, paddingTop: 60, paddingBottom: 20 }}>
+        <Text style={{
+          fontSize: 28,
+          fontWeight: '800',
+          color: colors.ink,
+          letterSpacing: -0.5,
+        }}>
+          Ganhos
+        </Text>
       </View>
 
-      {/* Saldo Stripe */}
+      {/* Card saldo Stripe */}
       {courier?.stripe_onboarding_ok && (
-        <CardSaldoStripe
-          saldo={saldoStripe}
-          linkExpress={linkExpress}
-        />
+        <CardSaldoStripe saldo={saldoStripe} linkExpress={linkExpress} />
       )}
 
-      {/* Próximo repasse */}
+      {/* Card próximo repasse */}
       {resumo && resumo.proximo_repasse > 0 && (
-        <View className="mx-5 mb-4 bg-[#1A4D3A] rounded-2xl p-4">
-          <Text className="text-green-200 text-xs font-semibold uppercase mb-1">
-            Próximo repasse
-          </Text>
-          <Text className="text-white text-2xl font-bold">
-            {formatarReais(resumo.proximo_repasse)}
-          </Text>
-          {resumo.data_proximo_repasse && (
-            <Text className="text-green-300 text-sm mt-1">
-              Previsto para{' '}
-              {new Date(resumo.data_proximo_repasse + 'T00:00:00')
-                .toLocaleDateString('pt-BR', {
-                  weekday: 'short',
-                  day: '2-digit',
-                  month: '2-digit',
-                })}
+        <View style={{
+          marginHorizontal: 16,
+          marginBottom: 12,
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          padding: 18,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <View>
+            <Text style={{
+              fontSize: 11,
+              fontWeight: '700',
+              color: colors.inkSoft,
+              letterSpacing: 0.7,
+              textTransform: 'uppercase',
+              marginBottom: 4,
+            }}>
+              Próximo repasse
             </Text>
+            <Text style={{
+              fontSize: 22,
+              fontWeight: '800',
+              color: colors.ink,
+              letterSpacing: -0.4,
+            }}>
+              {formatarReais(resumo.proximo_repasse)}
+            </Text>
+          </View>
+          {resumo.data_proximo_repasse && (
+            <View style={{
+              backgroundColor: colors.canvasAlt,
+              borderRadius: radius.md,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              alignItems: 'center',
+            }}>
+              <Text style={{ fontSize: 11, color: colors.inkSoft, marginBottom: 1 }}>
+                Previsto em
+              </Text>
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink }}>
+                {new Date(resumo.data_proximo_repasse + 'T00:00:00')
+                  .toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+              </Text>
+            </View>
           )}
         </View>
       )}
 
       {/* Seletor de período */}
-      <View className="flex-row mx-5 mb-4 bg-white rounded-2xl p-1 border border-gray-100">
-        {(['hoje', 'semana', 'mes'] as Periodo[]).map((p) => (
+      <View style={{
+        marginHorizontal: 16,
+        marginBottom: 12,
+        backgroundColor: colors.surface,
+        borderRadius: radius.lg,
+        padding: 4,
+        flexDirection: 'row',
+        gap: 2,
+      }}>
+        {PERIODOS.map(({ key, label }) => (
           <TouchableOpacity
-            key={p}
-            onPress={() => setPeriodo(p)}
-            className={`flex-1 py-2 rounded-xl items-center ${
-              periodo === p ? 'bg-[#1A4D3A]' : ''
-            }`}
+            key={key}
+            onPress={() => setPeriodo(key)}
             activeOpacity={0.75}
+            style={{
+              flex: 1,
+              height: 38,
+              borderRadius: radius.md,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: periodo === key ? colors.ink : 'transparent',
+            }}
           >
-            <Text
-              className={`text-sm font-medium ${
-                periodo === p ? 'text-white' : 'text-gray-500'
-              }`}
-            >
-              {p === 'hoje' ? 'Hoje' : p === 'semana' ? '7 dias' : 'Mês'}
+            <Text style={{
+              fontSize: 13,
+              fontWeight: '700',
+              color: periodo === key ? colors.accent : colors.inkSoft,
+            }}>
+              {label}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* KPIs do período */}
+      {/* KPIs */}
       {resumo && (
-        <View className="flex-row mx-5 mb-4 gap-3">
-          <View className="flex-1 bg-white rounded-2xl p-4 border border-gray-100">
-            <Text className="text-xs text-gray-400 mb-1">Ganhos</Text>
-            <Text className="text-xl font-bold text-[#1A4D3A]">
+        <View style={{
+          flexDirection: 'row',
+          marginHorizontal: 16,
+          marginBottom: 12,
+          gap: 8,
+        }}>
+          <View style={{
+            flex: 1,
+            backgroundColor: colors.surface,
+            borderRadius: radius.lg,
+            padding: 16,
+          }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: colors.inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+              Ganhos
+            </Text>
+            <Text style={{ fontSize: 20, fontWeight: '800', color: colors.ink, letterSpacing: -0.4 }}>
               {formatarReais(resumo.ganhos_brutos)}
             </Text>
           </View>
-          <View className="flex-1 bg-white rounded-2xl p-4 border border-gray-100">
-            <Text className="text-xs text-gray-400 mb-1">Entregas</Text>
-            <Text className="text-xl font-bold text-[#1A4D3A]">
-              {resumo.entregas_concluidas}
-              <Text className="text-sm text-gray-400">
+
+          <View style={{
+            flex: 1,
+            backgroundColor: colors.surface,
+            borderRadius: radius.lg,
+            padding: 16,
+          }}>
+            <Text style={{ fontSize: 11, fontWeight: '600', color: colors.inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+              Entregas
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.ink, letterSpacing: -0.4 }}>
+                {resumo.entregas_concluidas}
+              </Text>
+              <Text style={{ fontSize: 13, color: colors.inkSoft }}>
                 /{resumo.total_entregas}
               </Text>
-            </Text>
+            </View>
           </View>
-          {resumo.entregas_concluidas > 0 && (
-            <View className="flex-1 bg-white rounded-2xl p-4 border border-gray-100">
-              <Text className="text-xs text-gray-400 mb-1">Média</Text>
-              <Text className="text-xl font-bold text-[#4CAF82]">
-                {formatarReais(
-                  Math.round(resumo.ganhos_brutos / resumo.entregas_concluidas)
-                )}
+
+          {mediaEntrega !== null && (
+            <View style={{
+              flex: 1,
+              backgroundColor: colors.surface,
+              borderRadius: radius.lg,
+              padding: 16,
+            }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.inkSoft, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+                Média
+              </Text>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: colors.success, letterSpacing: -0.4 }}>
+                {formatarReais(mediaEntrega)}
               </Text>
             </View>
           )}
@@ -303,19 +384,31 @@ export default function TelaGanhos() {
       )}
 
       {/* Histórico de entregas */}
-      <View className="mx-5 mb-6">
-        <Text className="text-sm font-semibold text-gray-500 uppercase mb-3">
+      <View style={{ marginHorizontal: 16, marginBottom: 24 }}>
+        <Text style={{
+          fontSize: 11,
+          fontWeight: '700',
+          color: colors.inkSoft,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          marginBottom: 10,
+        }}>
           Histórico
         </Text>
 
         {historico.length === 0 ? (
-          <View className="py-10 items-center">
-            <Text className="text-gray-400 text-sm">
+          <View style={{
+            backgroundColor: colors.surface,
+            borderRadius: radius.lg,
+            paddingVertical: 36,
+            alignItems: 'center',
+          }}>
+            <Text style={{ fontSize: 14, color: colors.inkSoft }}>
               Nenhuma entrega neste período.
             </Text>
           </View>
         ) : (
-          <View className="gap-2">
+          <View style={{ gap: 6 }}>
             {historico.map((entrega) => (
               <EntregaHistoricoCard key={entrega.id} entrega={entrega} />
             ))}
@@ -323,13 +416,20 @@ export default function TelaGanhos() {
         )}
       </View>
 
-      {/* Histórico de repasses */}
+      {/* Repasses */}
       {repasses.length > 0 && (
-        <View className="mx-5">
-          <Text className="text-sm font-semibold text-gray-500 uppercase mb-3">
+        <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
+          <Text style={{
+            fontSize: 11,
+            fontWeight: '700',
+            color: colors.inkSoft,
+            letterSpacing: 0.8,
+            textTransform: 'uppercase',
+            marginBottom: 10,
+          }}>
             Repasses
           </Text>
-          <View className="gap-2">
+          <View style={{ gap: 6 }}>
             {repasses.map((repasse) => (
               <RepasseCard key={repasse.id} repasse={repasse} />
             ))}
@@ -341,29 +441,39 @@ export default function TelaGanhos() {
 }
 
 function RepasseCard({ repasse }: { repasse: Repasse }) {
+  const { colors, radius } = courierDesign
+  const cor = STATUS_CORES[repasse.status] ?? colors.inkSoft
+
   return (
-    <View className="bg-white rounded-2xl px-4 py-3 mb-2 flex-row items-center justify-between border border-gray-50">
-      <View>
-        <Text className="text-xs text-gray-400">
+    <View style={{
+      backgroundColor: colors.surface,
+      borderRadius: radius.lg,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    }}>
+      <View style={{ gap: 4 }}>
+        <Text style={{ fontSize: 13, color: colors.inkMuted }}>
           {new Date(repasse.data_referencia + 'T00:00:00')
             .toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
-          {' · '}
+          {'  ·  '}
           {repasse.total_pedidos} entrega{repasse.total_pedidos !== 1 ? 's' : ''}
         </Text>
-        <View className="flex-row items-center gap-1.5 mt-1">
-          <View
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: STATUS_REPASSE_CORES[repasse.status] ?? '#6B7280' }}
-          />
-          <Text
-            className="text-xs font-medium"
-            style={{ color: STATUS_REPASSE_CORES[repasse.status] ?? '#6B7280' }}
-          >
-            {STATUS_REPASSE_LABELS[repasse.status] ?? repasse.status}
+        <View style={{
+          alignSelf: 'flex-start',
+          paddingHorizontal: 8,
+          paddingVertical: 3,
+          borderRadius: radius.pill,
+          backgroundColor: `${cor}18`,
+        }}>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: cor }}>
+            {STATUS_LABELS[repasse.status] ?? repasse.status}
           </Text>
         </View>
       </View>
-      <Text className="text-base font-bold text-[#1A4D3A]">
+      <Text style={{ fontSize: 16, fontWeight: '800', color: colors.ink, letterSpacing: -0.3 }}>
         {formatarReais(repasse.valor_liquido)}
       </Text>
     </View>

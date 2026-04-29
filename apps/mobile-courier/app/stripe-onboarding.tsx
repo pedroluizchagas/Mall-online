@@ -5,15 +5,26 @@ import {
   TouchableOpacity,
   Linking,
   ActivityIndicator,
+  ScrollView,
+  StatusBar,
 } from 'react-native'
 import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
+import { CourierIcon } from '@/components/CourierIcon'
+import { courierDesign } from '@/lib/courier-design'
+
+const REQUISITOS = [
+  { icon: 'user'  as const, label: 'CPF e dados pessoais' },
+  { icon: 'cash'  as const, label: 'Conta bancária ou chave PIX' },
+  { icon: 'phone' as const, label: 'Celular para verificação' },
+]
 
 export default function TelaStripeOnboarding() {
   const { courier, setCourier } = useAuthStore()
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
+  const { colors, radius } = courierDesign
 
   async function handleIniciarOnboarding() {
     setCarregando(true)
@@ -50,7 +61,6 @@ export default function TelaStripeOnboarding() {
 
   async function handleVerificarStatus() {
     if (!courier?.id) return
-
     setCarregando(true)
 
     const { data } = await supabase
@@ -63,83 +73,192 @@ export default function TelaStripeOnboarding() {
 
     if (data?.stripe_onboarding_ok) {
       setCourier({ ...courier, stripe_onboarding_ok: true })
-      router.replace('/(tabs)')
+      router.back()
     } else {
       setErro('Configuração ainda não concluída. Verifique se completou todos os passos no Stripe.')
     }
   }
 
   return (
-    <View className="flex-1 bg-[#FFF8ED] px-6 items-center justify-center">
-      <View className="w-20 h-20 rounded-full bg-[#4CAF82]/20
-        items-center justify-center mb-6">
-        <Text className="text-4xl">💳</Text>
+    <ScrollView
+      style={{ flex: 1, backgroundColor: colors.surfaceDark }}
+      contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 60, paddingBottom: 52 }}
+      showsVerticalScrollIndicator={false}
+    >
+      <StatusBar barStyle="light-content" />
+
+      {/* Botão de voltar */}
+      <TouchableOpacity
+        onPress={() => router.back()}
+        activeOpacity={0.7}
+        style={{ marginBottom: 36 }}
+      >
+        <CourierIcon name="back" size={24} color={colors.white} />
+      </TouchableOpacity>
+
+      {/* Ícone principal */}
+      <View style={{
+        width: 68,
+        height: 68,
+        borderRadius: radius.lg,
+        backgroundColor: colors.surfaceDarkSoft,
+        borderWidth: 1,
+        borderColor: colors.lineDark,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 24,
+      }}>
+        <CourierIcon name="wallet" size={30} color={colors.accent} strokeWidth={1.6} />
       </View>
 
-      <Text className="text-2xl font-bold text-[#1A4D3A] text-center mb-3">
-        Configure seus recebimentos
+      {/* Título e descrição */}
+      <Text style={{
+        fontSize: 30,
+        fontWeight: '800',
+        color: colors.white,
+        letterSpacing: -0.6,
+        lineHeight: 36,
+        marginBottom: 12,
+      }}>
+        Configure seus{'\n'}recebimentos
+      </Text>
+      <Text style={{
+        fontSize: 15,
+        color: colors.inkSoft,
+        lineHeight: 24,
+        marginBottom: 36,
+      }}>
+        Para receber seus pagamentos, configure sua conta bancária via Stripe. O processo é rápido e seguro.
       </Text>
 
-      <Text className="text-gray-500 text-center leading-6 mb-8">
-        Para receber seus pagamentos, você precisa configurar sua conta
-        bancária na Stripe. O processo é rápido e seguro.
-      </Text>
-
-      <View className="bg-white rounded-2xl p-5 w-full mb-6">
-        <Text className="text-sm font-semibold text-gray-700 mb-3">
+      {/* Card de requisitos */}
+      <View style={{
+        backgroundColor: colors.surfaceDarkSoft,
+        borderRadius: radius.lg,
+        borderWidth: 1,
+        borderColor: colors.lineDark,
+        padding: 20,
+        marginBottom: 12,
+      }}>
+        <Text style={{
+          fontSize: 11,
+          fontWeight: '700',
+          color: colors.inkSoft,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          marginBottom: 6,
+        }}>
           O que você vai precisar
         </Text>
-        <View className="gap-2">
-          {[
-            'CPF e dados pessoais',
-            'Conta bancária (PIX ou conta corrente)',
-            'Celular para verificação',
-          ].map((item, i) => (
-            <View key={i} className="flex-row items-center gap-2">
-              <View className="w-1.5 h-1.5 rounded-full bg-[#4CAF82]" />
-              <Text className="text-sm text-gray-600">{item}</Text>
+
+        {REQUISITOS.map(({ icon, label }, i) => (
+          <View
+            key={i}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 14,
+              paddingVertical: 12,
+              borderTopWidth: i > 0 ? 1 : 0,
+              borderTopColor: colors.lineDark,
+              marginTop: i === 0 ? 12 : 0,
+            }}
+          >
+            <View style={{
+              width: 34,
+              height: 34,
+              borderRadius: radius.sm,
+              backgroundColor: colors.surfaceDark,
+              borderWidth: 1,
+              borderColor: colors.lineDark,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <CourierIcon name={icon} size={16} color={colors.inkSoft} strokeWidth={1.8} />
             </View>
-          ))}
-        </View>
+            <Text style={{ fontSize: 14, color: colors.inkMuted, flex: 1 }}>
+              {label}
+            </Text>
+          </View>
+        ))}
       </View>
 
-      {erro && (
-        <Text className="text-red-500 text-sm text-center mb-4">
-          {erro}
+      {/* Nota de segurança */}
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        backgroundColor: colors.surfaceDarkSoft,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: colors.lineDark,
+        paddingHorizontal: 16,
+        paddingVertical: 13,
+        marginBottom: 32,
+      }}>
+        <CourierIcon name="shield" size={15} color={colors.inkSoft} strokeWidth={1.8} />
+        <Text style={{ fontSize: 13, color: colors.inkSoft, flex: 1, lineHeight: 19 }}>
+          Seus dados bancários são armazenados com segurança pela Stripe. A plataforma não tem acesso.
         </Text>
+      </View>
+
+      {/* Banner de erro */}
+      {erro && (
+        <View style={{
+          backgroundColor: 'rgba(255,109,94,0.10)',
+          borderRadius: radius.sm,
+          borderWidth: 1,
+          borderColor: 'rgba(255,109,94,0.2)',
+          paddingHorizontal: 14,
+          paddingVertical: 11,
+          marginBottom: 16,
+        }}>
+          <Text style={{ color: colors.danger, fontSize: 13, lineHeight: 19 }}>{erro}</Text>
+        </View>
       )}
 
+      {/* CTA primário */}
       <TouchableOpacity
         onPress={handleIniciarOnboarding}
         disabled={carregando}
-        className="w-full bg-[#1A4D3A] py-4 rounded-2xl items-center
-          mb-3 disabled:opacity-50"
         activeOpacity={0.85}
+        style={{
+          height: 56,
+          borderRadius: radius.pill,
+          backgroundColor: carregando ? colors.accentStrong : colors.accent,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: 12,
+          opacity: carregando ? 0.8 : 1,
+        }}
       >
         {carregando ? (
-          <ActivityIndicator color="#fff" />
+          <ActivityIndicator color={colors.ink} />
         ) : (
-          <Text className="text-white font-bold text-base">
+          <Text style={{ fontSize: 16, fontWeight: '800', color: colors.ink }}>
             Configurar conta de recebimentos
           </Text>
         )}
       </TouchableOpacity>
 
+      {/* CTA secundário */}
       <TouchableOpacity
         onPress={handleVerificarStatus}
         disabled={carregando}
-        className="w-full border border-[#4CAF82] py-4 rounded-2xl items-center"
         activeOpacity={0.75}
+        style={{
+          height: 56,
+          borderRadius: radius.pill,
+          borderWidth: 1.5,
+          borderColor: colors.lineDark,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
-        <Text className="text-[#4CAF82] font-semibold text-sm">
+        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.inkSoft }}>
           Já configurei — verificar status
         </Text>
       </TouchableOpacity>
-
-      <Text className="text-xs text-gray-400 text-center mt-6 leading-5">
-        Seus dados bancários são armazenados com segurança pela Stripe.
-        A plataforma não tem acesso a essas informações.
-      </Text>
-    </View>
+    </ScrollView>
   )
 }

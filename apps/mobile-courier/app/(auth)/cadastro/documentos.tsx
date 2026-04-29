@@ -52,12 +52,35 @@ export default function EtapaDocumentos() {
 
   async function uploadImagem(uri: string, caminho: string): Promise<string | null> {
     try {
-      const resposta = await fetch(uri)
-      const blob = await resposta.blob()
-      const { error } = await supabase.storage
-        .from('courier-docs')
-        .upload(caminho, blob, { contentType: 'image/jpeg', upsert: true })
-      if (error) return null
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return null
+
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!
+      const supabaseKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!
+
+      // React Native não suporta blob via XHR para URIs locais — usa FormData com fetch nativo
+      const formData = new FormData()
+      formData.append('file', {
+        uri,
+        name: caminho.split('/').pop() ?? 'image.jpg',
+        type: 'image/jpeg',
+      } as any)
+
+      const res = await fetch(
+        `${supabaseUrl}/storage/v1/object/courier-docs/${caminho}`,
+        {
+          method: 'POST',
+          headers: {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${session.access_token}`,
+            'x-upsert': 'true',
+          },
+          body: formData,
+        }
+      )
+
+      if (!res.ok) return null
+
       const { data } = supabase.storage.from('courier-docs').getPublicUrl(caminho)
       return data.publicUrl
     } catch {

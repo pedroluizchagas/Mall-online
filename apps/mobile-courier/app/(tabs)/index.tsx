@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   View,
   Text,
+  Image,
   Switch,
   Alert,
   ActivityIndicator,
@@ -9,6 +10,7 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router } from 'expo-router'
 import { formatarReais } from '@mallora/lib'
 import { supabase } from '@/lib/supabase'
@@ -20,7 +22,6 @@ import { CourierIcon } from '@/components/CourierIcon'
 import {
   abreviarNome,
   courierDesign,
-  saudacaoPorHorario,
 } from '@/lib/courier-design'
 
 export default function TelaEntregas() {
@@ -28,8 +29,10 @@ export default function TelaEntregas() {
   const { disponiveis, setDisponiveis, ativa } = useEntregaStore()
   const [toggleCarregando, setToggleCarregando] = useState(false)
   const [atualizando, setAtualizando] = useState(false)
+  const [avatarErro, setAvatarErro] = useState(false)
   const recusasRef = useRef<Record<string, number>>({})
   const { colors } = courierDesign
+  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     if (!courier?.id) return
@@ -260,35 +263,51 @@ export default function TelaEntregas() {
         />
       }
     >
-      <View className="px-5 pt-14 pb-6">
-        <View className="flex-row items-center justify-between mb-6">
-          <View className="flex-row items-center gap-3 flex-1">
-            <View
-              className="w-14 h-14 rounded-full items-center justify-center"
-              style={{ backgroundColor: '#E6E7E1' }}
-            >
-              <Text className="text-lg font-bold" style={{ color: colors.ink }}>
-                {(courier?.nome?.charAt(0) ?? 'E').toUpperCase()}
-              </Text>
-            </View>
+      <View style={{ paddingHorizontal: 20, paddingTop: insets.top + 20, paddingBottom: 24 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+          {/* Avatar + saudação */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+            {courier?.foto_url && !avatarErro ? (
+              <Image
+                source={{ uri: courier.foto_url }}
+                style={{ width: 54, height: 54, borderRadius: 27 }}
+                onError={() => setAvatarErro(true)}
+              />
+            ) : (
+              <View style={{
+                width: 54, height: 54, borderRadius: 27,
+                backgroundColor: colors.accent,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Text style={{ fontSize: 20, fontWeight: '800', color: colors.ink }}>
+                  {(courier?.nome?.charAt(0) ?? 'E').toUpperCase()}
+                </Text>
+              </View>
+            )}
 
-            <View>
-              <Text className="text-sm" style={{ color: colors.inkMuted }}>
-                {saudacaoPorHorario()}
+            <View style={{ gap: 4 }}>
+              <Text style={{ fontSize: 17, letterSpacing: -0.3 }}>
+                <Text style={{ fontWeight: '400', color: colors.inkSoft }}>Olá, </Text>
+                <Text style={{ fontWeight: '700', color: colors.ink }}>{abreviarNome(courier?.nome)}</Text>
               </Text>
-              <Text className="text-2xl font-bold" style={{ color: colors.ink }}>
-                {abreviarNome(courier?.nome)}
-              </Text>
-              <Text className="text-sm mt-0.5" style={{ color: colors.inkSoft }}>
-                {courier?.online ? 'Disponivel para novas rotas' : 'Modo offline'}
-              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+                <View style={{
+                  width: 6, height: 6, borderRadius: 3,
+                  backgroundColor: courier?.online ? colors.success : colors.line,
+                }} />
+                <Text style={{ fontSize: 11, color: courier?.online ? colors.inkMuted : colors.inkSoft }}>
+                  {courier?.online ? 'Disponível para novas rotas' : 'Modo offline'}
+                </Text>
+              </View>
             </View>
           </View>
 
-          <View
-            className="w-11 h-11 rounded-full items-center justify-center"
-            style={{ backgroundColor: colors.surface }}
-          >
+          {/* Ícone de status */}
+          <View style={{
+            width: 44, height: 44, borderRadius: 22,
+            backgroundColor: colors.surface,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
             <CourierIcon
               name={courier?.online ? 'spark' : 'power'}
               color={courier?.online ? colors.ink : colors.inkSoft}

@@ -27,10 +27,6 @@ export default function TelaInicial() {
     return <Redirect href="/aguardando-aprovacao" />
   }
 
-  if (courier.status === 'aprovado' && !courier.stripe_onboarding_ok && courier.tipo === 'autonomo') {
-    return <Redirect href="/stripe-onboarding" />
-  }
-
   if (['reprovado', 'suspenso'].includes(courier.status)) {
     return <Redirect href="/(auth)/entrar" />
   }

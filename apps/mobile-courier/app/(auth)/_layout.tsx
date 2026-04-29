@@ -21,9 +21,6 @@ export default function LayoutAuth() {
       return <Redirect href="/aguardando-aprovacao" />
     }
     if (courier.status === 'aprovado') {
-      if (!courier.stripe_onboarding_ok && courier.tipo === 'autonomo') {
-        return <Redirect href="/stripe-onboarding" />
-      }
       return <Redirect href="/(tabs)" />
     }
   }
