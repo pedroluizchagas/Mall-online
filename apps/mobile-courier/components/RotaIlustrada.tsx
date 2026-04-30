@@ -15,21 +15,20 @@ const W = 100
 const H = 130
 
 const ORIGIN = { x: 20, y: 110 }
-const DEST = { x: 86, y: 22 }
-const MID = { x: 56, y: 64 }
+const DEST = { x: 76, y: 64 }
+const MID = { x: 46, y: 86 }
 
 const ROUTE = `M ${ORIGIN.x} ${ORIGIN.y}
-               C ${ORIGIN.x + 14} ${ORIGIN.y - 22},
-                 40 90,
-                 ${MID.x} ${MID.y}
-               C 64 46, 76 30, ${DEST.x} ${DEST.y}`
+               C 28 100, 38 94, ${MID.x} ${MID.y}
+               C 56 80, 66 72, ${DEST.x} ${DEST.y}`
 
 interface Props {
   width?: number | string
   height?: number | string
+  mostrarRadar?: boolean
 }
 
-export function RotaIlustrada({ width = '100%', height = '100%' }: Props) {
+export function RotaIlustrada({ width = '100%', height = '100%', mostrarRadar = false }: Props) {
   const { accent, accentStrong } = courierDesign.colors
 
   const STREET = 'rgba(255,255,255,0.07)'
@@ -78,34 +77,56 @@ export function RotaIlustrada({ width = '100%', height = '100%' }: Props) {
           <Stop offset="0" stopColor={accentStrong} stopOpacity="0.9" />
           <Stop offset="1" stopColor={accent} stopOpacity="1" />
         </LinearGradient>
+
+        <RadialGradient
+          id="radarGlow"
+          cx={DEST.x}
+          cy={DEST.y}
+          r="8"
+          gradientUnits="userSpaceOnUse"
+        >
+          <Stop offset="0" stopColor={accent} stopOpacity="0.55" />
+          <Stop offset="0.6" stopColor={accent} stopOpacity="0.18" />
+          <Stop offset="1" stopColor={accent} stopOpacity="0" />
+        </RadialGradient>
       </Defs>
 
       <G mask="url(#fade)">
         {/* Glow ambiente — sem retângulo escuro próprio, deixa o painel respirar */}
         <Rect x={0} y={0} width={W} height={H} fill="url(#routeGlow)" />
 
-        {/* Malha de ruas — translúcidas para deitar sobre qualquer surface escura */}
-        <G fill="none" strokeLinecap="round">
-          <Path d="M 24 24 Q 50 22, 78 30 T 110 28" stroke={STREET} strokeWidth={1.4} />
-          <Path d="M 24 58 Q 46 56, 70 62 T 110 60" stroke={STREET} strokeWidth={1.4} />
-          <Path d="M 24 96 Q 50 92, 78 100 T 110 98" stroke={STREET} strokeWidth={1.4} />
-          <Path d="M 38 -6 Q 40 30, 46 60 T 52 130" stroke={STREET} strokeWidth={1.2} />
-          <Path d="M 72 -6 Q 70 30, 76 64 T 82 130" stroke={STREET} strokeWidth={1.2} />
+        {/* Malha de ruas — grade ortogonal, como mapa de cidade real */}
+        <G fill="none" strokeLinecap="square">
+          {/* Avenidas horizontais (mais grossas) */}
+          <Path d="M -6 14 L 110 14" stroke={STREET} strokeWidth={1.4} />
+          <Path d="M -6 46 L 110 46" stroke={STREET} strokeWidth={1.4} />
+          <Path d="M -6 84 L 110 84" stroke={STREET} strokeWidth={1.4} />
+          <Path d="M -6 118 L 110 118" stroke={STREET} strokeWidth={1.4} />
 
-          <Path d="M 24 12 Q 50 10, 78 16 T 110 14" stroke={STREET_SOFT} strokeWidth={0.9} />
-          <Path d="M 24 40 Q 48 38, 72 44 T 110 42" stroke={STREET_SOFT} strokeWidth={0.9} />
-          <Path d="M 24 74 Q 50 70, 78 78 T 110 76" stroke={STREET_SOFT} strokeWidth={0.9} />
-          <Path d="M 24 112 Q 48 108, 76 116 T 110 114" stroke={STREET_SOFT} strokeWidth={0.9} />
-          <Path d="M 56 -6 Q 58 32, 62 70 T 68 130" stroke={STREET_SOFT} strokeWidth={0.8} />
-          <Path d="M 92 -6 Q 94 30, 98 66 T 102 130" stroke={STREET_SOFT} strokeWidth={0.8} />
+          {/* Vias verticais principais */}
+          <Path d="M 18 -6 L 18 136" stroke={STREET} strokeWidth={1.2} />
+          <Path d="M 50 -6 L 50 136" stroke={STREET} strokeWidth={1.2} />
+          <Path d="M 84 -6 L 84 136" stroke={STREET} strokeWidth={1.2} />
 
-          <Path d="M 40 18 L 60 18" stroke={STREET_THIN} strokeWidth={0.6} />
-          <Path d="M 70 50 L 84 50" stroke={STREET_THIN} strokeWidth={0.6} />
-          <Path d="M 44 86 L 64 86" stroke={STREET_THIN} strokeWidth={0.6} />
-          <Path d="M 76 86 L 96 86" stroke={STREET_THIN} strokeWidth={0.6} />
-          <Path d="M 50 122 L 70 120" stroke={STREET_THIN} strokeWidth={0.6} />
-          <Path d="M 76 6 Q 84 18, 94 14" stroke={STREET_THIN} strokeWidth={0.6} />
-          <Path d="M 76 110 Q 86 116, 96 110" stroke={STREET_THIN} strokeWidth={0.6} />
+          {/* Ruas horizontais secundárias */}
+          <Path d="M -6 28 L 110 28" stroke={STREET_SOFT} strokeWidth={0.8} />
+          <Path d="M -6 60 L 110 60" stroke={STREET_SOFT} strokeWidth={0.8} />
+          <Path d="M -6 72 L 110 72" stroke={STREET_SOFT} strokeWidth={0.8} />
+          <Path d="M -6 100 L 110 100" stroke={STREET_SOFT} strokeWidth={0.8} />
+
+          {/* Ruas verticais secundárias */}
+          <Path d="M 32 -6 L 32 136" stroke={STREET_SOFT} strokeWidth={0.7} />
+          <Path d="M 66 -6 L 66 136" stroke={STREET_SOFT} strokeWidth={0.7} />
+          <Path d="M 96 -6 L 96 136" stroke={STREET_SOFT} strokeWidth={0.7} />
+
+          {/* Diagonal — avenida principal cortando o bairro */}
+          <Path d="M -6 4 L 70 136" stroke={STREET_THIN} strokeWidth={0.7} />
+
+          {/* Detalhes finos — entradas de quadra */}
+          <Path d="M 24 18 L 24 26" stroke={STREET_THIN} strokeWidth={0.5} />
+          <Path d="M 58 50 L 58 58" stroke={STREET_THIN} strokeWidth={0.5} />
+          <Path d="M 90 88 L 90 98" stroke={STREET_THIN} strokeWidth={0.5} />
+          <Path d="M 38 104 L 38 116" stroke={STREET_THIN} strokeWidth={0.5} />
         </G>
 
         {/* Halo do traçado */}
@@ -142,9 +163,38 @@ export function RotaIlustrada({ width = '100%', height = '100%' }: Props) {
         <Circle cx={ORIGIN.x} cy={ORIGIN.y} r={5} fill={accent} opacity={0.22} />
         <Circle cx={ORIGIN.x} cy={ORIGIN.y} r={2.6} fill={accent} />
 
-        {/* Nó de destino */}
-        <Circle cx={DEST.x} cy={DEST.y} r={5} fill={accent} opacity={0.22} />
-        <Circle cx={DEST.x} cy={DEST.y} r={2.6} fill={accent} />
+        {/* Nó de destino — radar (buscando) ou ponto simples */}
+        {mostrarRadar ? (
+          <G>
+            {/* Halo externo */}
+            <Circle
+              cx={DEST.x}
+              cy={DEST.y}
+              r={18}
+              fill="none"
+              stroke="rgba(255,255,255,0.10)"
+              strokeWidth={1}
+            />
+            {/* Halo intermediário */}
+            <Circle
+              cx={DEST.x}
+              cy={DEST.y}
+              r={11}
+              fill="rgba(255,255,255,0.05)"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth={1.4}
+            />
+            {/* Glow do ponto */}
+            <Circle cx={DEST.x} cy={DEST.y} r={9} fill="url(#radarGlow)" />
+            {/* Ponto central */}
+            <Circle cx={DEST.x} cy={DEST.y} r={3} fill={accent} />
+          </G>
+        ) : (
+          <G>
+            <Circle cx={DEST.x} cy={DEST.y} r={5} fill={accent} opacity={0.22} />
+            <Circle cx={DEST.x} cy={DEST.y} r={2.6} fill={accent} />
+          </G>
+        )}
       </G>
     </Svg>
   )

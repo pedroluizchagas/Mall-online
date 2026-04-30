@@ -459,80 +459,104 @@ export default function TelaEntregas() {
         {disponiveis.length === 0 ? (
           <View
             style={{
-              borderRadius: 28,
+              borderRadius: 32,
               overflow: 'hidden',
               backgroundColor: colors.surfaceDark,
               marginBottom: 12,
+              minHeight: 196,
+              position: 'relative',
             }}
           >
-            {/* Linha superior: status badge */}
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: 20,
-              paddingTop: 20,
-              paddingBottom: 16,
-            }}>
+            {/* Camada do mapa (~55% à direita) */}
+            <View
+              pointerEvents="none"
+              style={{ position: 'absolute', top: 0, bottom: 0, right: 0, width: '55%' }}
+            >
+              <RotaIlustrada mostrarRadar={courier?.online ?? false} />
+            </View>
+
+            {/* Pill flutuante "Aguardando rota" */}
+            <View
+              style={{
+                position: 'absolute',
+                top: 20,
+                right: 20,
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 20,
+                backgroundColor: courier?.online ? 'rgba(142,209,79,0.15)' : 'rgba(255,255,255,0.06)',
+                zIndex: 10,
+              }}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '600', color: courier?.online ? colors.success : '#6B6E75' }}>
+                {courier?.online ? 'Aguardando rota' : 'Modo pausado'}
+              </Text>
+            </View>
+
+            {/* Camada de informação (esquerda) */}
+            <View style={{ padding: 24, paddingRight: 130, gap: 24 }}>
+              {/* Indicador de status */}
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <View style={{
-                  width: 8, height: 8, borderRadius: 4,
-                  backgroundColor: courier?.online ? colors.success : '#4C4F55',
-                }} />
-                <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: '#A4A7AD', textTransform: 'uppercase' }}>
+                <View
+                  style={{
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: courier?.online ? colors.success : '#4C4F55',
+                  }}
+                />
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: '700',
+                    letterSpacing: 1.2,
+                    color: '#A4A7AD',
+                    textTransform: 'uppercase',
+                  }}
+                >
                   {courier?.online ? 'Em espera' : 'Offline'}
                 </Text>
               </View>
-              <View style={{
-                paddingHorizontal: 10, paddingVertical: 4,
-                borderRadius: 20,
-                backgroundColor: courier?.online ? 'rgba(142,209,79,0.12)' : 'rgba(255,255,255,0.06)',
-              }}>
-                <Text style={{ fontSize: 11, fontWeight: '600', color: courier?.online ? colors.success : '#6B6E75' }}>
-                  {courier?.online ? 'Aguardando rota' : 'Modo pausado'}
+
+              {/* Título principal */}
+              <View style={{ gap: 4 }}>
+                <Text
+                  style={{
+                    fontSize: 10,
+                    fontWeight: '600',
+                    color: '#6B6E75',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.8,
+                  }}
+                >
+                  Próxima entrega
+                </Text>
+                <Text
+                  style={{ fontSize: 24, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.5 }}
+                >
+                  {courier?.online ? 'Buscando...' : 'Sem rota'}
                 </Text>
               </View>
-            </View>
 
-            {/* Corpo: info + ilustração */}
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'flex-end',
-              paddingHorizontal: 20,
-              paddingBottom: 20,
-              gap: 16,
-            }}>
-              <View style={{ flex: 1, gap: 12 }}>
-                <View style={{ gap: 4 }}>
-                  <Text style={{ fontSize: 11, fontWeight: '600', color: '#6B6E75', textTransform: 'uppercase', letterSpacing: 0.6 }}>
-                    Próxima entrega
-                  </Text>
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF', letterSpacing: -0.5 }}>
-                    {courier?.online ? 'Buscando...' : 'Sem rota'}
+              {/* Lista de detalhes */}
+              <View style={{ gap: 10 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <CourierIcon name="pin" size={13} color="#6B6E75" />
+                  <Text style={{ fontSize: 12, color: '#A4A7AD', flex: 1 }} numberOfLines={1}>
+                    {courier?.online
+                      ? 'Monitorando pedidos na sua área'
+                      : 'Ative o modo online para operar'}
                   </Text>
                 </View>
-
-                <View style={{ gap: 8 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <CourierIcon name="pin" size={13} color="#6B6E75" />
-                    <Text style={{ fontSize: 12, color: '#A4A7AD' }} numberOfLines={1}>
-                      {courier?.online
-                        ? 'Monitorando pedidos na sua área'
-                        : 'Ative o modo online para operar'}
-                    </Text>
-                  </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <CourierIcon name="clock" size={13} color="#6B6E75" />
-                    <Text style={{ fontSize: 12, color: '#A4A7AD' }}>
-                      {courier?.online
-                        ? 'Atribuições chegam em tempo real'
-                        : 'Seu histórico do turno está salvo'}
-                    </Text>
-                  </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <CourierIcon name="clock" size={13} color="#6B6E75" />
+                  <Text style={{ fontSize: 12, color: '#A4A7AD', flex: 1 }} numberOfLines={1}>
+                    {courier?.online
+                      ? 'Atribuições chegam em tempo real'
+                      : 'Seu histórico do turno está salvo'}
+                  </Text>
                 </View>
               </View>
-
-              <RotaIlustrada width={100} height={120} />
             </View>
           </View>
         ) : (
