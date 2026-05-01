@@ -53,27 +53,27 @@ Não é necessário reaplicar. Documentada aqui apenas para referência.
 
 -----
 
-## MIGRATION 002 — Campos Stripe
+## MIGRATION 002 — Campos de pagamento (Pagar.me + Stripe Billing)
 
 ### Status: PENDENTE
 
-Arquivo: `20240102000000_migration_002_stripe_fields.sql`
+Arquivo: `20240102000000_migration_002_payment_fields.sql`
 
-Adiciona todos os campos necessários para integração com Stripe Connect
-e Stripe Billing nas tabelas existentes.
+Adiciona todos os campos necessários para integração com **Pagar.me** (split
+de pedidos) e **Stripe Billing** (assinatura mensal) nas tabelas existentes.
 
 ```sql
 -- ============================================================
 -- UP
 -- ============================================================
 
--- Campos Stripe no tenant (lojista)
+-- Campos do tenant (lojista)
 ALTER TABLE tenants
-  ADD COLUMN IF NOT EXISTS stripe_customer_id   TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS stripe_account_id    TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS stripe_onboarding_ok BOOLEAN NOT NULL DEFAULT false;
+  ADD COLUMN IF NOT EXISTS stripe_customer_id        TEXT UNIQUE,                 -- Stripe Billing
+  ADD COLUMN IF NOT EXISTS pagarme_recipient_id      TEXT UNIQUE,                 -- Pagar.me split
+  ADD COLUMN IF NOT EXISTS pagarme_onboarding_status TEXT NOT NULL DEFAULT 'registration';
 
--- Campos Stripe na assinatura
+-- Campos de assinatura (Stripe Billing — inalterado)
 ALTER TABLE tenant_subscriptions
   ADD COLUMN IF NOT EXISTS stripe_subscription_id TEXT UNIQUE,
   ADD COLUMN IF NOT EXISTS stripe_price_id         TEXT,
@@ -83,16 +83,18 @@ ALTER TABLE tenant_subscriptions
   ADD COLUMN IF NOT EXISTS periodo_fim             TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS cancelado_em            TIMESTAMPTZ;
 
--- Campos de pagamento no pedido
+-- Campos de pagamento no pedido (Pagar.me)
 ALTER TABLE orders
-  ADD COLUMN IF NOT EXISTS payment_status           TEXT NOT NULL DEFAULT 'pendente',
-  ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS platform_fee_amount      INTEGER NOT NULL DEFAULT 100,
-  ADD COLUMN IF NOT EXISTS troco_para               INTEGER,
-  ADD COLUMN IF NOT EXISTS cancelado_em             TIMESTAMPTZ,
-  ADD COLUMN IF NOT EXISTS motivo_cancelamento      TEXT;
+  ADD COLUMN IF NOT EXISTS payment_status      TEXT NOT NULL DEFAULT 'pendente',
+  ADD COLUMN IF NOT EXISTS pagarme_order_id    TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS pagarme_charge_id   TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS valor_estornado     INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS platform_fee_amount INTEGER NOT NULL DEFAULT 100,
+  ADD COLUMN IF NOT EXISTS troco_para          INTEGER,
+  ADD COLUMN IF NOT EXISTS cancelado_em        TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS motivo_cancelamento TEXT;
 
--- Campos Stripe nos planos
+-- Campos Stripe Billing nos planos (mensalidade — inalterado)
 ALTER TABLE plans
   ADD COLUMN IF NOT EXISTS stripe_product_id TEXT,
   ADD COLUMN IF NOT EXISTS stripe_price_id   TEXT,
@@ -103,11 +105,14 @@ ALTER TABLE plans
 CREATE INDEX IF NOT EXISTS idx_tenants_stripe_customer
   ON tenants(stripe_customer_id);
 
-CREATE INDEX IF NOT EXISTS idx_tenants_stripe_account
-  ON tenants(stripe_account_id);
+CREATE INDEX IF NOT EXISTS idx_tenants_pagarme_recipient
+  ON tenants(pagarme_recipient_id);
 
-CREATE INDEX IF NOT EXISTS idx_orders_payment_intent
-  ON orders(stripe_payment_intent_id);
+CREATE INDEX IF NOT EXISTS idx_orders_pagarme_order
+  ON orders(pagarme_order_id);
+
+CREATE INDEX IF NOT EXISTS idx_orders_pagarme_charge
+  ON orders(pagarme_charge_id);
 
 CREATE INDEX IF NOT EXISTS idx_orders_payment_status
   ON orders(payment_status);
@@ -121,8 +126,8 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe
 
 -- ALTER TABLE tenants
 --   DROP COLUMN IF EXISTS stripe_customer_id,
---   DROP COLUMN IF EXISTS stripe_account_id,
---   DROP COLUMN IF EXISTS stripe_onboarding_ok;
+--   DROP COLUMN IF EXISTS pagarme_recipient_id,
+--   DROP COLUMN IF EXISTS pagarme_onboarding_status;
 
 -- ALTER TABLE tenant_subscriptions
 --   DROP COLUMN IF EXISTS stripe_subscription_id,
@@ -135,7 +140,9 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_stripe
 
 -- ALTER TABLE orders
 --   DROP COLUMN IF EXISTS payment_status,
---   DROP COLUMN IF EXISTS stripe_payment_intent_id,
+--   DROP COLUMN IF EXISTS pagarme_order_id,
+--   DROP COLUMN IF EXISTS pagarme_charge_id,
+--   DROP COLUMN IF EXISTS valor_estornado,
 --   DROP COLUMN IF EXISTS platform_fee_amount,
 --   DROP COLUMN IF EXISTS troco_para,
 --   DROP COLUMN IF EXISTS cancelado_em,
@@ -199,38 +206,39 @@ CREATE TABLE couriers (
   cnh_foto_url          TEXT,
   veiculo_tipo          TEXT,
   veiculo_placa         TEXT,
-  status                courier_status NOT NULL DEFAULT 'pendente',
-  online                BOOLEAN NOT NULL DEFAULT false,
-  stripe_account_id     TEXT UNIQUE,
-  stripe_onboarding_ok  BOOLEAN NOT NULL DEFAULT false,
-  aprovado_em           TIMESTAMPTZ,
-  aprovado_por          UUID REFERENCES auth.users(id),
-  criado_em             TIMESTAMPTZ NOT NULL DEFAULT now(),
-  atualizado_em         TIMESTAMPTZ NOT NULL DEFAULT now()
+  status                      courier_status NOT NULL DEFAULT 'pendente',
+  online                      BOOLEAN NOT NULL DEFAULT false,
+  pagarme_recipient_id        TEXT UNIQUE,
+  pagarme_onboarding_status   TEXT NOT NULL DEFAULT 'registration',
+  aprovado_em                 TIMESTAMPTZ,
+  aprovado_por                UUID REFERENCES auth.users(id),
+  criado_em                   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  atualizado_em               TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_couriers_user     ON couriers(user_id);
-CREATE INDEX idx_couriers_tenant   ON couriers(tenant_id);
-CREATE INDEX idx_couriers_status   ON couriers(status);
-CREATE INDEX idx_couriers_online   ON couriers(online) WHERE online = true;
-CREATE INDEX idx_couriers_stripe   ON couriers(stripe_account_id);
+CREATE INDEX idx_couriers_user      ON couriers(user_id);
+CREATE INDEX idx_couriers_tenant    ON couriers(tenant_id);
+CREATE INDEX idx_couriers_status    ON couriers(status);
+CREATE INDEX idx_couriers_online    ON couriers(online) WHERE online = true;
+CREATE INDEX idx_couriers_recipient ON couriers(pagarme_recipient_id);
 
 -- Tabela de atribuições de entrega
 CREATE TABLE delivery_assignments (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id            UUID NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
-  courier_id          UUID NOT NULL REFERENCES couriers(id),
-  tenant_id           UUID NOT NULL REFERENCES tenants(id),
-  status              delivery_status NOT NULL DEFAULT 'pendente',
-  valor_entrega       INTEGER NOT NULL DEFAULT 0,
-  aceito_em           TIMESTAMPTZ,
-  coletado_em         TIMESTAMPTZ,
-  entregue_em         TIMESTAMPTZ,
-  cancelado_em        TIMESTAMPTZ,
-  comprovante_url     TEXT,
-  codigo_confirmacao  TEXT,
-  criado_em           TIMESTAMPTZ NOT NULL DEFAULT now(),
-  atualizado_em       TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id                 UUID NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+  courier_id               UUID NOT NULL REFERENCES couriers(id),
+  tenant_id                UUID NOT NULL REFERENCES tenants(id),
+  status                   delivery_status NOT NULL DEFAULT 'pendente',
+  valor_entrega            INTEGER NOT NULL DEFAULT 0,
+  aceito_em                TIMESTAMPTZ,
+  coletado_em              TIMESTAMPTZ,
+  entregue_em              TIMESTAMPTZ,
+  cancelado_em             TIMESTAMPTZ,
+  comprovante_url          TEXT,
+  codigo_confirmacao       TEXT,
+  pagarme_transfer_id      TEXT UNIQUE,                  -- estágio 2 do split
+  criado_em                TIMESTAMPTZ NOT NULL DEFAULT now(),
+  atualizado_em            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_assignments_order   ON delivery_assignments(order_id);
@@ -304,25 +312,26 @@ CREATE TYPE payout_status AS ENUM (
   'falhou'
 );
 
--- Tabela de repasses
+-- Tabela de repasses (auditoria de transfers Pagar.me + antecipações)
 CREATE TABLE payouts (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tipo                TEXT NOT NULL CHECK (tipo IN ('lojista', 'entregador')),
-  tenant_id           UUID REFERENCES tenants(id),
-  courier_id          UUID REFERENCES couriers(id),
-  valor_bruto         INTEGER NOT NULL,
-  taxa_antecipacao    INTEGER NOT NULL DEFAULT 0,
-  valor_liquido       INTEGER NOT NULL,
-  total_pedidos       INTEGER NOT NULL DEFAULT 0,
-  status              payout_status NOT NULL DEFAULT 'agendado',
-  antecipado          BOOLEAN NOT NULL DEFAULT false,
-  data_referencia     DATE NOT NULL,
-  data_prevista       DATE NOT NULL,
-  stripe_transfer_id  TEXT UNIQUE,
-  erro_mensagem       TEXT,
-  processado_em       TIMESTAMPTZ,
-  criado_em           TIMESTAMPTZ NOT NULL DEFAULT now(),
-  atualizado_em       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo                     TEXT NOT NULL CHECK (tipo IN ('lojista', 'entregador')),
+  tenant_id                UUID REFERENCES tenants(id),
+  courier_id               UUID REFERENCES couriers(id),
+  valor_bruto              INTEGER NOT NULL,
+  taxa_antecipacao         INTEGER NOT NULL DEFAULT 0,
+  valor_liquido            INTEGER NOT NULL,
+  total_pedidos            INTEGER NOT NULL DEFAULT 0,
+  status                   payout_status NOT NULL DEFAULT 'agendado',
+  antecipado               BOOLEAN NOT NULL DEFAULT false,
+  data_referencia          DATE NOT NULL,
+  data_prevista            DATE NOT NULL,
+  pagarme_transfer_id      TEXT UNIQUE,
+  pagarme_anticipation_id  TEXT UNIQUE,
+  erro_mensagem            TEXT,
+  processado_em            TIMESTAMPTZ,
+  criado_em                TIMESTAMPTZ NOT NULL DEFAULT now(),
+  atualizado_em            TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT payouts_owner CHECK (
     (tenant_id IS NOT NULL AND courier_id IS NULL) OR
     (tenant_id IS NULL AND courier_id IS NOT NULL)
@@ -333,20 +342,22 @@ CREATE INDEX idx_payouts_tenant        ON payouts(tenant_id);
 CREATE INDEX idx_payouts_courier       ON payouts(courier_id);
 CREATE INDEX idx_payouts_status        ON payouts(status);
 CREATE INDEX idx_payouts_data_prevista ON payouts(data_prevista);
+CREATE INDEX idx_payouts_transfer      ON payouts(pagarme_transfer_id);
 
--- Tabela de solicitações de antecipação
+-- Tabela de solicitações de antecipação (chamadas à API Pagar.me)
 CREATE TABLE payout_advance_requests (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id       UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  payout_id       UUID REFERENCES payouts(id),
-  total_pedidos   INTEGER NOT NULL,
-  taxa_total      INTEGER NOT NULL,
-  valor_estimado  INTEGER NOT NULL,
-  status          TEXT NOT NULL DEFAULT 'pendente'
-                  CHECK (status IN ('pendente', 'aprovada', 'rejeitada', 'executada')),
-  solicitado_em   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  processado_em   TIMESTAMPTZ,
-  criado_em       TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id                UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  payout_id                UUID REFERENCES payouts(id),
+  total_pedidos            INTEGER NOT NULL DEFAULT 0,
+  taxa_total               INTEGER NOT NULL,
+  valor_estimado           INTEGER NOT NULL,
+  pagarme_anticipation_id  TEXT UNIQUE,
+  status                   TEXT NOT NULL DEFAULT 'pendente'
+                           CHECK (status IN ('pendente', 'aprovada', 'rejeitada', 'executada')),
+  solicitado_em            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  processado_em            TIMESTAMPTZ,
+  criado_em                TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_advance_requests_tenant ON payout_advance_requests(tenant_id);

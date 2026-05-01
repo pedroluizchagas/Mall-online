@@ -123,11 +123,10 @@ apps/web/
 │   │   │   └── page.tsx              Tela de cadastro
 │   │   └── onboarding/
 │   │       ├── page.tsx              Wizard de onboarding (4 etapas)
-│   │       └── stripe/
-│   │           ├── callback/
-│   │           │   └── page.tsx      Retorno do Stripe Connect
-│   │           └── retry/
-│   │               └── page.tsx      Link expirado — gerar novo
+│   │       └── recebimentos/
+│   │           ├── page.tsx          Coleta de dados bancários ou chave Pix
+│   │           └── kyc/
+│   │               └── page.tsx      Embeds o link KYC do Pagar.me
 │   │
 │   ├── (dashboard)/                  Grupo com sidebar e header
 │   │   ├── layout.tsx                Sidebar + Header + verificação de auth
@@ -202,8 +201,12 @@ apps/web/
 │   │   ├── client.ts                 Cliente Supabase para Client Components
 │   │   └── middleware.ts             Verificação de sessão nas rotas
 │   │
+│   ├── pagarme/
+│   │   ├── server.ts                 Cliente Pagar.me REST (Basic Auth)
+│   │   └── webhook.ts                Verificação HMAC SHA-256
+│   │
 │   ├── stripe/
-│   │   └── server.ts                 Cliente Stripe server-side
+│   │   └── server.ts                 Cliente Stripe (apenas Stripe Billing)
 │   │
 │   ├── actions/                      Server Actions
 │   │   ├── auth.ts                   Login, logout, signup
@@ -392,7 +395,7 @@ apps/mobile-consumer/
 │
 ├── lib/
 │   ├── supabase.ts                   Cliente Supabase para Expo
-│   └── stripe.ts                     Configuração Stripe React Native
+│   └── pagarme.ts                    Helper para chamar create-pagarme-order
 │
 ├── store/
 │   ├── useAuthStore.ts               Sessão e dados do consumidor
@@ -423,7 +426,6 @@ apps/mobile-consumer/
     "@mallora/lib": "workspace:*",
     "@mallora/types": "workspace:*",
     "@supabase/supabase-js": "^2.43.0",
-    "@stripe/stripe-react-native": "0.37.0",
     "expo": "~51.0.0",
     "expo-router": "~3.5.0",
     "expo-notifications": "~0.28.0",
@@ -458,7 +460,7 @@ apps/mobile-courier/
 │       ├── index.tsx                 Lista de entregas disponíveis
 │       ├── ativa.tsx                 Entrega em andamento
 │       ├── ganhos.tsx                Dashboard de ganhos
-│       └── perfil.tsx                Perfil e conta Stripe
+│       └── perfil.tsx                Perfil e conta de recebimentos (Pagar.me)
 │
 ├── app/
 │   └── entrega/
@@ -683,25 +685,28 @@ supabase/
 │
 ├── migrations/
 │   ├── 20240101000000_migration_001_additive.sql     (aplicada)
-│   ├── 20240102000000_migration_002_stripe_fields.sql
+│   ├── 20240102000000_migration_002_payment_fields.sql
 │   ├── 20240103000000_migration_003_couriers.sql
 │   ├── 20240104000000_migration_004_payouts.sql
 │   └── 20240105000000_migration_005_stock.sql
 │
 ├── functions/
 │   ├── helpers/
-│   │   └── auth.ts                   Reutilizado por todas as functions
+│   │   ├── auth.ts                   Reutilizado por todas as functions
+│   │   └── pagarme.ts                Cliente Pagar.me REST + verificação HMAC
 │   ├── onboard-tenant/
 │   │   └── index.ts
 │   ├── onboard-courier/
 │   │   └── index.ts
-│   ├── create-payment-intent/
+│   ├── create-pagarme-order/
+│   │   └── index.ts
+│   ├── transfer-to-courier/
+│   │   └── index.ts
+│   ├── pagarme-webhook/
 │   │   └── index.ts
 │   ├── create-subscription/
 │   │   └── index.ts
-│   ├── stripe-webhook/
-│   │   └── index.ts
-│   ├── daily-payouts/
+│   ├── stripe-webhook/               (apenas Stripe Billing)
 │   │   └── index.ts
 │   ├── request-advance/
 │   │   └── index.ts
@@ -737,9 +742,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx
 SUPABASE_SERVICE_ROLE_KEY=eyJxxx
 SUPABASE_PROJECT_ID=xxxxxxxxxxxx
 
-# Stripe
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
-EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+# Pagar.me (pagamentos de pedidos)
+PAGARME_API_KEY=ak_test_xxx
+PAGARME_WEBHOOK_SECRET=whsec_xxx
+PAGARME_PLATFORM_RECIPIENT_ID=rp_test_xxx
+
+# Stripe Billing (apenas assinatura — sem chave pública mobile)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx     # uso restrito ao Customer Portal web
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 

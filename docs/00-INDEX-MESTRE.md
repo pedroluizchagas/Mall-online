@@ -16,12 +16,13 @@
 |**Receita 1**         |Assinatura mensal do lojista (Stripe Billing)             |
 |**Receita 2**         |R$1,00 por pedido entregue                                |
 |**Receita 3**         |R$0,75 por pedido com antecipação de repasse              |
-|**Mecanismo Stripe**  |Separate Charges and Transfers                            |
+|**Gateway de pedidos**|Pagar.me (Pix, cartão, split com múltiplos recebedores)   |
+|**Gateway de assinatura**|Stripe Billing (mensalidade do lojista — inalterado)   |
 |**Merchant of Record**|Plataforma                                                |
-|**Conta conectada**   |Express Accounts (lojistas + entregadores)                |
-|**Repasse lojista**   |D+7 padrão · D+2 com taxa de R$0,75/pedido                |
-|**Repasse entregador**|D+1 automático                                            |
-|**Cron de repasses**  |Supabase Scheduled Edge Function — meia-noite             |
+|**Recebedores**       |Recipients Pagar.me (lojistas + entregadores)             |
+|**Liquidação lojista**|Pix D+0 · Cartão D+29+2 · D+15 com antecipação automática |
+|**Liquidação entregador**|D+1 (transfer estágio 2 da Mallora para o recipient)   |
+|**Repasses operacionais**|Liquidação automática Pagar.me (sem cron próprio)      |
 |**Migration 001**     |Aplicada                                                |
 |**Paleta**            |Verde Minas: `#1A4D3A` · `#4CAF82` · `#F5A623` · `#FFF8ED`|
 
@@ -49,30 +50,32 @@
 
 -----
 
-## FLUXO DE DINHEIRO (Separate Charges and Transfers)
+## FLUXO DE DINHEIRO (Pagar.me — split + transfer)
 
 ```
 Consumidor paga R$60 (R$50 produto + R$10 frete)
                   ↓
      Plataforma recebe R$60 (Merchant of Record)
                   ↓
-     Stripe desconta taxa (~R$2,28 no Brasil)
+     Pagar.me debita MDR (~3,5% cartão / ~0,99% Pix — rateado)
                   ↓
-     Plataforma retém R$1,00 (comissão por pedido)
+     Estágio 1 — split na criação da Order:
+        Mallora       R$1,00 (comissão fixa)
+        Mallora       R$10,00 (taxa de entrega — temporária)
+        Lojista       R$49,00
                   ↓
-     Saldo a distribuir: ~R$56,72
-          ↓                    ↓
-   Transfer ao LOJISTA    Transfer ao ENTREGADOR
-   R$46,72 (D+7)          R$10,00 (D+1)
-   ou D+2 pagando R$0,75
-
-   Antecipação lojista:
-   R$46,72 - (nº pedidos × R$0,75) = valor líquido D+2
+     Estágio 2 — após o lojista alocar entregador:
+        Transfer Mallora → Entregador  R$10,00
+                  ↓
+     Liquidação automática do Pagar.me:
+        Lojista:    Pix D+0 · Cartão D+29+2 (ou D+15 c/ antecipação)
+        Entregador: D+1 (configuração padrão do recipient)
+        Mallora:    saldo da conta principal
 ```
 
 -----
 
-## LISTA COMPLETA — 30 ARQUIVOS
+## LISTA COMPLETA — 31 ARQUIVOS (00 + 01..30)
 
 -----
 
@@ -93,7 +96,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 - Diagrama de arquitetura completo (4 atores, 3 apps, 1 backend)
 - Stack com versões fixadas: Next.js 14, Expo SDK 51, Supabase, Stripe
-- Decisões técnicas e justificativas (por que Separate Charges, por que Express)
+- Decisões técnicas e justificativas (por que Pagar.me para pedidos, por que Stripe Billing apenas para assinatura)
 - Estrutura do monorepo pnpm (apps/web · apps/mobile-consumer · apps/mobile-courier · packages/types · packages/lib)
 - Fluxo de dados entre os 4 atores
 - *Tokens est.: ~4.000*
@@ -107,7 +110,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 - Todas as tabelas com colunas, tipos, constraints e índices
 - Tabelas existentes: `plans` · `tenant_subscriptions` · `categories` · `tenants` · `stores` · `products` · `orders` · `order_items` · `consumers`
 - Novas tabelas: `couriers` · `delivery_assignments` · `courier_locations` · `payouts` · `payout_advance_requests` · `stock_movements`
-- Campos Stripe em todas as tabelas relevantes
+- Campos Pagar.me (`pagarme_recipient_id`, `pagarme_order_id`, `pagarme_charge_id`, `pagarme_transfer_id`) e campos Stripe Billing (`stripe_customer_id`, `stripe_subscription_id`, `stripe_price_id`, `stripe_product_id`)
 - ENUMs de status: pedido · entrega · pagamento · repasse · billing
 - Diagrama de relacionamentos (ERD textual)
 - *Tokens est.: ~5.000*
@@ -115,7 +118,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 **`04` — Migrations SQL**
 
 - `migration_001` — já aplicada (documentada como referência)
-- `migration_002` — campos Stripe (`stripe_account_id`, `stripe_customer_id`, `billing_status`, `payment_status`, etc.)
+- `migration_002` — campos de pagamento (`pagarme_recipient_id`, `pagarme_onboarding_status`, `stripe_customer_id`, `billing_status`, `payment_status`, `pagarme_order_id`, `pagarme_charge_id`, etc.)
 - `migration_003` — módulo entregador (`couriers`, `delivery_assignments`, `courier_locations`)
 - `migration_004` — módulo financeiro (`payouts`, `payout_advance_requests`, `platform_fee_amount`)
 - `migration_005` — módulo estoque (`stock_movements`, campos `stock_quantity`, `track_stock`)
@@ -135,33 +138,33 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 -----
 
-### GRUPO 3 — PAGAMENTOS STRIPE
+### GRUPO 3 — PAGAMENTOS (PAGAR.ME + STRIPE BILLING)
 
-**`06` — Arquitetura Stripe Connect & Modelo Financeiro**
+**`06` — Arquitetura Pagar.me & Modelo Financeiro**
 
-- Separate Charges and Transfers explicado com exemplos de código
-- Por que não Destination Charges puro (múltiplos destinatários)
-- Fluxo de dinheiro detalhado com valores reais e taxas Stripe Brasil
-- Express Accounts para lojistas: onboarding, KYC, Express Dashboard
-- Express Accounts para entregadores: onboarding simplificado, saque
+- Pagar.me como gateway de pedidos; Stripe Billing apenas para assinatura
+- Estrutura de split (Mallora, lojista, entregador) com `charge_processing_fee` e `liable`
+- Modelo de dois estágios para alocação de motoboy após checkout
+- Fluxo de dinheiro detalhado com valores reais e taxas Pagar.me Brasil
+- Cadastro de recipients (lojistas e entregadores) com KYC para PF
 - Stripe Billing para assinatura: produtos, preços, trial, dunning
-- Lógica de repasse D+7 (lojista) e D+1 (entregador)
-- Lógica de antecipação D+2 com desconto R$0,75 por pedido
-- Tabela `payouts` e `payout_advance_requests` explicadas
-- Cron job `daily-payouts`: como funciona e quando dispara
-- Tratamento de cancelamentos e estornos (tudo na plataforma)
-- *Tokens est.: ~5.000*
+- Liquidação automática Pagar.me: Pix instantâneo · Cartão D+29+2 · D+15 com antecipação
+- Antecipação automática e manual via API Pagar.me
+- Tabelas `payouts` e `payout_advance_requests` explicadas
+- Tratamento de cancelamentos, estornos e chargebacks com split
+- *Tokens est.: ~5.500*
 
 **`07` — Edge Functions de Pagamento (código completo)**
 
-- `onboard-tenant` — cria tenant + store + Stripe Customer + inicia onboarding Express
-- `onboard-courier` — cria courier + inicia onboarding Express do entregador
-- `create-payment-intent` — cria PaymentIntent com currency BRL
-- `stripe-webhook` — todos os eventos: `payment_intent.succeeded` · `payment_intent.payment_failed` · `account.updated` · `customer.subscription.updated` · `customer.subscription.deleted` · `invoice.paid` · `invoice.payment_failed`
-- `daily-payouts` — cron meia-noite: processa repasses D+1 (entregadores) e D+7 (lojistas), executa antecipações aprovadas D+2 com desconto de R$0,75
-- `request-advance` — lojista solicita antecipação, valida elegibilidade, calcula desconto
-- `create-subscription` — cria Stripe Subscription após onboarding
-- *Tokens est.: ~5.000*
+- `onboard-tenant` — cria recipient Pagar.me + Stripe Customer (para Billing)
+- `onboard-courier` — cria recipient Pagar.me + gera kyc_link
+- `create-pagarme-order` — cria Order com split estágio 1 (Mallora + lojista)
+- `transfer-to-courier` — Transfer estágio 2 (taxa de entrega ao entregador)
+- `pagarme-webhook` — eventos: `order.paid` · `charge.paid` · `charge.refunded` · `charge.chargeback.created` · `recipient.status.changed` · `transfer.created` / `paid` / `failed`
+- `request-advance` — antecipação via API Pagar.me com taxa contratual
+- `create-subscription` — cria Stripe Subscription após recipient ativo
+- `stripe-webhook` — apenas eventos de Billing: `customer.subscription.*` · `invoice.paid` · `invoice.payment_failed`
+- *Tokens est.: ~6.000*
 
 -----
 
@@ -179,9 +182,9 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 **`09` — Variáveis de Ambiente & Secrets**
 
-- Todas as env vars necessárias (Supabase, Stripe, Expo)
+- Todas as env vars necessárias (Supabase, Pagar.me, Stripe Billing, Expo)
 - Template `.env.local` completo
-- Onde obter cada chave (Supabase Dashboard, Stripe Dashboard)
+- Onde obter cada chave (Supabase Dashboard, Pagar.me Dashboard, Stripe Dashboard)
 - Configuração no Vercel (produção) e localmente (desenvolvimento)
 - Separação dev / staging / prod
 - Regras: nunca commitar chaves, usar `.env.example` no repositório
@@ -195,9 +198,9 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 - Páginas `/entrar` e `/cadastro`
 - Wizard 4 etapas: dados do negócio → dados da loja → escolha de plano → configurar recebimentos
-- Stripe Connect Express Onboarding: criar conta, gerar link, callback `/onboarding/stripe/callback`
-- Webhook `account.updated` → marcar KYC completo
-- Criar Stripe Subscription após KYC
+- Onboarding Pagar.me: criar recipient, coletar dados bancários / chave Pix, gerar `kyc_url`
+- Webhook `recipient.status.changed` → marcar `pagarme_onboarding_status = active`
+- Criar Stripe Billing Subscription após recipient ativo
 - Middleware Next.js de proteção de rotas
 - Bloqueio de acesso quando `billing_status = past_due | canceled`
 - *Tokens est.: ~4.500*
@@ -232,7 +235,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 - Seção repasses: saldo a receber, próximo repasse, histórico
 - Botão “Antecipar recebimento” → modal com cálculo do desconto (nº pedidos × R$0,75)
 - Tabela de `payouts` com status (pendente · processado · falhou)
-- Link para Stripe Express Dashboard (saldos e saques)
+- Saldo do recipient Pagar.me: disponível · a receber · transferido
 - Gestão da assinatura: status · próxima cobrança · link para Customer Portal · histórico de faturas
 - *Tokens est.: ~4.500*
 
@@ -271,17 +274,18 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 - Modal de produto: foto, descrição, adicionais/variações, quantidade, botão adicionar ao carrinho
 - *Tokens est.: ~4.500*
 
-**`17` — Consumer App — Carrinho & Checkout Stripe**
+**`17` — Consumer App — Carrinho & Checkout Pagar.me**
 
 - Carrinho global via Zustand (`useCartStore`)
 - Bottom sheet do carrinho (swipe up)
 - Resumo: itens · subtotal · taxa de entrega · total
 - Seleção e confirmação de endereço (endereços salvos + novo)
-- Seleção de forma de pagamento: cartão online (Stripe) · PIX (Stripe) · dinheiro na entrega · cartão na entrega
-- Stripe Payment Sheet (`@stripe/stripe-react-native`): fluxo completo cartão + PIX
-- Chamada à Edge Function `create-payment-intent` antes de abrir o Payment Sheet
+- Seleção de forma de pagamento: cartão online (Pagar.me) · Pix (Pagar.me) · dinheiro na entrega · cartão na entrega
+- Tela de Pix com QR code/copia-e-cola e expiração
+- Tela de cartão com tokenização opcional ou Pagar.me Checkout server-side
+- Chamada à Edge Function `create-pagarme-order` para criação da Order com split
 - Observações do pedido
-- Criação do pedido em `orders` após confirmação do pagamento
+- Atualização do `payment_status` via webhook Pagar.me (Realtime)
 - Tratamento de erros de pagamento
 - *Tokens est.: ~5.000*
 
@@ -307,7 +311,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 - Dois tipos: **próprio do lojista** (vinculado a um tenant) vs **autônomo da plataforma** (pool geral)
 - Tela de cadastro: nome · CPF · telefone · CNH · foto · dados bancários
 - Fluxo de aprovação pelo admin (status: `pendente → aprovado | reprovado`)
-- Onboarding Stripe Express após aprovação (KYC para receber pagamentos)
+- Onboarding Pagar.me após aprovação: criação de recipient + KYC com Prova de Vida
 - Auth mobile (Supabase Auth, separado dos consumidores)
 - Permissões: localização em background (Expo Location), notificações
 - *Tokens est.: ~4.500*
@@ -339,12 +343,12 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 - Dashboard de ganhos: hoje · semana · mês
 - Valor por entrega (definido pelo lojista ou pela plataforma)
-- Repasse automático D+1 (cron `daily-payouts`)
+- Transfer automático após alocação no pedido (estágio 2 do split)
 - Histórico de entregas e valores correspondentes
-- Tabela de `payouts` filtrada pelo courier
-- Saldo disponível na conta Stripe Express via API
-- Link para Stripe Express Dashboard (sacar para conta bancária)
-- Notificação quando repasse for processado
+- Tabela de `payouts` filtrada pelo courier (com `pagarme_transfer_id`)
+- Saldo do recipient consultado via API Pagar.me (`/recipients/{id}/balance`)
+- Configuração de conta bancária ou chave Pix (atualização via API)
+- Notificação quando transfer for liquidado (webhook `transfer.paid`)
 - *Tokens est.: ~4.000*
 
 -----
@@ -385,10 +389,10 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 - Gestão de tenants: listar · filtrar por status de assinatura · ativar · suspender
 - Gestão de entregadores: listar cadastros pendentes · aprovar · reprovar · ver histórico
 - Métricas globais: GMV · pedidos/dia · lojas ativas · entregadores ativos · receita da plataforma
-- Receita detalhada: assinaturas (Stripe Billing API) + comissão por pedido (soma `platform_fee_amount`) + taxas de antecipação
+- Receita detalhada: assinaturas (Stripe Billing API) + comissão por pedido (soma `platform_fee_amount`) + taxas de antecipação Pagar.me
 - Gestão de planos: CRUD com sincronização Stripe Products/Prices
-- Conciliação financeira: repasses processados vs pendentes por período
-- Log de webhooks Stripe (para debug)
+- Conciliação financeira: repasses Pagar.me (estágio 2 + liquidações automáticas) vs pendentes por período
+- Log de webhooks Pagar.me e Stripe Billing (para debug)
 - *Tokens est.: ~5.000*
 
 -----
@@ -398,19 +402,20 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 **`26` — Testes & Qualidade**
 
 - Estratégia geral: unitários para lógica crítica + E2E para fluxos principais
-- Testes unitários: Edge Functions (`daily-payouts`, `create-payment-intent`, cálculo de antecipação)
-- Testes E2E com Playwright: fluxo completo (consumidor faz pedido → lojista confirma → entregador entrega → repasse processado)
-- Stripe test mode: como usar cartões de teste, simular webhooks localmente (`stripe listen`)
+- Testes unitários: Edge Functions (`create-pagarme-order`, `transfer-to-courier`, `request-advance`, cálculo de split)
+- Testes E2E com Playwright: fluxo completo (consumidor faz pedido → lojista confirma → entregador entrega → transfer estágio 2 processado)
+- Pagar.me sandbox: cartões de teste, forçar confirmação Pix; Stripe Billing test mode para assinatura
 - Testes de RLS: garantir que cada ator só acessa seus próprios dados
 - *Tokens est.: ~3.500*
 
 **`27` — Deploy & Infraestrutura**
 
-- Supabase Pro ($25/mês): habilitar PIX no Stripe, configurar Scheduled Functions
+- Supabase Pro ($25/mês): Edge Functions, Realtime, Scheduled Functions
 - Vercel Pro ($20/mês): domínio customizado, SSL, variáveis de ambiente por environment
-- Stripe produção: checklist de ativação (conta verificada, PIX ativo, webhooks registrados, Radar configurado)
-- Configuração de webhooks Stripe em produção (URL da Edge Function)
-- Monitoramento: Vercel Analytics + Supabase Dashboard + Stripe Dashboard
+- Pagar.me produção: checklist de ativação (conta empresarial verificada, recipient principal ativo, webhooks registrados, antifraude se aplicável)
+- Stripe Billing produção: checklist (Customer Portal habilitado, Products/Prices sincronizados, webhooks registrados)
+- Configuração de webhooks Pagar.me e Stripe em produção (URLs das Edge Functions)
+- Monitoramento: Vercel Analytics + Supabase Dashboard + Pagar.me Dashboard + Stripe Dashboard
 - Checklist completo pré-lançamento (30 itens)
 - *Tokens est.: ~4.000*
 
@@ -420,12 +425,12 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 **`28` — Prompt Mestre Claude Code**
 
-- Contexto completo do projeto (4 atores, 3 fontes de receita, modelo Stripe)
+- Contexto completo do projeto (4 atores, 3 fontes de receita, modelo Pagar.me + Stripe Billing)
 - Stack com versões fixadas
 - Convenções de código (TypeScript strict, português para domínio, Server Actions, etc.)
 - Regras de multi-tenancy e segurança
 - Estrutura de pastas completa
-- Campos Stripe nas tabelas
+- Campos Pagar.me e Stripe Billing nas tabelas
 - Fluxo obrigatório antes de cada tarefa
 - Seção `[TAREFA ATUAL]` para preencher a cada sessão
 - *Tokens est.: ~3.500*
@@ -439,18 +444,37 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 -----
 
+### GRUPO 12 — INTEGRACAO PAGAR.ME (NOVO)
+
+**`30` — Integração Pagar.me: Split, Recebedores e Liquidação**
+
+- Visão geral da integração Pagar.me e divisão de responsabilidades com Stripe Billing
+- Autenticação Basic Auth, ambiente sandbox e produção
+- Cadastro de recipients (lojistas PJ/PF e entregadores) com KYC e Prova de Vida
+- Estrutura de `split_rules` com 3 recebedores e parâmetros `charge_processing_fee` / `liable`
+- Arquitetura de dois estágios para alocação de motoboy após checkout (Estratégia B)
+- Webhooks: `order.paid`, `charge.refunded`, `charge.chargeback.created`, `recipient.status.changed`, `transfer.*`
+- Antecipação automática (recipient setting) e manual (API por lote)
+- Tratamento de chargeback e estorno parcial com split
+- Variáveis de ambiente e estrutura de segredos
+- Tabela de mapeamento Stripe Connect → Pagar.me (campo a campo)
+- Checklist sandbox + produção
+- *Tokens est.: ~5.500*
+
+-----
+
 ## VISÃO GERAL
 
 |Item                     |Valor                                                         |
 |-------------------------|--------------------------------------------------------------|
-|Total de arquivos        |29 + este índice = **30**                                     |
-|Grupos temáticos         |11                                                            |
-|Tokens totais estimados  |~125.000                                                      |
+|Total de arquivos        |30 + este índice = **31**                                     |
+|Grupos temáticos         |12                                                            |
+|Tokens totais estimados  |~131.000                                                      |
 |Tamanho médio por arquivo|~4.200 tokens                                                 |
 |Atores cobertos          |Plataforma · Lojista · Consumidor · Entregador                |
 |Apps cobertos            |web (Next.js) · mobile-consumer (Expo) · mobile-courier (Expo)|
 |Migrations cobertas      |5 (001 já aplicada + 4 pendentes)                             |
-|Edge Functions cobertas  |7                                                             |
+|Edge Functions cobertas  |8 (Pagar.me + Stripe Billing)                                 |
 
 -----
 
@@ -470,7 +494,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 01 → 02              Entender o produto
 08 → 09              Configurar o ambiente
 03 → 04 → 05         Banco de dados completo
-06 → 07              Stripe (antes de qualquer UI)
+06 → 07 → 30         Pagamentos (Pagar.me) antes de qualquer UI
 10                   Onboarding do lojista
 11 → 12 → 13 → 14   Dashboard completo
 15 → 16 → 17 → 18   App do consumidor
@@ -483,5 +507,5 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 -----
 
-*Índice definitivo — 23/03/2026*
-*Plataforma Delivery Divinópolis — Stack: Next.js + Expo ×2 + Supabase + Stripe Connect*
+*Índice atualizado — 29/04/2026 (substitui Stripe Connect por Pagar.me)*
+*Plataforma Delivery Divinópolis — Stack: Next.js + Expo ×2 + Supabase + Pagar.me + Stripe Billing*

@@ -12,11 +12,11 @@ O fluxo de entrada do lojista tem duas etapas distintas:
 
 1. Autenticação — criar conta ou fazer login via Supabase Auth
 1. Onboarding — wizard de 4 etapas que configura o tenant, a loja,
-   o plano e a conta Stripe Express para recebimentos
+   o plano e o recebedor Pagar.me (com KYC) para recebimentos
 
-Após o onboarding, o lojista é redirecionado para o dashboard.
-O acesso ao dashboard é bloqueado via middleware enquanto o onboarding
-não estiver concluído ou enquanto a assinatura estiver cancelada.
+Após o onboarding, o lojista é redirecionado para o dashboard. O acesso ao
+dashboard é bloqueado via middleware enquanto o `pagarme_onboarding_status`
+não for `active` ou enquanto a assinatura Stripe Billing estiver cancelada.
 
 -----
 
@@ -31,12 +31,14 @@ não estiver concluído ou enquanto a assinatura estiver cancelada.
   Etapa 1: Dados do responsável
   Etapa 2: Dados da loja
   Etapa 3: Escolha do plano
-  Etapa 4: Configurar recebimentos (Stripe Connect)
+  Etapa 4: Configurar recebimentos (Pagar.me)
+    → Coleta dados bancários ou chave Pix
     → Chama Edge Function onboard-tenant
-    → Redireciona para URL do Stripe
-    → Stripe redireciona para /onboarding/stripe/callback
-    → Webhook account.updated confirma KYC
-    → Edge Function create-subscription cria assinatura
+       → Cria recipient no Pagar.me + Stripe Customer (Billing)
+       → Retorna kyc_url se necessário (PF)
+    → Embarca o lojista no link KYC do Pagar.me (ou pula se PJ aprovado)
+    → Webhook recipient.status.changed confirma status = 'active'
+    → Edge Function create-subscription cria assinatura no Stripe Billing
     → Redireciona para /dashboard
 
 /entrar
@@ -167,7 +169,7 @@ export async function login(formData: FormData) {
   // Verificar se tenant existe e onboarding está completo
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, stripe_onboarding_ok')
+    .select('id, pagarme_onboarding_status')
     .single()
 
   if (!tenant) {
@@ -370,8 +372,14 @@ export default function PaginaOnboarding() {
         throw new Error(resultado.error)
       }
 
-      // Redirecionar para o Stripe Connect Onboarding
-      window.location.href = resultado.stripe_onboarding_url
+      // Se o Pagar.me retornou kyc_url, redirecionar para o KYC.
+      // Caso contrário, recipient já está apto — ir direto para o dashboard
+      // (a assinatura é criada pelo webhook recipient.status.changed).
+      if (resultado.kyc_url) {
+        window.location.href = resultado.kyc_url
+      } else {
+        window.location.href = '/onboarding/recebimentos/aguardando'
+      }
     } catch (erro: any) {
       alert(erro.message)
       setCarregando(false)
@@ -497,27 +505,33 @@ Cada card de plano exibe:
 - Features disponíveis (estoque, relatórios, antecipação)
 - Botão de seleção com estado visual destacado
 
-### Etapa 4 — Configurar Recebimentos
+### Etapa 4 — Configurar Recebimentos (Pagar.me)
 
-Tela explicativa do que acontecerá:
+Tela com formulário de dados bancários ou chave Pix:
 
-- Será redirecionado para a Stripe para configurar dados bancários
-- O processo leva cerca de 5 minutos
-- Dados bancários são armazenados com segurança pela Stripe
-- Após isso, estará pronto para receber pagamentos
+- Tipo de conta (Conta Corrente / Poupança / Pix)
+- Banco (autocomplete com lista de bancos brasileiros)
+- Agência, conta e dígito verificador
+- Ou chave Pix (CPF, CNPJ, email, telefone, aleatória)
+- Nome do titular e CPF/CNPJ
+- Aceite dos termos de uso do Pagar.me
 
-Botão “Configurar conta de recebimentos” dispara `finalizarOnboarding`.
+Após submeter, a Edge Function `onboard-tenant` cria o recipient. Para
+Pessoa Física e em alguns casos PJ, o Pagar.me devolve um `kyc_url` para
+Prova de Vida e envio de documentos. O frontend redireciona o lojista
+para esse URL e, ao terminar, ele é direcionado de volta para
+`/onboarding/recebimentos/aguardando`.
 
 -----
 
-## CALLBACK DO STRIPE CONNECT
+## AGUARDANDO ATIVACAO DO RECIPIENT (PAGAR.ME)
 
-### app/(auth)/onboarding/stripe/callback/page.tsx
+### app/(auth)/onboarding/recebimentos/aguardando/page.tsx
 
-Após o lojista concluir o KYC no Stripe, ele é redirecionado para
-esta página. O webhook `account.updated` (processado de forma assíncrona)
-é quem efetivamente confirma o KYC — a página de callback apenas
-exibe uma mensagem de aguardo e faz polling até confirmar.
+Após o lojista concluir o KYC no Pagar.me, ele é redirecionado para esta
+página. O webhook `recipient.status.changed` (assíncrono) é quem confirma
+o status `active`. A página exibe mensagem de aguardo e faz polling até
+confirmar.
 
 ```typescript
 'use client'
@@ -526,35 +540,43 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createSupabaseClient } from '@/lib/supabase/client'
 
-export default function PaginaStripeCallback() {
+export default function PaginaAguardandoRecipient() {
   const router = useRouter()
   const supabase = createSupabaseClient()
   const [mensagem, setMensagem] = useState('Verificando sua conta...')
 
   useEffect(() => {
     let tentativas = 0
-    const maxTentativas = 12 // até 60 segundos
+    const maxTentativas = 24 // até 2 minutos
 
     const intervalo = setInterval(async () => {
       tentativas++
 
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('stripe_onboarding_ok')
+        .select('pagarme_onboarding_status')
         .single()
 
-      if (tenant?.stripe_onboarding_ok) {
+      if (tenant?.pagarme_onboarding_status === 'active') {
         clearInterval(intervalo)
-        setMensagem('Conta verificada! Redirecionando...')
+        setMensagem('Conta ativada! Redirecionando...')
         setTimeout(() => router.push('/dashboard'), 1500)
+        return
+      }
+
+      if (tenant?.pagarme_onboarding_status === 'refused') {
+        clearInterval(intervalo)
+        setMensagem(
+          'Seu cadastro precisa de ajustes. Entre em contato pelo suporte.'
+        )
         return
       }
 
       if (tentativas >= maxTentativas) {
         clearInterval(intervalo)
         setMensagem(
-          'A verificação pode demorar alguns minutos. ' +
-          'Você receberá um email quando estiver pronta.'
+          'A análise pode demorar alguns minutos a algumas horas. ' +
+          'Você receberá um email quando a conta estiver ativa.'
         )
       }
     }, 5000)
@@ -577,11 +599,11 @@ export default function PaginaStripeCallback() {
 }
 ```
 
-### app/(auth)/onboarding/stripe/retry/page.tsx
+### app/(auth)/onboarding/recebimentos/kyc/page.tsx
 
-Exibida quando o link do Stripe expira. Gera um novo link chamando
-a Edge Function `onboard-tenant` novamente (que detecta o tenant
-existente e apenas regenera o account link).
+Exibida quando o link KYC do Pagar.me expira. Gera um novo link chamando
+a Edge Function `onboard-tenant` novamente (que detecta o tenant existente
+e regenera apenas o `kyc_link` via API).
 
 -----
 
@@ -610,11 +632,13 @@ export default async function LayoutDashboard({
   // Verificar tenant e onboarding
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, stripe_onboarding_ok')
+    .select('id, pagarme_onboarding_status')
     .single()
 
   if (!tenant) redirect('/onboarding')
-  if (!tenant.stripe_onboarding_ok) redirect('/onboarding/stripe/retry')
+  if (tenant.pagarme_onboarding_status !== 'active') {
+    redirect('/onboarding/recebimentos/aguardando')
+  }
 
   // Verificar assinatura
   const { data: assinatura } = await supabase
@@ -723,10 +747,11 @@ export type EscolhaPlano = z.infer<typeof schemaEscolhaPlano>
 - [ ] Categorias globais inseridas no banco antes de abrir o onboarding
 - [ ] Planos inseridos na tabela `plans` com `stripe_product_id` e
   `stripe_price_id` preenchidos
-- [ ] Edge Function `onboard-tenant` deployada e testada
-- [ ] URLs de callback e retry configuradas corretamente na Edge Function
-- [ ] Webhook `account.updated` registrado e apontando para `stripe-webhook`
+- [ ] Edge Function `onboard-tenant` deployada e testada (cria recipient Pagar.me + Customer Stripe)
+- [ ] Webhook `recipient.status.changed` registrado em `pagarme-webhook`
+- [ ] Webhook `customer.subscription.*` e `invoice.*` registrados em `stripe-webhook`
 - [ ] Middleware bloqueando `/dashboard` para usuários sem tenant
+- [ ] Middleware bloqueando `/dashboard` enquanto `pagarme_onboarding_status` ≠ `active`
 - [ ] Banner de assinatura em atraso visível no layout do dashboard
 
 -----

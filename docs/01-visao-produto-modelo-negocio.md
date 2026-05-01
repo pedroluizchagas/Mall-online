@@ -36,8 +36,8 @@ sistema e uma comissão mínima por venda — sem percentual sobre o faturamento
 - Paga mensalidade para acessar o sistema CRM/ERP
 - Recebe pedidos, confirma, separa e despacha
 - Pode usar entregadores próprios ou do pool da plataforma
-- Recebe repasse automaticamente via Stripe
-- Pode antecipar recebimentos pagando taxa
+- Recebe valores via Pagar.me (split direto + liquidação automática)
+- Pode antecipar recebíveis via Pagar.me (planos pagos)
 
 ### 3. Consumidor
 
@@ -62,7 +62,7 @@ Dois sub-tipos:
 - Cadastrado diretamente na plataforma
 - Compõe o pool geral de entregadores disponíveis
 - Aceita ou recusa entregas de qualquer lojista
-- Recebe por entrega via Stripe Express (repasse D+1)
+- Recebe por entrega via Pagar.me (recipient + transfer estágio 2 — D+1)
 
 -----
 
@@ -85,18 +85,17 @@ Dois sub-tipos:
 
 ### Fonte 2 — Comissão por Pedido (R$1,00)
 
-- Debitada automaticamente de cada pedido entregue com sucesso
-- Implementada como `application_fee` no Stripe (Separate Charges and Transfers)
+- Definida como split rule fixa (`type: 'flat'`) no Pagar.me, com `liable: false` e `charge_processing_fee: false`
 - Não incide sobre pedidos cancelados ou estornados
 - Valor fixo e previsível — não percentual sobre o ticket
 
-### Fonte 3 — Taxa de Antecipação de Repasse (R$0,75/pedido)
+### Fonte 3 — Taxa de Antecipação de Recebíveis (Pagar.me)
 
-- Repasse padrão do lojista: **D+7**
-- Lojista pode solicitar antecipação para **D+2** pagando R$0,75 por pedido antecipado
-- Desconto aplicado automaticamente no valor do repasse
-- Exemplo: lojista antecipa 40 pedidos → desconto de R$30,00 no repasse
-- O entregador autônomo recebe sempre em D+1 (sem opção de antecipação no MVP)
+- Liquidação padrão do lojista: cartão D+29+2 / Pix D+0
+- Lojista em planos pagos pode habilitar **antecipação automática** via Pagar.me, recebendo em D+15 (cartão) com taxa contratual (referência inicial: a partir de 1,25% a.m.)
+- Antecipação manual sob demanda também disponível via API Pagar.me
+- A Mallora repassa a taxa Pagar.me integralmente ao lojista, sem margem adicional no MVP
+- O entregador autônomo recebe via transfer Mallora → recipient após alocação no pedido (D+1 padrão na conta bancária)
 
 -----
 
@@ -110,8 +109,8 @@ Dois sub-tipos:
 3. Monta o carrinho
       ↓
 4. Finaliza o checkout
-   → Paga via Stripe (cartão ou PIX)
-   → PaymentIntent criado na plataforma
+   → Paga via Pagar.me (cartão ou Pix)
+   → Order criada com split entre Mallora e lojista (estágio 1)
       ↓
 5. Pedido criado com status "novo"
       ↓
@@ -121,15 +120,14 @@ Dois sub-tipos:
       ↓
 8. Lojista despacha → atribui entregador
    → Entregador recebe notificação
+   → Edge Function `transfer-to-courier` executa estágio 2: transfer Mallora → recipient do entregador (taxa de entrega)
       ↓
 9. Entregador aceita → status "saiu para entrega"
    → Localização do entregador aparece no mapa do consumidor
       ↓
 10. Entregador entrega → confirma com foto ou código
     → Status "entregue"
-    → Pedido marcado como pago
-    → Agenda repasse ao lojista (D+7 ou D+2 se antecipação ativa)
-    → Agenda repasse ao entregador autônomo (D+1)
+    → Liquidação Pagar.me automática para cada recipient (lojista e entregador) conforme cronograma do método de pagamento e plano de antecipação configurado
       ↓
 11. Consumidor avalia loja e entregador
 ```
@@ -142,26 +140,31 @@ Dois sub-tipos:
 Consumidor paga R$60,00
 (R$50 produto + R$10 taxa de entrega)
          ↓
-Plataforma recebe R$60,00
-(Merchant of Record — Separate Charges and Transfers)
+Plataforma é Merchant of Record — Pagar.me cria Order com split:
+  Estágio 1:
+    Mallora       R$1,00 (comissão fixa) + R$10,00 (frete temporário)
+    Lojista       R$49,00
          ↓
-Stripe desconta ~R$2,28 (taxa ~3,8% + R$0,50 — cartão BR)
+Pagar.me debita MDR (~3,5% cartão / ~0,99% Pix), rateado entre
+recebedores que pagam taxa (lojista e, no estágio 2, entregador)
          ↓
-Plataforma retém R$1,00 (comissão por pedido)
+Estágio 2 (após alocação do entregador):
+  Transfer Mallora → recipient do entregador  R$10,00
          ↓
-Saldo líquido a distribuir: ~R$56,72
-    ↓                              ↓
-Lojista recebe ~R$46,72        Entregador recebe R$10,00
-(D+7 automático)                (D+1 automático)
-ou D+2 pagando R$0,75
+Liquidação automática do Pagar.me:
+  Lojista:    Pix D+0 · Cartão D+29+2 (ou D+15 com antecipação)
+  Entregador: D+1 padrão na conta bancária do recipient
+  Mallora:    saldo da conta principal
 
-Lojista com antecipação (ex: 40 pedidos):
-→ Desconto: 40 × R$0,75 = R$30,00
-→ Recebe: valor_total_repasse - R$30,00 em D+2
+Lojista em plano pago com antecipação automática:
+  → Recebíveis de cartão liquidam em D+15 com taxa Pagar.me
+    (referência: a partir de 1,25% a.m., contratual)
+  → Antecipação manual disponível para lotes específicos via API
 ```
 
-**Nota sobre PIX:** taxa Stripe para PIX no Brasil é menor (~0,99% + R$0,30).
-O fluxo financeiro é o mesmo — apenas o valor líquido distribuído muda levemente.
+**Nota sobre Pix:** liquidação instantânea. O saldo do recipient cresce
+no momento do `order.paid` e é repassado conforme cronograma da conta
+bancária do recipient (geralmente D+0).
 
 -----
 
@@ -206,7 +209,7 @@ Cada segmento pode ter **categorias globais** (definidas pelo admin) e **categor
 |Foco            |Nacional / grandes centros |Regional / Divinópolis    |
 |Suporte         |Automatizado / distante    |Proximidade com o operador|
 |Dados do lojista|Propriedade da plataforma  |Lojista tem acesso total  |
-|Repasse         |D+30 (iFood)               |D+7 (ou D+2 com taxa)     |
+|Repasse         |D+30 (iFood)               |Pix D+0 · Cartão D+15 com antecipação Pagar.me |
 
 -----
 
@@ -215,14 +218,14 @@ Cada segmento pode ter **categorias globais** (definidas pelo admin) e **categor
 - **Fase 1 (MVP):** Divinópolis — foco em validação do modelo
 - **Fase 2:** Cidades vizinhas do oeste de MG (Formiga, Itaúna, Pará de Minas)
 - **Fase 3:** Multi-regional com operadores locais parceiros (sub-franquia do sistema)
-- **Gateway próprio:** quando atingir volume para negociar taxas Stripe customizadas
+- **Gateway próprio:** quando atingir volume para negociar taxas Pagar.me customizadas (ou avaliar adquirência direta)
 
 -----
 
 ## PREMISSAS E RESTRIÇÕES DO MVP
 
 1. Pagamento na entrega **ainda é suportado** (dinheiro, cartão na maquininha) — não apenas online
-1. O gateway Stripe é para pagamentos **online** (cartão e PIX) — pedidos com pagamento na entrega não geram PaymentIntent
+1. O gateway Pagar.me é para pagamentos **online** (cartão e Pix) — pedidos com pagamento na entrega não geram Order no Pagar.me
 1. A comissão de R$1,00 incide apenas sobre pedidos **com pagamento online confirmado** no MVP
 1. Não há avaliação de crédito ou antecipação para entregadores no MVP
 1. O módulo de estoque está disponível apenas em planos superiores

@@ -63,17 +63,17 @@ Critério de aceite:
 
 -----
 
-### PROMPT — Fase 0.2: Migrations Stripe e Entregador
+### PROMPT — Fase 0.2: Migrations Pagar.me e Entregador
 
 ```
 Tarefa: Aplicar as migrations 002, 003 e 004 no banco Supabase
-local para adicionar os campos Stripe, o módulo de entregadores
+local para adicionar os campos Pagar.me, o módulo de entregadores
 e o módulo financeiro.
 
 Referência: arquivo 04 — Migrations SQL
 
 Passos:
-1. Criar o arquivo supabase/migrations/20240102000000_migration_002_stripe_fields.sql
+1. Criar o arquivo supabase/migrations/20240102000000_migration_002_gateway_fields.sql
    com o conteúdo da migration_002 do arquivo 04.
 
 2. Criar supabase/migrations/20240103000000_migration_003_couriers.sql
@@ -116,6 +116,8 @@ Passos:
    o arquivo 07.
 
 3. Configurar os secrets necessários:
+   supabase secrets set PAGARME_API_KEY=ak_test_xxx
+   supabase secrets set PAGARME_RECIPIENT_ID_MALLORA=re_xxx
    supabase secrets set STRIPE_SECRET_KEY=sk_test_xxx
    supabase secrets set APP_URL=http://localhost:3000
 
@@ -131,10 +133,11 @@ Passos:
 
 Critério de aceite:
 - Função responde sem erro 500
-- Registro criado em tenants com stripe_customer_id preenchido
+- Registro criado em tenants com pagarme_recipient_id preenchido
+- Registro criado em tenants com stripe_customer_id preenchido (Billing)
 - Registro criado em tenant_subscriptions com billing_status = 'trial'
 - Registro criado em stores
-- Resposta contém tenant_id, store_id e stripe_onboarding_url
+- Resposta contém tenant_id, store_id e pagarme_onboarding_status
 ```
 
 -----
@@ -185,31 +188,42 @@ Critério de aceite:
 ### PROMPT — Fase 3.1: Edge Functions de Pagamento
 
 ```
-Tarefa: Criar as Edge Functions create-payment-intent,
-create-subscription, stripe-webhook e daily-payouts.
+Tarefa: Criar as Edge Functions create-pagarme-order,
+transfer-to-courier, create-subscription, stripe-webhook,
+pagarme-webhook e daily-payouts.
 
 Referência: arquivo 07 — Edge Functions de Pagamento
 
 Criar nesta ordem (cada uma depende da anterior):
-1. supabase/functions/create-payment-intent/index.ts
-2. supabase/functions/create-subscription/index.ts
-3. supabase/functions/stripe-webhook/index.ts
-4. supabase/functions/daily-payouts/index.ts
-5. supabase/functions/request-advance/index.ts
+1. supabase/functions/helpers/pagarme.ts (pagarmePost, pagarmeGet)
+2. supabase/functions/create-pagarme-order/index.ts
+3. supabase/functions/transfer-to-courier/index.ts
+4. supabase/functions/create-subscription/index.ts
+5. supabase/functions/pagarme-webhook/index.ts
+6. supabase/functions/stripe-webhook/index.ts
+7. supabase/functions/daily-payouts/index.ts
+8. supabase/functions/request-advance/index.ts
 
-Para testar o stripe-webhook localmente:
+Para testar o pagarme-webhook localmente:
+  curl -X POST http://localhost:54321/functions/v1/pagarme-webhook \
+    -H "Content-Type: application/json" \
+    -H "x-hub-signature: sha256=<hmac>" \
+    -d '{"type":"order.paid","data":{"id":"or_xxx","status":"paid"}}'
+
+Para testar o stripe-webhook localmente (Billing):
   stripe listen --forward-to localhost:54321/functions/v1/stripe-webhook
-  stripe trigger payment_intent.succeeded
+  stripe trigger customer.subscription.updated
 
 Para testar o daily-payouts:
   supabase functions invoke daily-payouts --no-verify-jwt
 
 Critério de aceite:
-- create-payment-intent cria PaymentIntent no Stripe e pedido no banco
-- stripe-webhook atualiza payment_status ao receber succeeded
+- create-pagarme-order cria Order Pagar.me com split_rules corretas
+- pagarme-webhook atualiza payment_status ao receber order.paid
 - stripe-webhook atualiza billing_status ao receber subscription events
+- transfer-to-courier executa transfer após courier ser alocado
 - daily-payouts executa sem erro com banco vazio (0 repasses processados)
-- request-advance calcula taxa corretamente (40 pedidos = R$30,00 = 3000 centavos)
+- request-advance registra solicitação de antecipação corretamente
 ```
 
 -----
@@ -241,8 +255,8 @@ Criar nesta ordem:
 Critério de aceite:
 - Usuário consegue criar conta e chegar no wizard
 - Wizard valida campos obrigatórios em cada etapa
-- Etapa 4 chama onboard-tenant e redireciona para Stripe
-- Callback faz polling até stripe_onboarding_ok = true
+- Etapa 4 chama onboard-tenant e cria recipient Pagar.me
+- Callback faz polling até pagarme_onboarding_status = 'active'
 - Dashboard bloqueia acesso com billing_status = 'cancelada'
 - Banner de aviso aparece com billing_status = 'em_atraso'
 ```
@@ -329,7 +343,7 @@ Criar:
 4. app/(dashboard)/configuracoes/assinatura/page.tsx
 5. components/dashboard/kpis-financeiros.tsx
 6. components/dashboard/grafico-faturamento.tsx (Recharts)
-7. components/dashboard/card-saldo-stripe.tsx
+7. components/dashboard/card-saldo-pagarme.tsx
 8. components/dashboard/card-antecipacao.tsx
 9. components/dashboard/lista-repasses.tsx
 
@@ -338,7 +352,8 @@ Critério de aceite:
 - Gráfico renderiza sem erro com dados vazios
 - Card de antecipação mostra cálculo correto (40 pedidos = -R$30,00)
 - Botão de antecipação tem confirmação em dois passos
-- Link para Stripe Customer Portal funciona
+- Saldo Pagar.me carregado via Edge Function (nunca direto do cliente)
+- Link para Stripe Customer Portal funciona (Billing)
 - Histórico de faturas exibe com link para PDF
 ```
 
@@ -360,14 +375,14 @@ Criar:
 5. components/dashboard/config/aba-horarios.tsx
 6. components/dashboard/config/aba-entrega.tsx
 7. components/dashboard/config/aba-pagamentos.tsx
-8. components/dashboard/config/aba-stripe.tsx
+8. components/dashboard/config/aba-pagarme.tsx
 
 Critério de aceite:
 - Upload de logo e banner com preview antes de salvar
 - Grade de horários com toggle por dia e inputs de time
 - Seleção de entregadores próprios vs pool da plataforma
 - Checkboxes de métodos de pagamento persistem corretamente
-- Aba Stripe mostra link para completar onboarding se pendente
+- Aba Pagar.me mostra status do recipient e link para completar KYC se pendente
 - Cidade padrão pré-preenchida como Divinópolis
 ```
 
@@ -387,8 +402,7 @@ Referência: arquivo 15 — Consumer App Auth e Estrutura
 
 Criar:
 1. lib/supabase.ts com cliente AsyncStorage
-2. lib/stripe.ts com configuração do StripeProvider
-3. app/_layout.tsx com providers e auth listener
+2. app/_layout.tsx com providers e auth listener
 4. app/(auth)/_layout.tsx com redirect se autenticado
 5. app/(tabs)/_layout.tsx com tab bar
 6. app/(auth)/boas-vindas.tsx com três slides
@@ -442,29 +456,31 @@ Critério de aceite:
 
 -----
 
-### PROMPT — Fase 3.3: Consumer App — Checkout Stripe
+### PROMPT — Fase 3.3: Consumer App — Checkout Pagar.me
 
 ```
 Tarefa: Implementar o fluxo completo de carrinho e checkout
-com Stripe Payment Sheet.
+com Pagar.me (cartão tokenizado ou Pix).
 
-Referência: arquivo 17 — Consumer App Carrinho e Checkout Stripe
+Referência: arquivo 17 — Consumer App Carrinho e Checkout Pagar.me
 
 Criar:
 1. app/checkout.tsx com fluxo completo
 2. components/ItemCarrinhoCard.tsx com controle de quantidade
 3. components/SeletorEndereco.tsx com busca de CEP via ViaCEP
 4. components/SeletorPagamento.tsx mostrando apenas métodos aceitos
+5. components/CheckoutCartao.tsx com tokenização via Pagar.me.js
+6. components/CheckoutPix.tsx com QR code e polling de status
 
-Para pagamentos offline, criar pedido diretamente no banco.
-Para pagamentos online, chamar create-payment-intent e abrir Payment Sheet.
+Para pagamentos offline (dinheiro/maquininha), criar pedido diretamente no banco.
+Para pagamentos online, chamar create-pagarme-order e processar resposta.
 
 Critério de aceite:
 - Carrinho exibe itens com controle de quantidade
 - Endereço buscado por CEP preenche automaticamente os campos
 - Seletor de pagamento mostra apenas métodos aceitos pela loja
-- Payment Sheet abre com aparência Verde Minas
-- Cancelar o Payment Sheet cancela o pedido no banco
+- Pix exibe QR code e faz polling até order.paid
+- Cartão tokenizado antes de enviar ao servidor (nunca dados brutos)
 - Após confirmação, navega para tela de acompanhamento
 - platform_fee_amount = 100 em todos os pedidos criados
 ```
@@ -525,7 +541,7 @@ Criar:
 8. app/(auth)/cadastro/veiculo.tsx (tipo de veículo)
 9. app/(auth)/cadastro/documentos.tsx (CNH e foto)
 10. app/aguardando-aprovacao.tsx com polling de 15s
-11. app/stripe-onboarding.tsx chamando onboard-courier
+11. app/pagarme-onboarding.tsx chamando onboard-courier
 
 Criar bucket courier-docs como privado no Supabase Storage.
 Configurar URL de callback mallora-courier://auth/callback.
@@ -535,8 +551,8 @@ Critério de aceite:
 - Foto de perfil selecionada via expo-image-picker
 - Cadastro cria registro em couriers com status 'pendente'
 - Tela de aguardando detecta aprovação e redireciona em 15s
-- Stripe onboarding abre no navegador externo via Linking.openURL
-- Botão "verificar status" detecta stripe_onboarding_ok = true
+- Onboarding Pagar.me abre link KYC no navegador externo via Linking.openURL
+- Botão "verificar status" detecta pagarme_onboarding_status = 'active'
 ```
 
 -----
@@ -583,17 +599,17 @@ do entregador.
 Referência: arquivo 22 — Entregador Financeiro e Ganhos
 
 Criar:
-1. supabase/functions/courier-stripe-info/index.ts
+1. supabase/functions/courier-pagarme-info/index.ts
 2. app/(tabs)/ganhos.tsx com KPIs por período
-3. app/(tabs)/perfil.tsx com status Stripe e logout
-4. components/CardSaldoStripe.tsx (mobile-courier)
+3. app/(tabs)/perfil.tsx com status Pagar.me e logout
+4. components/CardSaldoPagarme.tsx (mobile-courier)
 5. components/EntregaHistoricoCard.tsx
 6. Seção de histórico de repasses na tela de ganhos
 
 Critério de aceite:
 - Seletor de período filtra dados corretamente (hoje/semana/mês)
-- Saldo Stripe carregado via Edge Function (nunca direto do cliente)
-- Link do Express Dashboard abre no navegador externo
+- Saldo Pagar.me carregado via Edge Function (nunca direto do cliente)
+- Status do recipient Pagar.me exibido no perfil
 - Logout garante courier.online = false antes de deslogar
 - KPIs exibem ganhos brutos, entregas concluídas e média
 - Repasses com status 'concluido' aparecem como 'Recebido'
@@ -723,34 +739,40 @@ SUPABASE:
 6. Configurar secrets de produção (chaves sk_live_)
 7. Criar backup manual antes de abrir para usuários
 
-STRIPE:
-8. Verificar conta Stripe para produção
-9. Ativar PIX no Stripe Dashboard
-10. Registrar webhook de produção com todos os eventos
-11. Copiar STRIPE_WEBHOOK_SECRET para secrets do Supabase
-12. Ativar Customer Portal
-13. Configurar regras básicas do Radar
+PAGARME:
+8. Verificar conta Pagar.me para produção (KYC da Mallora concluído)
+9. Criar recipient da Mallora e confirmar status active
+10. Registrar webhook Pagar.me de produção com todos os eventos
+11. Copiar PAGARME_API_KEY, PAGARME_WEBHOOK_SECRET e PAGARME_RECIPIENT_ID_MALLORA para secrets
+12. Configurar antifraude (Clearsale ou Konduto)
+
+STRIPE BILLING:
+13. Verificar conta Stripe para produção
+14. Registrar webhook Stripe de produção (apenas eventos Billing)
+15. Copiar STRIPE_WEBHOOK_SECRET para secrets do Supabase
+16. Ativar Customer Portal
+17. Configurar regras básicas do Radar
 
 VERCEL:
-14. Configurar variáveis de ambiente de produção (pk_live_, sk_live_)
-16. Adicionar domínio customizado
-17. Verificar que APP_URL aponta para o domínio de produção
+18. Configurar variáveis de ambiente de produção (pk_live_, sk_live_)
+19. Adicionar domínio customizado
+20. Verificar que APP_URL aponta para o domínio de produção
 
 CONTEUDO:
-18. Criar usuário admin com role = 'admin'
-19. Inserir categorias globais na tabela categories
-20. Inserir planos na tabela plans com stripe_product_id preenchido
+21. Criar usuário admin com role = 'admin'
+22. Inserir categorias globais na tabela categories
+23. Inserir planos na tabela plans com stripe_product_id preenchido
 
 VALIDACAO:
-21. Fazer um pedido completo em produção com cartão real de R$1,00
-22. Verificar que webhook foi recebido nos logs do Stripe
-23. Verificar que payment_status foi atualizado para 'pago'
-24. Invocar daily-payouts manualmente e verificar logs
+24. Fazer um pedido completo em produção com cartão Pagar.me de R$1,00
+25. Verificar que webhook order.paid foi recebido nos logs do Supabase
+26. Verificar que payment_status foi atualizado para 'pago'
+27. Invocar daily-payouts manualmente e verificar logs
 
 Critério de aceite:
 - Checklist completo do arquivo 27 executado sem pendências
-- Pedido de teste pago e status atualizado corretamente
-- Nenhum erro nos logs do Vercel, Supabase e Stripe após 1 hora
+- Pedido de teste pago via Pagar.me e status atualizado corretamente
+- Nenhum erro nos logs do Vercel, Supabase, Pagar.me e Stripe após 1 hora
 ```
 
 -----
@@ -759,21 +781,22 @@ Critério de aceite:
 
 -----
 
-### PROMPT — Bug: Payment Sheet não abre
+### PROMPT — Bug: Checkout Pagar.me não processa pagamento
 
 ```
-Bug: O Stripe Payment Sheet não está abrindo no app do consumidor.
+Bug: O checkout Pagar.me não está processando o pagamento no app do consumidor.
 
 Verificar nesta ordem:
-1. STRIPE_PUBLISHABLE_KEY está com prefixo EXPO_PUBLIC_ no .env.local?
-2. StripeProvider está envolvendo o app no _layout.tsx raiz?
-3. O client_secret retornado pela Edge Function é válido?
-   (deve ter formato pi_xxxxx_secret_xxxxx)
-4. initPaymentSheet retorna erro? Logar initError.
-5. O PaymentIntent foi criado com currency: 'brl'?
-6. Verificar logs da Edge Function create-payment-intent no Supabase.
+1. PAGARME_API_KEY está configurada nos secrets das Edge Functions?
+2. O token do cartão está sendo gerado via Pagar.me.js antes do envio?
+   (nunca enviar dados brutos do cartão ao servidor)
+3. A Edge Function create-pagarme-order retornou erro? Verificar logs no Supabase.
+4. O campo split_rules está correto? Verificar se todos os recipient_id existem.
+5. Para Pix: o QR code está sendo exibido? O polling de status está rodando?
+6. Verificar webhook pagarme-webhook: o evento order.paid foi recebido?
+7. Verificar a assinatura HMAC do webhook (x-hub-signature header).
 
-Arquivo de referência: 17 — Consumer App Carrinho e Checkout Stripe
+Arquivo de referência: 17 — Consumer App Carrinho e Checkout Pagar.me
 ```
 
 -----
@@ -856,8 +879,8 @@ Verificar nesta ordem:
    supabase functions invoke daily-payouts --no-verify-jwt
 3. Verificar o retorno — campo 'erros' deve estar vazio
 4. Os pedidos têm status = 'entregue' AND payment_status = 'pago'?
-5. Os tenants têm stripe_account_id E stripe_onboarding_ok = true?
-6. Os couriers autônomos têm stripe_account_id E stripe_onboarding_ok = true?
+5. Os tenants têm pagarme_recipient_id E pagarme_onboarding_status = 'active'?
+6. Os couriers autônomos têm pagarme_recipient_id E pagarme_onboarding_status = 'active'?
 7. As datas de referência batem? O cron busca pedidos de D-1 (entregadores)
    e D-7 (lojistas) baseado na data de execução.
 8. Verificar logs detalhados da Edge Function no Supabase Dashboard.
