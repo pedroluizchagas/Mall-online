@@ -5,18 +5,31 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { z } from 'zod'
 import type { HorariosFuncionamento } from '@mallora/types'
 
-const schemaDadosLoja = z.object({
+const schemaDadosGerais = z.object({
   nome: z.string().min(2, 'Nome obrigatório'),
   descricao: z.string().optional(),
   telefone: z.string().min(10, 'Telefone inválido').optional(),
+  slug: z
+    .string()
+    .min(2, 'Slug deve ter ao menos 2 caracteres')
+    .max(60, 'Slug muito longo')
+    .regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens')
+    .optional(),
+  ativo: z.boolean(),
+})
+
+const schemaEntrega = z.object({
   taxa_entrega: z.number().int().min(0),
   tempo_entrega: z.number().int().min(1).max(180).optional(),
   raio_entrega_km: z.number().min(0).max(50).optional(),
+  usa_entregadores_proprios: z.boolean(),
+})
+
+const schemaPagamentos = z.object({
   aceita_dinheiro: z.boolean(),
   aceita_pix: z.boolean(),
   aceita_cartao_maquininha: z.boolean(),
   aceita_cartao_online: z.boolean(),
-  usa_entregadores_proprios: z.boolean(),
 })
 
 // Buscar dados da loja
@@ -39,18 +52,14 @@ export async function getDadosLoja() {
   return { tenant, loja }
 }
 
-// Atualizar dados gerais da loja
-export async function atualizarDadosLoja(
+// Atualizar dados gerais da loja (nome, descrição, telefone, slug, status)
+export async function atualizarDadosGerais(
   _prevState: unknown,
   formData: FormData
 ) {
   const supabase = createSupabaseServer()
 
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('id')
-    .single()
-
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
   if (!tenant) return { erro: 'Tenant não encontrado' }
 
   const { data: loja } = await supabase
@@ -58,32 +67,100 @@ export async function atualizarDadosLoja(
     .select('id')
     .eq('tenant_id', tenant.id)
     .single()
+  if (!loja) return { erro: 'Loja não encontrada' }
 
+  const slugRaw = formData.get('slug')
+
+  const dados = schemaDadosGerais.safeParse({
+    nome: formData.get('nome'),
+    descricao: formData.get('descricao') || undefined,
+    telefone: formData.get('telefone') || undefined,
+    slug: slugRaw ? String(slugRaw).toLowerCase().trim() : undefined,
+    ativo: formData.get('ativo') === 'true',
+  })
+
+  if (!dados.success) return { erro: dados.error.errors[0].message }
+
+  const { error } = await supabase
+    .from('stores')
+    .update(dados.data)
+    .eq('id', loja.id)
+    .eq('tenant_id', tenant.id)
+
+  if (error) return { erro: error.message }
+
+  revalidatePath('/configuracoes')
+  revalidatePath('/minha-loja')
+  return { sucesso: true }
+}
+
+// Atualizar configurações de entrega
+export async function atualizarConfigEntrega(
+  _prevState: unknown,
+  formData: FormData
+) {
+  const supabase = createSupabaseServer()
+
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  if (!tenant) return { erro: 'Tenant não encontrado' }
+
+  const { data: loja } = await supabase
+    .from('stores')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .single()
   if (!loja) return { erro: 'Loja não encontrada' }
 
   const taxa_raw = formData.get('taxa_entrega')
   const tempo_raw = formData.get('tempo_entrega')
   const raio_raw = formData.get('raio_entrega_km')
 
-  const dados = schemaDadosLoja.safeParse({
-    nome: formData.get('nome'),
-    descricao: formData.get('descricao') || undefined,
-    telefone: formData.get('telefone') || undefined,
-    taxa_entrega: taxa_raw
-      ? Math.round(parseFloat(String(taxa_raw)) * 100)
-      : 0,
+  const dados = schemaEntrega.safeParse({
+    taxa_entrega: taxa_raw ? Math.round(parseFloat(String(taxa_raw)) * 100) : 0,
     tempo_entrega: tempo_raw ? parseInt(String(tempo_raw)) : undefined,
     raio_entrega_km: raio_raw ? parseFloat(String(raio_raw)) : undefined,
+    usa_entregadores_proprios: formData.get('usa_entregadores_proprios') === 'true',
+  })
+
+  if (!dados.success) return { erro: dados.error.errors[0].message }
+
+  const { error } = await supabase
+    .from('stores')
+    .update(dados.data)
+    .eq('id', loja.id)
+    .eq('tenant_id', tenant.id)
+
+  if (error) return { erro: error.message }
+
+  revalidatePath('/configuracoes')
+  return { sucesso: true }
+}
+
+// Atualizar métodos de pagamento
+export async function atualizarMetodosPagamento(
+  _prevState: unknown,
+  formData: FormData
+) {
+  const supabase = createSupabaseServer()
+
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  if (!tenant) return { erro: 'Tenant não encontrado' }
+
+  const { data: loja } = await supabase
+    .from('stores')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .single()
+  if (!loja) return { erro: 'Loja não encontrada' }
+
+  const dados = schemaPagamentos.safeParse({
     aceita_dinheiro: formData.get('aceita_dinheiro') === 'true',
     aceita_pix: formData.get('aceita_pix') === 'true',
     aceita_cartao_maquininha: formData.get('aceita_cartao_maquininha') === 'true',
     aceita_cartao_online: formData.get('aceita_cartao_online') === 'true',
-    usa_entregadores_proprios: formData.get('usa_entregadores_proprios') === 'true',
   })
 
-  if (!dados.success) {
-    return { erro: dados.error.errors[0].message }
-  }
+  if (!dados.success) return { erro: dados.error.errors[0].message }
 
   const { error } = await supabase
     .from('stores')

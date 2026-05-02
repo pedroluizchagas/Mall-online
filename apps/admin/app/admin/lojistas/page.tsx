@@ -23,16 +23,16 @@ export default async function PaginaLojistas({
   const statusAtual = searchParams.status ?? ''
 
   return (
-    <div className="p-6 space-y-5 max-w-[1400px]">
+    <div className="p-9 space-y-5 max-w-[1400px]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center">
-            <Store size={17} className="text-emerald-600" />
+          <div className="w-9 h-9 rounded-full bg-brick/10 flex items-center justify-center">
+            <Store size={17} className="text-brick-dk" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Lojistas</h1>
-            <p className="text-xs text-gray-400">{tenants.length} encontrado(s)</p>
+            <h1 className="font-bold text-[17px] tracking-tight text-ink">Lojistas</h1>
+            <p className="text-[13px] text-ink-3">{tenants.length} encontrado(s)</p>
           </div>
         </div>
       </div>
@@ -43,11 +43,12 @@ export default async function PaginaLojistas({
           <a
             key={f.valor}
             href={`/admin/lojistas${f.valor ? `?status=${f.valor}` : ''}`}
-            className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+            className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${
               statusAtual === f.valor
-                ? 'bg-[#1A4D3A] text-white border-[#1A4D3A] shadow-sm'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                ? 'border-transparent text-brick-ink'
+                : 'bg-bg text-ink-2 border-line hover:border-line-2 hover:bg-bg-2'
             }`}
+            style={statusAtual === f.valor ? { background: 'var(--brick)' } : {}}
           >
             {f.label}
           </a>

@@ -18,16 +18,16 @@ export default async function PaginaEntregadores({
   const entregadores = await getEntregadores({ status })
 
   return (
-    <div className="p-6 space-y-5 max-w-[1400px]">
+    <div className="p-9 space-y-5 max-w-[1400px]">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center">
-            <Bike size={17} className="text-blue-600" />
+          <div className="w-9 h-9 rounded-full bg-sky/10 flex items-center justify-center">
+            <Bike size={17} className="text-sky" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Entregadores</h1>
-            <p className="text-xs text-gray-400">{entregadores.length} encontrado(s)</p>
+            <h1 className="font-bold text-[17px] tracking-tight text-ink">Entregadores</h1>
+            <p className="text-[13px] text-ink-3">{entregadores.length} encontrado(s)</p>
           </div>
         </div>
       </div>
@@ -38,11 +38,12 @@ export default async function PaginaEntregadores({
           <a
             key={f.valor}
             href={`/admin/entregadores?status=${f.valor}`}
-            className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
+            className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${
               status === f.valor
-                ? 'bg-[#1A4D3A] text-white border-[#1A4D3A] shadow-sm'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                ? 'border-transparent text-brick-ink'
+                : 'bg-bg text-ink-2 border-line hover:border-line-2 hover:bg-bg-2'
             }`}
+            style={status === f.valor ? { background: 'var(--brick)' } : {}}
           >
             {f.label}
           </a>

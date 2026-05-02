@@ -7,13 +7,13 @@ export default async function PaginaPlanos() {
   const planos = await getPlanos()
 
   return (
-    <div className="p-6 space-y-5 max-w-3xl">
+    <div className="p-9 space-y-5 max-w-3xl">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 bg-violet-100 rounded-xl flex items-center justify-center">
-          <CreditCard size={17} className="text-violet-600" />
+        <div className="w-9 h-9 rounded-full bg-berry/10 flex items-center justify-center">
+          <CreditCard size={17} className="text-berry" />
         </div>
-        <h1 className="text-xl font-bold text-gray-900">Planos</h1>
+        <h1 className="font-bold text-[17px] tracking-tight text-ink">Planos</h1>
       </div>
 
       {/* Planos list */}
@@ -21,31 +21,32 @@ export default async function PaginaPlanos() {
         {planos.map((plano: any) => (
           <div
             key={plano.id}
-            className={`bg-white rounded-2xl border shadow-card p-5 transition-opacity ${
-              plano.ativo ? 'border-gray-100' : 'border-gray-100 opacity-50'
+            className={`bg-bg rounded-lg border p-5 transition-opacity ${
+              plano.ativo ? 'border-line' : 'border-line opacity-50'
             }`}
+            style={{ boxShadow: 'var(--shadow-sm)' }}
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2.5">
                 {plano.ativo ? (
-                  <CheckCircle2 size={16} className="text-emerald-500 flex-shrink-0" />
+                  <CheckCircle2 size={16} className="text-ok flex-shrink-0" />
                 ) : (
-                  <XCircle size={16} className="text-gray-300 flex-shrink-0" />
+                  <XCircle size={16} className="text-ink-3 flex-shrink-0" />
                 )}
                 <div>
-                  <p className="font-semibold text-gray-800">{plano.nome}</p>
+                  <p className="font-semibold text-ink">{plano.nome}</p>
                   {plano.descricao && (
-                    <p className="text-xs text-gray-400 mt-0.5">{plano.descricao}</p>
+                    <p className="text-[13px] text-ink-3 mt-0.5">{plano.descricao}</p>
                   )}
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-lg font-bold text-[#1A4D3A]">
+                <p className="text-[17px] font-bold text-ink">
                   {formatarReais(plano.preco_mensal)}
-                  <span className="text-sm font-normal text-gray-400">/mês</span>
+                  <span className="text-[13px] font-normal text-ink-3">/mês</span>
                 </p>
                 {!plano.ativo && (
-                  <span className="text-xs text-gray-400">Inativo</span>
+                  <span className="text-[13px] text-ink-3">Inativo</span>
                 )}
               </div>
             </div>
@@ -60,7 +61,7 @@ export default async function PaginaPlanos() {
               ].map((item) => (
                 <span
                   key={item}
-                  className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg"
+                  className="text-[11px] bg-bg-2 text-ink-2 px-2.5 py-1 rounded-full font-medium"
                 >
                   {item}
                 </span>
@@ -68,7 +69,7 @@ export default async function PaginaPlanos() {
             </div>
 
             {plano.stripe_price_id && (
-              <p className="text-[10px] text-gray-300 font-mono mt-3 truncate">
+              <p className="text-[10px] text-ink-3 font-mono mt-3 truncate">
                 {plano.stripe_price_id}
               </p>
             )}
@@ -77,10 +78,10 @@ export default async function PaginaPlanos() {
       </div>
 
       {/* Novo plano */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-card p-6">
+      <div className="bg-bg border border-line rounded-lg p-6" style={{ boxShadow: 'var(--shadow-sm)' }}>
         <div className="flex items-center gap-2 mb-5">
-          <Plus size={16} className="text-[#4CAF82]" />
-          <h2 className="font-semibold text-gray-800">Novo plano</h2>
+          <Plus size={16} className="text-brick-dk" />
+          <h2 className="font-semibold text-ink">Novo plano</h2>
         </div>
         <FormularioPlano />
       </div>

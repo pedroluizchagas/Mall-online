@@ -28,7 +28,7 @@ export function GraficoGMV() {
       <div className="flex gap-3">
         {/* Y-axis */}
         <div
-          className="flex flex-col justify-between items-end pr-2 pb-6 text-[10px] text-gray-400 select-none"
+          className="flex flex-col justify-between items-end pr-2 pb-6 text-[10px] text-ink-3 select-none"
           style={{ height: CHART_H }}
         >
           {[MAX, MAX * 0.75, MAX * 0.5, MAX * 0.25, 0].map((v, i) => (
@@ -43,7 +43,7 @@ export function GraficoGMV() {
             {[0, 0.25, 0.5, 0.75, 1].map((pct) => (
               <div
                 key={pct}
-                className="absolute w-full border-t border-gray-100"
+                className="absolute w-full border-t border-line"
                 style={{ bottom: `${pct * 100}%` }}
               />
             ))}
@@ -62,31 +62,40 @@ export function GraficoGMV() {
                   >
                     {/* Tooltip */}
                     <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block
-                      bg-gray-900 text-white text-[11px] rounded-xl px-3 py-2 whitespace-nowrap z-20
-                      shadow-xl pointer-events-none">
-                      <p className="font-semibold text-[#4CAF82]">GMV R$ {(dado.gmv / 1000).toFixed(1)}K</p>
-                      <p className="text-gray-400">Comissão R$ {(dado.comissao / 1000).toFixed(1)}K</p>
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+                      text-[11px] rounded-lg px-3 py-2 whitespace-nowrap z-20
+                      pointer-events-none"
+                      style={{
+                        background: 'var(--ink)',
+                        color: 'var(--bg)',
+                        boxShadow: 'var(--shadow-lg)',
+                      }}
+                    >
+                      <p className="font-semibold text-brick">GMV R$ {(dado.gmv / 1000).toFixed(1)}K</p>
+                      <p className="text-ink-3" style={{ color: 'rgba(245,245,240,0.55)' }}>
+                        Comissão R$ {(dado.comissao / 1000).toFixed(1)}K
+                      </p>
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent"
+                        style={{ borderTopColor: 'var(--ink)' }} />
                     </div>
 
                     {/* GMV bar */}
                     <div
-                      className="w-[42%] rounded-t-md transition-all duration-200"
+                      className="w-[42%] rounded-t-sm transition-all duration-200"
                       style={{
                         height: `${hGmv}%`,
                         background: isActive
-                          ? 'linear-gradient(to top, #4CAF82, #6DD5A5)'
-                          : 'rgba(76, 175, 130, 0.35)',
+                          ? 'var(--brick)'
+                          : 'rgba(193,241,72,0.25)',
                       }}
                     />
                     {/* Comissão bar */}
                     <div
-                      className="w-[42%] rounded-t-md transition-all duration-200"
+                      className="w-[42%] rounded-t-sm transition-all duration-200"
                       style={{
                         height: `${hComissao}%`,
                         background: isActive
-                          ? 'linear-gradient(to top, #1A4D3A, #2D7A5C)'
-                          : 'rgba(26, 77, 58, 0.25)',
+                          ? 'var(--brick-dk)'
+                          : 'rgba(163,210,42,0.18)',
                       }}
                     />
                   </div>
@@ -101,7 +110,7 @@ export function GraficoGMV() {
               <div
                 key={i}
                 className={`flex-1 text-center text-[10px] ${
-                  i === mesAtual ? 'text-[#4CAF82] font-semibold' : 'text-gray-400'
+                  i === mesAtual ? 'text-brick-dk font-semibold' : 'text-ink-3'
                 }`}
               >
                 {mes}
@@ -114,12 +123,12 @@ export function GraficoGMV() {
       {/* Legend */}
       <div className="flex items-center gap-5 mt-4 pl-9">
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-sm bg-[#4CAF82]" />
-          <span className="text-xs text-gray-500">GMV</span>
+          <div className="w-2.5 h-2.5 rounded-sm bg-brick" />
+          <span className="text-[13px] text-ink-3">GMV</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2.5 h-2.5 rounded-sm bg-[#1A4D3A]" />
-          <span className="text-xs text-gray-500">Comissão</span>
+          <div className="w-2.5 h-2.5 rounded-sm bg-brick-dk" />
+          <span className="text-[13px] text-ink-3">Comissão</span>
         </div>
       </div>
     </div>

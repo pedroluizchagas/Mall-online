@@ -21,51 +21,51 @@ export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
 
   if (entregadores.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-card py-16 text-center">
-        <p className="text-gray-400 text-sm">Nenhum entregador encontrado com este status.</p>
+      <div className="bg-bg rounded-lg border border-line py-16 text-center" style={{ boxShadow: 'var(--shadow-sm)' }}>
+        <p className="text-ink-3 text-[13px]">Nenhum entregador encontrado com este status.</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-card overflow-hidden">
-      <table className="w-full text-sm">
+    <div className="bg-bg rounded-lg border border-line overflow-hidden" style={{ boxShadow: 'var(--shadow-sm)' }}>
+      <table className="w-full text-[13px]">
         <thead>
-          <tr className="border-b border-gray-100 bg-gray-50/60">
+          <tr className="border-b border-line bg-bg-2">
             {['Entregador', 'Tipo', 'Veículo', 'CNH', 'Stripe', 'Cadastro', ''].map((h) => (
-              <th key={h} className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <th key={h} className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
                 {h}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-50">
+        <tbody className="divide-y divide-line">
           {entregadores.map((courier: any) => (
-            <tr key={courier.id} className="hover:bg-gray-50/70 transition-colors">
+            <tr key={courier.id} className="hover:bg-bg-2 transition-colors">
               <td className="px-5 py-4">
-                <p className="font-semibold text-gray-800">{courier.nome}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{courier.telefone}</p>
+                <p className="font-semibold text-ink">{courier.nome}</p>
+                <p className="text-[11px] text-ink-3 mt-0.5">{courier.telefone}</p>
                 {courier.tenants && (
-                  <p className="text-xs text-[#4CAF82] mt-0.5">
+                  <p className="text-[11px] text-brick-dk mt-0.5">
                     {courier.tenants.nome_responsavel}
                   </p>
                 )}
               </td>
 
               <td className="px-5 py-4">
-                <span className={`text-xs px-2.5 py-1 rounded-lg font-medium ${
+                <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold ${
                   courier.tipo === 'autonomo'
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-blue-100 text-blue-700'
+                    ? 'bg-berry/10 text-berry'
+                    : 'bg-sky/10 text-sky'
                 }`}>
                   {courier.tipo === 'autonomo' ? 'Autônomo' : 'Próprio'}
                 </span>
               </td>
 
-              <td className="px-5 py-4 text-gray-600 text-sm capitalize">
+              <td className="px-5 py-4 text-ink-2 capitalize">
                 {courier.veiculo_tipo?.replace('_', ' ') ?? '—'}
                 {courier.veiculo_placa && (
-                  <span className="text-gray-400 ml-1.5 text-xs">({courier.veiculo_placa})</span>
+                  <span className="text-ink-3 ml-1.5 text-[11px]">({courier.veiculo_placa})</span>
                 )}
               </td>
 
@@ -75,24 +75,24 @@ export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
                     href={courier.cnh_foto_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-[#4CAF82] hover:text-[#1A4D3A] font-medium transition-colors"
+                    className="flex items-center gap-1 text-[11px] text-brick-dk hover:text-ink font-medium transition-colors"
                   >
                     <ExternalLink size={11} /> Ver foto
                   </a>
                 ) : (
-                  <span className="text-xs text-gray-400">Não enviada</span>
+                  <span className="text-[13px] text-ink-3">Não enviada</span>
                 )}
               </td>
 
               <td className="px-5 py-4">
-                <span className={`text-xs font-semibold ${
-                  courier.stripe_onboarding_ok ? 'text-emerald-600' : 'text-amber-500'
+                <span className={`text-[11px] font-bold ${
+                  courier.stripe_onboarding_ok ? 'text-ok' : 'text-warn'
                 }`}>
                   {courier.stripe_onboarding_ok ? '✓ OK' : '⏳ Pendente'}
                 </span>
               </td>
 
-              <td className="px-5 py-4 text-xs text-gray-400">
+              <td className="px-5 py-4 text-[13px] text-ink-3">
                 {new Date(courier.criado_em).toLocaleDateString('pt-BR')}
               </td>
 
@@ -100,37 +100,21 @@ export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
                 <div className="flex gap-1.5">
                   {courier.status === 'pendente' && (
                     <>
-                      <ActionBtn
-                        onClick={() => handleAprovar(courier.id)}
-                        disabled={isPending}
-                        variant="success"
-                      >
+                      <ActionBtn onClick={() => handleAprovar(courier.id)} disabled={isPending} variant="success">
                         Aprovar
                       </ActionBtn>
-                      <ActionBtn
-                        onClick={() => handleReprovar(courier.id)}
-                        disabled={isPending}
-                        variant="danger"
-                      >
+                      <ActionBtn onClick={() => handleReprovar(courier.id)} disabled={isPending} variant="danger">
                         Reprovar
                       </ActionBtn>
                     </>
                   )}
                   {courier.status === 'aprovado' && (
-                    <ActionBtn
-                      onClick={() => handleSuspender(courier.id)}
-                      disabled={isPending}
-                      variant="neutral"
-                    >
+                    <ActionBtn onClick={() => handleSuspender(courier.id)} disabled={isPending} variant="neutral">
                       Suspender
                     </ActionBtn>
                   )}
                   {['reprovado', 'suspenso'].includes(courier.status) && (
-                    <ActionBtn
-                      onClick={() => handleAprovar(courier.id)}
-                      disabled={isPending}
-                      variant="success"
-                    >
+                    <ActionBtn onClick={() => handleAprovar(courier.id)} disabled={isPending} variant="success">
                       Reativar
                     </ActionBtn>
                   )}
@@ -156,16 +140,16 @@ function ActionBtn({
   variant: 'success' | 'danger' | 'neutral'
 }) {
   const styles = {
-    success: 'border-emerald-200 text-emerald-700 hover:bg-emerald-50',
-    danger:  'border-red-200 text-red-600 hover:bg-red-50',
-    neutral: 'border-gray-200 text-gray-600 hover:bg-gray-50',
+    success: 'border-ok/30 text-ok hover:bg-ok/5',
+    danger:  'border-err/30 text-err hover:bg-err/5',
+    neutral: 'border-line text-ink-3 hover:bg-bg-2',
   }
 
   return (
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`text-xs px-2.5 py-1.5 rounded-lg border font-medium
+      className={`text-[11px] px-2.5 py-1.5 rounded-full border font-bold
         transition-all disabled:opacity-50 ${styles[variant]}`}
     >
       {children}

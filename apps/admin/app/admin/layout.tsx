@@ -17,9 +17,20 @@ export default async function LayoutAdmin({
   const adminEmail = user.email || ''
 
   return (
-    <div className="flex h-screen bg-[#F0F4F8] overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--sidebar)' }}>
       <SidebarNav userName={adminName} userEmail={adminEmail} />
-      <main className="flex-1 overflow-auto">{children}</main>
+      <div className="flex-1 overflow-hidden" style={{ padding: '12px 12px 12px 0' }}>
+        <div
+          className="flex flex-col rounded-[24px] overflow-hidden"
+          style={{
+            height: 'calc(100vh - 24px)',
+            background: 'var(--bg)',
+            boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 24px -8px rgba(0,0,0,0.35)',
+          }}
+        >
+          <main className="flex-1 overflow-y-auto min-h-0">{children}</main>
+        </div>
+      </div>
     </div>
   )
 }

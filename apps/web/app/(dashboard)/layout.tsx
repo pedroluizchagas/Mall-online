@@ -44,21 +44,21 @@ export default async function LayoutDashboard({
 
   return (
     <div
-      className="flex min-h-screen overflow-hidden"
+      className="flex h-screen overflow-hidden"
       style={{ background: 'var(--sidebar)' }}
     >
       <SidebarDashboard nomeLoja={loja?.nome ?? 'Minha loja'} />
 
       <div
-        className="flex-1 flex flex-col min-w-0"
+        className="flex-1 flex flex-col min-w-0 overflow-hidden"
         style={{ padding: '12px 12px 12px 0' }}
       >
         <div
-          className="flex-1 flex flex-col min-w-0 overflow-hidden rounded-[24px]"
+          className="flex flex-col min-w-0 overflow-hidden rounded-[24px]"
           style={{
             background: 'var(--bg)',
             boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 24px -8px rgba(0,0,0,0.35)',
-            minHeight: 'calc(100vh - 24px)',
+            height: 'calc(100vh - 24px)',
           }}
         >
           {/* Banners no topo do conteúdo */}
@@ -72,7 +72,7 @@ export default async function LayoutDashboard({
             >
               <p className="text-sm" style={{ color: '#92400e' }}>
                 Sua assinatura está com pagamento em atraso.{' '}
-                <a href="/configuracoes/assinatura" className="underline font-medium">
+                <a href="/configuracoes/conta" className="underline font-medium">
                   Regularize agora
                 </a>
               </p>
@@ -81,7 +81,7 @@ export default async function LayoutDashboard({
 
           {!tenant.stripe_onboarding_ok && <BannerStripePendente />}
 
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto min-h-0">
             {!assinaturaAtiva && assinatura?.billing_status === 'cancelada' ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center max-w-sm">
@@ -92,7 +92,7 @@ export default async function LayoutDashboard({
                     Reative sua assinatura para continuar usando a plataforma.
                   </p>
                   <a
-                    href="/configuracoes/assinatura"
+                    href="/configuracoes/conta"
                     className="px-6 py-2.5 rounded-full font-bold inline-block transition-colors"
                     style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
                   >

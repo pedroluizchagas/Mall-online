@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Search,
   LogOut,
+  UserCircle,
   type LucideIcon,
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
@@ -40,7 +41,8 @@ const mainItems: NavItem[] = [
 const configItems: NavItem[] = [
   { href: '/mensagens', label: 'Mensagens', icon: Bell },
   { href: '/avaliacoes', label: 'Avaliações', icon: Star },
-  { href: '/configuracoes', label: 'Configurações', icon: Settings },
+  { href: '/configuracoes/loja', label: 'Configurações', icon: Settings },
+  { href: '/configuracoes/conta', label: 'Minha conta', icon: UserCircle },
   { href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
 ]
 

@@ -1,7 +1,8 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
-import { atualizarDadosLoja, atualizarEndereco } from '@/lib/actions/lojas'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
+import { atualizarConfigEntrega, atualizarEndereco } from '@/lib/actions/lojas'
 
 const inputClass =
   'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
@@ -21,8 +22,8 @@ function BotaoSalvar({ label }: { label: string }) {
 }
 
 export function AbaEntrega({ loja }: { loja: any }) {
-  const [estadoEntrega, dispatchEntrega] = useFormState(atualizarDadosLoja, null)
-  const [estadoEndereco, dispatchEndereco] = useFormState(atualizarEndereco, null)
+  const [estadoEntrega, dispatchEntrega] = useActionState(atualizarConfigEntrega, null)
+  const [estadoEndereco, dispatchEndereco] = useActionState(atualizarEndereco, null)
 
   return (
     <div className="space-y-6">
@@ -126,14 +127,6 @@ export function AbaEntrega({ loja }: { loja: any }) {
               })}
             </div>
           </div>
-
-          <input type="hidden" name="nome" value={loja.nome} />
-          <input type="hidden" name="descricao" value={loja.descricao ?? ''} />
-          <input type="hidden" name="telefone" value={loja.telefone ?? ''} />
-          <input type="hidden" name="aceita_dinheiro" value={String(loja.aceita_dinheiro)} />
-          <input type="hidden" name="aceita_pix" value={String(loja.aceita_pix)} />
-          <input type="hidden" name="aceita_cartao_maquininha" value={String(loja.aceita_cartao_maquininha)} />
-          <input type="hidden" name="aceita_cartao_online" value={String(loja.aceita_cartao_online)} />
 
           <BotaoSalvar label="Salvar configurações" />
         </form>

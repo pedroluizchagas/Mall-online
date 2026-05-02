@@ -864,7 +864,7 @@ describe('onboard-tenant Edge Function', () => {
       const handler = createHandler({
         stripe: mockStripe,
         supabaseClient: createMockSupabaseChain(),
-        appUrl: 'https://mallora.com.br',
+        appUrl: 'https://app.mallevo.com.br',
         getAuthenticatedUser: async () => FAKE_USER,
       })
 
@@ -874,11 +874,11 @@ describe('onboard-tenant Edge Function', () => {
       assertExists(capturedParams)
       assertEquals(
         capturedParams!.refresh_url,
-        'https://mallora.com.br/onboarding/stripe/retry',
+        'https://app.mallevo.com.br/onboarding/stripe/retry',
       )
       assertEquals(
         capturedParams!.return_url,
-        'https://mallora.com.br/onboarding/stripe/callback',
+        'https://app.mallevo.com.br/onboarding/stripe/callback',
       )
       assertEquals(capturedParams!.type, 'account_onboarding')
     })

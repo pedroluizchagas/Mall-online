@@ -1,10 +1,11 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { useState } from 'react'
-import { atualizarDadosLoja, atualizarImagensLoja } from '@/lib/actions/lojas'
+import { atualizarDadosGerais, atualizarImagensLoja } from '@/lib/actions/lojas'
 
-function BotaoSalvar() {
+function BotaoSalvar({ label = 'Salvar' }: { label?: string }) {
   const { pending } = useFormStatus()
   return (
     <button
@@ -13,7 +14,7 @@ function BotaoSalvar() {
       className="px-6 py-2.5 rounded-full text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity"
       style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
     >
-      {pending ? 'Salvando...' : 'Salvar'}
+      {pending ? 'Salvando...' : label}
     </button>
   )
 }
@@ -22,10 +23,11 @@ const inputClass =
   'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
 
 export function AbaGeral({ loja }: { loja: any }) {
-  const [estadoGeral, dispatchGeral] = useFormState(atualizarDadosLoja, null)
-  const [estadoImagens, dispatchImagens] = useFormState(atualizarImagensLoja, null)
+  const [estadoGeral, dispatchGeral] = useActionState(atualizarDadosGerais, null)
+  const [estadoImagens, dispatchImagens] = useActionState(atualizarImagensLoja, null)
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
   const [previewBanner, setPreviewBanner] = useState<string | null>(null)
+  const [ativo, setAtivo] = useState<boolean>(loja.ativo ?? true)
 
   function handleImagemChange(
     e: React.ChangeEvent<HTMLInputElement>,
@@ -33,6 +35,16 @@ export function AbaGeral({ loja }: { loja: any }) {
   ) {
     const file = e.target.files?.[0]
     if (file) setter(URL.createObjectURL(file))
+  }
+
+  function sanitizarSlug(valor: string) {
+    return valor
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
   }
 
   return (
@@ -76,7 +88,6 @@ export function AbaGeral({ loja }: { loja: any }) {
                   accept="image/jpeg,image/png,image/webp"
                   onChange={(e) => handleImagemChange(e, setPreviewLogo)}
                   className="text-sm text-ink-3 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:cursor-pointer"
-                  style={{ '--tw-file-bg': 'var(--bg-2)' } as React.CSSProperties}
                 />
                 <p className="text-xs text-ink-3 mt-1">Recomendado: 400×400px. JPEG ou PNG.</p>
               </div>
@@ -107,7 +118,7 @@ export function AbaGeral({ loja }: { loja: any }) {
             </div>
           </div>
 
-          <BotaoSalvar />
+          <BotaoSalvar label="Salvar imagens" />
         </form>
       </div>
 
@@ -162,14 +173,60 @@ export function AbaGeral({ loja }: { loja: any }) {
             />
           </div>
 
-          <input type="hidden" name="taxa_entrega" value={(loja.taxa_entrega / 100).toFixed(2)} />
-          <input type="hidden" name="tempo_entrega" value={loja.tempo_entrega ?? ''} />
-          <input type="hidden" name="raio_entrega_km" value={loja.raio_entrega_km ?? ''} />
-          <input type="hidden" name="aceita_dinheiro" value={String(loja.aceita_dinheiro)} />
-          <input type="hidden" name="aceita_pix" value={String(loja.aceita_pix)} />
-          <input type="hidden" name="aceita_cartao_maquininha" value={String(loja.aceita_cartao_maquininha)} />
-          <input type="hidden" name="aceita_cartao_online" value={String(loja.aceita_cartao_online)} />
-          <input type="hidden" name="usa_entregadores_proprios" value={String(loja.usa_entregadores_proprios)} />
+          <div>
+            <label className="block text-sm font-medium text-ink-2 mb-1">
+              Slug da loja
+            </label>
+            <div className="flex items-center rounded-xl overflow-hidden" style={{ border: '1px solid var(--line)' }}>
+              <span
+                className="px-3 py-2.5 text-sm flex-shrink-0"
+                style={{ background: 'var(--bg-2)', color: 'var(--ink-3)', borderRight: '1px solid var(--line)' }}
+              >
+                mallora.app/
+              </span>
+              <input
+                name="slug"
+                defaultValue={loja.slug ?? ''}
+                placeholder="minha-loja"
+                className="flex-1 px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow"
+                onChange={(e) => {
+                  e.target.value = sanitizarSlug(e.target.value)
+                }}
+              />
+            </div>
+            <p className="text-xs text-ink-3 mt-1">
+              URL pública da sua loja. Só letras minúsculas, números e hífens.
+              {loja.slug && ' Alterar invalida links compartilhados.'}
+            </p>
+          </div>
+
+          {/* Status da loja */}
+          <div>
+            <label className="block text-sm font-medium text-ink-2 mb-2">Status da loja</label>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={ativo}
+                onClick={() => setAtivo((v) => !v)}
+                className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
+                style={{ background: ativo ? 'var(--brick)' : 'var(--bg-3)' }}
+              >
+                <span
+                  className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
+                  style={{ transform: ativo ? 'translateX(22px)' : 'translateX(2px)' }}
+                />
+              </button>
+              <span className="text-sm text-ink">
+                {ativo ? (
+                  <span>Loja <strong>ativa</strong> — clientes podem fazer pedidos</span>
+                ) : (
+                  <span>Loja <strong>inativa</strong> — pedidos pausados</span>
+                )}
+              </span>
+            </div>
+            <input type="hidden" name="ativo" value={String(ativo)} />
+          </div>
 
           <BotaoSalvar />
         </form>
