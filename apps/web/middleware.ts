@@ -22,6 +22,14 @@ function getSubdomain(hostname: string): string | null {
   return null
 }
 
+function redirectComCookies(destino: URL, response: NextResponse): NextResponse {
+  const redirect = NextResponse.redirect(destino)
+  response.cookies.getAll().forEach((cookie) => {
+    redirect.cookies.set(cookie.name, cookie.value, cookie)
+  })
+  return redirect
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
   const slug = getSubdomain(hostname)
@@ -62,25 +70,37 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
+  // Apenas GET requests recebem lógica de redirecionamento em rotas públicas.
+  // POSTs chegam de Server Actions e devem ser processados pelo servidor.
+  if (request.method !== 'GET') {
+    return response
+  }
+
   if (rotasPublicas.some(rota => pathname.startsWith(rota))) {
     if (user) {
-      const { data: tenant } = await supabase
+      const { data: tenant, error: tenantError } = await supabase
         .from('tenants')
         .select('id')
         .single()
+
+      // PGRST116 = nenhuma linha encontrada (usuário sem tenant de fato).
+      // Qualquer outro erro (rede, timeout) → deixa passar; o layout trata corretamente.
+      if (tenantError && tenantError.code !== 'PGRST116') {
+        return response
+      }
 
       if (!tenant) {
         if (pathname.startsWith('/onboarding')) {
           return response
         }
-        return NextResponse.redirect(new URL('/onboarding', request.url))
+        return redirectComCookies(new URL('/onboarding', request.url), response)
       }
 
       if (pathname.startsWith('/onboarding/stripe')) {
         return response
       }
 
-      return NextResponse.redirect(new URL('/', request.url))
+      return redirectComCookies(new URL('/', request.url), response)
     }
     return response
   }
