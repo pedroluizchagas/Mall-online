@@ -18,11 +18,12 @@ export default async function PaginaInicio() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: tenant } = await supabase
+  const { data: tenants } = await supabase
     .from('tenants')
     .select('id, stripe_onboarding_ok')
-    .single()
+    .limit(1)
 
+  const tenant = tenants?.[0]
   const tenantId = tenant?.id ?? ''
 
   const [{ data: loja }, { count: totalProdutos }] = await Promise.all([

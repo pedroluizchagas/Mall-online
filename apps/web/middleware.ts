@@ -81,28 +81,30 @@ export async function middleware(request: NextRequest) {
   // --- Usuário autenticado em rota pública ---
 
   // /entrar → redireciona para o dashboard; o layout decide se vai para /onboarding.
-  // Não fazemos query de tenant aqui para evitar race condition com rotação de token.
   if (pathname.startsWith('/entrar')) {
     return comCookies(new URL('/', request.url), response)
   }
 
-  // /onboarding → verifica se o usuário já tem tenant para evitar que
-  // lojistas cadastrados vejam a tela de cadastro novamente.
-  // Usamos limit(1) ao invés de single() para o caso de usuários com múltiplos tenants
+  // Apenas verifica tenant quando o usuário está na rota /onboarding para evitar
+  // que lojistas cadastrados vejam a tela de cadastro novamente. Para qualquer
+  // outra rota autenticada, o middleware não interfere — o layout trata a lógica.
+  if (!pathname.startsWith('/onboarding')) {
+    return response
+  }
+
   const { data: tenants, error: tenantError } = await supabase
     .from('tenants')
     .select('id')
     .limit(1)
-
-  const tenant = tenants?.[0]
 
   // Erro inesperado (timeout, rede) → deixa passar; o layout trata.
   if (tenantError) {
     return response
   }
 
+  const tenant = tenants?.[0]
+
   if (tenant) {
-    // Tem tenant → não precisa mais de onboarding
     return comCookies(new URL('/', request.url), response)
   }
 
