@@ -108,6 +108,23 @@ export default function PaginaOnboarding() {
         throw new Error('Conta criada! Acesse a página de login para entrar.')
       }
 
+      // Provisionar subdomínio — falha silenciosa para não bloquear o onboarding
+      if (resultado.store_id && resultado.store_slug) {
+        try {
+          const dnsRes = await fetch('/api/stores/provision-domain', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ storeId: resultado.store_id, slug: resultado.store_slug }),
+          })
+          if (!dnsRes.ok) {
+            const dnsErro = await dnsRes.json()
+            console.error('Falha ao provisionar DNS:', dnsErro)
+          }
+        } catch (dnsErr) {
+          console.error('Erro de rede ao provisionar DNS:', dnsErr)
+        }
+      }
+
       setContaCriada(true)
       setTimeout(() => {
         window.location.href = '/?welcome=1'

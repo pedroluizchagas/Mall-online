@@ -132,13 +132,30 @@ Deno.serve(async (req) => {
       throw stripeError
     }
 
-    // Gerar slug da loja
-    const slug = nome_loja
+    // Gerar slug limpo a partir do nome da loja
+    const baseSlug = nome_loja
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
+
+    // Resolver colis\u00e3o de slug incrementando sufixo num\u00e9rico
+    async function resolverSlugDisponivel(base: string): Promise<string> {
+      const { data: existing } = await supabase
+        .from('stores')
+        .select('slug')
+        .like('slug', `${base}%`)
+
+      const slugsExistentes = new Set((existing ?? []).map((r: { slug: string }) => r.slug))
+      if (!slugsExistentes.has(base)) return base
+
+      let i = 2
+      while (slugsExistentes.has(`${base}-${i}`)) i++
+      return `${base}-${i}`
+    }
+
+    const storeSlug = await resolverSlugDisponivel(baseSlug)
 
     const { data: tenant, error: tenantError } = await supabase
       .from('tenants')
@@ -148,7 +165,7 @@ Deno.serve(async (req) => {
         cpf_cnpj,
         telefone,
         email,
-        slug: `${slug}-${Date.now()}`,
+        slug: `${baseSlug}-${Date.now()}`,
         stripe_customer_id: stripeCustomerId,
         stripe_account_id: stripeAccountId,
         stripe_onboarding_ok: false,
@@ -177,7 +194,7 @@ Deno.serve(async (req) => {
       .insert({
         tenant_id: tenant.id,
         nome: nome_loja,
-        slug: `${slug}-store-${Date.now()}`,
+        slug: storeSlug,
         endereco,
         categoria_id: categoria_id ?? null,
       })
@@ -187,7 +204,7 @@ Deno.serve(async (req) => {
     if (storeError) throw storeError
 
     return new Response(
-      JSON.stringify({ tenant_id: tenant.id, store_id: store.id }),
+      JSON.stringify({ tenant_id: tenant.id, store_id: store.id, store_slug: storeSlug }),
       { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
   } catch (error) {
