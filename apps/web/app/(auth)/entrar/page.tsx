@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import { login } from '@/lib/actions/auth'
 import Link from 'next/link'
-import { ArrowRight, Mail, Lock, Loader2, TrendingUp, DollarSign } from 'lucide-react'
+import { Mail, Lock, Loader2, TrendingUp } from 'lucide-react'
 
 export default function PaginaEntrar() {
   const [erro, setErro] = useState<string | null>(null)
@@ -17,6 +17,10 @@ export default function PaginaEntrar() {
     if (resultado?.erro) {
       setErro(resultado.erro)
       setEnviando(false)
+      return
+    }
+    if (resultado?.sucesso) {
+      window.location.href = '/'
     }
   }
 
