@@ -17,10 +17,6 @@ export default function PaginaEntrar() {
     if (resultado?.erro) {
       setErro(resultado.erro)
       setEnviando(false)
-      return
-    }
-    if (resultado?.sucesso) {
-      window.location.href = '/'
     }
   }
 

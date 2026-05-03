@@ -37,7 +37,7 @@ export async function login(formData: FormData) {
     return { erro: 'Email ou senha incorretos' }
   }
 
-  return { sucesso: true }
+  redirect('/')
 }
 
 export async function cadastro(formData: FormData) {
