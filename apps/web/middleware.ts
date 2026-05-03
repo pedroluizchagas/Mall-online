@@ -3,7 +3,39 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 const rotasPublicas = ['/entrar', '/onboarding']
 
+const IGNORED_SUBDOMAINS = new Set(['www', 'app', 'admin', 'api'])
+const MAIN_DOMAINS = ['mallevo.com.br', 'mallevo.localhost']
+
+function getSubdomain(hostname: string): string | null {
+  const host = hostname.split(':')[0]
+
+  for (const domain of MAIN_DOMAINS) {
+    if (host === domain) return null
+    if (host.endsWith(`.${domain}`)) {
+      const sub = host.slice(0, host.length - domain.length - 1)
+      if (!sub.includes('.') && !IGNORED_SUBDOMAINS.has(sub)) {
+        return sub
+      }
+    }
+  }
+
+  return null
+}
+
 export async function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host') || ''
+  const slug = getSubdomain(hostname)
+
+  if (slug) {
+    const url = request.nextUrl.clone()
+    const pathname = url.pathname
+    url.pathname = `/loja/${slug}${pathname === '/' ? '' : pathname}`
+
+    const response = NextResponse.rewrite(url)
+    response.headers.set('x-subdomain', slug)
+    return response
+  }
+
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
@@ -29,8 +61,6 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  // Rotas públicas: usuário logado com conta criada (tenant existe) já é mandado para o dashboard.
-  // A configuração de recebimentos (Stripe Express) é opcional pós-conta — não bloqueia mais aqui.
   if (rotasPublicas.some(rota => pathname.startsWith(rota))) {
     if (user) {
       const { data: tenant } = await supabase
@@ -46,7 +76,7 @@ export async function middleware(request: NextRequest) {
       }
 
       if (pathname.startsWith('/onboarding/stripe')) {
-        return response // permite voltar para finalizar Stripe quando o usuário escolher
+        return response
       }
 
       return NextResponse.redirect(new URL('/', request.url))

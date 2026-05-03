@@ -12,7 +12,12 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'app.mallevo.com.br'],
+      allowedOrigins: [
+        'localhost:3000',
+        'app.mallevo.com.br',
+        '*.mallevo.com.br',
+        '*.mallevo.localhost',
+      ],
     },
   },
 }
