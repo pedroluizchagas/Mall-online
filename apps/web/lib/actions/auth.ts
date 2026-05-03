@@ -83,10 +83,12 @@ export async function logout() {
 export async function getDadosConta() {
   const supabase = createSupabaseServer()
 
-  const [{ data: { user } }, { data: tenant }] = await Promise.all([
+  const [{ data: { user } }, { data: tenants }] = await Promise.all([
     supabase.auth.getUser(),
-    supabase.from('tenants').select('nome_responsavel, email, telefone, cpf_cnpj').single(),
+    supabase.from('tenants').select('nome_responsavel, email, telefone, cpf_cnpj').limit(1),
   ])
+
+  const tenant = tenants?.[0]
 
   return {
     email: user?.email ?? tenant?.email ?? '',
@@ -127,7 +129,7 @@ export async function atualizarDadosPessoais(
     supabase.from('tenants').update({
       nome_responsavel: dados.data.nome,
       ...(dados.data.telefone ? { telefone: dados.data.telefone } : {}),
-    }).eq('id', (await supabase.from('tenants').select('id').single()).data?.id ?? ''),
+    }).eq('id', (await supabase.from('tenants').select('id').limit(1)).data?.[0]?.id ?? ''),
   ])
 
   if (errAuth || errTenant) return { erro: 'Erro ao atualizar dados. Tente novamente.' }

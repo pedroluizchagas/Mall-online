@@ -41,13 +41,10 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname
 
-  // Apenas GET requests em rotas públicas recebem lógica de auth.
-  // POSTs (Server Actions) e requests para rotas privadas passam direto.
-  const rotaPublica = pathname.startsWith('/entrar') || pathname.startsWith('/onboarding')
-  if (request.method !== 'GET' || !rotaPublica) {
-    return NextResponse.next({ request })
-  }
-
+  // Remover a restrição de rota pública para garantir que o token seja sempre renovado
+  // pelo middleware conforme as melhores práticas do @supabase/ssr.
+  // Apenas ignoramos rotas de webhook ou api se necessário (já ignorado pelo matcher).
+  
   // Stripe onboarding flow: skip auth check entirely — this route is prefetched by
   // SetupWizard and running getUser() here would race with the dashboard layout's own call.
   if (pathname.startsWith('/onboarding/stripe')) {
@@ -91,14 +88,16 @@ export async function middleware(request: NextRequest) {
 
   // /onboarding → verifica se o usuário já tem tenant para evitar que
   // lojistas cadastrados vejam a tela de cadastro novamente.
-  const { data: tenant, error: tenantError } = await supabase
+  // Usamos limit(1) ao invés de single() para o caso de usuários com múltiplos tenants
+  const { data: tenants, error: tenantError } = await supabase
     .from('tenants')
     .select('id')
-    .single()
+    .limit(1)
+
+  const tenant = tenants?.[0]
 
   // Erro inesperado (timeout, rede) → deixa passar; o layout trata.
-  // PGRST116 = nenhuma linha = usuário sem tenant → onboarding é correto.
-  if (tenantError && tenantError.code !== 'PGRST116') {
+  if (tenantError) {
     return response
   }
 

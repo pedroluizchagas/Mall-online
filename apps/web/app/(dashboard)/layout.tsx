@@ -21,14 +21,14 @@ export default async function LayoutDashboard({
   } = await supabase.auth.getUser()
   if (!user) redirect('/entrar')
 
-  const { data: tenant, error: tenantError } = (await supabase
+  const { data: tenants, error: tenantError } = (await supabase
     .from('tenants')
     .select('id, stripe_onboarding_ok')
-    .single()) as { data: Pick<Tenant, 'id' | 'stripe_onboarding_ok'> | null; error: { code: string } | null }
+    .limit(1)) as { data: Pick<Tenant, 'id' | 'stripe_onboarding_ok'>[] | null; error: any }
 
-  // PGRST116 = no rows = user genuinely has no tenant yet.
-  // Any other error (network, token race) should not send a logged-in user to /onboarding.
-  if (tenantError && tenantError.code !== 'PGRST116') redirect('/entrar')
+  const tenant = tenants?.[0]
+
+  if (tenantError) redirect('/entrar')
   if (!tenant) redirect('/onboarding')
 
   const { data: loja } = (await supabase
