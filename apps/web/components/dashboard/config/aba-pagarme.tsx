@@ -3,33 +3,62 @@
 import { useState } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
 
-type StatusPagarme = 'pending' | 'active' | 'refused' | 'suspended'
+// pagarme_onboarding_status é TEXT no banco — a Pagar.me pode evoluir o
+// vocabulário (ex.: 'affiliation', 'registration', 'blocked', 'inactive').
+// Mapeamos os principais e caímos num fallback genérico para os demais.
 
-const ROTULO_STATUS: Record<StatusPagarme, string> = {
+const ROTULO_STATUS: Record<string, string> = {
   pending: 'Em verificação',
   active: 'Verificado',
   refused: 'Reprovado',
   suspended: 'Suspenso',
+  registration: 'Cadastro em andamento',
+  affiliation: 'Afiliação em andamento',
+  blocked: 'Bloqueado',
+  inactive: 'Inativo',
 }
 
-const COR_STATUS: Record<StatusPagarme, string> = {
+const COR_STATUS: Record<string, string> = {
   pending: 'var(--warn)',
   active: 'var(--ok)',
   refused: 'var(--brick)',
   suspended: 'var(--brick)',
+  registration: 'var(--warn)',
+  affiliation: 'var(--warn)',
+  blocked: 'var(--brick)',
+  inactive: 'var(--ink-3)',
 }
 
-const DESCRICAO_STATUS: Record<StatusPagarme, string> = {
+const DESCRICAO_STATUS: Record<string, string> = {
   pending: 'Estamos analisando seus dados — você pode acompanhar pelo link de KYC.',
   active: 'Sua conta está pronta para receber repasses.',
   refused: 'O cadastro foi recusado pelo Pagar.me. Entre em contato com o suporte.',
   suspended: 'Sua conta está suspensa. Entre em contato com o suporte.',
+  registration: 'Conclua os dados de cadastro para liberar os recebimentos.',
+  affiliation: 'Aguardando aprovação final da Pagar.me.',
+  blocked: 'Conta bloqueada. Entre em contato com o suporte.',
+  inactive: 'Conta inativa. Reative pelo painel ou entre em contato.',
+}
+
+function rotuloStatus(status: string): string {
+  return ROTULO_STATUS[status] ?? 'Não iniciado'
+}
+
+function corStatus(status: string): string {
+  return COR_STATUS[status] ?? 'var(--ink-3)'
+}
+
+function descricaoStatus(status: string): string {
+  return (
+    DESCRICAO_STATUS[status] ??
+    'Status não reconhecido. Entre em contato com o suporte se persistir.'
+  )
 }
 
 interface Props {
   tenant: {
     pagarme_recipient_id: string | null
-    pagarme_onboarding_status: StatusPagarme
+    pagarme_onboarding_status: string
     pagarme_kyc_link: string | null
   }
 }
@@ -92,11 +121,11 @@ export function AbaPagarme({ tenant }: Props) {
       >
         <div
           className="w-3 h-3 rounded-full flex-shrink-0"
-          style={{ background: COR_STATUS[status] }}
+          style={{ background: corStatus(status) }}
         />
         <div>
-          <p className="text-sm font-medium text-ink">{ROTULO_STATUS[status]}</p>
-          <p className="text-xs text-ink-3 mt-0.5">{DESCRICAO_STATUS[status]}</p>
+          <p className="text-sm font-medium text-ink">{rotuloStatus(status)}</p>
+          <p className="text-xs text-ink-3 mt-0.5">{descricaoStatus(status)}</p>
         </div>
       </div>
 

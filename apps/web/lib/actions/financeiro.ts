@@ -230,7 +230,7 @@ export async function getRecipientBalance() {
     .single() as {
       data: {
         pagarme_recipient_id: string | null
-        pagarme_onboarding_status: 'pending' | 'active' | 'refused' | 'suspended'
+        pagarme_onboarding_status: string
       } | null
     }
 
@@ -255,7 +255,7 @@ export async function listAnticipations() {
     .single() as {
       data: {
         pagarme_recipient_id: string | null
-        pagarme_onboarding_status: 'pending' | 'active' | 'refused' | 'suspended'
+        pagarme_onboarding_status: string
       } | null
     }
 
@@ -286,7 +286,7 @@ export async function getPedidosElegiveis() {
     .single() as {
       data: {
         id: string
-        pagarme_onboarding_status: 'pending' | 'active' | 'refused' | 'suspended'
+        pagarme_onboarding_status: string
       } | null
     }
 
