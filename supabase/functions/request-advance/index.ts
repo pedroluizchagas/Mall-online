@@ -1,5 +1,11 @@
 // supabase/functions/request-advance/index.ts
-import { getSupabaseAdmin, getAuthenticatedUser, corsHeaders } from '../helpers/auth.ts'
+import {
+  getSupabaseAdmin,
+  getAuthenticatedUser,
+  corsHeaders,
+  pagarmeHeaders,
+  PAGARME_BASE_URL,
+} from '../helpers/auth.ts'
 
 const TAXA_ANTECIPACAO_CENTAVOS = 75 // R$0,75 por pedido
 
@@ -12,19 +18,17 @@ Deno.serve(async (req) => {
     const user = await getAuthenticatedUser(req)
     const supabase = getSupabaseAdmin()
 
-    // Buscar tenant do lojista
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id, stripe_onboarding_ok')
+      .select('id, pagarme_recipient_id, pagarme_onboarding_status')
       .eq('user_id', user.id)
       .single()
 
     if (!tenant) throw new Error('Lojista não encontrado')
-    if (!tenant.stripe_onboarding_ok) {
+    if (!tenant.pagarme_recipient_id || tenant.pagarme_onboarding_status !== 'active') {
       throw new Error('Configure sua conta de recebimentos antes de solicitar antecipação')
     }
 
-    // Verificar assinatura e se o plano permite antecipação
     const { data: sub } = await supabase
       .from('tenant_subscriptions')
       .select('billing_status, plans!inner(tem_antecipacao)')
@@ -39,7 +43,6 @@ Deno.serve(async (req) => {
       throw new Error('Seu plano não inclui antecipação de repasses')
     }
 
-    // Verificar se já tem antecipação pendente ou aprovada
     const { data: antecipacaoExistente } = await supabase
       .from('payout_advance_requests')
       .select('id, status')
@@ -51,7 +54,6 @@ Deno.serve(async (req) => {
       throw new Error('Já existe uma solicitação de antecipação em andamento')
     }
 
-    // Calcular pedidos elegíveis (entregues nos últimos 7 dias, pagos, sem payout)
     const seteDiasAtras = new Date()
     seteDiasAtras.setDate(seteDiasAtras.getDate() - 7)
 
@@ -75,7 +77,27 @@ Deno.serve(async (req) => {
     const taxaTotal = totalPedidos * TAXA_ANTECIPACAO_CENTAVOS
     const valorLiquido = valorEstimado - taxaTotal
 
-    // Registrar solicitação — aprovação automática no MVP
+    // Ativa a antecipação automática no recipient Pagar.me. A liquidação
+    // antecipada passa a valer para todas as charges futuras do recebedor.
+    const pagarmeRes = await fetch(
+      `${PAGARME_BASE_URL}/recipients/${tenant.pagarme_recipient_id}`,
+      {
+        method: 'PUT',
+        headers: pagarmeHeaders(),
+        body: JSON.stringify({
+          automatic_anticipation_enabled: true,
+          automatic_anticipation_type: 'full',
+          automatic_anticipation_days: 1,
+          automatic_anticipation_1025_delay: 15,
+        }),
+      }
+    )
+
+    if (!pagarmeRes.ok) {
+      const erro = await pagarmeRes.json().catch(() => ({}))
+      throw new Error(`Falha ao ativar antecipação no Pagar.me: ${JSON.stringify(erro)}`)
+    }
+
     const { data: solicitacao } = await supabase
       .from('payout_advance_requests')
       .insert({
@@ -95,14 +117,14 @@ Deno.serve(async (req) => {
         valor_bruto: valorEstimado,
         taxa_antecipacao: taxaTotal,
         valor_liquido: valorLiquido,
-        previsao_repasse: 'D+2 úteis',
-        mensagem: 'Antecipação aprovada. O repasse será processado no próximo ciclo do cron.',
+        previsao_liquidacao: 'Conforme calendário Pagar.me — D+15 a partir da ativação',
+        mensagem: 'Antecipação automática ativada no Pagar.me.',
       }),
       { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
   }

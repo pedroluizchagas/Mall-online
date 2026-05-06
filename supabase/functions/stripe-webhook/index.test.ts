@@ -1,6 +1,10 @@
 // supabase/functions/stripe-webhook/index.test.ts
 //
 // Testes unitários para a Edge Function stripe-webhook.
+// Após a migração para Pagar.me, este endpoint só responde a eventos de
+// Stripe Billing. Eventos de pagamentos de pedidos / Connect / payouts são
+// ignorados com log "evento não tratado".
+//
 // Executa com: deno test --allow-env --allow-net supabase/functions/stripe-webhook/index.test.ts
 
 import {
@@ -19,10 +23,6 @@ import {
 
 const FUNCTION_URL = 'http://localhost:54321/functions/v1/stripe-webhook'
 
-// ---------------------------------------------------------------------------
-// mapSubscriptionStatus — réplica para testes
-// ---------------------------------------------------------------------------
-
 function mapSubscriptionStatus(status: string): string {
   const map: Record<string, string> = {
     active: 'ativa',
@@ -40,13 +40,7 @@ function mapSubscriptionStatus(status: string): string {
 // Mock factories
 // ---------------------------------------------------------------------------
 
-function createMockSupabaseChain(overrides: Record<string, unknown> = {}) {
-  const defaults: Record<string, unknown> = {
-    tenantData: { id: 'tenant-uuid-001' },
-    courierData: null,
-    ...overrides,
-  }
-
+function createMockSupabaseChain() {
   // deno-lint-ignore no-explicit-any
   const captured: { updates: Array<{ table: string; data: any; filter: any }> } = {
     updates: [],
@@ -65,15 +59,7 @@ function createMockSupabaseChain(overrides: Record<string, unknown> = {}) {
         }
         return chain
       },
-      single: () => {
-        if (table === 'tenants' && op === 'select') {
-          return { data: defaults.tenantData, error: null }
-        }
-        if (table === 'couriers' && op === 'select') {
-          return { data: defaults.courierData, error: null }
-        }
-        return { data: null, error: null }
-      },
+      single: () => ({ data: null, error: null }),
       // deno-lint-ignore no-explicit-any
       update: (row: any) => {
         op = 'update'
@@ -107,22 +93,17 @@ function createMockStripe(overrides: Record<string, unknown> = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Handler com dependências injetáveis
+// Handler com dependências injetáveis — replica fielmente a logica do index.ts
 // ---------------------------------------------------------------------------
 
 function createHandler(deps: {
   stripe: ReturnType<typeof createMockStripe>
   // deno-lint-ignore no-explicit-any
   supabaseClient: any
-  supabaseUrl?: string
-  serviceRoleKey?: string
-  // deno-lint-ignore no-explicit-any
-  fetchFn?: (url: string, init: any) => Promise<any>
+  logger?: (msg: string) => void
 }) {
   const { stripe, supabaseClient } = deps
-  const supabaseUrl = deps.supabaseUrl ?? 'http://localhost:54321'
-  const serviceRoleKey = deps.serviceRoleKey ?? 'fake-service-role-key'
-  const fetchFn = deps.fetchFn ?? (async () => ({ ok: true }))
+  const log = deps.logger ?? (() => {})
 
   return async (req: Request): Promise<Response> => {
     const signature = req.headers.get('stripe-signature')
@@ -140,88 +121,13 @@ function createHandler(deps: {
 
     try {
       switch (event.type) {
-        case 'payment_intent.succeeded': {
-          const pi = event.data.object
-          await supabase
-            .from('orders')
-            .update({
-              payment_status: 'pago',
-              forma_pagamento: pi.payment_method_types[0] === 'pix'
-                ? 'online_pix'
-                : 'online_cartao',
-            })
-            .eq('stripe_payment_intent_id', pi.id)
-          break
-        }
-
-        case 'payment_intent.payment_failed': {
-          const pi = event.data.object
-          await supabase
-            .from('orders')
-            .update({
-              status: 'cancelado',
-              payment_status: 'pendente',
-              motivo_cancelamento: 'Falha no pagamento',
-              cancelado_em: new Date().toISOString(),
-            })
-            .eq('stripe_payment_intent_id', pi.id)
-          break
-        }
-
-        case 'account.updated': {
-          const account = event.data.object
-          const onboardingOk =
-            account.charges_enabled &&
-            account.payouts_enabled &&
-            account.details_submitted
-
-          if (onboardingOk) {
-            const { data: tenant } = await supabase
-              .from('tenants')
-              .select('id')
-              .eq('stripe_account_id', account.id)
-              .single()
-
-            if (tenant) {
-              await supabase
-                .from('tenants')
-                .update({ stripe_onboarding_ok: true })
-                .eq('id', tenant.id)
-
-              await fetchFn(`${supabaseUrl}/functions/v1/create-subscription`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${serviceRoleKey}`,
-                },
-                body: JSON.stringify({ tenant_id: tenant.id }),
-              })
-            }
-
-            const { data: courier } = await supabase
-              .from('couriers')
-              .select('id')
-              .eq('stripe_account_id', account.id)
-              .single()
-
-            if (courier) {
-              await supabase
-                .from('couriers')
-                .update({ stripe_onboarding_ok: true })
-                .eq('id', courier.id)
-            }
-          }
-          break
-        }
-
+        case 'customer.subscription.created':
         case 'customer.subscription.updated': {
           const sub = event.data.object
-          const billingStatus = mapSubscriptionStatus(sub.status)
-
           await supabase
             .from('tenant_subscriptions')
             .update({
-              billing_status: billingStatus,
+              billing_status: mapSubscriptionStatus(sub.status),
               periodo_inicio: new Date(sub.current_period_start * 1000).toISOString(),
               periodo_fim: new Date(sub.current_period_end * 1000).toISOString(),
             })
@@ -252,7 +158,8 @@ function createHandler(deps: {
           break
         }
 
-        case 'invoice.payment_failed': {
+        case 'invoice.payment_failed':
+        case 'invoice.payment_action_required': {
           const invoice = event.data.object
           if (invoice.subscription) {
             await supabase
@@ -264,6 +171,7 @@ function createHandler(deps: {
         }
 
         default:
+          log(`stripe-webhook: evento não tratado (${event.type})`)
           break
       }
 
@@ -280,10 +188,6 @@ function createHandler(deps: {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Helper to build a webhook Request
-// ---------------------------------------------------------------------------
-
 function buildWebhookRequest(body: string = '{}'): Request {
   return new Request(FUNCTION_URL, {
     method: 'POST',
@@ -299,10 +203,7 @@ function buildWebhookRequest(body: string = '{}'): Request {
 // Tests
 // ===========================================================================
 
-describe('stripe-webhook Edge Function', () => {
-  // -----------------------------------------------------------------------
-  // Assinatura inválida
-  // -----------------------------------------------------------------------
+describe('stripe-webhook Edge Function (Billing-only)', () => {
   describe('verificação de assinatura', () => {
     it('retorna 400 quando assinatura do webhook é inválida', async () => {
       const handler = createHandler({
@@ -316,20 +217,19 @@ describe('stripe-webhook Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // payment_intent.succeeded
-  // -----------------------------------------------------------------------
-  describe('payment_intent.succeeded', () => {
-    it('atualiza payment_status para pago com cartão', async () => {
+  describe('customer.subscription.created', () => {
+    it('atualiza billing_status quando subscription created', async () => {
       const mockClient = createMockSupabaseChain()
       const handler = createHandler({
         stripe: createMockStripe({
           event: {
-            type: 'payment_intent.succeeded',
+            type: 'customer.subscription.created',
             data: {
               object: {
-                id: 'pi_test_123',
-                payment_method_types: ['card'],
+                id: 'sub_test_created',
+                status: 'trialing',
+                current_period_start: Math.floor(Date.now() / 1000),
+                current_period_end: Math.floor(Date.now() / 1000) + 30 * 86400,
               },
             },
           },
@@ -339,177 +239,13 @@ describe('stripe-webhook Edge Function', () => {
 
       const res = await handler(buildWebhookRequest())
       assertEquals(res.status, 200)
-      const json = await res.json()
-      assertEquals(json.received, true)
 
-      // Verificar que update foi chamado
-      const updates = mockClient._captured.updates
-      const orderUpdate = updates.find((u) => u.table === 'orders')
-      assertExists(orderUpdate)
-      assertEquals(orderUpdate!.data.payment_status, 'pago')
-      assertEquals(orderUpdate!.data.forma_pagamento, 'online_cartao')
-    })
-
-    it('atualiza forma_pagamento para online_pix quando pix', async () => {
-      const mockClient = createMockSupabaseChain()
-      const handler = createHandler({
-        stripe: createMockStripe({
-          event: {
-            type: 'payment_intent.succeeded',
-            data: {
-              object: {
-                id: 'pi_test_pix',
-                payment_method_types: ['pix'],
-              },
-            },
-          },
-        }),
-        supabaseClient: mockClient,
-      })
-
-      await handler(buildWebhookRequest())
-      const updates = mockClient._captured.updates
-      const orderUpdate = updates.find((u) => u.table === 'orders')
-      assertExists(orderUpdate)
-      assertEquals(orderUpdate!.data.forma_pagamento, 'online_pix')
+      const subUpdate = mockClient._captured.updates.find((u) => u.table === 'tenant_subscriptions')
+      assertExists(subUpdate)
+      assertEquals(subUpdate!.data.billing_status, 'trial')
     })
   })
 
-  // -----------------------------------------------------------------------
-  // payment_intent.payment_failed
-  // -----------------------------------------------------------------------
-  describe('payment_intent.payment_failed', () => {
-    it('cancela pedido e mantém payment_status pendente', async () => {
-      const mockClient = createMockSupabaseChain()
-      const handler = createHandler({
-        stripe: createMockStripe({
-          event: {
-            type: 'payment_intent.payment_failed',
-            data: {
-              object: {
-                id: 'pi_failed_123',
-                payment_method_types: ['card'],
-              },
-            },
-          },
-        }),
-        supabaseClient: mockClient,
-      })
-
-      const res = await handler(buildWebhookRequest())
-      assertEquals(res.status, 200)
-
-      const updates = mockClient._captured.updates
-      const orderUpdate = updates.find((u) => u.table === 'orders')
-      assertExists(orderUpdate)
-      assertEquals(orderUpdate!.data.status, 'cancelado')
-      assertEquals(orderUpdate!.data.payment_status, 'pendente')
-      assertEquals(orderUpdate!.data.motivo_cancelamento, 'Falha no pagamento')
-      assertExists(orderUpdate!.data.cancelado_em)
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // account.updated (KYC tenant)
-  // -----------------------------------------------------------------------
-  describe('account.updated', () => {
-    it('atualiza stripe_onboarding_ok do tenant e chama create-subscription', async () => {
-      let fetchCalled = false
-      // deno-lint-ignore no-explicit-any
-      let fetchBody: any = null
-
-      const mockClient = createMockSupabaseChain({ tenantData: { id: 'tenant-001' } })
-      const handler = createHandler({
-        stripe: createMockStripe({
-          event: {
-            type: 'account.updated',
-            data: {
-              object: {
-                id: 'acct_test_123',
-                charges_enabled: true,
-                payouts_enabled: true,
-                details_submitted: true,
-              },
-            },
-          },
-        }),
-        supabaseClient: mockClient,
-        fetchFn: async (_url, init) => {
-          fetchCalled = true
-          fetchBody = JSON.parse(init.body)
-          return { ok: true }
-        },
-      })
-
-      const res = await handler(buildWebhookRequest())
-      assertEquals(res.status, 200)
-      assertEquals(fetchCalled, true)
-      assertEquals(fetchBody.tenant_id, 'tenant-001')
-
-      // Verificar que tenant foi atualizado
-      const tenantUpdate = mockClient._captured.updates.find((u) => u.table === 'tenants')
-      assertExists(tenantUpdate)
-      assertEquals(tenantUpdate!.data.stripe_onboarding_ok, true)
-    })
-
-    it('atualiza stripe_onboarding_ok do courier quando é entregador', async () => {
-      const mockClient = createMockSupabaseChain({
-        tenantData: null,
-        courierData: { id: 'courier-001' },
-      })
-      const handler = createHandler({
-        stripe: createMockStripe({
-          event: {
-            type: 'account.updated',
-            data: {
-              object: {
-                id: 'acct_courier_123',
-                charges_enabled: true,
-                payouts_enabled: true,
-                details_submitted: true,
-              },
-            },
-          },
-        }),
-        supabaseClient: mockClient,
-      })
-
-      const res = await handler(buildWebhookRequest())
-      assertEquals(res.status, 200)
-
-      const courierUpdate = mockClient._captured.updates.find((u) => u.table === 'couriers')
-      assertExists(courierUpdate)
-      assertEquals(courierUpdate!.data.stripe_onboarding_ok, true)
-    })
-
-    it('ignora quando onboarding não está completo', async () => {
-      const mockClient = createMockSupabaseChain()
-      const handler = createHandler({
-        stripe: createMockStripe({
-          event: {
-            type: 'account.updated',
-            data: {
-              object: {
-                id: 'acct_test_123',
-                charges_enabled: true,
-                payouts_enabled: false, // não completo
-                details_submitted: true,
-              },
-            },
-          },
-        }),
-        supabaseClient: mockClient,
-      })
-
-      const res = await handler(buildWebhookRequest())
-      assertEquals(res.status, 200)
-      assertEquals(mockClient._captured.updates.length, 0)
-    })
-  })
-
-  // -----------------------------------------------------------------------
-  // customer.subscription.updated
-  // -----------------------------------------------------------------------
   describe('customer.subscription.updated', () => {
     it('atualiza billing_status ao receber subscription updated', async () => {
       const mockClient = createMockSupabaseChain()
@@ -565,9 +301,6 @@ describe('stripe-webhook Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // customer.subscription.deleted
-  // -----------------------------------------------------------------------
   describe('customer.subscription.deleted', () => {
     it('atualiza billing_status para cancelada', async () => {
       const mockClient = createMockSupabaseChain()
@@ -593,9 +326,6 @@ describe('stripe-webhook Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // invoice.paid
-  // -----------------------------------------------------------------------
   describe('invoice.paid', () => {
     it('atualiza billing_status para ativa quando fatura paga', async () => {
       const mockClient = createMockSupabaseChain()
@@ -603,9 +333,7 @@ describe('stripe-webhook Edge Function', () => {
         stripe: createMockStripe({
           event: {
             type: 'invoice.paid',
-            data: {
-              object: { subscription: 'sub_test_123' },
-            },
+            data: { object: { subscription: 'sub_test_123' } },
           },
         }),
         supabaseClient: mockClient,
@@ -620,9 +348,6 @@ describe('stripe-webhook Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // invoice.payment_failed
-  // -----------------------------------------------------------------------
   describe('invoice.payment_failed', () => {
     it('atualiza billing_status para em_atraso quando fatura falha', async () => {
       const mockClient = createMockSupabaseChain()
@@ -630,9 +355,29 @@ describe('stripe-webhook Edge Function', () => {
         stripe: createMockStripe({
           event: {
             type: 'invoice.payment_failed',
-            data: {
-              object: { subscription: 'sub_test_123' },
-            },
+            data: { object: { subscription: 'sub_test_123' } },
+          },
+        }),
+        supabaseClient: mockClient,
+      })
+
+      const res = await handler(buildWebhookRequest())
+      assertEquals(res.status, 200)
+
+      const subUpdate = mockClient._captured.updates.find((u) => u.table === 'tenant_subscriptions')
+      assertExists(subUpdate)
+      assertEquals(subUpdate!.data.billing_status, 'em_atraso')
+    })
+  })
+
+  describe('invoice.payment_action_required', () => {
+    it('marca billing_status como em_atraso quando 3DS é exigido', async () => {
+      const mockClient = createMockSupabaseChain()
+      const handler = createHandler({
+        stripe: createMockStripe({
+          event: {
+            type: 'invoice.payment_action_required',
+            data: { object: { subscription: 'sub_test_3ds' } },
           },
         }),
         supabaseClient: mockClient,
@@ -648,26 +393,46 @@ describe('stripe-webhook Edge Function', () => {
   })
 
   // -----------------------------------------------------------------------
-  // Evento desconhecido
+  // Eventos que pertenciam ao Stripe Connect / pagamentos de pedido — agora
+  // tratados pelo `pagarme-webhook`. O endpoint stripe-webhook deve ignorá-los.
   // -----------------------------------------------------------------------
-  describe('evento desconhecido', () => {
-    it('retorna 200 received para evento não tratado', async () => {
-      const handler = createHandler({
-        stripe: createMockStripe({
-          event: { type: 'charge.refunded', data: { object: {} } },
-        }),
-        supabaseClient: createMockSupabaseChain(),
+  describe('eventos não tratados (delegados ao pagarme-webhook)', () => {
+    const eventosIgnorados = [
+      'payment_intent.succeeded',
+      'payment_intent.payment_failed',
+      'account.updated',
+      'transfer.created',
+      'transfer.failed',
+      'charge.refunded',
+    ]
+
+    for (const tipo of eventosIgnorados) {
+      it(`retorna 200 e loga evento não tratado para ${tipo}`, async () => {
+        const mockClient = createMockSupabaseChain()
+        const logs: string[] = []
+        const handler = createHandler({
+          stripe: createMockStripe({
+            event: { type: tipo, data: { object: {} } },
+          }),
+          supabaseClient: mockClient,
+          logger: (msg) => logs.push(msg),
+        })
+
+        const res = await handler(buildWebhookRequest())
+        assertEquals(res.status, 200)
+        const json = await res.json()
+        assertEquals(json.received, true)
+
+        // Nenhuma escrita no banco
+        assertEquals(mockClient._captured.updates.length, 0)
+        // Mensagem de log esperada
+        assertEquals(logs.length, 1)
+        assertStringIncludes(logs[0], 'evento não tratado')
+        assertStringIncludes(logs[0], tipo)
       })
-      const res = await handler(buildWebhookRequest())
-      assertEquals(res.status, 200)
-      const json = await res.json()
-      assertEquals(json.received, true)
-    })
+    }
   })
 
-  // -----------------------------------------------------------------------
-  // mapSubscriptionStatus
-  // -----------------------------------------------------------------------
   describe('mapSubscriptionStatus', () => {
     it('mapeia active → ativa', () => assertEquals(mapSubscriptionStatus('active'), 'ativa'))
     it('mapeia trialing → trial', () => assertEquals(mapSubscriptionStatus('trialing'), 'trial'))

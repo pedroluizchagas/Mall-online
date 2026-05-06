@@ -30,3 +30,14 @@ export function corsHeaders() {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   }
 }
+
+export const PAGARME_BASE_URL = 'https://api.pagar.me/core/v5'
+
+export function pagarmeHeaders() {
+  const apiKey = Deno.env.get('PAGARME_API_KEY')!
+  const encoded = btoa(`${apiKey}:`)
+  return {
+    'Authorization': `Basic ${encoded}`,
+    'Content-Type': 'application/json',
+  }
+}
