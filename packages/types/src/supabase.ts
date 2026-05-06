@@ -77,6 +77,7 @@ export type Database = {
           stripe_onboarding_ok: boolean
           pagarme_recipient_id: string | null
           pagarme_onboarding_status: string
+          pagarme_kyc_link: string | null
           ativo: boolean
           criado_em: string
           atualizado_em: string
@@ -94,6 +95,7 @@ export type Database = {
           stripe_onboarding_ok?: boolean
           pagarme_recipient_id?: string | null
           pagarme_onboarding_status?: string
+          pagarme_kyc_link?: string | null
           ativo?: boolean
           criado_em?: string
           atualizado_em?: string
@@ -111,6 +113,7 @@ export type Database = {
           stripe_onboarding_ok?: boolean
           pagarme_recipient_id?: string | null
           pagarme_onboarding_status?: string
+          pagarme_kyc_link?: string | null
           ativo?: boolean
           criado_em?: string
           atualizado_em?: string
@@ -528,6 +531,8 @@ export type Database = {
           stripe_payment_intent_id: string | null
           pagarme_order_id: string | null
           pagarme_charge_id: string | null
+          pagarme_qr_code: string | null
+          pagarme_qr_code_url: string | null
           valor_estornado: number
           cancelado_em: string | null
           motivo_cancelamento: string | null
@@ -552,6 +557,8 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           pagarme_order_id?: string | null
           pagarme_charge_id?: string | null
+          pagarme_qr_code?: string | null
+          pagarme_qr_code_url?: string | null
           valor_estornado?: number
           cancelado_em?: string | null
           motivo_cancelamento?: string | null
@@ -576,6 +583,8 @@ export type Database = {
           stripe_payment_intent_id?: string | null
           pagarme_order_id?: string | null
           pagarme_charge_id?: string | null
+          pagarme_qr_code?: string | null
+          pagarme_qr_code_url?: string | null
           valor_estornado?: number
           cancelado_em?: string | null
           motivo_cancelamento?: string | null

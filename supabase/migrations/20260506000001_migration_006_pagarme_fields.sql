@@ -22,9 +22,14 @@
 -- ------------------------------------------------------------
 -- tenants — recipient Pagar.me do lojista
 -- ------------------------------------------------------------
+-- pagarme_kyc_link: URL hospedada pela Pagar.me para o lojista
+-- completar Prova de Vida / KYC quando exigido. Solicitada via
+-- POST /core/v5/recipients/{id}/kyc_link, exibida no dashboard
+-- enquanto pagarme_onboarding_status != 'active'.
 ALTER TABLE tenants
   ADD COLUMN IF NOT EXISTS pagarme_recipient_id      TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS pagarme_onboarding_status TEXT NOT NULL DEFAULT 'registration';
+  ADD COLUMN IF NOT EXISTS pagarme_onboarding_status TEXT NOT NULL DEFAULT 'registration',
+  ADD COLUMN IF NOT EXISTS pagarme_kyc_link          TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_tenants_pagarme_recipient
   ON tenants(pagarme_recipient_id);
@@ -42,10 +47,17 @@ CREATE INDEX IF NOT EXISTS idx_couriers_pagarme_recipient
 -- ------------------------------------------------------------
 -- orders — Order + Charge Pagar.me
 -- ------------------------------------------------------------
+-- pagarme_qr_code / pagarme_qr_code_url: persistidos pela Edge
+-- Function `create-pagarme-order` quando o método é Pix. O app
+-- consumidor (`/checkout/pix`) lê esses campos via Supabase Realtime
+-- para renderizar o QR Code e o copia-e-cola, e navega para a tela
+-- de acompanhamento quando `payment_status` muda para 'pago'.
 ALTER TABLE orders
-  ADD COLUMN IF NOT EXISTS pagarme_order_id  TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS pagarme_charge_id TEXT UNIQUE,
-  ADD COLUMN IF NOT EXISTS valor_estornado   INTEGER NOT NULL DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS pagarme_order_id    TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS pagarme_charge_id   TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS pagarme_qr_code     TEXT,
+  ADD COLUMN IF NOT EXISTS pagarme_qr_code_url TEXT,
+  ADD COLUMN IF NOT EXISTS valor_estornado     INTEGER NOT NULL DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_orders_pagarme_order
   ON orders(pagarme_order_id);
@@ -134,6 +146,8 @@ ALTER TABLE webhook_events_log ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE orders
 --   DROP COLUMN IF EXISTS pagarme_order_id,
 --   DROP COLUMN IF EXISTS pagarme_charge_id,
+--   DROP COLUMN IF EXISTS pagarme_qr_code,
+--   DROP COLUMN IF EXISTS pagarme_qr_code_url,
 --   DROP COLUMN IF EXISTS valor_estornado;
 
 -- ALTER TABLE couriers
@@ -142,4 +156,5 @@ ALTER TABLE webhook_events_log ENABLE ROW LEVEL SECURITY;
 
 -- ALTER TABLE tenants
 --   DROP COLUMN IF EXISTS pagarme_recipient_id,
---   DROP COLUMN IF EXISTS pagarme_onboarding_status;
+--   DROP COLUMN IF EXISTS pagarme_onboarding_status,
+--   DROP COLUMN IF EXISTS pagarme_kyc_link;
