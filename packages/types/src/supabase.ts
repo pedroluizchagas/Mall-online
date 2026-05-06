@@ -75,6 +75,9 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_account_id: string | null
           stripe_onboarding_ok: boolean
+          pagarme_recipient_id: string | null
+          pagarme_onboarding_status: string
+          pagarme_kyc_link: string | null
           ativo: boolean
           criado_em: string
           atualizado_em: string
@@ -90,6 +93,9 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_account_id?: string | null
           stripe_onboarding_ok?: boolean
+          pagarme_recipient_id?: string | null
+          pagarme_onboarding_status?: string
+          pagarme_kyc_link?: string | null
           ativo?: boolean
           criado_em?: string
           atualizado_em?: string
@@ -105,6 +111,9 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_account_id?: string | null
           stripe_onboarding_ok?: boolean
+          pagarme_recipient_id?: string | null
+          pagarme_onboarding_status?: string
+          pagarme_kyc_link?: string | null
           ativo?: boolean
           criado_em?: string
           atualizado_em?: string
@@ -438,6 +447,8 @@ export type Database = {
           online: boolean
           stripe_account_id: string | null
           stripe_onboarding_ok: boolean
+          pagarme_recipient_id: string | null
+          pagarme_onboarding_status: string
           aprovado_em: string | null
           aprovado_por: string | null
           criado_em: string
@@ -460,6 +471,8 @@ export type Database = {
           online?: boolean
           stripe_account_id?: string | null
           stripe_onboarding_ok?: boolean
+          pagarme_recipient_id?: string | null
+          pagarme_onboarding_status?: string
           aprovado_em?: string | null
           aprovado_por?: string | null
           criado_em?: string
@@ -482,6 +495,8 @@ export type Database = {
           online?: boolean
           stripe_account_id?: string | null
           stripe_onboarding_ok?: boolean
+          pagarme_recipient_id?: string | null
+          pagarme_onboarding_status?: string
           aprovado_em?: string | null
           aprovado_por?: string | null
           criado_em?: string
@@ -514,6 +529,11 @@ export type Database = {
           endereco_entrega: Json
           observacoes: string | null
           stripe_payment_intent_id: string | null
+          pagarme_order_id: string | null
+          pagarme_charge_id: string | null
+          pagarme_qr_code: string | null
+          pagarme_qr_code_url: string | null
+          valor_estornado: number
           cancelado_em: string | null
           motivo_cancelamento: string | null
           criado_em: string
@@ -535,6 +555,11 @@ export type Database = {
           endereco_entrega: Json
           observacoes?: string | null
           stripe_payment_intent_id?: string | null
+          pagarme_order_id?: string | null
+          pagarme_charge_id?: string | null
+          pagarme_qr_code?: string | null
+          pagarme_qr_code_url?: string | null
+          valor_estornado?: number
           cancelado_em?: string | null
           motivo_cancelamento?: string | null
           criado_em?: string
@@ -556,6 +581,11 @@ export type Database = {
           endereco_entrega?: Json
           observacoes?: string | null
           stripe_payment_intent_id?: string | null
+          pagarme_order_id?: string | null
+          pagarme_charge_id?: string | null
+          pagarme_qr_code?: string | null
+          pagarme_qr_code_url?: string | null
+          valor_estornado?: number
           cancelado_em?: string | null
           motivo_cancelamento?: string | null
           criado_em?: string
@@ -650,6 +680,7 @@ export type Database = {
           cancelado_em: string | null
           comprovante_url: string | null
           codigo_confirmacao: string | null
+          pagarme_transfer_id: string | null
           criado_em: string
           atualizado_em: string
         }
@@ -666,6 +697,7 @@ export type Database = {
           cancelado_em?: string | null
           comprovante_url?: string | null
           codigo_confirmacao?: string | null
+          pagarme_transfer_id?: string | null
           criado_em?: string
           atualizado_em?: string
         }
@@ -682,6 +714,7 @@ export type Database = {
           cancelado_em?: string | null
           comprovante_url?: string | null
           codigo_confirmacao?: string | null
+          pagarme_transfer_id?: string | null
           criado_em?: string
           atualizado_em?: string
         }
@@ -769,6 +802,8 @@ export type Database = {
           data_referencia: string
           data_prevista: string
           stripe_transfer_id: string | null
+          pagarme_transfer_id: string | null
+          pagarme_anticipation_id: string | null
           erro_mensagem: string | null
           processado_em: string | null
           criado_em: string
@@ -788,6 +823,8 @@ export type Database = {
           data_referencia: string
           data_prevista: string
           stripe_transfer_id?: string | null
+          pagarme_transfer_id?: string | null
+          pagarme_anticipation_id?: string | null
           erro_mensagem?: string | null
           processado_em?: string | null
           criado_em?: string
@@ -807,6 +844,8 @@ export type Database = {
           data_referencia?: string
           data_prevista?: string
           stripe_transfer_id?: string | null
+          pagarme_transfer_id?: string | null
+          pagarme_anticipation_id?: string | null
           erro_mensagem?: string | null
           processado_em?: string | null
           criado_em?: string
@@ -838,6 +877,7 @@ export type Database = {
           taxa_total: number
           valor_estimado: number
           status: string
+          pagarme_anticipation_id: string | null
           solicitado_em: string
           processado_em: string | null
           criado_em: string
@@ -850,6 +890,7 @@ export type Database = {
           taxa_total: number
           valor_estimado: number
           status?: string
+          pagarme_anticipation_id?: string | null
           solicitado_em?: string
           processado_em?: string | null
           criado_em?: string
@@ -862,6 +903,7 @@ export type Database = {
           taxa_total?: number
           valor_estimado?: number
           status?: string
+          pagarme_anticipation_id?: string | null
           solicitado_em?: string
           processado_em?: string | null
           criado_em?: string
@@ -990,6 +1032,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      webhook_events_log: {
+        Row: {
+          id: string
+          source: string
+          event_id: string
+          event_type: string
+          payload: Json
+          status: string
+          error_message: string | null
+          recebido_em: string
+          processado_em: string | null
+        }
+        Insert: {
+          id?: string
+          source: string
+          event_id: string
+          event_type: string
+          payload: Json
+          status?: string
+          error_message?: string | null
+          recebido_em?: string
+          processado_em?: string | null
+        }
+        Update: {
+          id?: string
+          source?: string
+          event_id?: string
+          event_type?: string
+          payload?: Json
+          status?: string
+          error_message?: string | null
+          recebido_em?: string
+          processado_em?: string | null
+        }
+        Relationships: []
       }
     }
     Views: {
