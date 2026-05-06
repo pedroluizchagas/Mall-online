@@ -88,7 +88,11 @@ export async function getMetricasGlobais() {
   }
 }
 
-export async function getTenants(filtro?: { billing_status?: string; busca?: string }) {
+export async function getTenants(filtro?: {
+  billing_status?: string
+  busca?: string
+  pagarme_status?: string
+}) {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
 
@@ -96,7 +100,7 @@ export async function getTenants(filtro?: { billing_status?: string; busca?: str
     .from('tenants')
     .select(`
       id, nome_responsavel, email, telefone, ativo,
-      stripe_onboarding_ok, criado_em,
+      pagarme_onboarding_status, criado_em,
       stores (id, nome),
       tenant_subscriptions (
         billing_status, trial_termina_em, periodo_fim,
@@ -109,6 +113,10 @@ export async function getTenants(filtro?: { billing_status?: string; busca?: str
     query = query.or(
       `nome_responsavel.ilike.%${filtro.busca}%,email.ilike.%${filtro.busca}%`
     )
+  }
+
+  if (filtro?.pagarme_status) {
+    query = query.eq('pagarme_onboarding_status', filtro.pagarme_status)
   }
 
   const { data, error } = await query.limit(100)
@@ -146,7 +154,11 @@ export async function atualizarStatusTenant(tenant_id: string, ativo: boolean) {
   return { sucesso: true }
 }
 
-export async function getEntregadores(filtro?: { status?: string; tipo?: string }) {
+export async function getEntregadores(filtro?: {
+  status?: string
+  tipo?: string
+  pagarme_status?: string
+}) {
   const supabase = createSupabaseServer()
   await verificarAdmin(supabase)
 
@@ -155,13 +167,15 @@ export async function getEntregadores(filtro?: { status?: string; tipo?: string 
     .select(`
       id, nome, telefone, cpf, foto_url, cnh_foto_url,
       tipo, status, veiculo_tipo, veiculo_placa,
-      stripe_onboarding_ok, criado_em, aprovado_em,
+      pagarme_onboarding_status, criado_em, aprovado_em,
       tenants (nome_responsavel)
     `)
     .order('criado_em', { ascending: false })
 
   if (filtro?.status) query = query.eq('status', filtro.status)
   if (filtro?.tipo) query = query.eq('tipo', filtro.tipo)
+  if (filtro?.pagarme_status)
+    query = query.eq('pagarme_onboarding_status', filtro.pagarme_status)
 
   const { data, error } = await query.limit(100)
   if (error) return []

@@ -4,6 +4,19 @@ import { useTransition } from 'react'
 import { atualizarStatusEntregador } from '@/lib/actions/admin'
 import { ExternalLink } from 'lucide-react'
 
+const PAGARME_BADGES: Record<string, { bg: string; text: string; label: string }> = {
+  active:       { bg: 'bg-ok/10',   text: 'text-ok',    label: 'Ativo' },
+  affiliation:  { bg: 'bg-sky/10',  text: 'text-sky',   label: 'Em análise' },
+  registration: { bg: 'bg-warn/10', text: 'text-warn',  label: 'Cadastro' },
+  pending:      { bg: 'bg-warn/10', text: 'text-warn',  label: 'Pendente' },
+  refused:      { bg: 'bg-err/10',  text: 'text-err',   label: 'Recusado' },
+  blocked:      { bg: 'bg-err/10',  text: 'text-err',   label: 'Bloqueado' },
+  suspended:    { bg: 'bg-bg-3',    text: 'text-ink-3', label: 'Suspenso' },
+  inactive:     { bg: 'bg-bg-3',    text: 'text-ink-3', label: 'Inativo' },
+}
+
+const PAGARME_FALLBACK = { bg: 'bg-bg-3', text: 'text-ink-3', label: 'Não iniciado' }
+
 export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
   const [isPending, startTransition] = useTransition()
 
@@ -32,7 +45,7 @@ export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
       <table className="w-full text-[13px]">
         <thead>
           <tr className="border-b border-line bg-bg-2">
-            {['Entregador', 'Tipo', 'Veículo', 'CNH', 'Stripe', 'Cadastro', ''].map((h) => (
+            {['Entregador', 'Tipo', 'Veículo', 'CNH', 'Recebimentos', 'Cadastro', ''].map((h) => (
               <th key={h} className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
                 {h}
               </th>
@@ -40,7 +53,14 @@ export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-line">
-          {entregadores.map((courier: any) => (
+          {entregadores.map((courier: any) => {
+            const pagarmeStatus = courier.pagarme_onboarding_status
+            const pagarmeBadge = pagarmeStatus
+              ? (PAGARME_BADGES[pagarmeStatus] ?? {
+                  bg: 'bg-bg-3', text: 'text-ink-3', label: pagarmeStatus,
+                })
+              : PAGARME_FALLBACK
+            return (
             <tr key={courier.id} className="hover:bg-bg-2 transition-colors">
               <td className="px-5 py-4">
                 <p className="font-semibold text-ink">{courier.nome}</p>
@@ -85,10 +105,8 @@ export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
               </td>
 
               <td className="px-5 py-4">
-                <span className={`text-[11px] font-bold ${
-                  courier.stripe_onboarding_ok ? 'text-ok' : 'text-warn'
-                }`}>
-                  {courier.stripe_onboarding_ok ? '✓ OK' : '⏳ Pendente'}
+                <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold ${pagarmeBadge.bg} ${pagarmeBadge.text}`}>
+                  {pagarmeBadge.label}
                 </span>
               </td>
 
@@ -121,7 +139,8 @@ export function TabelaEntregadores({ entregadores }: { entregadores: any[] }) {
                 </div>
               </td>
             </tr>
-          ))}
+            )
+          })}
         </tbody>
       </table>
     </div>
