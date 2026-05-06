@@ -1,4 +1,9 @@
 // supabase/functions/stripe-webhook/index.ts
+//
+// Processa exclusivamente eventos de Stripe Billing (assinatura mensal do
+// lojista). Eventos relacionados a pagamentos de pedidos, repasses ou contas
+// Connect passaram a viver no `pagarme-webhook` — aqui são apenas ignorados
+// com log "evento não tratado".
 import Stripe from 'https://esm.sh/stripe@14'
 import { getSupabaseAdmin } from '../helpers/auth.ts'
 
@@ -10,25 +15,20 @@ Deno.serve(async (req) => {
   const signature = req.headers.get('stripe-signature')
   const body = await req.text()
 
-  let event: Stripe.Event
-
-  const secrets = [
-    Deno.env.get('STRIPE_WEBHOOK_SECRET'),
-    Deno.env.get('STRIPE_WEBHOOK_SECRET_CONNECT'),
-  ].filter(Boolean) as string[]
-
+  let event: Stripe.Event | null = null
   let verified = false
-  for (const secret of secrets) {
+
+  for (const secret of [Deno.env.get('STRIPE_WEBHOOK_SECRET')].filter(Boolean) as string[]) {
     try {
       event = stripe.webhooks.constructEvent(body, signature!, secret)
       verified = true
       break
     } catch {
-      // tenta o próximo secret
+      // tenta o próximo secret (caso múltiplos venham a ser configurados)
     }
   }
 
-  if (!verified) {
+  if (!verified || !event) {
     return new Response('Assinatura inválida', { status: 400 })
   }
 
@@ -36,95 +36,13 @@ Deno.serve(async (req) => {
 
   try {
     switch (event.type) {
-
-      // Pagamento confirmado pelo consumidor
-      case 'payment_intent.succeeded': {
-        const pi = event.data.object as Stripe.PaymentIntent
-        await supabase
-          .from('orders')
-          .update({
-            payment_status: 'pago',
-            forma_pagamento: pi.payment_method_types[0] === 'pix'
-              ? 'online_pix'
-              : 'online_cartao',
-          })
-          .eq('stripe_payment_intent_id', pi.id)
-        break
-      }
-
-      // Pagamento falhou
-      case 'payment_intent.payment_failed': {
-        const pi = event.data.object as Stripe.PaymentIntent
-        await supabase
-          .from('orders')
-          .update({
-            status: 'cancelado',
-            payment_status: 'pendente',
-            motivo_cancelamento: 'Falha no pagamento',
-            cancelado_em: new Date().toISOString(),
-          })
-          .eq('stripe_payment_intent_id', pi.id)
-        break
-      }
-
-      // KYC da Express Account concluído
-      case 'account.updated': {
-        const account = event.data.object as Stripe.Account
-        const onboardingOk =
-          account.charges_enabled &&
-          account.payouts_enabled &&
-          account.details_submitted
-
-        if (onboardingOk) {
-          // Verificar se é lojista ou entregador
-          const { data: tenant } = await supabase
-            .from('tenants')
-            .select('id')
-            .eq('stripe_account_id', account.id)
-            .single()
-
-          if (tenant) {
-            await supabase
-              .from('tenants')
-              .update({ stripe_onboarding_ok: true })
-              .eq('id', tenant.id)
-
-            // Criar subscription Stripe Billing
-            await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/create-subscription`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-              },
-              body: JSON.stringify({ tenant_id: tenant.id }),
-            })
-          }
-
-          const { data: courier } = await supabase
-            .from('couriers')
-            .select('id')
-            .eq('stripe_account_id', account.id)
-            .single()
-
-          if (courier) {
-            await supabase
-              .from('couriers')
-              .update({ stripe_onboarding_ok: true })
-              .eq('id', courier.id)
-          }
-        }
-        break
-      }
-
-      // Assinatura atualizada
+      case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription
-        const billingStatus = mapSubscriptionStatus(sub.status)
-
         await supabase
           .from('tenant_subscriptions')
           .update({
-            billing_status: billingStatus,
+            billing_status: mapSubscriptionStatus(sub.status),
             periodo_inicio: new Date(sub.current_period_start * 1000).toISOString(),
             periodo_fim: new Date(sub.current_period_end * 1000).toISOString(),
           })
@@ -132,7 +50,6 @@ Deno.serve(async (req) => {
         break
       }
 
-      // Assinatura cancelada
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
         await supabase
@@ -145,7 +62,6 @@ Deno.serve(async (req) => {
         break
       }
 
-      // Fatura paga (renovação ou ativação)
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice
         if (invoice.subscription) {
@@ -157,7 +73,6 @@ Deno.serve(async (req) => {
         break
       }
 
-      // Fatura com falha no pagamento
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice
         if (invoice.subscription) {
@@ -169,8 +84,19 @@ Deno.serve(async (req) => {
         break
       }
 
+      case 'invoice.payment_action_required': {
+        const invoice = event.data.object as Stripe.Invoice
+        if (invoice.subscription) {
+          await supabase
+            .from('tenant_subscriptions')
+            .update({ billing_status: 'em_atraso' })
+            .eq('stripe_subscription_id', invoice.subscription)
+        }
+        break
+      }
+
       default:
-        // Evento não tratado — ignorar silenciosamente
+        console.log(`stripe-webhook: evento não tratado (${event.type})`)
         break
     }
 
@@ -178,7 +104,7 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    console.error('Erro ao processar webhook:', error)
+    console.error('Erro ao processar webhook Stripe:', error)
     return new Response(
       JSON.stringify({ error: (error as Error).message }),
       { status: 500 }

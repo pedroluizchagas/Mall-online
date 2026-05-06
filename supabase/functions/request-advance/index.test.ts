@@ -1,6 +1,6 @@
 // supabase/functions/request-advance/index.test.ts
 //
-// Testes unitários para a Edge Function request-advance.
+// Testes unitários para a Edge Function request-advance (após migração para Pagar.me).
 // Executa com: deno test --allow-env --allow-net supabase/functions/request-advance/index.test.ts
 
 import {
@@ -29,7 +29,11 @@ const TAXA_ANTECIPACAO_CENTAVOS = 75
 
 function createMockSupabaseChain(overrides: Record<string, unknown> = {}) {
   const defaults: Record<string, unknown> = {
-    tenantData: { id: 'tenant-uuid-001', stripe_onboarding_ok: true },
+    tenantData: {
+      id: 'tenant-uuid-001',
+      pagarme_recipient_id: 'rp_test_001',
+      pagarme_onboarding_status: 'active',
+    },
     subData: { billing_status: 'ativa', plans: { tem_antecipacao: true } },
     antecipacaoExistente: null,
     pedidosElegiveis: [
@@ -46,8 +50,6 @@ function createMockSupabaseChain(overrides: Record<string, unknown> = {}) {
   function createChain(table: string) {
     let op = ''
 
-    // We need chain methods to return the proxy, not the raw chain.
-    // So we create the proxy first and reference it in closures.
     // deno-lint-ignore no-explicit-any
     let proxy: any
 
@@ -80,7 +82,6 @@ function createMockSupabaseChain(overrides: Record<string, unknown> = {}) {
       },
     }
 
-    // Make chain thenable for array queries (pedidosElegiveis)
     proxy = new Proxy(chain, {
       get(target, prop) {
         if (prop === 'then') {
@@ -111,13 +112,21 @@ function createHandler(deps: {
   // deno-lint-ignore no-explicit-any
   supabaseClient: any
   getAuthenticatedUser: (req: Request) => Promise<typeof FAKE_USER>
+  // deno-lint-ignore no-explicit-any
+  fetchFn?: (url: string, init: any) => Promise<any>
 }) {
   const { supabaseClient, getAuthenticatedUser } = deps
+  const fetchFn = deps.fetchFn ?? (async () => ({
+    ok: true,
+    json: async () => ({}),
+  }))
 
   const corsHeaders = () => ({
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   })
+
+  const PAGARME_BASE_URL = 'https://api.pagar.me/core/v5'
 
   return async (req: Request): Promise<Response> => {
     if (req.method === 'OPTIONS') {
@@ -130,12 +139,12 @@ function createHandler(deps: {
 
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('id, stripe_onboarding_ok')
+        .select('id, pagarme_recipient_id, pagarme_onboarding_status')
         .eq('user_id', user.id)
         .single()
 
       if (!tenant) throw new Error('Lojista não encontrado')
-      if (!tenant.stripe_onboarding_ok) {
+      if (!tenant.pagarme_recipient_id || tenant.pagarme_onboarding_status !== 'active') {
         throw new Error('Configure sua conta de recebimentos antes de solicitar antecipação')
       }
 
@@ -188,6 +197,25 @@ function createHandler(deps: {
       const taxaTotal = totalPedidos * TAXA_ANTECIPACAO_CENTAVOS
       const valorLiquido = valorEstimado - taxaTotal
 
+      const pagarmeRes = await fetchFn(
+        `${PAGARME_BASE_URL}/recipients/${tenant.pagarme_recipient_id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            automatic_anticipation_enabled: true,
+            automatic_anticipation_type: 'full',
+            automatic_anticipation_days: 1,
+            automatic_anticipation_1025_delay: 15,
+          }),
+        }
+      )
+
+      if (!pagarmeRes.ok) {
+        const erro = await pagarmeRes.json().catch(() => ({}))
+        throw new Error(`Falha ao ativar antecipação no Pagar.me: ${JSON.stringify(erro)}`)
+      }
+
       const { data: solicitacao } = await supabase
         .from('payout_advance_requests')
         .insert({
@@ -207,8 +235,8 @@ function createHandler(deps: {
           valor_bruto: valorEstimado,
           taxa_antecipacao: taxaTotal,
           valor_liquido: valorLiquido,
-          previsao_repasse: 'D+2 úteis',
-          mensagem: 'Antecipação aprovada. O repasse será processado no próximo ciclo do cron.',
+          previsao_liquidacao: 'Conforme calendário Pagar.me — D+15 a partir da ativação',
+          mensagem: 'Antecipação automática ativada no Pagar.me.',
         }),
         { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
       )
@@ -239,10 +267,7 @@ function buildRequest(method: string = 'POST', token: string = 'valid-token'): R
 // Tests
 // ===========================================================================
 
-describe('request-advance Edge Function', () => {
-  // -----------------------------------------------------------------------
-  // CORS
-  // -----------------------------------------------------------------------
+describe('request-advance Edge Function (Pagar.me)', () => {
   describe('CORS preflight', () => {
     it('responde 200 com headers CORS para OPTIONS', async () => {
       const handler = createHandler({
@@ -255,9 +280,6 @@ describe('request-advance Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // Autenticação
-  // -----------------------------------------------------------------------
   describe('autenticação', () => {
     it('retorna 400 quando token não fornecido', async () => {
       const handler = createHandler({
@@ -269,9 +291,6 @@ describe('request-advance Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // Validações
-  // -----------------------------------------------------------------------
   describe('validações', () => {
     it('retorna 400 quando lojista não encontrado', async () => {
       const handler = createHandler({
@@ -284,10 +303,31 @@ describe('request-advance Edge Function', () => {
       assertStringIncludes(json.error, 'Lojista não encontrado')
     })
 
-    it('retorna 400 quando KYC não concluído', async () => {
+    it('retorna 400 quando recipient Pagar.me não está ativo', async () => {
       const handler = createHandler({
         supabaseClient: createMockSupabaseChain({
-          tenantData: { id: 'tenant-001', stripe_onboarding_ok: false },
+          tenantData: {
+            id: 'tenant-001',
+            pagarme_recipient_id: 'rp_pending',
+            pagarme_onboarding_status: 'pending',
+          },
+        }),
+        getAuthenticatedUser: async () => FAKE_USER,
+      })
+      const res = await handler(buildRequest())
+      assertEquals(res.status, 400)
+      const json = await res.json()
+      assertStringIncludes(json.error, 'conta de recebimentos')
+    })
+
+    it('retorna 400 quando lojista sem pagarme_recipient_id', async () => {
+      const handler = createHandler({
+        supabaseClient: createMockSupabaseChain({
+          tenantData: {
+            id: 'tenant-001',
+            pagarme_recipient_id: null,
+            pagarme_onboarding_status: 'pending',
+          },
         }),
         getAuthenticatedUser: async () => FAKE_USER,
       })
@@ -348,9 +388,6 @@ describe('request-advance Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // Happy path
-  // -----------------------------------------------------------------------
   describe('happy path', () => {
     it('retorna solicitacao_id, valores e mensagem de aprovação', async () => {
       const handler = createHandler({
@@ -366,8 +403,8 @@ describe('request-advance Edge Function', () => {
       assertExists(json.valor_bruto)
       assertExists(json.taxa_antecipacao)
       assertExists(json.valor_liquido)
-      assertEquals(json.previsao_repasse, 'D+2 úteis')
-      assertStringIncludes(json.mensagem, 'Antecipação aprovada')
+      assertExists(json.previsao_liquidacao)
+      assertStringIncludes(json.mensagem, 'Antecipação automática ativada no Pagar.me')
     })
 
     it('calcula valor_bruto corretamente (total - taxa_entrega - platform_fee)', async () => {
@@ -377,10 +414,7 @@ describe('request-advance Edge Function', () => {
       })
       const res = await handler(buildRequest())
       const json = await res.json()
-
-      // Pedido 1: 5000 - 500 - 100 = 4400
-      // Pedido 2: 3000 - 300 - 100 = 2600
-      // Total: 7000
+      // 5000-500-100 + 3000-300-100 = 7000
       assertEquals(json.valor_bruto, 7000)
     })
 
@@ -391,19 +425,51 @@ describe('request-advance Edge Function', () => {
       })
       const res = await handler(buildRequest())
       const json = await res.json()
-
-      // 2 pedidos * 75 = 150 centavos
       assertEquals(json.taxa_antecipacao, 150)
       assertEquals(json.valor_liquido, 7000 - 150)
     })
+
+    it('chama PUT /recipients/{id} com flags de antecipação automática', async () => {
+      // deno-lint-ignore no-explicit-any
+      const calls: Array<{ url: string; init: any }> = []
+      const handler = createHandler({
+        supabaseClient: createMockSupabaseChain(),
+        getAuthenticatedUser: async () => FAKE_USER,
+        fetchFn: async (url, init) => {
+          calls.push({ url, init })
+          return { ok: true, json: async () => ({}) }
+        },
+      })
+
+      await handler(buildRequest())
+
+      assertEquals(calls.length, 1)
+      assertEquals(calls[0].init.method, 'PUT')
+      assertStringIncludes(calls[0].url, '/recipients/rp_test_001')
+      const payload = JSON.parse(calls[0].init.body)
+      assertEquals(payload.automatic_anticipation_enabled, true)
+      assertEquals(payload.automatic_anticipation_type, 'full')
+    })
+
+    it('retorna 400 quando Pagar.me responde com erro', async () => {
+      const handler = createHandler({
+        supabaseClient: createMockSupabaseChain(),
+        getAuthenticatedUser: async () => FAKE_USER,
+        fetchFn: async () => ({
+          ok: false,
+          json: async () => ({ message: 'recipient inválido' }),
+        }),
+      })
+
+      const res = await handler(buildRequest())
+      assertEquals(res.status, 400)
+      const json = await res.json()
+      assertStringIncludes(json.error, 'Falha ao ativar antecipação no Pagar.me')
+    })
   })
 
-  // -----------------------------------------------------------------------
-  // Critério de aceite: 40 pedidos = R$30,00 = 3000 centavos
-  // -----------------------------------------------------------------------
   describe('critério de aceite — taxa de antecipação', () => {
     it('40 pedidos = R$30,00 = 3000 centavos de taxa', async () => {
-      // Gerar 40 pedidos elegíveis
       const pedidos40 = Array.from({ length: 40 }, (_, i) => ({
         id: `order-${i}`,
         total: 2000,
@@ -421,9 +487,7 @@ describe('request-advance Edge Function', () => {
 
       const json = await res.json()
       assertEquals(json.total_pedidos, 40)
-      assertEquals(json.taxa_antecipacao, 3000) // 40 * 75 = 3000 centavos = R$30,00
-
-      // valor_bruto = 40 * (2000 - 300 - 100) = 40 * 1600 = 64000
+      assertEquals(json.taxa_antecipacao, 3000)
       assertEquals(json.valor_bruto, 64000)
       assertEquals(json.valor_liquido, 64000 - 3000)
     })
@@ -445,9 +509,6 @@ describe('request-advance Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // Inserção no banco
-  // -----------------------------------------------------------------------
   describe('inserção da solicitação', () => {
     it('insere com status aprovada (aprovação automática no MVP)', async () => {
       const mockClient = createMockSupabaseChain()
@@ -471,9 +532,6 @@ describe('request-advance Edge Function', () => {
     })
   })
 
-  // -----------------------------------------------------------------------
-  // Resposta de erro usa status 400 (não 500)
-  // -----------------------------------------------------------------------
   describe('status de erro', () => {
     it('erros de validação retornam 400, não 500', async () => {
       const handler = createHandler({

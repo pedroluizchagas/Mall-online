@@ -1,10 +1,72 @@
 // supabase/functions/onboard-tenant/index.ts
 import Stripe from 'https://esm.sh/stripe@14'
-import { getSupabaseAdmin, corsHeaders } from '../helpers/auth.ts'
+import {
+  getSupabaseAdmin,
+  corsHeaders,
+  pagarmeHeaders,
+  PAGARME_BASE_URL,
+} from '../helpers/auth.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-04-10',
 })
+
+type DadosBancariosPix = {
+  tipo: 'pix'
+  chave_pix: string
+  tipo_chave: 'cpf' | 'cnpj' | 'email' | 'telefone' | 'aleatoria'
+}
+
+type DadosBancariosConta = {
+  tipo: 'conta_bancaria'
+  banco: string
+  agencia: string
+  conta: string
+  digito: string
+  tipo_conta: 'checking' | 'savings'
+}
+
+type DadosBancarios = DadosBancariosPix | DadosBancariosConta
+
+function buildRecipientPayload(args: {
+  nome_responsavel: string
+  email: string
+  cpf_cnpj: string
+  dados_bancarios: DadosBancarios
+}) {
+  const { nome_responsavel, email, cpf_cnpj, dados_bancarios } = args
+  const documentDigits = cpf_cnpj.replace(/\D/g, '')
+  const type = documentDigits.length <= 11 ? 'individual' : 'company'
+
+  const base = {
+    name: nome_responsavel,
+    email,
+    document: cpf_cnpj,
+    type,
+  }
+
+  if (dados_bancarios.tipo === 'pix') {
+    return {
+      ...base,
+      payment_mode: 'pix',
+      pix_key: dados_bancarios.chave_pix,
+      pix_key_type: dados_bancarios.tipo_chave,
+    }
+  }
+
+  return {
+    ...base,
+    default_bank_account: {
+      holder_name: nome_responsavel,
+      holder_document: cpf_cnpj,
+      bank: dados_bancarios.banco,
+      branch_number: dados_bancarios.agencia,
+      account_number: dados_bancarios.conta,
+      account_check_digit: dados_bancarios.digito,
+      type: dados_bancarios.tipo_conta,
+    },
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -23,11 +85,30 @@ Deno.serve(async (req) => {
       categoria_id,
       endereco,
       plan_id,
-    } = body
+      dados_bancarios,
+    } = body as {
+      nome_responsavel: string
+      cpf_cnpj: string
+      telefone: string
+      email: string
+      senha: string
+      nome_loja: string
+      categoria_id?: string
+      endereco: unknown
+      plan_id: string
+      dados_bancarios: DadosBancarios
+    }
 
     if (!email || !senha) {
       return new Response(
         JSON.stringify({ error: 'Email e senha são obrigatórios' }),
+        { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!dados_bancarios || !dados_bancarios.tipo) {
+      return new Response(
+        JSON.stringify({ error: 'Dados bancários são obrigatórios' }),
         { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
       )
     }
@@ -37,7 +118,6 @@ Deno.serve(async (req) => {
     let userId: string
     let isNewUser = false
 
-    // Tentar criar o usuário via admin SDK — sem enviar e-mail de confirmação
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password: senha,
@@ -50,7 +130,6 @@ Deno.serve(async (req) => {
         authError.message.includes('already been registered') ||
         authError.message.includes('already registered')
       ) {
-        // E-mail já existe em auth.users — verificar se é um usuário órfão (sem tenant)
         const { data: existingUserId, error: rpcError } = await supabase.rpc(
           'get_user_id_by_email',
           { p_email: email }
@@ -76,7 +155,6 @@ Deno.serve(async (req) => {
           )
         }
 
-        // Usuário órfão: auth criado mas tenant não. Atualizar senha e continuar.
         await supabase.auth.admin.updateUserById(existingUserId, {
           password: senha,
           user_metadata: { nome: nome_responsavel, role: 'tenant' },
@@ -91,7 +169,6 @@ Deno.serve(async (req) => {
       isNewUser = true
     }
 
-    // Buscar plano selecionado
     const { data: plano, error: planoError } = await supabase
       .from('plans')
       .select('id, stripe_price_id')
@@ -104,9 +181,11 @@ Deno.serve(async (req) => {
       throw new Error('Plano não encontrado ou inativo')
     }
 
-    // Criar Stripe Customer (para billing) e Express Account (para repasses)
     let stripeCustomerId: string
-    let stripeAccountId: string
+    let pagarmeRecipientId: string
+    let pagarmeRecipientStatus: string
+    let pagarmeKycLink: string | null = null
+
     try {
       const stripeCustomer = await stripe.customers.create({
         email,
@@ -116,23 +195,32 @@ Deno.serve(async (req) => {
       })
       stripeCustomerId = stripeCustomer.id
 
-      const stripeAccount = await stripe.accounts.create({
-        type: 'express',
-        country: 'BR',
+      const recipientPayload = buildRecipientPayload({
+        nome_responsavel,
         email,
-        capabilities: {
-          card_payments: { requested: true },
-          transfers: { requested: true },
-        },
-        metadata: { user_id: userId },
+        cpf_cnpj,
+        dados_bancarios,
       })
-      stripeAccountId = stripeAccount.id
-    } catch (stripeError) {
+
+      const pagarmeRes = await fetch(`${PAGARME_BASE_URL}/recipients`, {
+        method: 'POST',
+        headers: pagarmeHeaders(),
+        body: JSON.stringify(recipientPayload),
+      })
+
+      const pagarmeData = await pagarmeRes.json()
+      if (!pagarmeRes.ok) {
+        throw new Error(`Pagar.me recipient: ${JSON.stringify(pagarmeData)}`)
+      }
+
+      pagarmeRecipientId = pagarmeData.id
+      pagarmeRecipientStatus = pagarmeData.status ?? 'pending'
+      pagarmeKycLink = pagarmeData.kyc_link ?? null
+    } catch (err) {
       if (isNewUser) await supabase.auth.admin.deleteUser(userId)
-      throw stripeError
+      throw err
     }
 
-    // Gerar slug limpo a partir do nome da loja
     const baseSlug = nome_loja
       .toLowerCase()
       .normalize('NFD')
@@ -140,7 +228,6 @@ Deno.serve(async (req) => {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
 
-    // Resolver colis\u00e3o de slug incrementando sufixo num\u00e9rico
     async function resolverSlugDisponivel(base: string): Promise<string> {
       const { data: existing } = await supabase
         .from('stores')
@@ -167,8 +254,8 @@ Deno.serve(async (req) => {
         email,
         slug: `${baseSlug}-${Date.now()}`,
         stripe_customer_id: stripeCustomerId,
-        stripe_account_id: stripeAccountId,
-        stripe_onboarding_ok: false,
+        pagarme_recipient_id: pagarmeRecipientId,
+        pagarme_onboarding_status: pagarmeRecipientStatus,
       })
       .select('id')
       .single()
@@ -203,13 +290,34 @@ Deno.serve(async (req) => {
 
     if (storeError) throw storeError
 
+    // Recipient já ativo (PJ verificada automaticamente) → cria a Subscription
+    // Stripe Billing imediatamente. Caso contrário, o webhook
+    // recipient.status.changed dispara create-subscription quando status='active'.
+    if (pagarmeRecipientStatus === 'active') {
+      await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/create-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
+        body: JSON.stringify({ tenant_id: tenant.id }),
+      })
+    }
+
     return new Response(
-      JSON.stringify({ tenant_id: tenant.id, store_id: store.id, store_slug: storeSlug }),
+      JSON.stringify({
+        tenant_id: tenant.id,
+        store_id: store.id,
+        store_slug: storeSlug,
+        pagarme_recipient_id: pagarmeRecipientId,
+        pagarme_recipient_status: pagarmeRecipientStatus,
+        kyc_link: pagarmeKycLink,
+      }),
       { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
   }
