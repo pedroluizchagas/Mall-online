@@ -1,6 +1,7 @@
 {
   "name": "mallora-monorepo",
   "private": true,
+  "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev:web": "pnpm --filter web dev",
     "dev:admin": "pnpm --filter admin dev",
@@ -19,5 +20,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react-native-worklets": "0.5.1"
+    }
   }
 }

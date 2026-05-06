@@ -9,8 +9,8 @@
 ## VISAO GERAL
 
 Este arquivo cobre todo o processo de configuração de infraestrutura
-para produção: Supabase Pro, Vercel Pro, domínio, Stripe em produção,
-monitoramento e o checklist completo de lançamento.
+para produção: Supabase Pro, Vercel Pro, domínio, Pagar.me e Stripe
+Billing em produção, monitoramento e o checklist completo de lançamento.
 
 A infraestrutura mensal custa aproximadamente $45 (R$225/mês).
 Todo o ambiente de desenvolvimento pode rodar localmente sem custo.
@@ -311,23 +311,62 @@ eas update --branch production --message "Correção de bug"
 
 -----
 
-## STRIPE EM PRODUCAO
+## PAGAR.ME EM PRODUCAO
 
-### Checklist de ativação da conta Stripe
+### Checklist de ativação da conta Pagar.me
 
 ```
-1. Acessar https://dashboard.stripe.com
-2. Completar verificação da conta (pessoa física ou jurídica)
-3. Adicionar dados bancários para recebimento das taxas da plataforma
-4. Verificar que Connect está habilitado para o Brasil
-   Dashboard → Connect → Settings → Countries → Brazil
-5. Ativar PIX
-   Dashboard → Settings → Payment methods → PIX → Ativar
-6. Verificar limite de transferências para o Brasil
-   Dashboard → Connect → Settings → Transfer schedule
+1. Acessar https://dashboard.pagar.me
+2. Completar verificação KYC da conta (pessoa jurídica — Mallora)
+3. Ativar conta para recebimentos (status: active)
+4. Habilitar métodos de pagamento: cartão de crédito, débito, Pix, boleto
+5. Criar recipient de conta da Mallora (recebe comissões e taxas de entrega)
+6. Ativar antecipação automática no recipient da Mallora (opcional)
+7. Gerar chave de API de produção (prefixo ak_live_)
 ```
 
-### Registrar webhook de producao
+### Registrar webhook Pagar.me em producao
+
+```
+Pagar.me Dashboard
+  → Configurações
+  → Webhooks
+  → Adicionar endpoint
+
+URL: https://[PROJECT_REF].supabase.co/functions/v1/pagarme-webhook
+Events a selecionar:
+  - order.paid
+  - order.payment_failed
+  - order.canceled
+  - charge.paid
+  - charge.refunded
+  - charge.chargeback.created
+  - recipient.created
+  - recipient.status.changed
+  - transfer.created
+  - transfer.failed
+
+Após criar:
+  → Copiar o segredo gerado para PAGARME_WEBHOOK_SECRET nos secrets do Supabase
+```
+
+### Configurar antifraude Pagar.me
+
+```
+Pagar.me Dashboard
+  → Configurações
+  → Antifraude
+  → Habilitar Clearsale ou Konduto (parceiros nativos)
+
+Alternativa: enviar campo antifraud_enabled: true na criação do Order
+e configurar score mínimo de aprovação (ex: 85).
+```
+
+-----
+
+## STRIPE BILLING EM PRODUCAO
+
+### Registrar webhook Stripe em producao (apenas Billing)
 
 ```
 Stripe Dashboard
@@ -336,43 +375,18 @@ Stripe Dashboard
   → Add endpoint
 
 URL: https://[PROJECT_REF].supabase.co/functions/v1/stripe-webhook
-Events a selecionar:
-  - payment_intent.succeeded
-  - payment_intent.payment_failed
-  - payment_intent.canceled
-  - account.updated
+Events a selecionar (apenas Billing):
   - customer.subscription.created
   - customer.subscription.updated
   - customer.subscription.deleted
   - invoice.paid
   - invoice.payment_failed
   - invoice.payment_action_required
-  - charge.dispute.created
-  - charge.refunded
 
 Após criar:
   → Clicar no endpoint
   → Reveal signing secret
   → Copiar para STRIPE_WEBHOOK_SECRET nos secrets do Supabase
-```
-
-### Configurar Stripe Radar (antifraude)
-
-```
-Stripe Dashboard
-  → Radar
-  → Rules
-  → Criar regras básicas:
-
-Regra 1: Bloquear cartões com risco alto
-  IF :risk_level: = 'highest' THEN block
-
-Regra 2: Revisar transações acima de R$500 sem histórico
-  IF :risk_score: > 65 AND :total_charges_per_customer_lifetime_count: = 0
-  THEN review
-
-Regra 3: Bloquear cartões de países fora do Brasil (opcional)
-  IF :card_country: != 'BR' THEN block
 ```
 
 ### Ativar Customer Portal do Stripe
@@ -450,11 +464,18 @@ Monitorar via Supabase Dashboard diariamente:
 - Storage → Usage
 - Auth → Users
 
-### Stripe Dashboard
+### Pagar.me Dashboard
 
-- Developers → Logs (requisições à API)
-- Developers → Webhooks → logs de entrega
-- Payments → filtrar por período para reconciliação
+- Transações → filtrar por período para reconciliação de pedidos
+- Webhooks → logs de entrega e reenvio manual
+- Recebíveis → posição de agenda financeira por recipient
+- Antecipações → histórico e saldo antecipado
+
+### Stripe Dashboard (Billing)
+
+- Developers → Logs (requisições à API Billing)
+- Developers → Webhooks → logs de entrega de eventos Billing
+- Billing → Subscriptions → filtrar por status (active, past_due, canceled)
 
 ### Alertas de erro — Vercel
 
@@ -469,16 +490,28 @@ Vercel Dashboard
   → Adicionar email para alertas
 ```
 
-### Alertas do Stripe
+### Alertas Pagar.me
+
+```
+Pagar.me Dashboard
+  → Configurações
+  → Notificações por email
+  → Habilitar:
+    - Pagamentos recusados
+    - Chargebacks criados
+    - Transferências falhas
+    - Recipient com status recusado ou suspenso
+```
+
+### Alertas Stripe Billing
 
 ```
 Stripe Dashboard
   → Settings
   → Emails
   → Habilitar:
-    - Failed payments
+    - Failed payments (assinaturas)
     - Disputed charges
-    - Payouts (quando dinheiro sair da conta)
 ```
 
 -----
@@ -562,18 +595,27 @@ GitHub → Repositório → Settings → Branches
 - [ ] Variáveis de ambiente de produção configuradas no Vercel
 - [ ] Build de produção do Next.js sem erros (`pnpm build`)
 
-### Stripe (3 dias antes)
+### Pagar.me (3 dias antes)
+
+- [ ] Conta Pagar.me verificada e aprovada (KYC da Mallora concluído)
+- [ ] Recipient da Mallora criado e com status `active`
+- [ ] Pix, cartão de crédito, débito e boleto habilitados
+- [ ] Webhook Pagar.me de produção registrado com todos os eventos necessários
+- [ ] `PAGARME_API_KEY` de produção (prefixo `ak_live_`) configurada nos secrets
+- [ ] `PAGARME_WEBHOOK_SECRET` de produção configurado nos secrets do Supabase
+- [ ] `PAGARME_RECIPIENT_ID_MALLORA` de produção configurado
+- [ ] Antifraude configurado (Clearsale ou Konduto)
+- [ ] Teste de pagamento no ambiente de produção com valor mínimo (R$1,00)
+- [ ] Teste de onboarding de recipient lojista e entregador em produção
+
+### Stripe Billing (3 dias antes)
 
 - [ ] Conta Stripe verificada e aprovada para o Brasil
-- [ ] PIX ativado no Stripe Dashboard
-- [ ] Stripe Connect habilitado para o Brasil
 - [ ] Customer Portal ativado e configurado
-- [ ] Webhook de produção registrado com todos os eventos necessários
+- [ ] Webhook Stripe de produção registrado (apenas eventos Billing)
 - [ ] `STRIPE_WEBHOOK_SECRET` de produção atualizado nos secrets do Supabase
-- [ ] Stripe Radar configurado com regras básicas
 - [ ] Planos criados na tabela `plans` com `stripe_product_id` e `stripe_price_id`
-- [ ] Teste de pagamento com cartão real de valor mínimo (R$1,00)
-- [ ] Teste de onboarding de Express Account em produção
+- [ ] Teste de assinatura com cartão Stripe de teste no ambiente de produção
 
 ### Apps mobile (1 semana antes)
 
@@ -592,7 +634,7 @@ GitHub → Repositório → Settings → Branches
 - [ ] Categorias globais inseridas na tabela `categories`
 - [ ] Planos criados na tabela `plans` com preços definidos
 - [ ] Pelo menos um lojista de teste cadastrado e operacional
-- [ ] Pelo menos um entregador de teste aprovado e com Stripe configurado
+- [ ] Pelo menos um entregador de teste aprovado e com recipient Pagar.me ativo
 
 ### Testes finais (dia anterior)
 
@@ -602,34 +644,36 @@ GitHub → Repositório → Settings → Branches
 - [ ] Repasse D+1 testado manualmente via `supabase functions invoke daily-payouts`
 - [ ] Onboarding de novo lojista testado do zero até o dashboard
 - [ ] Dashboard do admin acessível e mostrando métricas
-- [ ] Nenhum erro nos logs do Vercel, Supabase e Stripe
+- [ ] Nenhum erro nos logs do Vercel, Supabase, Pagar.me e Stripe
 
 ### No dia do lançamento
 
 - [ ] Fazer backup manual do banco antes de abrir para usuários
 - [ ] Monitorar logs do Supabase por 1 hora após abertura
 - [ ] Monitorar logs do Vercel por 1 hora após abertura
-- [ ] Monitorar webhooks do Stripe por 1 hora após abertura
+- [ ] Monitorar webhooks do Pagar.me por 1 hora após abertura
+- [ ] Monitorar webhooks do Stripe Billing por 1 hora após abertura
 - [ ] Ter canal de suporte pronto (WhatsApp ou email)
-- [ ] Ter o Stripe CLI instalado para simular/debugar webhooks se necessário
+- [ ] Ter o Stripe CLI instalado para simular/debugar webhooks Billing se necessário
 
 -----
 
 ## CUSTOS MENSAIS ESTIMADOS
 
-|Serviço        |Plano        |Custo               |
-|---------------|-------------|--------------------|
-|Supabase       |Pro          |$25,00              |
-|Vercel         |Pro          |$20,00              |
-|Stripe         |Pay-as-you-go|~3,8% por transação*|
-|Expo EAS       |Free tier    |$0,00               |
-|Domínio .com.br|Anual        |~R$3,50/mês         |
-|Total fixo     |             |~$45/mês + R$3,50   |
+|Serviço             |Plano        |Custo                      |
+|--------------------|-------------|---------------------------|
+|Supabase            |Pro          |$25,00                     |
+|Vercel              |Pro          |$20,00                     |
+|Pagar.me (pedidos)  |Pay-as-you-go|MDR ~2,99% cartão / 0% Pix*|
+|Stripe Billing (sub)|Pay-as-you-go|~2,9% + $0,30 por cobrança  |
+|Expo EAS            |Free tier    |$0,00                      |
+|Domínio .com.br     |Anual        |~R$3,50/mês                |
+|Total fixo          |             |~$45/mês + R$3,50          |
 
-*Taxa Stripe debitada automaticamente das transações. Com 1.500 pedidos/mês
-de R$60 médios = R$90.000 em volume, a taxa Stripe seria ~R$3.420.
-Essa taxa sai do volume transacionado — não é custo adicional para a plataforma
-além do que já foi considerado no modelo financeiro.
+*MDR Pagar.me debitado das transações. Com 1.500 pedidos/mês de R$60 médios
+= R$90.000 em volume, o MDR médio seria ~R$2.691 (MDR 2,99% no crédito).
+Para Pix, sem MDR — custo apenas de tarifa por transação (~R$0,01).
+Esses custos já estão incorporados no modelo financeiro (arquivo 06).
 
 -----
 

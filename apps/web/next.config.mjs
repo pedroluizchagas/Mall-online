@@ -1,5 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/dashboard',
+        destination: '/',
+        permanent: true,
+      },
+    ]
+  },
   transpilePackages: ['@mallora/types', '@mallora/lib'],
   images: {
     remotePatterns: [
@@ -12,7 +21,12 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'mallora.com.br'],
+      allowedOrigins: [
+        'localhost:3000',
+        'app.mallevo.com.br',
+        '*.mallevo.com.br',
+        '*.mallevo.localhost',
+      ],
     },
   },
 }

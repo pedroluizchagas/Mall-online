@@ -16,14 +16,14 @@ const LABELS_STATUS: Record<string, string> = {
   cancelado: 'Cancelado',
 }
 
-const CORES_STATUS: Record<string, string> = {
-  novo: 'bg-amber-100 text-amber-800',
-  confirmado: 'bg-blue-100 text-blue-800',
-  em_preparo: 'bg-purple-100 text-purple-800',
-  aguardando_entregador: 'bg-orange-100 text-orange-800',
-  saiu_para_entrega: 'bg-cyan-100 text-cyan-800',
-  entregue: 'bg-green-100 text-green-800',
-  cancelado: 'bg-red-100 text-red-800',
+const CORES_STATUS: Record<string, { bg: string; color: string }> = {
+  novo: { bg: '#fef3c7', color: '#92400e' },
+  confirmado: { bg: '#dbeafe', color: '#1e40af' },
+  em_preparo: { bg: '#ede9fe', color: '#5b21b6' },
+  aguardando_entregador: { bg: '#ffedd5', color: '#9a3412' },
+  saiu_para_entrega: { bg: '#cffafe', color: '#155e75' },
+  entregue: { bg: '#dcfce7', color: '#166534' },
+  cancelado: { bg: '#fee2e2', color: '#991b1b' },
 }
 
 const PROXIMAS_ACOES: Record<string, { label: string; status: string }[]> = {
@@ -49,9 +49,7 @@ export function PedidoCard({
   pedido: any
   expandidoInicial?: boolean
 }) {
-  const [expandido, setExpandido] = useState(
-    expandidoInicial ?? pedido.status === 'novo'
-  )
+  const [expandido, setExpandido] = useState(expandidoInicial ?? pedido.status === 'novo')
   const [isPending, startTransition] = useTransition()
   const [erro, setErro] = useState<string | null>(null)
 
@@ -60,6 +58,7 @@ export function PedidoCard({
     hour: '2-digit',
     minute: '2-digit',
   })
+  const corStatus = CORES_STATUS[pedido.status]
 
   function handleAcao(status: string) {
     setErro(null)
@@ -71,13 +70,14 @@ export function PedidoCard({
 
   return (
     <div
-      className={`bg-white rounded-xl border transition-all ${
-        pedido.status === 'novo'
-          ? 'border-amber-300 shadow-md shadow-amber-50'
-          : 'border-gray-100'
-      }`}
+      className="rounded-xl transition-all"
+      style={{
+        background: 'var(--bg)',
+        border: pedido.status === 'novo'
+          ? '1px solid var(--warn)'
+          : '1px solid var(--line)',
+      }}
     >
-      {/* Cabeçalho — sempre visível */}
       <div
         className="flex items-center justify-between p-4 cursor-pointer"
         onClick={() => setExpandido(!expandido)}
@@ -85,24 +85,27 @@ export function PedidoCard({
         <div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/dashboard/pedidos/${pedido.id}`}
-              className="font-semibold text-gray-800 hover:text-[#4CAF82] transition-colors"
+              href={`/pedidos/${pedido.id}`}
+              className="font-semibold text-ink hover:text-brick-dk transition-colors"
               onClick={(e) => e.stopPropagation()}
             >
               #{pedido.id.slice(-6).toUpperCase()}
             </Link>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${CORES_STATUS[pedido.status]}`}>
+            <span
+              className="text-xs px-2 py-0.5 rounded-full font-medium"
+              style={corStatus}
+            >
               {LABELS_STATUS[pedido.status]}
             </span>
           </div>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-ink-3 mt-0.5">
             {pedido.consumers?.nome} — {horario}
           </p>
         </div>
 
         <div className="text-right">
-          <p className="font-bold text-[#1A4D3A]">{formatarReais(pedido.total)}</p>
-          <p className="text-xs text-gray-400">
+          <p className="font-bold text-ink">{formatarReais(pedido.total)}</p>
+          <p className="text-xs text-ink-3">
             {pedido.forma_pagamento === 'online_cartao' && 'Cartão online'}
             {pedido.forma_pagamento === 'online_pix' && 'PIX'}
             {pedido.forma_pagamento === 'dinheiro' && 'Dinheiro'}
@@ -111,79 +114,81 @@ export function PedidoCard({
         </div>
       </div>
 
-      {/* Detalhes expandidos */}
       {expandido && (
-        <div className="px-4 pb-4 space-y-4 border-t border-gray-50 pt-3">
-
+        <div
+          className="px-4 pb-4 space-y-4 pt-3"
+          style={{ borderTop: '1px solid var(--line)' }}
+        >
           {erro && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
               {erro}
             </p>
           )}
 
-          {/* Itens */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Itens</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-2">Itens</p>
             <div className="space-y-1">
               {pedido.order_items?.map((item: any) => (
                 <div key={item.id} className="flex justify-between text-sm">
-                  <span className="text-gray-700">
+                  <span className="text-ink">
                     {item.quantidade}x {item.nome}
                     {item.observacoes && (
-                      <span className="text-gray-400 ml-1">({item.observacoes})</span>
+                      <span className="text-ink-3 ml-1">({item.observacoes})</span>
                     )}
                   </span>
-                  <span className="text-gray-600">{formatarReais(item.subtotal)}</span>
+                  <span className="text-ink-2">{formatarReais(item.subtotal)}</span>
                 </div>
               ))}
             </div>
-            <div className="border-t border-gray-100 pt-2 mt-2 space-y-0.5">
-              <div className="flex justify-between text-sm text-gray-500">
+            <div className="pt-2 mt-2 space-y-0.5" style={{ borderTop: '1px solid var(--line)' }}>
+              <div className="flex justify-between text-sm text-ink-3">
                 <span>Subtotal</span>
                 <span>{formatarReais(pedido.subtotal)}</span>
               </div>
               {pedido.taxa_entrega > 0 && (
-                <div className="flex justify-between text-sm text-gray-500">
+                <div className="flex justify-between text-sm text-ink-3">
                   <span>Taxa de entrega</span>
                   <span>{formatarReais(pedido.taxa_entrega)}</span>
                 </div>
               )}
               <div className="flex justify-between font-bold">
-                <span>Total</span>
-                <span className="text-[#1A4D3A]">{formatarReais(pedido.total)}</span>
+                <span className="text-ink">Total</span>
+                <span className="text-ink">{formatarReais(pedido.total)}</span>
               </div>
             </div>
           </div>
 
-          {/* Endereço */}
           <div>
-            <p className="text-xs font-medium text-gray-500 uppercase mb-1">Entrega</p>
-            <p className="text-sm text-gray-700">
+            <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-1">Entrega</p>
+            <p className="text-sm text-ink">
               {pedido.endereco_entrega?.rua}, {pedido.endereco_entrega?.numero}
-              {pedido.endereco_entrega?.complemento &&
-                ` — ${pedido.endereco_entrega.complemento}`}
+              {pedido.endereco_entrega?.complemento && ` — ${pedido.endereco_entrega.complemento}`}
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ink-3">
               {pedido.endereco_entrega?.bairro} — {pedido.endereco_entrega?.cidade}
             </p>
           </div>
 
-          {/* Observações */}
           {pedido.observacoes && (
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase mb-1">Observações</p>
-              <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-1">Observações</p>
+              <p
+                className="text-sm text-ink px-3 py-2 rounded-xl"
+                style={{ background: 'var(--bg-2)' }}
+              >
                 {pedido.observacoes}
               </p>
             </div>
           )}
 
-          {/* Entregador atribuído */}
           {pedido.delivery_assignments?.[0] && (
             <div>
-              <p className="text-xs font-medium text-gray-500 uppercase mb-1">Entregador</p>
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-1">Entregador</p>
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+                <div
+                  className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
+                  style={{ background: 'var(--bg-2)' }}
+                >
                   {pedido.delivery_assignments[0].couriers?.foto_url ? (
                     <img
                       src={pedido.delivery_assignments[0].couriers.foto_url}
@@ -191,14 +196,14 @@ export function PedidoCard({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300 text-xs">?</div>
+                    <div className="w-full h-full flex items-center justify-center text-ink-3 text-xs">?</div>
                   )}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-700">
+                  <p className="text-sm font-medium text-ink">
                     {pedido.delivery_assignments[0].couriers?.nome}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-ink-3">
                     {pedido.delivery_assignments[0].couriers?.telefone}
                   </p>
                 </div>
@@ -206,15 +211,10 @@ export function PedidoCard({
             </div>
           )}
 
-          {/* Botão de atribuir entregador */}
           {pedido.status === 'em_preparo' && !pedido.delivery_assignments?.[0] && (
-            <ModalAtribuirEntregador
-              pedidoId={pedido.id}
-              valorEntrega={pedido.taxa_entrega}
-            />
+            <ModalAtribuirEntregador pedidoId={pedido.id} valorEntrega={pedido.taxa_entrega} />
           )}
 
-          {/* Ações de status */}
           {acoes.length > 0 && (
             <div className="flex gap-2 pt-1">
               {acoes.map((acao) => (
@@ -222,12 +222,12 @@ export function PedidoCard({
                   key={acao.status}
                   onClick={() => handleAcao(acao.status)}
                   disabled={isPending}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors
-                    disabled:opacity-50 ${
+                  className="flex-1 py-2 rounded-full text-sm font-bold transition-opacity disabled:opacity-50 hover:opacity-90"
+                  style={
                     acao.status === 'cancelado'
-                      ? 'border border-red-200 text-red-600 hover:bg-red-50'
-                      : 'bg-[#1A4D3A] text-white hover:bg-[#163d2e]'
-                  }`}
+                      ? { border: '1px solid var(--err)', color: 'var(--err)', background: 'transparent' }
+                      : { background: 'var(--brick)', color: 'var(--brick-ink)' }
+                  }
                 >
                   {isPending ? 'Aguarde...' : acao.label}
                 </button>

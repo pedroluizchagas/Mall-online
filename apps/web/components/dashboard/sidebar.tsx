@@ -2,216 +2,239 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import {
+  Home,
+  ShoppingBag,
+  Package,
+  DollarSign,
+  Store,
+  Bike,
+  BarChart3,
+  Settings,
+  Bell,
+  Star,
+  HelpCircle,
+  Search,
+  LogOut,
+  UserCircle,
+  type LucideIcon,
+} from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
 
-/* ── Ícones ─────────────────────────────────────────────────────────────── */
-function IconPedidos() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/>
-      <path d="M3 6h18"/>
-      <path d="M16 10a4 4 0 0 1-8 0"/>
-    </svg>
-  )
+interface NavItem {
+  href: string
+  label: string
+  icon: LucideIcon
+  badge?: number
 }
 
-function IconProdutos() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-      <polyline points="3.29 7 12 12 20.71 7"/>
-      <line x1="12" x2="12" y1="22" y2="12"/>
-    </svg>
-  )
-}
-
-function IconCategorias() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect width="7" height="7" x="3" y="3" rx="1"/>
-      <rect width="7" height="7" x="14" y="3" rx="1"/>
-      <rect width="7" height="7" x="3" y="14" rx="1"/>
-      <rect width="7" height="7" x="14" y="14" rx="1"/>
-    </svg>
-  )
-}
-
-function IconFinanceiro() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" x2="12" y1="2" y2="22"/>
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-    </svg>
-  )
-}
-
-function IconConfiguracoes() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </svg>
-  )
-}
-
-function IconSair() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-      <polyline points="16 17 21 12 16 7"/>
-      <line x1="21" x2="9" y1="12" y2="12"/>
-    </svg>
-  )
-}
-
-function IconSearch() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8"/>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
-  )
-}
-
-/* ── Grupos de navegação ─────────────────────────────────────────────────── */
-const navGroups = [
-  {
-    label: 'Menu Principal',
-    items: [
-      { href: '/pedidos',    label: 'Pedidos',    icon: IconPedidos },
-      { href: '/produtos',   label: 'Produtos',   icon: IconProdutos },
-      { href: '/categorias', label: 'Categorias', icon: IconCategorias },
-    ],
-  },
-  {
-    label: 'Gestão',
-    items: [
-      { href: '/financeiro',    label: 'Financeiro',    icon: IconFinanceiro },
-      { href: '/configuracoes', label: 'Configurações', icon: IconConfiguracoes },
-    ],
-  },
+const mainItems: NavItem[] = [
+  { href: '/', label: 'Início', icon: Home },
+  { href: '/pedidos', label: 'Pedidos', icon: ShoppingBag, badge: 2 },
+  { href: '/produtos', label: 'Produtos', icon: Package },
+  { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
+  { href: '/minha-loja', label: 'Minha Loja', icon: Store },
+  { href: '/entregadores', label: 'Entregadores', icon: Bike },
+  { href: '/relatorios', label: 'Relatórios', icon: BarChart3 },
 ]
 
-/* ── Botão sair ─────────────────────────────────────────────────────────── */
-function BotaoSair() {
-  return (
-    <form action={logout}>
-      <button
-        type="submit"
-        className="flex w-full items-center gap-2.5 px-4 py-2.5 text-[#555] hover:text-[#888] transition-colors duration-150 text-[12px] font-medium"
-      >
-        <IconSair />
-        Sair
-      </button>
-    </form>
-  )
+const configItems: NavItem[] = [
+  { href: '/mensagens', label: 'Mensagens', icon: Bell },
+  { href: '/avaliacoes', label: 'Avaliações', icon: Star },
+  { href: '/configuracoes/loja', label: 'Configurações', icon: Settings },
+  { href: '/configuracoes/conta', label: 'Minha conta', icon: UserCircle },
+  { href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
+]
+
+interface Props {
+  nomeLoja: string
 }
 
-/* ── Componente principal ───────────────────────────────────────────────── */
-export function Sidebar({ nomeLoja }: { nomeLoja?: string | null }) {
+export function SidebarDashboard({ nomeLoja }: Props) {
   const pathname = usePathname()
-
-  function isActive(href: string) {
-    return pathname === href || pathname.startsWith(href + '/')
-  }
 
   return (
     <aside
-      className="flex flex-col h-screen sidebar-scroll overflow-y-auto flex-shrink-0"
-      style={{ width: 210, minWidth: 210, background: '#151515' }}
+      className="flex flex-col flex-shrink-0 sticky top-0"
+      style={{
+        width: 236,
+        height: '100vh',
+        background: 'var(--sidebar)',
+        color: 'var(--sidebar-ink)',
+        padding: '20px 14px',
+      }}
     >
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '12px 16px 16px' }}>
-        <div style={{
-          width: 28, height: 28,
-          background: '#4CAF82',
-          borderRadius: 7,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <polyline points="9 22 9 12 15 12 15 22"/>
-          </svg>
+      {/* Brand */}
+      <div className="flex items-center gap-2.5 px-2 pb-[18px] pt-1">
+        <div
+          className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center font-extrabold text-base tracking-tight"
+          style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+        >
+          M
         </div>
-        <span style={{ color: '#fff', fontWeight: 600, fontSize: 15, flex: 1 }}>Mallora</span>
+        <div>
+          <div className="text-[15px] font-bold tracking-tight">Mallevo</div>
+          <div className="text-[10px]" style={{ color: 'var(--sidebar-ink-3)' }}>
+            shopping de Divinópolis
+          </div>
+        </div>
       </div>
 
-      {/* Barra de pesquisa */}
-      <div style={{
-        margin: '0 12px 4px',
-        background: '#1f1f1f',
-        borderRadius: 8,
-        display: 'flex', alignItems: 'center', gap: 7,
-        padding: '8px 10px',
-      }}>
-        <IconSearch />
+      {/* Search */}
+      <div
+        className="flex items-center gap-2 mb-5 rounded-[10px]"
+        style={{
+          padding: '8px 12px',
+          background: 'var(--sidebar-2)',
+          border: '1px solid var(--sidebar-line)',
+        }}
+      >
+        <Search className="w-3.5 h-3.5" style={{ color: 'var(--sidebar-ink-3)' }} />
         <input
-          type="text"
-          placeholder="Pesquise aqui..."
-          style={{
-            background: 'none', border: 'none', outline: 'none',
-            color: '#666', fontSize: 11.5, width: '100%',
-            fontFamily: 'inherit',
-          }}
+          placeholder="Buscar..."
+          className="bg-transparent outline-none border-none flex-1 text-[12px]"
+          style={{ color: 'var(--sidebar-ink)' }}
         />
-        <span style={{
-          background: '#2a2a2a', color: '#555', fontSize: 9,
-          padding: '2px 5px', borderRadius: 4, whiteSpace: 'nowrap',
-        }}>⌘K</span>
+        <span
+          className="font-mono text-[9px] px-1.5 py-0.5 rounded"
+          style={{ color: 'var(--sidebar-ink-3)', background: 'rgba(255,255,255,0.05)' }}
+        >
+          ⌘K
+        </span>
       </div>
 
-      {/* Navegação por grupos */}
-      {navGroups.map((group) => (
-        <div key={group.label}>
-          {/* Label da seção */}
-          <div style={{
-            fontSize: 8.5, fontWeight: 600,
-            letterSpacing: '0.09em', color: '#383838',
-            textTransform: 'uppercase',
-            padding: '14px 16px 5px',
-          }}>
-            {group.label}
-          </div>
+      <SectionLabel>Menu principal</SectionLabel>
+      <nav className="flex flex-col gap-0.5">
+        {mainItems.map((item) => (
+          <NavLink key={item.href} item={item} pathname={pathname} />
+        ))}
+      </nav>
 
-          {/* Itens */}
-          {group.items.map(({ href, label, icon: Icon }) => {
-            const active = isActive(href)
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`sidebar-nav-link${active ? ' active' : ''}`}
-              >
-                <Icon />
-                {label}
-                <span className="sidebar-active-bar" />
-              </Link>
-            )
-          })}
+      <div className="pt-[22px]">
+        <SectionLabel>Configurações</SectionLabel>
+      </div>
+      <nav className="flex flex-col gap-0.5">
+        {configItems.map((item) => (
+          <NavLink key={item.href} item={item} pathname={pathname} />
+        ))}
+      </nav>
+
+      {/* Próximo evento */}
+      <div
+        className="mt-auto rounded-[14px]"
+        style={{
+          padding: 14,
+          background: 'var(--sidebar-2)',
+          border: '1px solid var(--sidebar-line)',
+        }}
+      >
+        <div
+          className="text-[9px] uppercase font-semibold mb-1.5"
+          style={{ color: 'var(--sidebar-ink-3)', letterSpacing: '0.14em' }}
+        >
+          Próximo evento
         </div>
-      ))}
+        <div className="text-[13px] font-bold tracking-tight">Feira Central</div>
+        <div className="font-mono text-[10px] mt-0.5" style={{ color: 'var(--sidebar-ink-2)' }}>
+          20 abr · 17h—20h
+        </div>
+        <div className="flex gap-1 mt-2.5">
+          <Chip variant="muted">Lojistas</Chip>
+          <Chip variant="brick">Reunião</Chip>
+        </div>
+      </div>
 
-      {/* Rodapé: loja + sair */}
-      <div style={{ marginTop: 'auto', paddingTop: 8, borderTop: '1px solid #1e1e1e' }}>
-        {nomeLoja && (
-          <div style={{
-            margin: '10px 12px 4px',
-            background: '#1c1c1c',
-            borderRadius: 11,
-            padding: '11px 13px',
-          }}>
-            <div style={{ color: '#3a3a3a', fontSize: 9, textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: 4 }}>
-              Sua loja
-            </div>
-            <div style={{ fontWeight: 600, fontSize: 12, color: '#ddd' }}>
-              {nomeLoja}
-            </div>
-          </div>
-        )}
+      <form action={logout} className="pt-3">
+        <button
+          type="submit"
+          className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[12.5px] font-medium w-full transition-all"
+          style={{ color: 'var(--sidebar-ink-3)' }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = 'var(--sidebar-ink)'
+            e.currentTarget.style.background = 'var(--sidebar-2)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--sidebar-ink-3)'
+            e.currentTarget.style.background = 'transparent'
+          }}
+        >
+          <LogOut className="w-4 h-4" />
+          Sair da conta
+        </button>
+      </form>
 
-        <BotaoSair />
+      <div className="text-[10px] mt-1 px-2" style={{ color: 'var(--sidebar-ink-3)' }}>
+        {nomeLoja}
       </div>
     </aside>
+  )
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="text-[10px] uppercase font-semibold px-2 pb-2"
+      style={{ color: 'var(--sidebar-ink-3)', letterSpacing: '0.14em' }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+  const Icon = item.icon
+
+  return (
+    <Link
+      href={item.href}
+      className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] transition-all"
+      style={{
+        background: active ? 'var(--brick)' : 'transparent',
+        color: active ? 'var(--brick-ink)' : 'var(--sidebar-ink-2)',
+        fontWeight: active ? 700 : 500,
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = 'var(--sidebar-2)'
+          e.currentTarget.style.color = 'var(--sidebar-ink)'
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.background = 'transparent'
+          e.currentTarget.style.color = 'var(--sidebar-ink-2)'
+        }
+      }}
+    >
+      <Icon className="w-4 h-4" strokeWidth={1.75} />
+      <span className="flex-1">{item.label}</span>
+      {item.badge && (
+        <span
+          className="px-1.5 py-px rounded-full text-[10px] font-bold"
+          style={{
+            background: active ? 'var(--ink)' : 'var(--brick)',
+            color: active ? 'var(--brick)' : 'var(--brick-ink)',
+          }}
+        >
+          {item.badge}
+        </span>
+      )}
+    </Link>
+  )
+}
+
+function Chip({ children, variant }: { children: React.ReactNode; variant: 'muted' | 'brick' }) {
+  const styles =
+    variant === 'brick'
+      ? { background: 'var(--brick)', color: 'var(--brick-ink)' }
+      : { background: 'rgba(255,255,255,0.08)', color: 'var(--sidebar-ink)' }
+  return (
+    <span
+      className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold"
+      style={styles}
+    >
+      {children}
+    </span>
   )
 }

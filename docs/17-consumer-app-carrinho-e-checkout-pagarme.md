@@ -1,23 +1,23 @@
-# 17 — Consumer App — Carrinho e Checkout Stripe
+# 17 — Consumer App — Carrinho e Checkout Pagar.me
 
 ### Plataforma Delivery Divinópolis
 
-*Versão 1.0 — 23/03/2026*
+*Versão 2.0 — 29/04/2026 (substitui Stripe Payment Sheet por Pagar.me)*
 
 -----
 
 ## VISAO GERAL
 
-O checkout é o fluxo mais crítico do app do consumidor. Cobre desde
-a revisão do carrinho até a confirmação do pagamento via Stripe
-Payment Sheet. O fluxo tem três etapas em sequência:
+O checkout é o fluxo mais crítico do app do consumidor. Cobre desde a revisão
+do carrinho até a confirmação do pagamento via Pagar.me. O fluxo tem três
+etapas em sequência:
 
 1. Carrinho — revisão dos itens, endereço e forma de pagamento
-1. Payment Sheet — para pagamentos online (Stripe)
+1. Pagamento — Pix (QR code in-app) ou cartão (formulário in-app com tokenização)
 1. Confirmação — pedido criado, redireciona para acompanhamento
 
 Pagamentos offline (dinheiro, cartão na maquininha) criam o pedido
-diretamente sem passar pelo Stripe.
+diretamente sem passar pelo Pagar.me.
 
 -----
 
@@ -34,13 +34,21 @@ app/checkout.tsx (modal)
     → campo de observações
     → botão "Fazer pedido"
         ↓
-  [se pagamento online]
-    → chama Edge Function create-payment-intent
-    → recebe client_secret
-    → abre Stripe Payment Sheet
-    → consumidor confirma pagamento
-    → webhook payment_intent.succeeded atualiza o banco
-        ↓
+  [se pagamento online — Pix]
+    → chama Edge Function create-pagarme-order com payment_method='pix'
+    → recebe qr_code + qr_code_url
+    → exibe tela de Pix com QR Code, copia-e-cola e timer de expiração
+    → assina canal Realtime em orders.id
+    → webhook order.paid atualiza payment_status no banco
+    → Realtime notifica o app e redireciona para acompanhamento
+
+  [se pagamento online — cartão]
+    → coleta dados do cartão no app (formulário com validação Luhn)
+    → chama Edge Function create-pagarme-order com payment_method='credit_card'
+       (a Edge Function tokeniza no servidor e cria a Order)
+    → resposta inclui status imediato (paid | failed | pending)
+    → se paid: redireciona; se failed: exibe motivo da recusa
+
   [se pagamento offline]
     → cria pedido diretamente no banco
         ↓
@@ -65,7 +73,6 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { router } from 'expo-router'
-import { useStripe } from '@stripe/stripe-react-native'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -83,8 +90,6 @@ type FormaPagamento =
   | 'cartao_maquininha'
 
 export default function TelaCheckout() {
-  const { initPaymentSheet, presentPaymentSheet } = useStripe()
-
   const {
     itens,
     store_id,
@@ -187,13 +192,22 @@ export default function TelaCheckout() {
     }
   }
 
-  async function fluxoPagamentoOnline() {
+  async function fluxoPagamentoOnline(
+    dadosCartao?: {
+      number: string
+      holder_name: string
+      exp_month: number
+      exp_year: number
+      cvv: string
+    }
+  ) {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) throw new Error('Sessão expirada. Faça login novamente.')
 
-    // Chamar Edge Function para criar PaymentIntent e o pedido
+    const payment_method = formaPagamento === 'online_pix' ? 'pix' : 'credit_card'
+
     const resposta = await fetch(
-      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`,
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-pagarme-order`,
       {
         method: 'POST',
         headers: {
@@ -211,6 +225,9 @@ export default function TelaCheckout() {
           })),
           endereco_entrega: enderecoSelecionado,
           observacoes: observacoes.trim() || undefined,
+          payment_method,
+          card: dadosCartao,
+          installments: 1,
         }),
       }
     )
@@ -218,62 +235,32 @@ export default function TelaCheckout() {
     const resultado = await resposta.json()
     if (!resposta.ok) throw new Error(resultado.error)
 
-    const { client_secret, order_id } = resultado
+    const { order_id, qr_code, qr_code_url, status } = resultado
 
-    // Inicializar Stripe Payment Sheet
-    const { error: initError } = await initPaymentSheet({
-      merchantDisplayName: store_nome ?? 'Mallora',
-      paymentIntentClientSecret: client_secret,
-      defaultBillingDetails: {
-        name: consumer?.nome ?? '',
-      },
-      allowsDelayedPaymentMethods: false,
-      appearance: {
-        colors: {
-          primary: '#1A4D3A',
-          background: '#FFF8ED',
-          componentBackground: '#FFFFFF',
-          componentBorder: '#E5E7EB',
-          primaryText: '#111827',
-          secondaryText: '#6B7280',
-          placeholderText: '#9CA3AF',
-        },
-        shapes: {
-          borderRadius: 12,
-          borderWidth: 1,
-        },
-      },
-    })
-
-    if (initError) throw new Error(initError.message)
-
-    // Apresentar Payment Sheet ao usuário
-    const { error: presentError } = await presentPaymentSheet()
-
-    if (presentError) {
-      if (presentError.code === 'Canceled') {
-        // Usuário fechou sem pagar — cancelar pedido
-        await supabase
-          .from('orders')
-          .update({
-            status: 'cancelado',
-            motivo_cancelamento: 'Pagamento cancelado pelo usuário',
-            cancelado_em: new Date().toISOString(),
-          })
-          .eq('id', order_id)
-
-        setProcessando(false)
-        setEtapa('revisao')
-        return
-      }
-      throw new Error(presentError.message)
+    if (payment_method === 'pix') {
+      // Mostrar tela de Pix e aguardar webhook order.paid via Realtime
+      router.replace({
+        pathname: '/checkout/pix',
+        params: { order_id, qr_code, qr_code_url },
+      })
+      return
     }
 
-    // Pagamento confirmado — redirecionar
-    limparCarrinho()
-    setPedidoAtivo(order_id)
-    setEtapa('concluido')
-    router.replace(`/pedido/${order_id}`)
+    // Cartão: status pode vir 'paid', 'pending' (3DS) ou 'failed'
+    if (status === 'paid') {
+      limparCarrinho()
+      setPedidoAtivo(order_id)
+      setEtapa('concluido')
+      router.replace(`/pedido/${order_id}`)
+    } else if (status === 'failed') {
+      throw new Error('Pagamento recusado. Tente outro cartão.')
+    } else {
+      // Pendente (3DS ou análise antifraude) — aguarda webhook via Realtime
+      router.replace({
+        pathname: '/checkout/aguardando',
+        params: { order_id },
+      })
+    }
   }
 
   async function fluxoPagamentoOffline() {
@@ -934,7 +921,7 @@ const OPCOES: OpcaoPagamento[] = [
   {
     id: 'online_cartao',
     label: 'Cartão ou PIX online',
-    descricao: 'Pague agora com segurança via Stripe',
+    descricao: 'Pague agora com segurança via Pagar.me (Pix ou cartão)',
     condicao: (l) => l.aceita_cartao_online,
   },
   {
@@ -1015,41 +1002,98 @@ export function SeletorPagamento({ loja, selecionado, onSelecionar }: Props) {
 
 -----
 
-## CONFIGURACAO DO STRIPE PAYMENT SHEET
+## TELA DE PIX
 
-A aparência do Payment Sheet é customizada via o objeto `appearance`
-passado em `initPaymentSheet`. As cores seguem a paleta Verde Minas.
+Pix exige uma tela dedicada que apresenta:
 
-Para suporte a PIX, certificar que o método está ativado no Stripe
-Dashboard (conforme arquivo 06). O Stripe Detection automático exibe
-PIX quando a moeda é BRL e o dispositivo é brasileiro.
+- QR Code renderizado a partir do `qr_code_url`
+- Código copia-e-cola (`qr_code`) com botão de cópia
+- Timer regressivo até a expiração (default 1 hora)
+- Mensagem "aguardando pagamento..." com pulso visual
+- Subscribe em `orders.id` via Realtime para atualizar quando `payment_status = 'pago'`
 
-Para habilitar Google Pay e Apple Pay:
+```typescript
+// app/checkout/pix.tsx
+import { View, Text, Image, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { useEffect } from 'react'
+import { router, useLocalSearchParams } from 'expo-router'
+import * as Clipboard from 'expo-clipboard'
+import { supabase } from '@/lib/supabase'
 
-- Google Pay: configurado no `app.json` via plugin Stripe (`enableGooglePay: true`)
-- Apple Pay: requer certificado no Apple Developer Portal e `merchantIdentifier`
+export default function TelaPix() {
+  const { order_id, qr_code, qr_code_url } = useLocalSearchParams<{
+    order_id: string
+    qr_code: string
+    qr_code_url: string
+  }>()
+
+  useEffect(() => {
+    const channel = supabase
+      .channel(`order-${order_id}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${order_id}` },
+        (payload) => {
+          if (payload.new.payment_status === 'pago') {
+            router.replace(`/pedido/${order_id}`)
+          } else if (payload.new.status === 'cancelado') {
+            router.replace('/')
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [order_id])
+
+  return (
+    <View className="flex-1 bg-creme items-center justify-center px-6">
+      <Text className="text-lg font-bold text-verde-profundo mb-2">
+        Pague com Pix
+      </Text>
+      <Text className="text-sm text-gray-500 text-center mb-6">
+        Aguardando confirmação do pagamento. Esta tela atualizará
+        automaticamente.
+      </Text>
+
+      <Image source={{ uri: qr_code_url }} style={{ width: 240, height: 240 }} />
+
+      <TouchableOpacity
+        onPress={() => Clipboard.setStringAsync(qr_code)}
+        className="mt-4 bg-verde-profundo px-6 py-3 rounded-xl"
+      >
+        <Text className="text-white font-semibold">Copiar código Pix</Text>
+      </TouchableOpacity>
+
+      <ActivityIndicator color="#1A4D3A" size="large" className="mt-6" />
+    </View>
+  )
+}
+```
 
 -----
 
-## TRATAMENTO DO CANCELAMENTO DO PAYMENT SHEET
+## TRATAMENTO DE CANCELAMENTO DO CHECKOUT
 
-Quando o usuário fecha o Payment Sheet sem pagar (`error.code === 'Canceled'`),
-o pedido já foi criado no banco com `status = 'novo'` e `payment_status = 'pendente'`.
-Neste caso o fluxo cancela o pedido imediatamente antes de retornar ao carrinho.
+Quando o consumidor abandona a tela de Pix sem pagar, o pedido permanece com
+`status = 'novo'` e `payment_status = 'pendente'`. O Pagar.me dispara
+`order.payment_failed` automaticamente quando o QR expira (default 1h),
+e a Edge Function `pagarme-webhook` marca o pedido como cancelado.
 
-Isso evita pedidos fantasmas com status `novo` que o lojista nunca receberá
-o pagamento.
+Em fluxo de cartão recusado, a Edge Function `create-pagarme-order` retorna
+`status = 'failed'` e o app exibe o motivo. O pedido é mantido com
+`payment_status = 'pendente'` e cancelado pela mesma rotina de webhook
+quando aplicável.
 
 -----
 
 ## CHECKLIST DO MODULO
 
-- [ ] `@stripe/stripe-react-native` instalado e configurado no `app.json`
-- [ ] `StripeProvider` envolvendo o app no `_layout.tsx` raiz (arquivo 15)
-- [ ] PIX ativado no Stripe Dashboard antes de testar em produção
-- [ ] Edge Function `create-payment-intent` deployada (arquivo 07)
-- [ ] Cancelamento do Payment Sheet cancela o pedido no banco imediatamente
-- [ ] Pagamentos offline criam o pedido diretamente sem chamar o Stripe
+- [ ] Edge Function `create-pagarme-order` deployada (arquivo 07)
+- [ ] Webhook `pagarme-webhook` registrado para `order.paid` e `order.payment_failed`
+- [ ] Tela de Pix com Realtime subscribe em `orders.id` para atualização automática
+- [ ] Tela de cartão com validação Luhn antes de chamar a Edge Function
+- [ ] Pagamentos offline criam o pedido diretamente sem chamar o Pagar.me
 - [ ] `platform_fee_amount = 100` (R$1,00) sempre definido ao criar pedido offline
 - [ ] Busca de CEP via ViaCEP funciona offline — tratar falha silenciosamente
 - [ ] Endereços salvos persistidos em `consumers.enderecos` (campo JSONB)

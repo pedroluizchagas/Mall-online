@@ -12,13 +12,23 @@ Deno.serve(async (req) => {
 
   let event: Stripe.Event
 
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature!,
-      Deno.env.get('STRIPE_WEBHOOK_SECRET')!
-    )
-  } catch {
+  const secrets = [
+    Deno.env.get('STRIPE_WEBHOOK_SECRET'),
+    Deno.env.get('STRIPE_WEBHOOK_SECRET_CONNECT'),
+  ].filter(Boolean) as string[]
+
+  let verified = false
+  for (const secret of secrets) {
+    try {
+      event = stripe.webhooks.constructEvent(body, signature!, secret)
+      verified = true
+      break
+    } catch {
+      // tenta o próximo secret
+    }
+  }
+
+  if (!verified) {
     return new Response('Assinatura inválida', { status: 400 })
   }
 
@@ -170,7 +180,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('Erro ao processar webhook:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500 }
     )
   }

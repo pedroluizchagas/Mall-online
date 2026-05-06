@@ -64,17 +64,21 @@ vi.mock('@/lib/supabase/server', () => ({
   createSupabaseAdmin: vi.fn(),
 }))
 
-// Mock do Stripe para testes unitários
+// Mock do Stripe para testes unitários (apenas Billing)
 vi.mock('stripe', () => {
   return {
     default: vi.fn().mockImplementation(() => ({
-      paymentIntents: { create: vi.fn() },
-      transfers: { create: vi.fn() },
-      accounts: { create: vi.fn(), createLoginLink: vi.fn() },
-      balance: { retrieve: vi.fn() },
+      customers: { create: vi.fn(), retrieve: vi.fn() },
+      subscriptions: { create: vi.fn(), update: vi.fn(), cancel: vi.fn() },
+      products: { create: vi.fn() },
+      prices: { create: vi.fn() },
+      invoices: { retrieve: vi.fn() },
     })),
   }
 })
+
+// Mock do fetch global para chamadas Pagar.me
+global.fetch = vi.fn()
 ```
 
 -----
@@ -730,25 +734,25 @@ test.describe('Fluxo completo de pedido', () => {
 
 -----
 
-## TESTES E2E — STRIPE TEST MODE
+## TESTES E2E — SANDBOX PAGAR.ME E STRIPE BILLING
 
-Para testar o fluxo de pagamento em E2E, usar os cartões de teste
-do Stripe. Nunca usar dados reais em testes.
+Para testar o fluxo de pagamento em E2E, usar o ambiente sandbox
+do Pagar.me. Nunca usar chaves de produção em testes.
 
-### Cartões de teste Stripe
+### Cartões de teste Pagar.me (sandbox)
 
 |Número             |Comportamento          |
 |-------------------|-----------------------|
-|4242 4242 4242 4242|Pagamento aprovado     |
-|4000 0000 0000 0002|Cartão recusado        |
-|4000 0025 0000 3155|Requer autenticação 3DS|
-|4000 0000 0000 9995|Fundos insuficientes   |
+|4000000000000010   |Pagamento aprovado     |
+|4000000000000028   |Cartão recusado        |
+|4000000000000036   |Requer autenticação 3DS|
+|5500000000000004   |Mastercard aprovado    |
 
-Data de validade: qualquer data futura (ex: 12/30)
+Data de validade: qualquer data futura (ex: 12/2030)
 CVV: qualquer 3 dígitos
-CEP: qualquer 5 dígitos
+Nome: qualquer string
 
-### Simular webhooks Stripe localmente
+### Simular webhooks Pagar.me localmente
 
 ```bash
 # Terminal 1 — Supabase local
@@ -757,19 +761,20 @@ supabase start
 # Terminal 2 — Next.js dev
 pnpm dev:web
 
-# Terminal 3 — Stripe CLI ouvindo e reencaminhando
+# Terminal 3 — Stripe CLI ouvindo (apenas para eventos Billing)
 stripe listen --forward-to localhost:54321/functions/v1/stripe-webhook
 
-# Terminal 4 — Disparar evento manualmente
-stripe trigger payment_intent.succeeded
+# Terminal 4 — Disparar evento Billing via Stripe CLI
 stripe trigger customer.subscription.updated \
   --override customer.subscription:status=past_due
 
-# Simular webhook com payload customizado
-stripe trigger account.updated \
-  --override account:charges_enabled=true \
-  --override account:payouts_enabled=true \
-  --override account:details_submitted=true
+# Simular webhook Pagar.me manualmente (cURL com assinatura HMAC)
+# Calcular x-hub-signature: echo -n '{"id":"or_xxx",...}' | \
+#   openssl dgst -sha256 -hmac "$PAGARME_WEBHOOK_SECRET"
+curl -X POST http://localhost:54321/functions/v1/pagarme-webhook \
+  -H "Content-Type: application/json" \
+  -H "x-hub-signature: sha256=<hmac-calculado>" \
+  -d '{"type":"order.paid","data":{"id":"or_xxx","status":"paid"}}'
 ```
 
 -----
@@ -862,6 +867,8 @@ jobs:
       NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PK_TEST }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SK_TEST }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET_TEST }}
+      PAGARME_API_KEY: ${{ secrets.PAGARME_API_KEY_TEST }}
+      PAGARME_WEBHOOK_SECRET: ${{ secrets.PAGARME_WEBHOOK_SECRET_TEST }}
       E2E_TENANT_EMAIL: ${{ secrets.E2E_TENANT_EMAIL }}
       E2E_TENANT_PASSWORD: ${{ secrets.E2E_TENANT_PASSWORD }}
 
@@ -894,11 +901,12 @@ jobs:
 ### Antes do deploy em produção
 
 - [ ] `pnpm test:all` passando
-- [ ] Testar fluxo completo de pagamento com cartão Stripe de teste
-- [ ] Testar webhook `payment_intent.succeeded` via Stripe CLI
-- [ ] Testar webhook `customer.subscription.updated` via Stripe CLI
-- [ ] Verificar que variáveis `pk_live_` e `sk_live_` estão configuradas
-- [ ] Verificar que `STRIPE_WEBHOOK_SECRET` de produção está correto
+- [ ] Testar fluxo completo de pagamento com cartão Pagar.me sandbox
+- [ ] Testar webhook `order.paid` via cURL com assinatura HMAC válida
+- [ ] Testar webhook `customer.subscription.updated` via Stripe CLI (Billing)
+- [ ] Verificar que `PAGARME_API_KEY` de produção está configurada (prefixo `ak_live_`)
+- [ ] Verificar que `PAGARME_WEBHOOK_SECRET` de produção está correto
+- [ ] Verificar que variáveis Stripe `pk_live_` e `sk_live_` estão configuradas (Billing)
 - [ ] Fazer backup manual do banco antes do deploy
 - [ ] Aplicar migrations pendentes com `supabase db push`
 - [ ] Verificar logs do Supabase após deploy por 15 minutos

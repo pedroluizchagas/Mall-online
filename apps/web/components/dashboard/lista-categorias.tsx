@@ -17,6 +17,9 @@ interface Props {
   categorias: Categoria[]
 }
 
+const inputClass =
+  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+
 export function ListaCategorias({ categorias }: Props) {
   const [isPending, startTransition] = useTransition()
   const [modalAberto, setModalAberto] = useState(false)
@@ -43,17 +46,16 @@ export function ListaCategorias({ categorias }: Props) {
 
   return (
     <>
-      {/* Botão Nova Categoria */}
       <button
         onClick={() => { setEditando(null); setModalAberto(true) }}
-        className="bg-[#1A4D3A] text-white px-4 py-2 rounded-lg text-sm font-medium
-          hover:bg-[#163d2e] transition-colors"
+        className="px-4 py-2 rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
+        style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
       >
         Nova categoria
       </button>
 
       {categorias.length === 0 ? (
-        <div className="text-center py-16 text-gray-400">
+        <div className="text-center py-16 text-ink-3">
           <p className="text-lg">Nenhuma categoria encontrada.</p>
         </div>
       ) : (
@@ -63,35 +65,36 @@ export function ListaCategorias({ categorias }: Props) {
             return (
               <div
                 key={cat.id}
-                className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between"
+                className="rounded-xl p-4 flex items-center justify-between"
+                style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
               >
                 <div className="flex items-center gap-3">
-                  {cat.icone && (
-                    <span className="text-2xl">{cat.icone}</span>
-                  )}
+                  {cat.icone && <span className="text-2xl">{cat.icone}</span>}
                   <div>
-                    <h3 className="font-medium text-gray-800">{cat.nome}</h3>
-                    {cat.descricao && (
-                      <p className="text-xs text-gray-400">{cat.descricao}</p>
-                    )}
+                    <h3 className="font-medium text-ink">{cat.nome}</h3>
+                    {cat.descricao && <p className="text-xs text-ink-3">{cat.descricao}</p>}
                     {isGlobal && (
-                      <span className="text-xs text-blue-500">Global (somente leitura)</span>
+                      <span className="text-xs" style={{ color: 'var(--sky)' }}>
+                        Global (somente leitura)
+                      </span>
                     )}
                   </div>
                 </div>
 
                 {!isGlobal && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => { setEditando(cat); setModalAberto(true) }}
-                      className="text-sm text-[#4CAF82] hover:underline"
+                      className="text-sm font-medium hover:underline"
+                      style={{ color: 'var(--brick-dk)' }}
                     >
                       Editar
                     </button>
                     <button
                       onClick={() => handleExcluir(cat.id)}
                       disabled={isPending}
-                      className="text-sm text-red-400 hover:text-red-600"
+                      className="text-sm hover:underline"
+                      style={{ color: 'var(--err)' }}
                     >
                       Excluir
                     </button>
@@ -103,67 +106,69 @@ export function ListaCategorias({ categorias }: Props) {
         </div>
       )}
 
-      {/* Modal de criação/edição */}
       {modalAberto && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-lg font-semibold text-[#1A4D3A] mb-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div
+            className="rounded-2xl p-6 w-full max-w-md mx-4"
+            style={{ background: 'var(--bg)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+          >
+            <h2 className="text-lg font-semibold text-ink mb-4">
               {editando ? 'Editar categoria' : 'Nova categoria'}
             </h2>
             <form action={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Nome</label>
                 <input
                   name="nome"
                   defaultValue={editando?.nome}
                   required
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5
-                    focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+                  className={inputClass}
+                  style={{ borderColor: 'var(--line)' }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Descrição</label>
                 <input
                   name="descricao"
                   defaultValue={editando?.descricao ?? ''}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5
-                    focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+                  className={inputClass}
+                  style={{ borderColor: 'var(--line)' }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ícone (emoji)</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Ícone (emoji)</label>
                 <input
                   name="icone"
                   defaultValue={editando?.icone ?? ''}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5
-                    focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+                  className={inputClass}
+                  style={{ borderColor: 'var(--line)' }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ordem</label>
+                <label className="block text-sm font-medium text-ink-2 mb-1">Ordem</label>
                 <input
                   name="ordem"
                   type="number"
                   min="0"
                   defaultValue={editando?.ordem ?? 0}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-2.5
-                    focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+                  className={inputClass}
+                  style={{ borderColor: 'var(--line)' }}
                 />
               </div>
               <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="flex-1 bg-[#1A4D3A] text-white py-2.5 rounded-lg font-medium
-                    disabled:opacity-50 hover:bg-[#163d2e] transition-colors"
+                  className="flex-1 py-2.5 rounded-full font-bold disabled:opacity-50 hover:opacity-90 transition-opacity"
+                  style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
                 >
                   {isPending ? 'Salvando...' : 'Salvar'}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setModalAberto(false); setEditando(null) }}
-                  className="flex-1 border border-gray-200 py-2.5 rounded-lg text-gray-600
-                    hover:bg-gray-50 transition-colors"
+                  className="flex-1 py-2.5 rounded-full font-medium"
+                  style={{ border: '1px solid var(--line)', color: 'var(--ink-2)' }}
                 >
                   Cancelar
                 </button>

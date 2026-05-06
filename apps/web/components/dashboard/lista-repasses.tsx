@@ -1,17 +1,11 @@
 import { formatarReais } from '@mallora/lib'
+import { Card } from '@/components/ui/card'
 
-const LABELS_STATUS: Record<string, string> = {
-  agendado: 'Agendado',
-  processando: 'Processando',
-  concluido: 'Concluído',
-  falhou: 'Falhou',
-}
-
-const CORES_STATUS: Record<string, string> = {
-  agendado: 'bg-amber-100 text-amber-700',
-  processando: 'bg-blue-100 text-blue-700',
-  concluido: 'bg-green-100 text-green-700',
-  falhou: 'bg-red-100 text-red-700',
+const META: Record<string, { label: string; bg: string; color: string }> = {
+  agendado: { label: 'Agendado', bg: '#fbe8a0', color: '#8a6a00' },
+  processando: { label: 'Processando', bg: '#d1e1f5', color: '#2a4d7a' },
+  concluido: { label: 'Concluído', bg: '#dff0cc', color: '#2a6e1a' },
+  falhou: { label: 'Falhou', bg: '#fbd9cf', color: '#a83820' },
 }
 
 interface Props {
@@ -22,74 +16,84 @@ interface Props {
 
 export function ListaRepasses({ repasses, totalPendente, totalRecebido }: Props) {
   return (
-    <div>
-      {/* Totais */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
-          <p className="text-xs text-amber-600 mb-1">A receber</p>
-          <p className="text-lg font-bold text-amber-800">
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Card style={{ background: 'var(--bg-2)' }}>
+          <p className="text-xs text-ink-3 mb-1">A receber</p>
+          <p className="font-display text-[22px] text-ink tracking-tight">
             {formatarReais(totalPendente)}
           </p>
-        </div>
-        <div className="bg-green-50 border border-green-100 rounded-xl p-3">
-          <p className="text-xs text-green-600 mb-1">Já recebido</p>
-          <p className="text-lg font-bold text-green-800">
+        </Card>
+        <Card>
+          <p className="text-xs text-ink-3 mb-1">Já recebido</p>
+          <p className="font-display text-[22px] text-ink tracking-tight">
             {formatarReais(totalRecebido)}
           </p>
-        </div>
+        </Card>
       </div>
 
-      {/* Tabela de repasses */}
       {repasses.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-6">
+        <p className="text-sm text-ink-3 text-center py-6">
           Nenhum repasse registrado ainda.
         </p>
       ) : (
-        <div className="space-y-2">
-          {repasses.map((repasse) => (
-            <div
-              key={repasse.id}
-              className="flex items-center justify-between p-3
-                bg-gray-50 rounded-xl text-sm"
-            >
-              <div>
+        <Card className="!p-0 overflow-hidden">
+          <div
+            className="grid items-center px-[18px] py-2.5 border-b text-[11px] font-medium uppercase tracking-wider text-ink-3"
+            style={{
+              gridTemplateColumns: '1fr 1fr 1fr 1fr',
+              gap: 12,
+              background: 'var(--bg-2)',
+              borderColor: 'var(--line)',
+            }}
+          >
+            <div>Data prevista</div>
+            <div>Pedidos</div>
+            <div>Status</div>
+            <div className="text-right">Líquido</div>
+          </div>
+          {repasses.map((r, i) => {
+            const meta = META[r.status] ?? { label: r.status, bg: '#eee', color: '#888' }
+            return (
+              <div
+                key={r.id}
+                className={`grid items-center px-[18px] py-3.5 ${i < repasses.length - 1 ? 'border-b border-line' : ''}`}
+                style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}
+              >
+                <div className="text-[13px] font-medium">
+                  {new Date(r.data_prevista + 'T00:00:00').toLocaleDateString('pt-BR')}
+                </div>
+                <div className="text-[13px] text-ink-2">{r.total_pedidos}</div>
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium
-                      ${CORES_STATUS[repasse.status]}`}
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
+                    style={{ background: meta.bg, color: meta.color }}
                   >
-                    {LABELS_STATUS[repasse.status]}
+                    {meta.label}
                   </span>
-                  {repasse.antecipado && (
-                    <span className="text-xs bg-[#F5A623]/20 text-[#F5A623] px-2 py-0.5 rounded-full">
-                      Antecipado
+                  {r.antecipado && (
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
+                      style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+                    >
+                      D+2
                     </span>
                   )}
                 </div>
-                <p className="text-gray-500 text-xs mt-1">
-                  {repasse.total_pedidos} pedidos ·{' '}
-                  Previsto para{' '}
-                  {new Date(repasse.data_prevista + 'T00:00:00').toLocaleDateString('pt-BR')}
-                </p>
-                {repasse.taxa_antecipacao > 0 && (
-                  <p className="text-xs text-amber-600 mt-0.5">
-                    Taxa antecipação: -{formatarReais(repasse.taxa_antecipacao)}
-                  </p>
-                )}
+                <div className="text-right">
+                  <div className="text-[13px] font-semibold">
+                    {formatarReais(r.valor_liquido)}
+                  </div>
+                  {r.taxa_antecipacao > 0 && (
+                    <div className="text-[10px] text-ink-3">
+                      taxa −{formatarReais(r.taxa_antecipacao)}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-bold text-[#1A4D3A]">
-                  {formatarReais(repasse.valor_liquido)}
-                </p>
-                {repasse.stripe_transfer_id && (
-                  <p className="text-xs text-gray-400 mt-0.5 font-mono">
-                    {repasse.stripe_transfer_id.slice(0, 12)}...
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
+            )
+          })}
+        </Card>
       )}
     </div>
   )

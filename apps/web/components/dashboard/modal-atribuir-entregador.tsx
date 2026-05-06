@@ -21,11 +21,7 @@ export function ModalAtribuirEntregador({ pedidoId, valorEntrega }: Props) {
     if (!aberto) return
 
     async function carregar() {
-      const { data: tenant } = await supabase
-        .from('tenants')
-        .select('id')
-        .single()
-
+      const { data: tenant } = await supabase.from('tenants').select('id').single()
       if (!tenant) return
 
       const { data } = await supabase
@@ -53,81 +49,77 @@ export function ModalAtribuirEntregador({ pedidoId, valorEntrega }: Props) {
     <>
       <button
         onClick={() => setAberto(true)}
-        className="w-full border border-[#4CAF82] text-[#4CAF82] py-2 rounded-lg
-          text-sm font-medium hover:bg-green-50 transition-colors"
+        className="w-full py-2 rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
+        style={{ border: '1px solid var(--brick)', color: 'var(--brick-dk)' }}
       >
         Atribuir entregador
       </button>
 
       {aberto && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
-            <h3 className="font-semibold text-[#1A4D3A] mb-1">
-              Selecionar entregador
-            </h3>
-            <p className="text-sm text-gray-500 mb-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            className="w-full max-w-sm rounded-2xl p-6"
+            style={{ background: 'var(--bg)', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}
+          >
+            <h3 className="font-semibold text-ink mb-1">Selecionar entregador</h3>
+            <p className="text-sm text-ink-3 mb-4">
               Valor da entrega: {formatarReais(valorEntrega)}
             </p>
 
             {entregadores.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">
+              <p className="text-sm text-ink-3 text-center py-4">
                 Nenhum entregador disponível no momento.
               </p>
             ) : (
               <div className="space-y-2 max-h-60 overflow-auto">
-                {entregadores.map((courier) => (
-                  <button
-                    key={courier.id}
-                    onClick={() => setSelecionado(courier.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl border
-                      transition-colors text-left ${
-                      selecionado === courier.id
-                        ? 'border-[#4CAF82] bg-green-50'
-                        : 'border-gray-100 hover:border-gray-200'
-                    }`}
-                  >
-                    <div className="w-9 h-9 rounded-full bg-gray-100 flex-shrink-0 overflow-hidden">
-                      {courier.foto_url ? (
-                        <img
-                          src={courier.foto_url}
-                          alt={courier.nome}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center
-                          justify-center text-gray-300 text-sm">?</div>
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">
-                        {courier.nome}
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        {courier.tipo === 'proprio'
-                          ? 'Entregador próprio'
-                          : 'Autônomo'}
-                        {courier.online && (
-                          <span className="ml-1 text-green-500">· Online</span>
+                {entregadores.map((courier) => {
+                  const sel = selecionado === courier.id
+                  return (
+                    <button
+                      key={courier.id}
+                      onClick={() => setSelecionado(courier.id)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors"
+                      style={{
+                        border: sel ? '1px solid var(--brick)' : '1px solid var(--line)',
+                        background: sel ? 'rgba(193,241,72,0.08)' : 'transparent',
+                      }}
+                    >
+                      <div
+                        className="w-9 h-9 rounded-full flex-shrink-0 overflow-hidden"
+                        style={{ background: 'var(--bg-2)' }}
+                      >
+                        {courier.foto_url ? (
+                          <img src={courier.foto_url} alt={courier.nome} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-ink-3 text-sm">?</div>
                         )}
-                      </p>
-                    </div>
-                  </button>
-                ))}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-ink">{courier.nome}</p>
+                        <p className="text-xs text-ink-3">
+                          {courier.tipo === 'proprio' ? 'Entregador próprio' : 'Autônomo'}
+                          {courier.online && <span className="ml-1" style={{ color: 'var(--ok)' }}>· Online</span>}
+                        </p>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             )}
 
             <div className="flex gap-2 mt-4">
               <button
                 onClick={() => setAberto(false)}
-                className="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-600"
+                className="flex-1 py-2 rounded-full text-sm font-medium"
+                style={{ border: '1px solid var(--line)', color: 'var(--ink-2)' }}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAtribuir}
                 disabled={!selecionado || isPending}
-                className="flex-1 py-2 bg-[#1A4D3A] text-white rounded-lg text-sm
-                  font-medium disabled:opacity-50"
+                className="flex-1 py-2 rounded-full text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity"
+                style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
               >
                 {isPending ? 'Atribuindo...' : 'Confirmar'}
               </button>

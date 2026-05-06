@@ -11,20 +11,23 @@ export function BarraEstoque({ atual, minimo, maximo }: Props) {
 
   const cor =
     atual === 0
-      ? 'bg-red-500'
+      ? 'var(--err)'
       : atual <= minimo
-      ? 'bg-amber-400'
-      : 'bg-[#4CAF82]'
+      ? 'var(--warn)'
+      : 'var(--brick)'
 
   return (
     <div className="space-y-1">
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div
+        className="h-1.5 rounded-full overflow-hidden"
+        style={{ background: 'var(--bg-3)' }}
+      >
         <div
-          className={`h-full rounded-full transition-all ${cor}`}
-          style={{ width: `${percentual}%` }}
+          className="h-full rounded-full transition-all"
+          style={{ width: `${percentual}%`, background: cor }}
         />
       </div>
-      <div className="flex justify-between text-xs text-gray-400">
+      <div className="flex justify-between text-xs text-ink-3">
         <span>Mínimo: {minimo}</span>
         <span>{percentual}%</span>
       </div>

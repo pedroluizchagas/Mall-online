@@ -12,18 +12,18 @@
 1. Commitar apenas o `.env.example` com valores fictícios como referência
 1. Variáveis com prefixo `NEXT_PUBLIC_` são expostas ao navegador — nunca colocar secrets nelas
 1. Variáveis com prefixo `EXPO_PUBLIC_` são expostas no bundle do app — nunca colocar secrets nelas
-1. Chaves secretas (Stripe secret key, service_role) ficam apenas no servidor
+1. Chaves secretas (Pagar.me API key, Stripe secret key, Supabase service_role) ficam apenas no servidor
 1. Cada ambiente (local, staging, produção) tem seu próprio conjunto de chaves
 
 -----
 
 ## AMBIENTES
 
-|Ambiente   |Onde roda               |Chaves Stripe          |Supabase                       |
-|-----------|------------------------|-----------------------|-------------------------------|
-|Local (dev)|Máquina do desenvolvedor|`pk_test_` / `sk_test_`|Projeto local ou projeto de dev|
-|Staging    |Vercel preview          |`pk_test_` / `sk_test_`|Projeto Supabase de staging    |
-|Produção   |Vercel production       |`pk_live_` / `sk_live_`|Projeto Supabase de produção   |
+|Ambiente   |Onde roda               |Pagar.me                          |Stripe Billing         |Supabase                       |
+|-----------|------------------------|----------------------------------|-----------------------|-------------------------------|
+|Local (dev)|Máquina do desenvolvedor|`ak_test_`                        |`sk_test_`             |Projeto local ou de dev        |
+|Staging    |Vercel preview          |`ak_test_`                        |`sk_test_`             |Projeto Supabase de staging    |
+|Produção   |Vercel production       |`ak_live_`                        |`sk_live_`             |Projeto Supabase de produção   |
 
 -----
 
@@ -41,24 +41,39 @@
 A `SUPABASE_SERVICE_ROLE_KEY` bypassa o RLS. Nunca expor ao cliente.
 Usada apenas dentro de Edge Functions e Server Actions com `createClient` server-side.
 
-### Stripe
+### Pagar.me (gateway de pedidos)
+
+|Variável                          |Onde usar                            |Como obter                                                          |
+|----------------------------------|-------------------------------------|--------------------------------------------------------------------|
+|`PAGARME_API_KEY`                 |Apenas servidor / Edge Functions     |Pagar.me Dashboard > Developer > API Keys                           |
+|`PAGARME_WEBHOOK_SECRET`          |Edge Function pagarme-webhook        |Pagar.me Dashboard > Developer > Webhooks > Signing secret          |
+|`PAGARME_PLATFORM_RECIPIENT_ID`   |Apenas servidor / Edge Functions     |`rp_xxx` do recipient principal da Mallora (criado no onboarding)   |
+
+Em desenvolvimento, usar chaves `ak_test_` e webhook secret de sandbox. A
+`PAGARME_API_KEY` nunca aparece no cliente — somente em Edge Functions e
+Server Actions. A tokenização de cartão pode ser feita server-side no MVP.
+
+### Stripe Billing (apenas assinatura mensal)
 
 |Variável                            |Onde usar                       |Como obter                                                |
 |------------------------------------|--------------------------------|----------------------------------------------------------|
-|`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`|Dashboard web (cliente)         |Stripe Dashboard > Developers > API Keys > Publishable key|
-|`EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`|Apps mobile (cliente)           |Mesma chave acima                                         |
+|`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`|Dashboard web (Customer Portal) |Stripe Dashboard > Developers > API Keys > Publishable key|
 |`STRIPE_SECRET_KEY`                 |Apenas servidor / Edge Functions|Stripe Dashboard > Developers > API Keys > Secret key     |
 |`STRIPE_WEBHOOK_SECRET`             |Edge Function stripe-webhook    |Stripe Dashboard > Developers > Webhooks > Signing secret |
 
-Em desenvolvimento, usar chaves `pk_test_` e `sk_test_`.
-O `STRIPE_WEBHOOK_SECRET` local é gerado pelo Stripe CLI com `stripe listen`.
+Em desenvolvimento, usar chaves `pk_test_` e `sk_test_`. O
+`STRIPE_WEBHOOK_SECRET` local é gerado pelo Stripe CLI com `stripe listen`.
+
+A `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` foi **descontinuada** — os apps mobile
+não usam Stripe em nenhum fluxo (pagamentos passam pelo Pagar.me via Edge
+Function).
 
 ### Aplicação
 
-|Variável             |Onde usar                               |Valor                                                      |
-|---------------------|----------------------------------------|-----------------------------------------------------------|
-|`APP_URL`            |Edge Functions (URLs de callback Stripe)|`http://localhost:3000` em dev / URL do domínio em produção|
-|`EXPO_PUBLIC_APP_URL`|Apps mobile                             |Mesma URL acima                                            |
+|Variável             |Onde usar                                 |Valor                                                      |
+|---------------------|------------------------------------------|-----------------------------------------------------------|
+|`APP_URL`            |Edge Functions (URLs de retorno e KYC link)|`http://localhost:3000` em dev / URL do domínio em produção|
+|`EXPO_PUBLIC_APP_URL`|Apps mobile                               |Mesma URL acima                                            |
 
 -----
 
@@ -84,24 +99,36 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx
 SUPABASE_PROJECT_ID=xxxxxxxxxxxx
 
 # ============================================================
-# STRIPE
+# PAGAR.ME (pagamentos de pedidos)
 # ============================================================
 
-# Chave pública — segura para expor ao cliente
+# Chave secreta de API — APENAS servidor
+PAGARME_API_KEY=ak_test_xxx
+
+# Secret HMAC dos webhooks (cabeçalho X-Hub-Signature)
+PAGARME_WEBHOOK_SECRET=whsec_xxx
+
+# recipient_id da Mallora (recebedor padrão da plataforma)
+PAGARME_PLATFORM_RECIPIENT_ID=rp_test_xxx
+
+# ============================================================
+# STRIPE BILLING (apenas assinatura mensal)
+# ============================================================
+
+# Chave pública — usada apenas pelo Customer Portal web
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 
-# Chave secreta — APENAS servidor, nunca expor ao cliente
+# Chave secreta — APENAS servidor
 STRIPE_SECRET_KEY=sk_test_xxx
 
-# Secret para verificação de assinatura dos webhooks
-# Em dev: gerado pelo comando 'stripe listen'
+# Secret de webhook (gerado pelo 'stripe listen' em dev)
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 
 # ============================================================
 # APLICACAO
 # ============================================================
 
-# URL base do dashboard (usado nas URLs de callback do Stripe Connect)
+# URL base do dashboard (usada em retornos de KYC link e callbacks)
 APP_URL=http://localhost:3000
 ```
 
@@ -116,11 +143,11 @@ Criar na pasta `apps/mobile-consumer/`. Nunca commitar.
 EXPO_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx
 
-# Stripe (chave pública apenas)
-EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
-
 # URL da aplicação web (para deep links e callbacks)
 EXPO_PUBLIC_APP_URL=http://localhost:3000
+
+# Pagar.me não tem chave pública mobile — pagamentos passam pela
+# Edge Function create-pagarme-order, sem credenciais no cliente.
 ```
 
 -----
@@ -150,6 +177,9 @@ em todas as functions. As demais precisam ser configuradas manualmente.
 
 ```bash
 # Definir variável de ambiente para as Edge Functions
+supabase secrets set PAGARME_API_KEY=ak_test_xxx
+supabase secrets set PAGARME_WEBHOOK_SECRET=whsec_xxx
+supabase secrets set PAGARME_PLATFORM_RECIPIENT_ID=rp_test_xxx
 supabase secrets set STRIPE_SECRET_KEY=sk_test_xxx
 supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxx
 supabase secrets set APP_URL=http://localhost:3000
@@ -169,11 +199,14 @@ Supabase Dashboard
 
 Secrets necessários nas Edge Functions:
 
-|Secret                 |Descrição                      |
-|-----------------------|-------------------------------|
-|`STRIPE_SECRET_KEY`    |Chave secreta Stripe           |
-|`STRIPE_WEBHOOK_SECRET`|Secret de assinatura do webhook|
-|`APP_URL`              |URL base do dashboard web      |
+|Secret                            |Descrição                                                  |
+|----------------------------------|-----------------------------------------------------------|
+|`PAGARME_API_KEY`                 |Chave secreta Pagar.me                                     |
+|`PAGARME_WEBHOOK_SECRET`          |Secret HMAC para verificação de webhook Pagar.me           |
+|`PAGARME_PLATFORM_RECIPIENT_ID`   |recipient_id da Mallora (recebedor padrão)                 |
+|`STRIPE_SECRET_KEY`                |Chave secreta Stripe (Billing)                             |
+|`STRIPE_WEBHOOK_SECRET`            |Secret de assinatura do webhook Stripe (Billing)           |
+|`APP_URL`                          |URL base do dashboard web                                  |
 
 `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` são injetados automaticamente
 pelo Supabase — não precisam ser configurados manualmente.
@@ -198,6 +231,9 @@ Adicionar para cada ambiente (Production, Preview, Development):
 |`NEXT_PUBLIC_SUPABASE_URL`          |URL do projeto prod     |URL do projeto staging|
 |`NEXT_PUBLIC_SUPABASE_ANON_KEY`     |Anon key prod           |Anon key staging      |
 |`SUPABASE_SERVICE_ROLE_KEY`         |Service role prod       |Service role staging  |
+|`PAGARME_API_KEY`                   |`ak_live_xxx`           |`ak_test_xxx`         |
+|`PAGARME_WEBHOOK_SECRET`            |Secret prod             |Secret sandbox        |
+|`PAGARME_PLATFORM_RECIPIENT_ID`     |`rp_live_xxx`           |`rp_test_xxx`         |
 |`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`|`pk_live_xxx`           |`pk_test_xxx`         |
 |`STRIPE_SECRET_KEY`                 |`sk_live_xxx`           |`sk_test_xxx`         |
 |`STRIPE_WEBHOOK_SECRET`             |Secret prod             |Secret staging        |
@@ -216,6 +252,7 @@ vercel login
 vercel link
 
 # Adicionar variável de produção
+vercel env add PAGARME_API_KEY production
 vercel env add STRIPE_SECRET_KEY production
 
 # Adicionar para todos os ambientes
@@ -248,7 +285,6 @@ configuradas no arquivo `eas.json` e no dashboard do Expo.
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_xxx",
         "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br"
       }
     },
@@ -257,7 +293,6 @@ configuradas no arquivo `eas.json` e no dashboard do Expo.
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_xxx",
         "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br"
       }
     },
@@ -265,7 +300,6 @@ configuradas no arquivo `eas.json` e no dashboard do Expo.
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_live_xxx",
         "EXPO_PUBLIC_APP_URL": "https://mallora.com.br"
       }
     }
@@ -308,7 +342,32 @@ eas secret:create --scope project --name SUPABASE_SERVICE_ROLE_KEY --value eyJxx
    → Reference ID        = SUPABASE_PROJECT_ID
 ```
 
-### Stripe — Chaves de API
+### Pagar.me — Chaves de API
+
+```
+1. Acessar https://dashboard.pagar.me
+2. Developer Settings
+3. API Keys
+   → Sandbox: ak_test_xxx
+   → Produção: ak_live_xxx
+4. Recipients
+   → Criar recipient principal da Mallora
+   → Anotar rp_xxx em PAGARME_PLATFORM_RECIPIENT_ID
+```
+
+### Pagar.me — Webhook Secret
+
+```
+1. Pagar.me Dashboard
+2. Developer > Webhooks
+3. Add endpoint
+   → URL: https://xxxxxxxxxxxx.supabase.co/functions/v1/pagarme-webhook
+   → Selecionar eventos listados no arquivo 30 (§ 6)
+4. Gerar secret
+   = PAGARME_WEBHOOK_SECRET
+```
+
+### Stripe Billing — Chaves de API
 
 ```
 1. Acessar https://dashboard.stripe.com
@@ -319,7 +378,7 @@ eas secret:create --scope project --name SUPABASE_SERVICE_ROLE_KEY --value eyJxx
    (clicar em 'Reveal' para ver a secret key)
 ```
 
-### Stripe — Webhook Secret (produção)
+### Stripe Billing — Webhook Secret (produção)
 
 ```
 1. Stripe Dashboard
@@ -327,19 +386,17 @@ eas secret:create --scope project --name SUPABASE_SERVICE_ROLE_KEY --value eyJxx
 3. Webhooks
 4. Add endpoint
    → URL: https://xxxxxxxxxxxx.supabase.co/functions/v1/stripe-webhook
-   → Selecionar todos os eventos listados no arquivo 07
+   → Selecionar apenas eventos de subscription/invoice (lista no arquivo 07)
 5. Após criar, clicar no endpoint
 6. Signing secret → Reveal
    = STRIPE_WEBHOOK_SECRET
 ```
 
-### Stripe — Webhook Secret (desenvolvimento local)
+### Stripe Billing — Webhook Secret (desenvolvimento local)
 
 ```bash
-# Instalar Stripe CLI
+# Stripe CLI permanece útil apenas para Billing
 brew install stripe/stripe-cli/stripe
-
-# Autenticar
 stripe login
 
 # Escutar e reencaminhar para Supabase local
@@ -364,9 +421,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-aqui
 SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key-aqui
 SUPABASE_PROJECT_ID=seu-project-id-aqui
 
-# Stripe
+# Pagar.me (pagamentos de pedidos)
+PAGARME_API_KEY=ak_test_sua_chave_aqui
+PAGARME_WEBHOOK_SECRET=whsec_sua_chave_aqui
+PAGARME_PLATFORM_RECIPIENT_ID=rp_test_recipient_mallora
+
+# Stripe Billing (assinatura mensal)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_sua_chave_aqui
-EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_sua_chave_aqui
 STRIPE_SECRET_KEY=sk_test_sua_chave_aqui
 STRIPE_WEBHOOK_SECRET=whsec_sua_chave_aqui
 
@@ -389,18 +450,21 @@ EXPO_PUBLIC_APP_URL=http://localhost:3000
 - [ ] Criar `apps/mobile-consumer/.env.local` com as variáveis Expo
 - [ ] Criar `apps/mobile-courier/.env.local` com as variáveis Expo
 - [ ] Configurar secrets nas Edge Functions via `supabase secrets set`
-- [ ] Rodar `stripe listen` para obter o `STRIPE_WEBHOOK_SECRET` local
+- [ ] Configurar webhook Pagar.me sandbox apontando para a URL local (via ngrok ou ambiente staging) e copiar o secret para `PAGARME_WEBHOOK_SECRET`
+- [ ] Rodar `stripe listen` para obter o `STRIPE_WEBHOOK_SECRET` local (apenas Billing)
 - [ ] Confirmar que `.env.local` está no `.gitignore`
 
 ### Antes de fazer deploy em produção
 
 - [ ] Configurar todas as variáveis no Vercel (Production environment)
-- [ ] Usar chaves `pk_live_` e `sk_live_` no ambiente de produção
+- [ ] Usar chaves `ak_live_` (Pagar.me) e `sk_live_` (Stripe Billing) no ambiente de produção
 - [ ] Configurar secrets nas Edge Functions do projeto Supabase de produção
-- [ ] Registrar o endpoint de webhook de produção no Stripe Dashboard
-- [ ] Confirmar que o `STRIPE_WEBHOOK_SECRET` de produção está correto
+- [ ] Registrar webhook de produção no Pagar.me Dashboard (eventos do § 6 do doc 30)
+- [ ] Registrar webhook de produção no Stripe Dashboard (apenas eventos de Billing)
+- [ ] Confirmar que `PAGARME_WEBHOOK_SECRET` e `STRIPE_WEBHOOK_SECRET` de produção estão corretos
+- [ ] Confirmar `PAGARME_PLATFORM_RECIPIENT_ID` aponta para o `rp_live_` da Mallora
 - [ ] Confirmar que `APP_URL` aponta para o domínio de produção
-- [ ] Verificar que nenhuma chave de teste (`pk_test_`, `sk_test_`) está no ambiente de produção
+- [ ] Verificar que nenhuma chave de teste (`ak_test_`, `pk_test_`, `sk_test_`) está no ambiente de produção
 
 -----
 

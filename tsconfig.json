@@ -9,8 +9,8 @@
     "strictNullChecks": true,
     "skipLibCheck": true,
     "paths": {
-      "@mallora/types": ["packages/types/index.ts"],
-      "@mallora/lib": ["packages/lib/index.ts"]
+      "@mallora/types": ["./packages/types/index.ts"],
+      "@mallora/lib": ["./packages/lib/index.ts"]
     }
   }
 }

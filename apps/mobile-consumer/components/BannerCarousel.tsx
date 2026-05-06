@@ -148,15 +148,26 @@ export function BannerCarousel() {
       </ScrollView>
 
       {/* Indicadores */}
-      <View className="flex-row justify-center items-center gap-1.5 mt-3">
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 12,
+          left: 0,
+          right: 0,
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
         {BANNERS.map((_, i) => (
           <View
             key={i}
             style={{
-              width: i === indice ? 20 : 6,
+              width: i === indice ? 18 : 6,
               height: 6,
               borderRadius: 3,
-              backgroundColor: i === indice ? '#1A4D3A' : '#D1D5DB',
+              backgroundColor: i === indice ? '#FFFFFF' : 'rgba(255, 255, 255, 0.4)',
             }}
           />
         ))}

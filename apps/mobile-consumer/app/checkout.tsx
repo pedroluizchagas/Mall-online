@@ -8,8 +8,9 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
-import { router } from 'expo-router'
-import { useStripe } from '@stripe/stripe-react-native'
+import { router, Stack } from 'expo-router'
+import { StripeProvider, useStripe } from '@stripe/stripe-react-native'
+import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
 import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -26,7 +27,7 @@ type FormaPagamento =
   | 'dinheiro'
   | 'cartao_maquininha'
 
-export default function TelaCheckout() {
+function TelaCheckoutInner() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe()
 
   const {
@@ -63,10 +64,7 @@ export default function TelaCheckout() {
     async function carregarLoja() {
       const { data } = await supabase
         .from('stores')
-        .select(
-          'id, nome, taxa_entrega, aceita_dinheiro, aceita_pix, ' +
-          'aceita_cartao_maquininha, aceita_cartao_online'
-        )
+        .select('id, nome, taxa_entrega, aceita_dinheiro, aceita_pix, aceita_cartao_maquininha, aceita_cartao_online')
         .eq('id', store_id!)
         .single()
 
@@ -83,7 +81,7 @@ export default function TelaCheckout() {
 
     carregarLoja()
 
-    if (consumer?.enderecos?.length > 0) {
+    if (consumer && consumer.enderecos && consumer.enderecos.length > 0) {
       setEnderecoSelecionado(consumer.enderecos[0])
     }
   }, [store_id])
@@ -232,12 +230,12 @@ export default function TelaCheckout() {
         tenant_id: loja.tenant_id,
         status: 'novo',
         payment_status: 'pendente',
-        forma_pagamento: formaPagamento,
+        forma_pagamento: formaPagamento!,
         subtotal: subtotal(),
         taxa_entrega: store_taxa_entrega,
         total: total(),
         platform_fee_amount: 100,
-        endereco_entrega: enderecoSelecionado,
+        endereco_entrega: enderecoSelecionado as any,
         observacoes: observacoes.trim() || null,
         troco_para: trocoPara
           ? Math.round(parseFloat(trocoPara) * 100)
@@ -422,5 +420,14 @@ export default function TelaCheckout() {
         </TouchableOpacity>
       </View>
     </View>
+  )
+}
+
+export default function TelaCheckout() {
+  return (
+    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
+      <Stack.Screen options={{ presentation: "modal" }} />
+      <TelaCheckoutInner />
+    </StripeProvider>
   )
 }

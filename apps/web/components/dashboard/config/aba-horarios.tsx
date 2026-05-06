@@ -19,9 +19,7 @@ export function AbaHorarios({
 }: {
   horarios: HorariosFuncionamento | null
 }) {
-  const [horarios, setHorarios] = useState<HorariosFuncionamento>(
-    horariosSalvos ?? {}
-  )
+  const [horarios, setHorarios] = useState<HorariosFuncionamento>(horariosSalvos ?? {})
   const [isPending, startTransition] = useTransition()
   const [sucesso, setSucesso] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
@@ -55,18 +53,19 @@ export function AbaHorarios({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5">
-      <h2 className="font-semibold text-gray-800 mb-4">
-        Horários de funcionamento
-      </h2>
+    <div
+      className="rounded-xl p-5"
+      style={{ border: '1px solid var(--line)', background: 'var(--bg)' }}
+    >
+      <h2 className="font-semibold text-ink mb-4">Horários de funcionamento</h2>
 
       {erro && (
-        <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg mb-4">
+        <p className="text-sm px-3 py-2 rounded-xl mb-4" style={{ background: '#fde8e4', color: 'var(--err)' }}>
           {erro}
         </p>
       )}
       {sucesso && (
-        <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg mb-4">
+        <p className="text-sm px-3 py-2 rounded-xl mb-4" style={{ background: '#e6f7e3', color: 'var(--ok)' }}>
           Horários atualizados com sucesso.
         </p>
       )}
@@ -77,60 +76,44 @@ export function AbaHorarios({
           const ativo = !!horarioDia
 
           return (
-            <div
-              key={dia.id}
-              className="flex items-center gap-4"
-            >
-              {/* Toggle do dia */}
+            <div key={dia.id} className="flex items-center gap-4">
               <div className="flex items-center gap-3 w-40">
                 <button
                   type="button"
                   onClick={() => toggleDia(dia.id, !ativo)}
-                  className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
-                    ativo ? 'bg-[#4CAF82]' : 'bg-gray-200'
-                  }`}
+                  className="relative w-9 h-5 rounded-full transition-colors flex-shrink-0"
+                  style={{ background: ativo ? 'var(--brick)' : 'var(--bg-3)' }}
                 >
                   <span
-                    className={`absolute top-0.5 w-4 h-4 bg-white rounded-full
-                      shadow transition-transform ${
-                      ativo ? 'translate-x-4' : 'translate-x-0.5'
-                    }`}
+                    className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
+                    style={{ transform: ativo ? 'translateX(16px)' : 'translateX(2px)' }}
                   />
                 </button>
-                <span
-                  className={`text-sm ${
-                    ativo ? 'text-gray-700 font-medium' : 'text-gray-400'
-                  }`}
-                >
+                <span className={`text-sm ${ativo ? 'text-ink font-medium' : 'text-ink-3'}`}>
                   {dia.label}
                 </span>
               </div>
 
-              {/* Inputs de horário */}
               {ativo ? (
                 <div className="flex items-center gap-2">
                   <input
                     type="time"
                     value={horarioDia.abre}
-                    onChange={(e) =>
-                      atualizarHorario(dia.id, 'abre', e.target.value)
-                    }
-                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+                    onChange={(e) => atualizarHorario(dia.id, 'abre', e.target.value)}
+                    className="border rounded-xl px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick"
+                    style={{ borderColor: 'var(--line)' }}
                   />
-                  <span className="text-gray-400 text-sm">até</span>
+                  <span className="text-ink-3 text-sm">até</span>
                   <input
                     type="time"
                     value={horarioDia.fecha}
-                    onChange={(e) =>
-                      atualizarHorario(dia.id, 'fecha', e.target.value)
-                    }
-                    className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm
-                      focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+                    onChange={(e) => atualizarHorario(dia.id, 'fecha', e.target.value)}
+                    className="border rounded-xl px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick"
+                    style={{ borderColor: 'var(--line)' }}
                   />
                 </div>
               ) : (
-                <span className="text-sm text-gray-400">Fechado</span>
+                <span className="text-sm text-ink-3">Fechado</span>
               )}
             </div>
           )
@@ -140,8 +123,8 @@ export function AbaHorarios({
       <button
         onClick={handleSalvar}
         disabled={isPending}
-        className="mt-6 bg-[#1A4D3A] text-white px-6 py-2.5 rounded-lg text-sm
-          font-medium disabled:opacity-50 hover:bg-[#163d2e] transition-colors"
+        className="mt-6 px-6 py-2.5 rounded-full text-sm font-bold disabled:opacity-50 hover:opacity-90 transition-opacity"
+        style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
       >
         {isPending ? 'Salvando...' : 'Salvar horários'}
       </button>

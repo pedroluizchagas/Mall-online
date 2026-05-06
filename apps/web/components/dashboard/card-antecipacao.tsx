@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { Zap } from 'lucide-react'
 import { formatarReais } from '@mallora/lib'
 import { solicitarAntecipacao } from '@/lib/actions/financeiro'
 
@@ -22,10 +23,9 @@ export function CardAntecipacao({ elegibilidade }: { elegibilidade: Elegibilidad
   function handleSolicitar() {
     setErro(null)
     startTransition(async () => {
-      const resultado = await solicitarAntecipacao()
-      if (resultado.erro) {
-        setErro(resultado.erro)
-      } else {
+      const r = await solicitarAntecipacao()
+      if (r.erro) setErro(r.erro)
+      else {
         setSucesso(true)
         setConfirmando(false)
       }
@@ -33,92 +33,111 @@ export function CardAntecipacao({ elegibilidade }: { elegibilidade: Elegibilidad
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5">
-      <h3 className="font-semibold text-[#1A4D3A] mb-1">
-        Antecipar repasse
-      </h3>
-      <p className="text-xs text-gray-400 mb-4">
-        Receba em D+2 em vez de D+7. Taxa de R$0,75 por pedido.
-      </p>
-
-      {sucesso ? (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <p className="text-sm font-medium text-green-800">
-            Antecipação solicitada com sucesso.
-          </p>
-          <p className="text-xs text-green-600 mt-1">
-            O repasse será processado no próximo ciclo (D+2).
-          </p>
+    <div
+      className="rounded-lg p-[18px] relative overflow-hidden"
+      style={{ background: 'var(--ink)', color: 'var(--bg)' }}
+    >
+      <div
+        className="absolute -top-10 -right-10 w-40 h-40 rounded-full pointer-events-none"
+        style={{ background: 'var(--brick)', opacity: 0.2, filter: 'blur(30px)' }}
+      />
+      <div className="relative">
+        <div
+          className="text-[11px] uppercase tracking-wider font-medium flex items-center gap-1.5"
+          style={{ opacity: 0.6 }}
+        >
+          <Zap className="w-3 h-3" />
+          Antecipação inteligente
         </div>
-      ) : !elegibilidade.elegivel ? (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-sm text-gray-500">{elegibilidade.motivo}</p>
+        <h3
+          className="font-display mt-2"
+          style={{ fontSize: 24, lineHeight: 1.15 }}
+        >
+          Receba em <span style={{ color: 'var(--brick-lt)' }}>2 dias</span>, não em 7.
+        </h3>
+        <div className="text-xs mt-1.5 leading-relaxed" style={{ opacity: 0.7 }}>
+          Escolha quais repasses antecipar. Taxa transparente de R$ 0,75 por pedido — sem surpresa.
         </div>
-      ) : !confirmando ? (
-        <div>
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Pedidos elegíveis</span>
-              <span className="font-medium">{elegibilidade.pedidos}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Valor bruto</span>
-              <span className="font-medium">
-                {formatarReais(elegibilidade.valor_bruto)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Taxa de antecipação</span>
-              <span className="font-medium text-amber-600">
-                -{formatarReais(elegibilidade.taxa)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm font-bold border-t border-gray-100 pt-2">
-              <span>Você recebe</span>
-              <span className="text-[#1A4D3A]">
-                {formatarReais(elegibilidade.valor_liquido)}
-              </span>
-            </div>
-          </div>
 
-          <button
-            onClick={() => setConfirmando(true)}
-            className="w-full bg-[#F5A623] text-white py-2.5 rounded-lg text-sm
-              font-medium hover:bg-[#e09520] transition-colors"
+        {sucesso ? (
+          <div
+            className="mt-5 p-3.5 rounded-md text-[13px]"
+            style={{ background: 'rgba(192, 241, 72, 0.15)', border: '1px solid var(--brick)' }}
           >
-            Solicitar antecipação
-          </button>
-        </div>
-      ) : (
-        <div>
-          <p className="text-sm text-gray-700 mb-4">
-            Confirma a antecipação de {formatarReais(elegibilidade.valor_liquido)}
-            {' '}com desconto de {formatarReais(elegibilidade.taxa)}?
-          </p>
-
-          {erro && (
-            <p className="text-sm text-red-600 mb-3">{erro}</p>
-          )}
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setConfirmando(false)}
-              disabled={isPending}
-              className="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-600"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSolicitar}
-              disabled={isPending}
-              className="flex-1 py-2 bg-[#F5A623] text-white rounded-lg text-sm
-                font-medium disabled:opacity-50"
-            >
-              {isPending ? 'Aguarde...' : 'Confirmar'}
-            </button>
+            Antecipação solicitada. Será processada em D+2.
           </div>
-        </div>
-      )}
+        ) : !elegibilidade.elegivel ? (
+          <div
+            className="mt-5 p-3.5 rounded-md text-[13px]"
+            style={{ background: 'rgba(255,255,255,0.06)' }}
+          >
+            {elegibilidade.motivo}
+          </div>
+        ) : (
+          <>
+            <div
+              className="mt-5 p-3.5 rounded-md"
+              style={{
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <div className="flex justify-between text-xs" style={{ opacity: 0.8 }}>
+                <span>{elegibilidade.pedidos} pedidos × R$ 0,75</span>
+                <span>− {formatarReais(elegibilidade.taxa)}</span>
+              </div>
+              <div className="flex justify-between text-xs mt-1" style={{ opacity: 0.8 }}>
+                <span>Valor total</span>
+                <span>{formatarReais(elegibilidade.valor_bruto)}</span>
+              </div>
+              <div
+                className="my-2.5"
+                style={{ height: 1, background: 'rgba(255,255,255,0.15)' }}
+              />
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs font-medium">Líquido em 2 dias</span>
+                <span className="text-xl font-semibold" style={{ color: 'var(--brick-lt)' }}>
+                  {formatarReais(elegibilidade.valor_liquido)}
+                </span>
+              </div>
+            </div>
+
+            {erro && <div className="text-[12px] text-err mt-3">{erro}</div>}
+
+            {!confirmando ? (
+              <button
+                onClick={() => setConfirmando(true)}
+                className="mt-3.5 w-full py-3 rounded-md text-sm font-bold transition-colors"
+                style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+              >
+                Solicitar antecipação
+              </button>
+            ) : (
+              <div className="mt-3.5 flex gap-2">
+                <button
+                  onClick={() => setConfirmando(false)}
+                  disabled={isPending}
+                  className="flex-1 py-3 rounded-md text-sm font-medium"
+                  style={{
+                    background: 'rgba(255,255,255,0.1)',
+                    color: 'var(--bg)',
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSolicitar}
+                  disabled={isPending}
+                  className="flex-1 py-3 rounded-md text-sm font-bold disabled:opacity-50"
+                  style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+                >
+                  {isPending ? 'Aguarde...' : 'Confirmar'}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

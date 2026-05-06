@@ -145,6 +145,7 @@ export default function TelaAcompanhamento() {
           headerTintColor: '#1A4D3A',
           headerStyle: { backgroundColor: '#FFF8ED' },
           headerShadowVisible: false,
+          presentation: 'card',
         }}
       />
 

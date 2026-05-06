@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { SidebarNav } from '@/components/admin/sidebar-nav'
 
 export default async function LayoutAdmin({
   children,
@@ -7,60 +8,29 @@ export default async function LayoutAdmin({
   children: React.ReactNode
 }) {
   const supabase = createSupabaseServer()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/entrar')
 
+  if (!user) redirect('/entrar')
   if (user.user_metadata?.role !== 'admin') redirect('/entrar?erro=acesso-negado')
 
+  const adminName = user.user_metadata?.nome || user.email?.split('@')[0] || 'Admin'
+  const adminEmail = user.email || ''
+
   return (
-    <div className="flex h-screen bg-[#FFF8ED]">
-      <SidebarAdmin />
-      <main className="flex-1 overflow-auto">{children}</main>
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--sidebar)' }}>
+      <SidebarNav userName={adminName} userEmail={adminEmail} />
+      <div className="flex-1 overflow-hidden" style={{ padding: '12px 12px 12px 0' }}>
+        <div
+          className="flex flex-col rounded-[24px] overflow-hidden"
+          style={{
+            height: 'calc(100vh - 24px)',
+            background: 'var(--bg)',
+            boxShadow: '0 1px 0 rgba(255,255,255,0.04), 0 8px 24px -8px rgba(0,0,0,0.35)',
+          }}
+        >
+          <main className="flex-1 overflow-y-auto min-h-0">{children}</main>
+        </div>
+      </div>
     </div>
-  )
-}
-
-function SidebarAdmin() {
-  const links = [
-    { href: '/admin', label: 'Visão geral' },
-    { href: '/admin/lojistas', label: 'Lojistas' },
-    { href: '/admin/entregadores', label: 'Entregadores' },
-    { href: '/admin/planos', label: 'Planos' },
-    { href: '/admin/financeiro', label: 'Financeiro' },
-  ]
-
-  return (
-    <aside className="w-52 bg-[#1A4D3A] flex flex-col py-6">
-      <div className="px-5 mb-8">
-        <p className="text-white font-bold text-base">Mallora</p>
-        <p className="text-green-300 text-xs mt-0.5">Admin</p>
-      </div>
-
-      <nav className="flex flex-col gap-1 px-3 flex-1">
-        {links.map((link) => (
-          <a
-            key={link.href}
-            href={link.href}
-            className="text-green-200 hover:text-white hover:bg-white/10
-              px-3 py-2 rounded-lg text-sm transition-colors"
-          >
-            {link.label}
-          </a>
-        ))}
-      </nav>
-
-      <div className="px-3 mt-4">
-        <form action="/api/logout" method="POST">
-          <button
-            type="submit"
-            className="w-full text-left text-green-400 hover:text-white
-              px-3 py-2 rounded-lg text-sm transition-colors"
-          >
-            Sair
-          </button>
-        </form>
-      </div>
-    </aside>
   )
 }

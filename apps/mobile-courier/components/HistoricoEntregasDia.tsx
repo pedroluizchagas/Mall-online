@@ -3,6 +3,8 @@ import { View, Text } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { formatarReais } from '@mallora/lib'
+import { CourierIcon } from '@/components/CourierIcon'
+import { courierDesign } from '@/lib/courier-design'
 
 export function HistoricoEntregasDia() {
   const { courier } = useAuthStore()
@@ -11,6 +13,7 @@ export function HistoricoEntregasDia() {
     ganhos: 0,
     entregues: 0,
   })
+  const { colors } = courierDesign
 
   useEffect(() => {
     if (!courier?.id) return
@@ -37,24 +40,54 @@ export function HistoricoEntregasDia() {
   if (resumo.total === 0) return null
 
   return (
-    <View className="w-full bg-white rounded-2xl p-4 mb-2">
-      <Text className="text-xs font-semibold text-gray-500 uppercase mb-3">Hoje</Text>
-      <View className="flex-row justify-between">
-        <View className="items-center">
-          <Text className="text-xl font-bold text-[#1A4D3A]">{resumo.entregues}</Text>
-          <Text className="text-xs text-gray-400 mt-0.5">Entregues</Text>
-        </View>
-        <View className="items-center">
-          <Text className="text-xl font-bold text-[#1A4D3A]">{resumo.total}</Text>
-          <Text className="text-xs text-gray-400 mt-0.5">Total</Text>
-        </View>
-        <View className="items-center">
-          <Text className="text-xl font-bold text-[#4CAF82]">
-            {formatarReais(resumo.ganhos)}
+    <View
+      className="w-full rounded-[28px] p-4 mb-4"
+      style={{ backgroundColor: colors.surface }}
+    >
+      <View className="flex-row items-center justify-between mb-4">
+        <View>
+          <Text className="text-xs font-semibold uppercase" style={{ color: colors.inkSoft }}>
+            Hoje
           </Text>
-          <Text className="text-xs text-gray-400 mt-0.5">Ganhos</Text>
+          <Text className="text-lg font-bold mt-1" style={{ color: colors.ink }}>
+            Resumo do turno
+          </Text>
+        </View>
+        <View
+          className="w-10 h-10 rounded-full items-center justify-center"
+          style={{ backgroundColor: colors.accentSoft }}
+        >
+          <CourierIcon name="trend" color={colors.ink} size={18} />
         </View>
       </View>
+
+      <View className="flex-row justify-between">
+        <Metric value={String(resumo.entregues)} label="Entregues" />
+        <Metric value={String(resumo.total)} label="Total" />
+        <View className="items-center flex-1">
+          <Text className="text-xl font-bold" style={{ color: colors.ink }}>
+            {formatarReais(resumo.ganhos)}
+          </Text>
+          <Text className="text-xs mt-0.5" style={{ color: colors.inkSoft }}>
+            Ganhos
+          </Text>
+        </View>
+      </View>
+    </View>
+  )
+}
+
+function Metric({ value, label }: { value: string; label: string }) {
+  const { colors } = courierDesign
+
+  return (
+    <View className="items-center flex-1">
+      <Text className="text-xl font-bold" style={{ color: colors.ink }}>
+        {value}
+      </Text>
+      <Text className="text-xs mt-0.5" style={{ color: colors.inkSoft }}>
+        {label}
+      </Text>
     </View>
   )
 }
