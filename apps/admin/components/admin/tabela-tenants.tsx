@@ -12,6 +12,19 @@ const BADGES: Record<string, { bg: string; text: string; label: string }> = {
   suspensa:  { bg: 'bg-bg-3',       text: 'text-ink-3',   label: 'Suspensa' },
 }
 
+const PAGARME_BADGES: Record<string, { bg: string; text: string; label: string }> = {
+  active:       { bg: 'bg-ok/10',   text: 'text-ok',    label: 'Ativo' },
+  affiliation:  { bg: 'bg-sky/10',  text: 'text-sky',   label: 'Em análise' },
+  registration: { bg: 'bg-warn/10', text: 'text-warn',  label: 'Cadastro' },
+  pending:      { bg: 'bg-warn/10', text: 'text-warn',  label: 'Pendente' },
+  refused:      { bg: 'bg-err/10',  text: 'text-err',   label: 'Recusado' },
+  blocked:      { bg: 'bg-err/10',  text: 'text-err',   label: 'Bloqueado' },
+  suspended:    { bg: 'bg-bg-3',    text: 'text-ink-3', label: 'Suspenso' },
+  inactive:     { bg: 'bg-bg-3',    text: 'text-ink-3', label: 'Inativo' },
+}
+
+const PAGARME_FALLBACK = { bg: 'bg-bg-3', text: 'text-ink-3', label: 'Não iniciado' }
+
 export function TabelaTenants({ tenants }: { tenants: any[] }) {
   const [isPending, startTransition] = useTransition()
 
@@ -44,7 +57,7 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
               Assinatura
             </th>
             <th className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
-              Stripe KYC
+              Recebimentos
             </th>
             <th className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
               Cadastro
@@ -59,6 +72,12 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
             const badge = sub
               ? (BADGES[sub.billing_status] ?? { bg: 'bg-bg-3', text: 'text-ink-3', label: sub.billing_status })
               : null
+            const pagarmeStatus = tenant.pagarme_onboarding_status
+            const pagarmeBadge = pagarmeStatus
+              ? (PAGARME_BADGES[pagarmeStatus] ?? {
+                  bg: 'bg-bg-3', text: 'text-ink-3', label: pagarmeStatus,
+                })
+              : PAGARME_FALLBACK
 
             return (
               <tr key={tenant.id} className="hover:bg-bg-2 transition-colors">
@@ -83,10 +102,8 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
                 </td>
 
                 <td className="px-5 py-4">
-                  <span className={`text-[11px] font-bold ${
-                    tenant.stripe_onboarding_ok ? 'text-ok' : 'text-warn'
-                  }`}>
-                    {tenant.stripe_onboarding_ok ? '✓ Verificado' : '⏳ Pendente'}
+                  <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold ${pagarmeBadge.bg} ${pagarmeBadge.text}`}>
+                    {pagarmeBadge.label}
                   </span>
                 </td>
 
