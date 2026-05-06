@@ -9,9 +9,8 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { router, Stack } from 'expo-router'
-import { StripeProvider, useStripe } from '@stripe/stripe-react-native'
-import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
 import { supabase } from '@/lib/supabase'
+import { tokenizarCartao } from '@/lib/pagarme'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
@@ -19,6 +18,8 @@ import { formatarReais } from '@mallora/lib'
 import { ItemCarrinhoCard } from '@/components/ItemCarrinhoCard'
 import { SeletorEndereco } from '@/components/SeletorEndereco'
 import { SeletorPagamento } from '@/components/SeletorPagamento'
+import { SeletorParcelas } from '@/components/SeletorParcelas'
+import { FormularioCartao, type DadosCartao } from '@/components/FormularioCartao'
 import type { Endereco } from '@mallora/types'
 
 type FormaPagamento =
@@ -27,9 +28,7 @@ type FormaPagamento =
   | 'dinheiro'
   | 'cartao_maquininha'
 
-function TelaCheckoutInner() {
-  const { initPaymentSheet, presentPaymentSheet } = useStripe()
-
+export default function TelaCheckout() {
   const {
     itens,
     store_id,
@@ -48,6 +47,8 @@ function TelaCheckoutInner() {
     useState<Endereco | null>(null)
   const [formaPagamento, setFormaPagamento] =
     useState<FormaPagamento>('online_cartao')
+  const [installments, setInstallments] = useState(1)
+  const [dadosCartao, setDadosCartao] = useState<DadosCartao | null>(null)
   const [trocoPara, setTrocoPara] = useState('')
   const [observacoes, setObservacoes] = useState('')
   const [processando, setProcessando] = useState(false)
@@ -86,10 +87,20 @@ function TelaCheckoutInner() {
     }
   }, [store_id])
 
+  // Reset installments when leaving card flow
+  useEffect(() => {
+    if (formaPagamento !== 'online_cartao') {
+      setInstallments(1)
+    }
+  }, [formaPagamento])
+
   function validar(): string | null {
     if (itens.length === 0) return 'Carrinho vazio.'
     if (!enderecoSelecionado) return 'Selecione um endereço de entrega.'
     if (!formaPagamento) return 'Selecione uma forma de pagamento.'
+    if (formaPagamento === 'online_cartao' && !dadosCartao) {
+      return 'Preencha os dados do cartão.'
+    }
     if (
       formaPagamento === 'dinheiro' &&
       trocoPara &&
@@ -111,11 +122,10 @@ function TelaCheckoutInner() {
     setEtapa('processando')
 
     try {
-      if (
-        formaPagamento === 'online_cartao' ||
-        formaPagamento === 'online_pix'
-      ) {
-        await fluxoPagamentoOnline()
+      if (formaPagamento === 'online_cartao') {
+        await fluxoCartao()
+      } else if (formaPagamento === 'online_pix') {
+        await fluxoPix()
       } else {
         await fluxoPagamentoOffline()
       }
@@ -126,93 +136,90 @@ function TelaCheckoutInner() {
     }
   }
 
-  async function fluxoPagamentoOnline() {
-    const { data: { session } } = await supabase.auth.getSession()
+  async function obterSessaoOuFalhar() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
     if (!session) throw new Error('Sessão expirada. Faça login novamente.')
+    return session
+  }
 
+  function payloadBase() {
+    return {
+      store_id,
+      itens: itens.map((i) => ({
+        product_id: i.product_id,
+        nome: i.nome,
+        preco: i.preco,
+        quantidade: i.quantidade,
+        observacoes: i.observacoes,
+      })),
+      endereco_entrega: enderecoSelecionado,
+      observacoes: observacoes.trim() || undefined,
+    }
+  }
+
+  async function chamarCreatePagarmeOrder(body: Record<string, unknown>) {
+    const session = await obterSessaoOuFalhar()
     const resposta = await fetch(
-      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`,
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-pagarme-order`,
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({
-          store_id,
-          itens: itens.map((i) => ({
-            product_id: i.product_id,
-            nome: i.nome,
-            preco: i.preco,
-            quantidade: i.quantidade,
-            observacoes: i.observacoes,
-          })),
-          endereco_entrega: enderecoSelecionado,
-          observacoes: observacoes.trim() || undefined,
-        }),
+        body: JSON.stringify(body),
       }
     )
-
     const resultado = await resposta.json()
-    if (!resposta.ok) throw new Error(resultado.error)
+    if (!resposta.ok) throw new Error(resultado.error ?? 'Erro no servidor.')
+    return resultado as {
+      order_id: string
+      status?: string
+      qr_code?: string
+      qr_code_url?: string
+    }
+  }
 
-    const { client_secret, order_id } = resultado
+  async function fluxoCartao() {
+    if (!dadosCartao) throw new Error('Dados do cartão ausentes.')
 
-    const { error: initError } = await initPaymentSheet({
-      merchantDisplayName: store_nome ?? 'Mallora',
-      paymentIntentClientSecret: client_secret,
-      defaultBillingDetails: {
-        name: consumer?.nome ?? '',
-      },
-      allowsDelayedPaymentMethods: false,
-      appearance: {
-        colors: {
-          primary: '#1A4D3A',
-          background: '#FFF8ED',
-          componentBackground: '#FFFFFF',
-          componentBorder: '#E5E7EB',
-          primaryText: '#111827',
-          secondaryText: '#6B7280',
-          placeholderText: '#9CA3AF',
-        },
-        shapes: {
-          borderRadius: 12,
-          borderWidth: 1,
-        },
-      },
+    // 1) Tokenizar diretamente na Pagar.me — o número do cartão NUNCA sai
+    //    daqui em direção à nossa Edge Function ou ao Supabase.
+    const token = await tokenizarCartao(dadosCartao)
+
+    // 2) Limpar dados sensíveis em memória assim que o token for emitido.
+    setDadosCartao(null)
+
+    // 3) Enviar somente o card_token para o backend.
+    const resultado = await chamarCreatePagarmeOrder({
+      ...payloadBase(),
+      forma_pagamento: 'online_cartao',
+      card_token: token.id,
+      installments,
     })
 
-    if (initError) throw new Error(initError.message)
+    limparCarrinho()
+    setPedidoAtivo(resultado.order_id)
+    setEtapa('concluido')
+    router.replace(`/pedido/${resultado.order_id}`)
+  }
 
-    const { error: presentError } = await presentPaymentSheet()
-
-    if (presentError) {
-      if (presentError.code === 'Canceled') {
-        await supabase
-          .from('orders')
-          .update({
-            status: 'cancelado',
-            motivo_cancelamento: 'Pagamento cancelado pelo usuário',
-            cancelado_em: new Date().toISOString(),
-          })
-          .eq('id', order_id)
-
-        setProcessando(false)
-        setEtapa('revisao')
-        return
-      }
-      throw new Error(presentError.message)
-    }
+  async function fluxoPix() {
+    const resultado = await chamarCreatePagarmeOrder({
+      ...payloadBase(),
+      forma_pagamento: 'online_pix',
+    })
 
     limparCarrinho()
-    setPedidoAtivo(order_id)
+    setPedidoAtivo(resultado.order_id)
     setEtapa('concluido')
-    router.replace(`/pedido/${order_id}`)
+    router.replace(`/checkout/pix?order_id=${resultado.order_id}`)
   }
 
   async function fluxoPagamentoOffline() {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) throw new Error('Sessão expirada.')
+    const session = await obterSessaoOuFalhar()
 
     const { data: consumer_data } = await supabase
       .from('consumers')
@@ -286,9 +293,20 @@ function TelaCheckoutInner() {
     )
   }
 
+  const labelBotao = (() => {
+    if (formaPagamento === 'online_cartao') {
+      return `Pagar ${formatarReais(total())} em ${installments}x`
+    }
+    if (formaPagamento === 'online_pix') {
+      return `Gerar Pix de ${formatarReais(total())}`
+    }
+    return `Fazer pedido — ${formatarReais(total())}`
+  })()
+
   return (
     <View className="flex-1 bg-creme">
-      {/* Header */}
+      <Stack.Screen options={{ presentation: 'modal' }} />
+
       <View className="flex-row items-center justify-between px-5 pt-14 pb-4 bg-white border-b border-gray-100">
         <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
           <Text className="text-verde-medio text-base">Fechar</Text>
@@ -303,7 +321,6 @@ function TelaCheckoutInner() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        {/* Nome da loja */}
         <View className="px-5 py-4">
           <Text className="text-sm text-gray-400">Pedido em</Text>
           <Text className="text-base font-bold text-verde-profundo">
@@ -311,21 +328,18 @@ function TelaCheckoutInner() {
           </Text>
         </View>
 
-        {/* Itens do carrinho */}
         <View className="bg-white border-t border-b border-gray-100 mb-4">
           {itens.map((item) => (
             <ItemCarrinhoCard key={item.product_id} item={item} />
           ))}
         </View>
 
-        {/* Endereço de entrega */}
         <SeletorEndereco
           enderecos={consumer?.enderecos ?? []}
           selecionado={enderecoSelecionado}
           onSelecionar={setEnderecoSelecionado}
         />
 
-        {/* Forma de pagamento */}
         {loja && (
           <SeletorPagamento
             loja={loja}
@@ -334,7 +348,17 @@ function TelaCheckoutInner() {
           />
         )}
 
-        {/* Troco (se dinheiro) */}
+        {formaPagamento === 'online_cartao' && (
+          <>
+            <FormularioCartao onChange={setDadosCartao} />
+            <SeletorParcelas
+              total={total()}
+              selecionado={installments}
+              onSelecionar={setInstallments}
+            />
+          </>
+        )}
+
         {formaPagamento === 'dinheiro' && (
           <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
             <Text className="text-sm font-medium text-gray-700 mb-2">
@@ -351,7 +375,6 @@ function TelaCheckoutInner() {
           </View>
         )}
 
-        {/* Observações gerais */}
         <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
           <Text className="text-sm font-medium text-gray-700 mb-2">
             Observações do pedido (opcional)
@@ -368,7 +391,6 @@ function TelaCheckoutInner() {
           />
         </View>
 
-        {/* Resumo de valores */}
         <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
           <Text className="text-sm font-semibold text-gray-700 mb-3">
             Resumo
@@ -400,7 +422,6 @@ function TelaCheckoutInner() {
         </View>
       </ScrollView>
 
-      {/* Botão de ação fixo no rodapé */}
       <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 pb-8 pt-4">
         <TouchableOpacity
           onPress={handleFazerPedido}
@@ -411,23 +432,10 @@ function TelaCheckoutInner() {
           {processando ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text className="text-white font-bold text-base">
-              {formaPagamento === 'online_cartao' || formaPagamento === 'online_pix'
-                ? `Pagar ${formatarReais(total())}`
-                : `Fazer pedido — ${formatarReais(total())}`}
-            </Text>
+            <Text className="text-white font-bold text-base">{labelBotao}</Text>
           )}
         </TouchableOpacity>
       </View>
     </View>
-  )
-}
-
-export default function TelaCheckout() {
-  return (
-    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
-      <Stack.Screen options={{ presentation: "modal" }} />
-      <TelaCheckoutInner />
-    </StripeProvider>
   )
 }
