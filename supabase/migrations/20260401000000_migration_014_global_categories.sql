@@ -1,35 +1,39 @@
 -- ============================================================
--- MIGRATION 014 — Categorias Globais de Loja
+-- MIGRATION 014 — Consolidação de categorias globais
 --
--- 1. Adiciona global_category_id em stores para vincular cada
---    loja a uma categoria de tipo (Restaurante, Farmácia, etc.)
--- 2. Insere as categorias globais de seed (tenant_id IS NULL)
+-- Reescrita após inspeção do banco real (2026-05-06):
+--   • Os 14 nomes do seed original já existem em `categories`
+--     (alguns com duplicatas) — o seed seria no-op com UNIQUE,
+--     ou criaria duplicatas sem ele. Removido.
+--   • A coluna `stores.global_category_id` é redundante com
+--     `stores.categoria_id` (já gravada no onboarding desde a
+--     migration 20260425000001 e referenciada pelas mesmas FKs).
+--     Removida para evitar divergência futura.
+--   • Existem 9 linhas duplicadas em `categories` (tenant_id IS NULL)
+--     em 8 nomes distintos; nenhuma é referenciada por `stores`
+--     (`categoria_id` ou `global_category_id` apontando para elas).
+--     Mantemos a linha mais antiga por `criado_em` (tiebreak `id::text`).
+--   • Cria índice único parcial em `categories(nome) WHERE tenant_id
+--     IS NULL` para impedir reincidência da duplicação.
 -- ============================================================
 
--- ── 1. Coluna em stores ──────────────────────────────────────
+-- ── 1. Remove coluna redundante ──────────────────────────────
+DROP INDEX IF EXISTS idx_stores_global_category;
+
 ALTER TABLE stores
-  ADD COLUMN IF NOT EXISTS global_category_id UUID
-    REFERENCES categories(id) ON DELETE SET NULL;
+  DROP COLUMN IF EXISTS global_category_id;
 
-CREATE INDEX IF NOT EXISTS idx_stores_global_category
-  ON stores(global_category_id);
+-- ── 2. Deduplica categorias globais ──────────────────────────
+WITH winners AS (
+  SELECT DISTINCT ON (nome) id
+  FROM categories
+  WHERE tenant_id IS NULL
+  ORDER BY nome, criado_em ASC NULLS LAST, id::text ASC
+)
+DELETE FROM categories
+WHERE tenant_id IS NULL
+  AND id NOT IN (SELECT id FROM winners);
 
--- ── 2. Seed: categorias globais (tipo de loja) ───────────────
--- tenant_id e store_id ficam NULL → são globais / públicas
-
-INSERT INTO categories (nome, icone, ordem, ativa) VALUES
-  ('Restaurantes',     '🍽️',  1,  true),
-  ('Lanchonetes',      '🍔',  2,  true),
-  ('Pizzarias',        '🍕',  3,  true),
-  ('Padarias & Cafés', '🥐',  4,  true),
-  ('Sorveterias',      '🍦',  5,  true),
-  ('Açaí & Sucos',     '🥤',  6,  true),
-  ('Sushi & Japonês',  '🍣',  7,  true),
-  ('Mercados',         '🛒',  8,  true),
-  ('Farmácias',        '💊',  9,  true),
-  ('Conveniências',    '🏪',  10, true),
-  ('Pet Shops',        '🐾',  11, true),
-  ('Bebidas',          '🍺',  12, true),
-  ('Flores & Presentes','🌸', 13, true),
-  ('Outros',           '📦',  99, true)
-ON CONFLICT DO NOTHING;
+-- ── 3. Trava futuras duplicatas globais ──────────────────────
+CREATE UNIQUE INDEX IF NOT EXISTS categories_nome_global_unique
+  ON categories (nome) WHERE tenant_id IS NULL;

@@ -1,64 +1,35 @@
 -- ============================================================
--- MIGRATION 015 — Seed dos Planos de Assinatura
+-- MIGRATION 015 — Consolidação dos planos de assinatura
 --
--- ATENÇÃO: stripe_price_id precisa ser atualizado com os IDs
--- reais criados no painel Stripe antes de ir para produção.
+-- Reescrita após inspeção do banco real (2026-05-06):
+--   • O catálogo definitivo é Básico / Profissional / Premium
+--     (Stripe Billing), todos já presentes em `plans` com
+--     `stripe_product_id` e `stripe_price_id` reais.
+--   • O seed Starter / Pro / Premium-placeholder originalmente
+--     planejado seria duplicata de Premium (com Stripe IDs
+--     placeholder, quebrando billing) e introduziria 2 planos
+--     novos que não existem no produto. Removido.
+--   • O plano Enterprise existe na tabela mas não tem assinatura
+--     em `tenant_subscriptions`. Soft-delete via `ativo = false`
+--     para esconder do form de signup mantendo histórico.
+--   • Adiciona UNIQUE em `plans(nome)` para impedir duplicação
+--     futura (não há constraint hoje além de PK em `id`).
 -- ============================================================
 
-INSERT INTO plans (
-  nome,
-  descricao,
-  preco_mensal,
-  max_lojas,
-  max_produtos,
-  max_entregadores,
-  tem_estoque,
-  tem_relatorios,
-  tem_antecipacao,
-  stripe_product_id,
-  stripe_price_id,
-  ativo
-) VALUES
-  (
-    'Starter',
-    'Ideal para quem está começando. Uma loja, catálogo básico e gestão de pedidos.',
-    4900,
-    1,
-    30,
-    0,
-    false,
-    false,
-    false,
-    'prod_placeholder_starter',
-    'price_placeholder_starter',
-    true
-  ),
-  (
-    'Pro',
-    'Para negócios em crescimento. Múltiplos produtos, controle de estoque e relatórios.',
-    9900,
-    1,
-    200,
-    3,
-    true,
-    true,
-    false,
-    'prod_placeholder_pro',
-    'price_placeholder_pro',
-    true
-  ),
-  (
-    'Premium',
-    'Máxima performance. Produtos ilimitados, entregadores próprios e antecipação de recebíveis.',
-    19900,
-    3,
-    1000,
-    10,
-    true,
-    true,
-    true,
-    'prod_placeholder_premium',
-    'price_placeholder_premium',
-    true
-  )
-ON CONFLICT DO NOTHING;
+-- ── 1. Soft-delete Enterprise ────────────────────────────────
+UPDATE plans
+SET ativo = false,
+    atualizado_em = now()
+WHERE nome = 'Enterprise'
+  AND ativo = true;
+
+-- ── 2. Trava nomes duplicados de planos ──────────────────────
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'plans_nome_unique'
+  ) THEN
+    ALTER TABLE plans
+      ADD CONSTRAINT plans_nome_unique UNIQUE (nome);
+  END IF;
+END $$;
