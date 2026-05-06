@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Linking,
   ActivityIndicator,
 } from 'react-native'
 import { router } from 'expo-router'
@@ -22,7 +21,6 @@ export default function TelaPerfil() {
   const { courier, user, setCourier, limpar: limparAuth } = useAuthStore()
   const { setAtiva } = useEntregaStore()
   const { limpar: limparLoc } = useLocalizacaoStore()
-  const [abrindoStripe, setAbrindoStripe] = useState(false)
   const [atualizandoFoto, setAtualizandoFoto] = useState(false)
   const [avatarErro, setAvatarErro] = useState(false)
   const { colors, radius } = courierDesign
@@ -84,23 +82,6 @@ export default function TelaPerfil() {
     }
   }
 
-  async function handleAbrirStripe() {
-    if (!courier?.stripe_account_id) return
-    setAbrindoStripe(true)
-
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setAbrindoStripe(false); return }
-
-    const resposta = await fetch(
-      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/courier-stripe-info`,
-      { headers: { Authorization: `Bearer ${session.access_token}` } }
-    )
-    const dados = await resposta.json()
-    setAbrindoStripe(false)
-
-    if (dados.link_express) Linking.openURL(dados.link_express)
-  }
-
   async function handleSair() {
     Alert.alert('Sair da conta', 'Deseja realmente sair?', [
       { text: 'Cancelar', style: 'cancel' },
@@ -122,7 +103,8 @@ export default function TelaPerfil() {
   }
 
   const inicial = courier?.nome?.charAt(0).toUpperCase() ?? '?'
-  const stripeOk = courier?.stripe_onboarding_ok ?? false
+  const pagarmeStatus = courier?.pagarme_onboarding_status ?? 'pending'
+  const pagarmeAtivo = pagarmeStatus === 'active'
 
   return (
     <ScrollView
@@ -256,25 +238,25 @@ export default function TelaPerfil() {
             width: 34,
             height: 34,
             borderRadius: radius.sm,
-            backgroundColor: stripeOk
+            backgroundColor: pagarmeAtivo
               ? 'rgba(142,209,79,0.12)'
               : 'rgba(242,184,75,0.12)',
             alignItems: 'center',
             justifyContent: 'center',
           }}>
             <CourierIcon
-              name={stripeOk ? 'check' : 'wallet'}
+              name={pagarmeAtivo ? 'check' : 'wallet'}
               size={16}
-              color={stripeOk ? colors.success : colors.warning}
-              strokeWidth={stripeOk ? 2.4 : 1.8}
+              color={pagarmeAtivo ? colors.success : colors.warning}
+              strokeWidth={pagarmeAtivo ? 2.4 : 1.8}
             />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}>
-              {stripeOk ? 'Conta verificada e ativa' : 'Configuração pendente'}
+              {pagarmeAtivo ? 'Conta verificada e ativa' : 'Configuração pendente'}
             </Text>
             <Text style={{ fontSize: 12, color: colors.inkSoft, marginTop: 1 }}>
-              {stripeOk
+              {pagarmeAtivo
                 ? 'Pagamentos serão transferidos automaticamente'
                 : 'Configure para receber seus pagamentos'}
             </Text>
@@ -282,32 +264,9 @@ export default function TelaPerfil() {
         </View>
 
         {/* Botão de ação */}
-        {stripeOk ? (
+        {!pagarmeAtivo && (
           <TouchableOpacity
-            onPress={handleAbrirStripe}
-            disabled={abrindoStripe}
-            activeOpacity={0.75}
-            style={{
-              height: 44,
-              borderRadius: radius.pill,
-              borderWidth: 1.5,
-              borderColor: colors.line,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: abrindoStripe ? 0.6 : 1,
-            }}
-          >
-            {abrindoStripe ? (
-              <ActivityIndicator size="small" color={colors.inkMuted} />
-            ) : (
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.inkMuted }}>
-                Acessar painel Stripe
-              </Text>
-            )}
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            onPress={() => router.push('/stripe-onboarding')}
+            onPress={() => router.push('/pagarme-onboarding')}
             activeOpacity={0.85}
             style={{
               height: 44,

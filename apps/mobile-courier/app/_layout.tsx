@@ -77,7 +77,7 @@ export default function LayoutRaiz() {
       .from('couriers')
       .select(
         'id, nome, telefone, foto_url, tipo, status, online, ' +
-        'stripe_account_id, stripe_onboarding_ok, tenant_id, veiculo_tipo, veiculo_placa'
+        'pagarme_recipient_id, pagarme_onboarding_status, tenant_id, veiculo_tipo, veiculo_placa'
       )
       .eq('user_id', userId)
       .single()

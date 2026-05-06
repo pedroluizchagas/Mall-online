@@ -1,14 +1,12 @@
-import { View, Text, TouchableOpacity, Linking, ActivityIndicator } from 'react-native'
+import { View, Text, ActivityIndicator } from 'react-native'
 import { formatarReais } from '@mallora/lib'
-import { CourierIcon } from '@/components/CourierIcon'
 import { courierDesign } from '@/lib/courier-design'
 
 interface Props {
-  saldo: { disponivel: number; pendente: number } | null
-  linkExpress: string | null
+  saldo: { disponivel: number; a_receber: number; transferido: number } | null
 }
 
-export function CardSaldoStripe({ saldo, linkExpress }: Props) {
+export function CardSaldoPagarme({ saldo }: Props) {
   const { colors, radius } = courierDesign
 
   return (
@@ -27,15 +25,15 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
         textTransform: 'uppercase',
         marginBottom: 16,
       }}>
-        Conta de recebimentos
+        Saldo Pagar.me
       </Text>
 
       {saldo ? (
         <>
-          <View style={{ flexDirection: 'row', gap: 20, marginBottom: 18 }}>
+          <View style={{ flexDirection: 'row', gap: 16, marginBottom: 6 }}>
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 12, color: colors.inkSoft, marginBottom: 4 }}>
-                Disponível para saque
+                Disponível
               </Text>
               <Text style={{ fontSize: 22, fontWeight: '800', color: colors.accent, letterSpacing: -0.4 }}>
                 {formatarReais(saldo.disponivel)}
@@ -46,31 +44,21 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
                 A receber
               </Text>
               <Text style={{ fontSize: 22, fontWeight: '800', color: colors.white, letterSpacing: -0.4 }}>
-                {formatarReais(saldo.pendente)}
+                {formatarReais(saldo.a_receber)}
               </Text>
             </View>
           </View>
 
-          {linkExpress && (
-            <TouchableOpacity
-              onPress={() => Linking.openURL(linkExpress)}
-              activeOpacity={0.85}
-              style={{
-                height: 44,
-                borderRadius: radius.pill,
-                backgroundColor: colors.accent,
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexDirection: 'row',
-                gap: 8,
-              }}
-            >
-              <CourierIcon name="wallet" size={15} color={colors.ink} strokeWidth={2.1} />
-              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.ink }}>
-                Acessar conta e sacar
-              </Text>
-            </TouchableOpacity>
-          )}
+          <Text style={{
+            fontSize: 12,
+            color: colors.inkSoft,
+            marginTop: 14,
+          }}>
+            Transferido até hoje:{' '}
+            <Text style={{ color: colors.white, fontWeight: '700' }}>
+              {formatarReais(saldo.transferido)}
+            </Text>
+          </Text>
         </>
       ) : (
         <View style={{ alignItems: 'center', paddingVertical: 12 }}>
@@ -88,7 +76,7 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
         marginTop: 14,
         lineHeight: 16,
       }}>
-        Saques via Stripe · Dados gerenciados com segurança
+        Repasses automáticos via Pagar.me · Dados gerenciados com segurança
       </Text>
     </View>
   )

@@ -9,8 +9,8 @@ interface Courier {
   tipo: 'proprio' | 'autonomo'
   status: 'pendente' | 'aprovado' | 'reprovado' | 'suspenso'
   online: boolean
-  stripe_account_id?: string | null
-  stripe_onboarding_ok: boolean
+  pagarme_recipient_id?: string | null
+  pagarme_onboarding_status: string
   tenant_id?: string | null
   veiculo_tipo?: string | null
   veiculo_placa?: string | null
