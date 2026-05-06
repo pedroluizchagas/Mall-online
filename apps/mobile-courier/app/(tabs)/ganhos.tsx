@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { formatarReais } from '@mallora/lib'
 import { Skeleton } from '@/components/Skeleton'
-import { CardSaldoStripe } from '@/components/CardSaldoStripe'
+import { CardSaldoPagarme } from '@/components/CardSaldoPagarme'
 import { EntregaHistoricoCard } from '@/components/EntregaHistoricoCard'
 import { courierDesign } from '@/lib/courier-design'
 
@@ -34,9 +34,10 @@ interface EntregaHistorico {
   store_nome: string
 }
 
-interface SaldoStripe {
+interface SaldoPagarme {
   disponivel: number
-  pendente: number
+  a_receber: number
+  transferido: number
 }
 
 interface Repasse {
@@ -45,7 +46,7 @@ interface Repasse {
   status: string
   data_prevista: string | null
   data_referencia: string
-  stripe_transfer_id: string | null
+  pagarme_transfer_id: string | null
   total_pedidos: number
 }
 
@@ -77,8 +78,7 @@ export default function TelaGanhos() {
   const [resumo, setResumo] = useState<Resumo | null>(null)
   const [historico, setHistorico] = useState<EntregaHistorico[]>([])
   const [repasses, setRepasses] = useState<Repasse[]>([])
-  const [saldoStripe, setSaldoStripe] = useState<SaldoStripe | null>(null)
-  const [linkExpress, setLinkExpress] = useState<string | null>(null)
+  const [saldoPagarme, setSaldoPagarme] = useState<SaldoPagarme | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [atualizando, setAtualizando] = useState(false)
 
@@ -119,7 +119,7 @@ export default function TelaGanhos() {
 
       supabase
         .from('payouts')
-        .select('id, valor_liquido, status, data_prevista, data_referencia, stripe_transfer_id, total_pedidos')
+        .select('id, valor_liquido, status, data_prevista, data_referencia, pagarme_transfer_id, total_pedidos')
         .eq('courier_id', courier.id)
         .order('criado_em', { ascending: false })
         .limit(10),
@@ -151,21 +151,23 @@ export default function TelaGanhos() {
     setCarregando(false)
   }
 
-  async function carregarSaldoStripe() {
-    if (!courier?.stripe_account_id || !courier?.stripe_onboarding_ok) return
+  async function carregarSaldoPagarme() {
+    if (
+      !courier?.pagarme_recipient_id ||
+      courier?.pagarme_onboarding_status !== 'active'
+    ) return
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
     try {
       const resposta = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/courier-stripe-info`,
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/pagarme-courier-balance`,
         { headers: { Authorization: `Bearer ${session.access_token}` } }
       )
       if (resposta.ok) {
         const dados = await resposta.json()
-        setSaldoStripe(dados.saldo)
-        setLinkExpress(dados.link_express)
+        setSaldoPagarme(dados.saldo)
       }
     } catch {
       // saldo não é crítico — ignora erros de conectividade
@@ -174,12 +176,12 @@ export default function TelaGanhos() {
 
   useEffect(() => {
     setCarregando(true)
-    Promise.all([carregarDados(), carregarSaldoStripe()])
+    Promise.all([carregarDados(), carregarSaldoPagarme()])
   }, [periodo])
 
   const onRefresh = useCallback(async () => {
     setAtualizando(true)
-    await Promise.all([carregarDados(), carregarSaldoStripe()])
+    await Promise.all([carregarDados(), carregarSaldoPagarme()])
     setAtualizando(false)
   }, [periodo])
 
@@ -232,9 +234,9 @@ export default function TelaGanhos() {
         </Text>
       </View>
 
-      {/* Card saldo Stripe */}
-      {courier?.stripe_onboarding_ok && (
-        <CardSaldoStripe saldo={saldoStripe} linkExpress={linkExpress} />
+      {/* Card saldo Pagar.me */}
+      {courier?.pagarme_onboarding_status === 'active' && (
+        <CardSaldoPagarme saldo={saldoPagarme} />
       )}
 
       {/* Card próximo repasse */}

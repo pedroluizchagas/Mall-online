@@ -127,7 +127,7 @@ export default function EtapaDocumentos() {
         tipo: 'autonomo',
         status: 'pendente',
         online: false,
-        stripe_onboarding_ok: false,
+        pagarme_onboarding_status: 'pending',
       })
       .select()
       .single()
