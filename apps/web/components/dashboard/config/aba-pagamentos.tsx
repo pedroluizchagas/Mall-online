@@ -1,7 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { useFormState, useFormStatus } from 'react-dom'
 import { useState } from 'react'
 import { atualizarMetodosPagamento } from '@/lib/actions/lojas'
 
@@ -43,7 +42,7 @@ function BotaoSalvar() {
 }
 
 export function AbaPagamentos({ loja }: { loja: any }) {
-  const [estado, dispatch] = useActionState(atualizarMetodosPagamento, null)
+  const [estado, dispatch] = useFormState(atualizarMetodosPagamento, null)
   const [metodos, setMetodos] = useState({
     aceita_dinheiro: loja.aceita_dinheiro as boolean,
     aceita_pix: loja.aceita_pix as boolean,

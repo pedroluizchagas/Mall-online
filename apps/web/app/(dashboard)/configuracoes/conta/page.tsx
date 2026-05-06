@@ -1,14 +1,12 @@
 import { getDadosLoja } from '@/lib/actions/lojas'
 import { getDadosConta } from '@/lib/actions/auth'
-import { getLinkExpressDashboard } from '@/lib/actions/financeiro'
 import { getDadosAssinatura, getFaturas, getLinkPortalAssinatura } from '@/lib/actions/assinatura'
 import { ConfiguracoesAbasConta } from '@/components/dashboard/configuracoes-abas-conta'
 
 export default async function PaginaConfiguracoesConta() {
-  const [dadosLoja, dadosConta, linkExpress, dadosAssinatura, faturas, linkPortal] = await Promise.all([
+  const [dadosLoja, dadosConta, dadosAssinatura, faturas, linkPortal] = await Promise.all([
     getDadosLoja(),
     getDadosConta(),
-    getLinkExpressDashboard(),
     getDadosAssinatura(),
     getFaturas(),
     getLinkPortalAssinatura(),
@@ -22,7 +20,6 @@ export default async function PaginaConfiguracoesConta() {
       <ConfiguracoesAbasConta
         dadosConta={dadosConta}
         tenant={dadosLoja?.tenant}
-        linkExpress={linkExpress}
         assinatura={dadosAssinatura.assinatura}
         faturas={faturas}
         linkPortal={linkPortal}

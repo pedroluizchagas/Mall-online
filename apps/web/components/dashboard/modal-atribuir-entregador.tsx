@@ -39,9 +39,10 @@ export function ModalAtribuirEntregador({ pedidoId, valorEntrega }: Props) {
 
   function handleAtribuir() {
     if (!selecionado) return
-    startTransition(async () => {
-      const resultado = await atribuirEntregador(pedidoId, selecionado, valorEntrega)
-      if (resultado.sucesso) setAberto(false)
+    startTransition(() => {
+      void atribuirEntregador(pedidoId, selecionado, valorEntrega).then((resultado) => {
+        if (resultado.sucesso) setAberto(false)
+      })
     })
   }
 

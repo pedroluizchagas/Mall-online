@@ -45,10 +45,11 @@ export function AbaHorarios({
   function handleSalvar() {
     setSucesso(false)
     setErro(null)
-    startTransition(async () => {
-      const resultado = await atualizarHorarios(horarios)
-      if (resultado.erro) setErro(resultado.erro)
-      else setSucesso(true)
+    startTransition(() => {
+      void atualizarHorarios(horarios).then((resultado) => {
+        if (resultado.erro) setErro(resultado.erro)
+        else setSucesso(true)
+      })
     })
   }
 

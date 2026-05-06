@@ -27,20 +27,20 @@ export function ListaCategorias({ categorias }: Props) {
 
   function handleExcluir(id: string) {
     if (!confirm('Excluir esta categoria? Os produtos serão desvinculados.')) return
-    startTransition(async () => {
-      await excluirCategoria(id)
+    startTransition(() => {
+      void excluirCategoria(id)
     })
   }
 
   function handleSubmit(formData: FormData) {
-    startTransition(async () => {
-      if (editando) {
-        await atualizarCategoria(editando.id, formData)
-      } else {
-        await criarCategoria(formData)
-      }
-      setModalAberto(false)
-      setEditando(null)
+    startTransition(() => {
+      const acao = editando
+        ? atualizarCategoria(editando.id, formData)
+        : criarCategoria(formData)
+      void acao.then(() => {
+        setModalAberto(false)
+        setEditando(null)
+      })
     })
   }
 

@@ -164,8 +164,8 @@ export function ListaProdutos({ produtos }: Props) {
 function ProductCard({ produto: p }: { produto: Produto }) {
   const [, startTransition] = useTransition()
   function toggle() {
-    startTransition(async () => {
-      await toggleDisponibilidade(p.id, !p.disponivel)
+    startTransition(() => {
+      void toggleDisponibilidade(p.id, !p.disponivel)
     })
   }
   const baixo = p.track_stock && (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) < 10
@@ -226,14 +226,14 @@ function ProductCard({ produto: p }: { produto: Produto }) {
 function ProductRow({ produto: p }: { produto: Produto }) {
   const [, startTransition] = useTransition()
   function toggle() {
-    startTransition(async () => {
-      await toggleDisponibilidade(p.id, !p.disponivel)
+    startTransition(() => {
+      void toggleDisponibilidade(p.id, !p.disponivel)
     })
   }
   function remover() {
     if (!confirm('Excluir este produto? Esta ação não pode ser desfeita.')) return
-    startTransition(async () => {
-      await excluirProduto(p.id)
+    startTransition(() => {
+      void excluirProduto(p.id)
     })
   }
   const baixo = p.track_stock && (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) < 10

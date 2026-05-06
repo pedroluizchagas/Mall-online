@@ -1,7 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { useFormState, useFormStatus } from 'react-dom'
 import {
   registrarEntradaEstoque,
   registrarAjusteEstoque,
@@ -32,7 +31,7 @@ interface Props {
 
 export function ModalMovimentacao({ produto, tipo, onFechar }: Props) {
   const action = tipo === 'entrada' ? registrarEntradaEstoque : registrarAjusteEstoque
-  const [estado, dispatch] = useActionState(action, null)
+  const [estado, dispatch] = useFormState(action, null)
 
   if (estado?.sucesso) {
     onFechar()

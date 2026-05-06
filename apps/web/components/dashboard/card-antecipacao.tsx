@@ -22,13 +22,14 @@ export function CardAntecipacao({ elegibilidade }: { elegibilidade: Elegibilidad
 
   function handleSolicitar() {
     setErro(null)
-    startTransition(async () => {
-      const r = await solicitarAntecipacao()
-      if (r.erro) setErro(r.erro)
-      else {
-        setSucesso(true)
-        setConfirmando(false)
-      }
+    startTransition(() => {
+      void solicitarAntecipacao().then((r) => {
+        if (r.erro) setErro(r.erro)
+        else {
+          setSucesso(true)
+          setConfirmando(false)
+        }
+      })
     })
   }
 

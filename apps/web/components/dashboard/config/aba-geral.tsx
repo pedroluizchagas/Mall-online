@@ -1,7 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { useFormState, useFormStatus } from 'react-dom'
 import { useState } from 'react'
 import { atualizarDadosGerais, atualizarImagensLoja } from '@/lib/actions/lojas'
 
@@ -23,8 +22,8 @@ const inputClass =
   'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
 
 export function AbaGeral({ loja }: { loja: any }) {
-  const [estadoGeral, dispatchGeral] = useActionState(atualizarDadosGerais, null)
-  const [estadoImagens, dispatchImagens] = useActionState(atualizarImagensLoja, null)
+  const [estadoGeral, dispatchGeral] = useFormState(atualizarDadosGerais, null)
+  const [estadoImagens, dispatchImagens] = useFormState(atualizarImagensLoja, null)
   const [previewLogo, setPreviewLogo] = useState<string | null>(null)
   const [previewBanner, setPreviewBanner] = useState<string | null>(null)
   const [ativo, setAtivo] = useState<boolean>(loja.ativo ?? true)

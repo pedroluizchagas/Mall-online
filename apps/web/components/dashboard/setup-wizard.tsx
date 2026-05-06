@@ -12,7 +12,7 @@ interface ProximoPasso {
 
 interface Props {
   nomeLoja: string
-  stripeOk: boolean
+  recebimentosOk: boolean
   temProdutos: boolean
   horariosConfigurados: boolean
   entregaConfigurada: boolean
@@ -20,7 +20,7 @@ interface Props {
 
 export function SetupWizard({
   nomeLoja,
-  stripeOk,
+  recebimentosOk,
   temProdutos,
   horariosConfigurados,
   entregaConfigurada,
@@ -29,10 +29,10 @@ export function SetupWizard({
     {
       id: 'recebimentos',
       titulo: 'Configurar recebimentos',
-      descricao: 'Conecte sua conta bancária via Stripe para receber pagamentos.',
-      href: '/onboarding/stripe/retry',
+      descricao: 'Conclua a verificação Pagar.me para receber pagamentos.',
+      href: '/configuracoes/conta',
       icone: CreditCard,
-      concluido: stripeOk,
+      concluido: recebimentosOk,
     },
     {
       id: 'produtos',
