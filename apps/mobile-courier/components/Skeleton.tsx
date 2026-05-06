@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { Animated, View } from 'react-native'
+import { Animated } from 'react-native'
+import { courierDesign } from '@/lib/courier-design'
 
 interface Props {
   largura: number | `${number}%`
@@ -7,22 +8,15 @@ interface Props {
   borderRadius?: number
 }
 
-export function Skeleton({ largura, altura, borderRadius = 12 }: Props) {
-  const opacidade = useRef(new Animated.Value(0.4)).current
+export function Skeleton({ largura, altura, borderRadius = 14 }: Props) {
+  const { colors } = courierDesign
+  const opacidade = useRef(new Animated.Value(0.5)).current
 
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(opacidade, {
-          toValue: 1,
-          duration: 700,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacidade, {
-          toValue: 0.4,
-          duration: 700,
-          useNativeDriver: true,
-        }),
+        Animated.timing(opacidade, { toValue: 1,   duration: 650, useNativeDriver: true }),
+        Animated.timing(opacidade, { toValue: 0.5, duration: 650, useNativeDriver: true }),
       ])
     ).start()
   }, [opacidade])
@@ -33,7 +27,7 @@ export function Skeleton({ largura, altura, borderRadius = 12 }: Props) {
         width: largura,
         height: altura,
         borderRadius,
-        backgroundColor: '#E5E7EB',
+        backgroundColor: colors.canvasAlt,
         opacity: opacidade,
       }}
     />

@@ -13,12 +13,12 @@ sobre faturamento, repasses recebidos e pendentes, e o status da sua
 assinatura. Há duas seções principais:
 
 1. Financeiro — faturamento, repasses, solicitação de antecipação
-1. Assinatura — status do plano, próxima cobrança, faturas, portal Stripe
+1. Assinatura — status do plano, próxima cobrança, faturas, Stripe Customer Portal
 
-Os dados financeiros vêm do banco (tabelas `orders` e `payouts`).
-O saldo disponível na conta Stripe e o histórico de faturas vêm
-diretamente da API do Stripe via Server Action — para garantir
-informações sempre atualizadas.
+Os dados financeiros vêm do banco (tabelas `orders` e `payouts`). O saldo
+do recipient e os recebíveis pendentes vêm da API Pagar.me via Server Action
+(`/recipients/{id}/balance` e `/payables`). O histórico de faturas da
+assinatura vem da API Stripe Billing.
 
 -----
 
@@ -233,69 +233,54 @@ export async function getRepasses(filtro: 'pendentes' | 'concluidos' | 'todos' =
   }
 }
 
-// Saldo na conta Stripe Express do lojista
-export async function getSaldoStripe() {
+// Saldo do recipient Pagar.me do lojista
+export async function getSaldoPagarme() {
   const supabase = createSupabaseServer()
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('stripe_account_id, stripe_onboarding_ok')
+    .select('pagarme_recipient_id, pagarme_onboarding_status')
     .single()
 
-  if (!tenant || !tenant.stripe_onboarding_ok || !tenant.stripe_account_id) {
+  if (
+    !tenant ||
+    tenant.pagarme_onboarding_status !== 'active' ||
+    !tenant.pagarme_recipient_id
+  ) {
     return null
   }
 
   try {
-    const saldo = await stripe.balance.retrieve({
-      stripeAccount: tenant.stripe_account_id,
-    })
+    const apiKey = process.env.PAGARME_API_KEY!
+    const auth = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64')
 
-    const disponivel = saldo.available.find((b) => b.currency === 'brl')
-    const pendente = saldo.pending.find((b) => b.currency === 'brl')
+    const res = await fetch(
+      `https://api.pagar.me/core/v5/recipients/${tenant.pagarme_recipient_id}/balance`,
+      { headers: { Authorization: auth } }
+    )
+    if (!res.ok) return null
+    const saldo = await res.json()
 
     return {
-      disponivel: disponivel?.amount ?? 0,
-      pendente: pendente?.amount ?? 0,
+      disponivel: saldo.available_amount ?? 0,
+      pendente: saldo.waiting_funds_amount ?? 0,
+      transferido: saldo.transferred_amount ?? 0,
     }
   } catch {
     return null
   }
 }
 
-// Link para o Stripe Express Dashboard (saques)
-export async function getLinkExpressDashboard() {
-  const supabase = createSupabaseServer()
-
-  const { data: tenant } = await supabase
-    .from('tenants')
-    .select('stripe_account_id, stripe_onboarding_ok')
-    .single()
-
-  if (!tenant || !tenant.stripe_onboarding_ok || !tenant.stripe_account_id) {
-    return null
-  }
-
-  try {
-    const link = await stripe.accounts.createLoginLink(
-      tenant.stripe_account_id
-    )
-    return link.url
-  } catch {
-    return null
-  }
-}
-
-// Pedidos elegíveis para antecipação
+// Pedidos elegíveis para antecipação manual (consulta limites no Pagar.me)
 export async function getPedidosElegiveis() {
   const supabase = createSupabaseServer()
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, stripe_onboarding_ok')
+    .select('id, pagarme_recipient_id, pagarme_onboarding_status')
     .single()
 
-  if (!tenant || !tenant.stripe_onboarding_ok) {
+  if (!tenant || tenant.pagarme_onboarding_status !== 'active') {
     return { elegivel: false, motivo: 'Configure sua conta de recebimentos primeiro', pedidos: 0, valor_bruto: 0, taxa: 0, valor_liquido: 0 }
   }
 
@@ -336,24 +321,38 @@ export async function getPedidosElegiveis() {
     .eq('payment_status', 'pago')
     .gte('atualizado_em', seteDiasAtras.toISOString())
 
-  if (!pedidos || pedidos.length === 0) {
-    return { elegivel: false, motivo: 'Nenhum pedido elegível no momento', pedidos: 0, valor_bruto: 0, taxa: 0, valor_liquido: 0 }
-  }
+  // Consultar limites de antecipação direto na API Pagar.me
+  try {
+    const apiKey = process.env.PAGARME_API_KEY!
+    const auth = 'Basic ' + Buffer.from(`${apiKey}:`).toString('base64')
+    const hoje = new Date().toISOString().split('T')[0]
 
-  const valor_bruto = pedidos.reduce(
-    (acc, p) => acc + p.total - p.taxa_entrega - p.platform_fee_amount,
-    0
-  )
-  const taxa = calcularTaxaAntecipacao(pedidos.length)
-  const valor_liquido = valor_bruto - taxa
+    const res = await fetch(
+      `https://api.pagar.me/core/v5/recipients/${tenant.pagarme_recipient_id}/anticipation_limits?timeframe=start&payment_date=${hoje}`,
+      { headers: { Authorization: auth } }
+    )
+    if (!res.ok) {
+      return { elegivel: false, motivo: 'Não foi possível consultar limites no Pagar.me', pedidos: 0, valor_bruto: 0, taxa: 0, valor_liquido: 0 }
+    }
+    const limite = await res.json()
+    const valor_bruto = limite?.maximum?.amount ?? 0
+    const taxa = limite?.maximum?.anticipation_fee ?? 0
+    const valor_liquido = valor_bruto - taxa
 
-  return {
-    elegivel: true,
-    motivo: null,
-    pedidos: pedidos.length,
-    valor_bruto,
-    taxa,
-    valor_liquido,
+    if (valor_bruto <= 0) {
+      return { elegivel: false, motivo: 'Nenhum recebível elegível para antecipação no momento', pedidos: 0, valor_bruto: 0, taxa: 0, valor_liquido: 0 }
+    }
+
+    return {
+      elegivel: true,
+      motivo: null,
+      pedidos: pedidos?.length ?? 0,
+      valor_bruto,
+      taxa,
+      valor_liquido,
+    }
+  } catch {
+    return { elegivel: false, motivo: 'Erro ao consultar Pagar.me', pedidos: 0, valor_bruto: 0, taxa: 0, valor_liquido: 0 }
   }
 }
 
@@ -406,7 +405,7 @@ export async function getDadosAssinatura() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('stripe_customer_id, stripe_onboarding_ok')
+    .select('stripe_customer_id, pagarme_onboarding_status')
     .single()
 
   const { data: sub } = await supabase
@@ -496,15 +495,14 @@ import {
   getFaturamentoDiario,
   getTopProdutos,
   getRepasses,
-  getSaldoStripe,
-  getLinkExpressDashboard,
+  getSaldoPagarme,
   getPedidosElegiveis,
 } from '@/lib/actions/financeiro'
 import { KpisFinanceiros } from '@/components/dashboard/kpis-financeiros'
 import { GraficoFaturamento } from '@/components/dashboard/grafico-faturamento'
 import { ListaRepasses } from '@/components/dashboard/lista-repasses'
 import { CardAntecipacao } from '@/components/dashboard/card-antecipacao'
-import { CardSaldoStripe } from '@/components/dashboard/card-saldo-stripe'
+import { CardSaldoPagarme } from '@/components/dashboard/card-saldo-pagarme'
 import { TopProdutos } from '@/components/dashboard/top-produtos'
 
 export default async function PaginaFinanceiro() {
@@ -515,8 +513,7 @@ export default async function PaginaFinanceiro() {
     faturamentoDiario,
     topProdutos,
     repasses,
-    saldoStripe,
-    linkExpress,
+    saldoPagarme,
     pedidosElegiveis,
   ] = await Promise.all([
     getKpisFinanceiros('hoje'),
@@ -524,8 +521,7 @@ export default async function PaginaFinanceiro() {
     getFaturamentoDiario(),
     getTopProdutos(),
     getRepasses(),
-    getSaldoStripe(),
-    getLinkExpressDashboard(),
+    getSaldoPagarme(),
     getPedidosElegiveis(),
   ])
 
@@ -545,10 +541,10 @@ export default async function PaginaFinanceiro() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Saldo na conta Stripe */}
-        <CardSaldoStripe saldo={saldoStripe} linkExpress={linkExpress} />
+        {/* Saldo no recipient Pagar.me */}
+        <CardSaldoPagarme saldo={saldoPagarme} />
 
-        {/* Antecipação de repasse */}
+        {/* Antecipação de recebíveis (Pagar.me) */}
         <CardAntecipacao elegibilidade={pedidosElegiveis} />
       </div>
 
@@ -751,17 +747,16 @@ export function GraficoFaturamento({ dados }: Props) {
 }
 ```
 
-### components/dashboard/card-saldo-stripe.tsx
+### components/dashboard/card-saldo-pagarme.tsx
 
 ```typescript
 import { formatarReais } from '@mallora/lib'
 
 interface Props {
-  saldo: { disponivel: number; pendente: number } | null
-  linkExpress: string | null
+  saldo: { disponivel: number; pendente: number; transferido: number } | null
 }
 
-export function CardSaldoStripe({ saldo, linkExpress }: Props) {
+export function CardSaldoPagarme({ saldo }: Props) {
   if (!saldo) {
     return (
       <div className="bg-white rounded-xl border border-gray-100 p-5">
@@ -769,7 +764,7 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
           Conta de recebimentos
         </h3>
         <p className="text-sm text-gray-400">
-          Configure sua conta Stripe para ver o saldo.
+          Configure sua conta de recebimentos para ver o saldo.
         </p>
       </div>
     )
@@ -778,38 +773,33 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5">
       <h3 className="font-semibold text-[#1A4D3A] mb-4">
-        Conta de recebimentos
+        Conta de recebimentos (Pagar.me)
       </h3>
 
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">Disponível para saque</span>
+          <span className="text-sm text-gray-500">Disponível para liquidação</span>
           <span className="text-lg font-bold text-[#1A4D3A]">
             {formatarReais(saldo.disponivel)}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">Pendente de liberação</span>
+          <span className="text-sm text-gray-500">A receber (recebíveis futuros)</span>
           <span className="text-base font-medium text-gray-600">
             {formatarReais(saldo.pendente)}
           </span>
         </div>
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-gray-500">Já transferido</span>
+          <span className="text-base font-medium text-gray-600">
+            {formatarReais(saldo.transferido)}
+          </span>
+        </div>
       </div>
 
-      {linkExpress && (
-        <a
-          href={linkExpress}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-4 block w-full text-center bg-[#1A4D3A] text-white
-            py-2.5 rounded-lg text-sm font-medium hover:bg-[#163d2e] transition-colors"
-        >
-          Acessar conta e sacar
-        </a>
-      )}
-
-      <p className="text-xs text-gray-400 mt-2 text-center">
-        Saques processados pelo Stripe — dados bancários gerenciados com segurança.
+      <p className="text-xs text-gray-400 mt-4 text-center">
+        Liquidação automática Pagar.me — Pix instantâneo, cartão D+29+2 ou
+        D+15 com antecipação automática.
       </p>
     </div>
   )
@@ -1031,9 +1021,9 @@ export function ListaRepasses({ repasses, totalPendente, totalRecebido }: Props)
                 <p className="font-bold text-[#1A4D3A]">
                   {formatarReais(repasse.valor_liquido)}
                 </p>
-                {repasse.stripe_transfer_id && (
+                {repasse.pagarme_transfer_id && (
                   <p className="text-xs text-gray-400 mt-0.5 font-mono">
-                    {repasse.stripe_transfer_id.slice(0, 12)}...
+                    {repasse.pagarme_transfer_id.slice(0, 12)}...
                   </p>
                 )}
               </div>
@@ -1223,15 +1213,15 @@ export default async function PaginaAssinatura() {
 
 ## CHECKLIST DO MODULO
 
-- [ ] Chave `STRIPE_SECRET_KEY` configurada no servidor (nunca no cliente)
-- [ ] `stripe.balance.retrieve` com `stripeAccount` — requer que o tenant tenha Express Account ativa
-- [ ] `stripe.accounts.createLoginLink` — requer `stripe_onboarding_ok = true`
+- [ ] Chaves `PAGARME_API_KEY` e `STRIPE_SECRET_KEY` configuradas no servidor (nunca no cliente)
+- [ ] `getSaldoPagarme` consulta `/recipients/{id}/balance` — requer recipient `active`
+- [ ] `getPedidosElegiveis` consulta `/recipients/{id}/anticipation_limits` — requer recipient `active` e plano com `tem_antecipacao`
 - [ ] `stripe.billingPortal.sessions.create` — requer Customer Portal ativado no Stripe Dashboard
 - [ ] `Promise.all` na página para carregar dados em paralelo (performance)
 - [ ] Gráfico de faturamento usa Recharts — importado como Client Component
 - [ ] Valores monetários sempre em centavos no banco, convertidos com `formatarReais` na exibição
 - [ ] Card de antecipação com fluxo de confirmação em dois passos para evitar clique acidental
-- [ ] Repasses com `stripe_transfer_id` exibem parte do ID para auditoria fácil
+- [ ] Repasses com `pagarme_transfer_id` exibem parte do ID para auditoria fácil
 - [ ] Ativar Customer Portal no Stripe Dashboard antes de usar em produção:
   Stripe Dashboard > Billing > Customer Portal > Activate
 

@@ -13,7 +13,7 @@ interface Props {
 export function TopProdutos({ produtos }: Props) {
   if (produtos.length === 0) {
     return (
-      <p className="text-sm text-gray-400 text-center py-6">
+      <p className="text-sm text-ink-3 text-center py-6">
         Nenhum produto vendido no período.
       </p>
     )
@@ -24,22 +24,19 @@ export function TopProdutos({ produtos }: Props) {
       {produtos.map((produto, i) => (
         <div
           key={produto.nome}
-          className="flex items-center justify-between p-3 bg-gray-50 rounded-xl text-sm"
+          className="flex items-center justify-between p-3 rounded-xl text-sm"
+          style={{ background: 'var(--bg-2)' }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-gray-400 w-5 text-center">
-              {i + 1}
-            </span>
+            <span className="text-xs font-bold text-ink-3 w-5 text-center">{i + 1}</span>
             <div>
-              <p className="font-medium text-gray-700">{produto.nome}</p>
-              <p className="text-xs text-gray-400">
+              <p className="font-medium text-ink">{produto.nome}</p>
+              <p className="text-xs text-ink-3">
                 {produto.quantidade} vendido{produto.quantidade !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
-          <span className="font-semibold text-[#1A4D3A]">
-            {formatarReais(produto.receita)}
-          </span>
+          <span className="font-semibold text-ink">{formatarReais(produto.receita)}</span>
         </div>
       ))}
     </div>

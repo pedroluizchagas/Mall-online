@@ -44,13 +44,16 @@ export default function PaginaStripeCallback() {
   }, [router, supabase])  // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#FFF8ED]">
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--sidebar)' }}>
       <div className="text-center max-w-sm px-4">
-        <div className="w-12 h-12 border-4 border-[#4CAF82] border-t-transparent rounded-full animate-spin mx-auto mb-6" />
-        <h2 className="text-xl font-semibold text-[#1A4D3A] mb-2">
+        <div
+          className="w-12 h-12 border-4 border-t-transparent rounded-full animate-spin mx-auto mb-6"
+          style={{ borderColor: 'var(--brick)', borderTopColor: 'transparent' }}
+        />
+        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--bg)' }}>
           Quase lá!
         </h2>
-        <p className="text-gray-500">{mensagem}</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)' }}>{mensagem}</p>
       </div>
     </div>
   )

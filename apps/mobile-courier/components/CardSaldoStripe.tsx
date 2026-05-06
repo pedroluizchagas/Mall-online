@@ -1,5 +1,7 @@
 import { View, Text, TouchableOpacity, Linking, ActivityIndicator } from 'react-native'
 import { formatarReais } from '@mallora/lib'
+import { CourierIcon } from '@/components/CourierIcon'
+import { courierDesign } from '@/lib/courier-design'
 
 interface Props {
   saldo: { disponivel: number; pendente: number } | null
@@ -7,28 +9,43 @@ interface Props {
 }
 
 export function CardSaldoStripe({ saldo, linkExpress }: Props) {
+  const { colors, radius } = courierDesign
+
   return (
-    <View className="mx-5 mb-4 bg-white rounded-2xl border border-gray-100 p-5">
-      <Text className="text-xs font-semibold text-gray-400 uppercase mb-3">
+    <View style={{
+      marginHorizontal: 16,
+      marginBottom: 12,
+      backgroundColor: colors.ink,
+      borderRadius: radius.lg,
+      padding: 20,
+    }}>
+      <Text style={{
+        fontSize: 11,
+        fontWeight: '700',
+        color: colors.inkSoft,
+        letterSpacing: 0.8,
+        textTransform: 'uppercase',
+        marginBottom: 16,
+      }}>
         Conta de recebimentos
       </Text>
 
       {saldo ? (
         <>
-          <View className="flex-row gap-4 mb-4">
-            <View className="flex-1">
-              <Text className="text-xs text-gray-400 mb-0.5">
+          <View style={{ flexDirection: 'row', gap: 20, marginBottom: 18 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, color: colors.inkSoft, marginBottom: 4 }}>
                 Disponível para saque
               </Text>
-              <Text className="text-xl font-bold text-[#1A4D3A]">
+              <Text style={{ fontSize: 22, fontWeight: '800', color: colors.accent, letterSpacing: -0.4 }}>
                 {formatarReais(saldo.disponivel)}
               </Text>
             </View>
-            <View className="flex-1">
-              <Text className="text-xs text-gray-400 mb-0.5">
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 12, color: colors.inkSoft, marginBottom: 4 }}>
                 A receber
               </Text>
-              <Text className="text-xl font-bold text-gray-600">
+              <Text style={{ fontSize: 22, fontWeight: '800', color: colors.white, letterSpacing: -0.4 }}>
                 {formatarReais(saldo.pendente)}
               </Text>
             </View>
@@ -37,26 +54,41 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
           {linkExpress && (
             <TouchableOpacity
               onPress={() => Linking.openURL(linkExpress)}
-              className="bg-[#1A4D3A] py-3 rounded-xl items-center"
               activeOpacity={0.85}
+              style={{
+                height: 44,
+                borderRadius: radius.pill,
+                backgroundColor: colors.accent,
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'row',
+                gap: 8,
+              }}
             >
-              <Text className="text-white font-semibold text-sm">
+              <CourierIcon name="wallet" size={15} color={colors.ink} strokeWidth={2.1} />
+              <Text style={{ fontSize: 14, fontWeight: '800', color: colors.ink }}>
                 Acessar conta e sacar
               </Text>
             </TouchableOpacity>
           )}
         </>
       ) : (
-        <View className="items-center py-3">
-          <ActivityIndicator color="#4CAF82" />
-          <Text className="text-gray-400 text-xs mt-2">
-            Carregando saldo...
+        <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+          <ActivityIndicator color={colors.accent} />
+          <Text style={{ fontSize: 12, color: colors.inkSoft, marginTop: 8 }}>
+            Carregando saldo…
           </Text>
         </View>
       )}
 
-      <Text className="text-xs text-gray-300 text-center mt-3 leading-4">
-        Saques via Stripe. Dados bancários gerenciados com segurança.
+      <Text style={{
+        fontSize: 11,
+        color: colors.lineDark,
+        textAlign: 'center',
+        marginTop: 14,
+        lineHeight: 16,
+      }}>
+        Saques via Stripe · Dados gerenciados com segurança
       </Text>
     </View>
   )

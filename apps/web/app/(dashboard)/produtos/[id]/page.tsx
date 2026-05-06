@@ -11,14 +11,15 @@ interface Props {
 export default async function PaginaEditarProduto({ params }: Props) {
   const supabase = createSupabaseServer()
 
-  const { data: tenant } = await supabase
+  const { data: tenantResult } = await supabase
     .from('tenants')
     .select('id')
     .single()
 
+  const tenant = tenantResult as any
   if (!tenant) redirect('/dashboard/produtos')
 
-  const { data: produto } = await supabase
+  const { data: produtoResult } = await supabase
     .from('products')
     .select(`
       id, nome, descricao, preco, preco_promocional,
@@ -28,6 +29,8 @@ export default async function PaginaEditarProduto({ params }: Props) {
     .eq('id', params.id)
     .eq('tenant_id', tenant.id)
     .single()
+
+  const produto = produtoResult as any
 
   if (!produto) notFound()
 
@@ -41,15 +44,16 @@ export default async function PaginaEditarProduto({ params }: Props) {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-9 max-w-2xl">
       <div className="mb-6">
         <a
-          href="/dashboard/produtos"
-          className="text-sm text-[#4CAF82] hover:underline"
+          href="/produtos"
+          className="text-sm font-medium hover:underline"
+          style={{ color: 'var(--brick-dk)' }}
         >
           &larr; Voltar para produtos
         </a>
-        <h1 className="text-2xl font-bold text-[#1A4D3A] mt-2">Editar produto</h1>
+        <h1 className="font-display text-[28px] leading-tight text-ink mt-2">Editar produto</h1>
       </div>
 
       <ProdutoForm action={action} categorias={categorias} produto={produto} />

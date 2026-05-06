@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Mallora",
-    "slug": "mallora-consumer",
+    "name": "Mallevo",
+    "slug": "mallevo-consumer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

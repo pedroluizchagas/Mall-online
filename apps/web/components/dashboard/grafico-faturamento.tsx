@@ -18,7 +18,7 @@ interface Props {
 export function GraficoFaturamento({ dados }: Props) {
   if (dados.length === 0) {
     return (
-      <div className="h-48 flex items-center justify-center text-gray-400 text-sm">
+      <div className="h-48 flex items-center justify-center text-ink-3 text-sm">
         Nenhum dado disponível ainda.
       </div>
     )
@@ -27,24 +27,26 @@ export function GraficoFaturamento({ dados }: Props) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={dados}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-        <XAxis
-          dataKey="data"
-          tick={{ fontSize: 11, fill: '#9CA3AF' }}
-        />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
+        <XAxis dataKey="data" tick={{ fontSize: 11, fill: 'var(--ink-3)' }} />
         <YAxis
           tickFormatter={(v) => `R$${(v / 100).toFixed(0)}`}
-          tick={{ fontSize: 11, fill: '#9CA3AF' }}
+          tick={{ fontSize: 11, fill: 'var(--ink-3)' }}
         />
         <Tooltip
           formatter={(value: number) => [formatarReais(value), '']}
-          labelStyle={{ color: '#374151' }}
+          labelStyle={{ color: 'var(--ink)' }}
+          contentStyle={{
+            background: 'var(--bg)',
+            border: '1px solid var(--line)',
+            borderRadius: 8,
+          }}
         />
         <Line
           type="monotone"
           dataKey="bruto"
           name="Bruto"
-          stroke="#4CAF82"
+          stroke="var(--ink-3)"
           strokeWidth={2}
           dot={false}
         />
@@ -52,8 +54,8 @@ export function GraficoFaturamento({ dados }: Props) {
           type="monotone"
           dataKey="liquido"
           name="Líquido"
-          stroke="#1A4D3A"
-          strokeWidth={2}
+          stroke="var(--brick)"
+          strokeWidth={2.5}
           dot={false}
         />
       </LineChart>

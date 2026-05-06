@@ -9,13 +9,13 @@
 ## VISAO GERAL
 
 O módulo financeiro do app do entregador exibe seus ganhos por
-período, o histórico de entregas com valores correspondentes, o
-saldo disponível na conta Stripe Express e o acesso para sacar
-para a conta bancária.
+período, o histórico de entregas com valores correspondentes e o
+saldo disponível no recipient Pagar.me.
 
-Os repasses são processados pelo cron `daily-payouts` em D+1 para
-entregadores autônomos. O entregador vê o saldo na conta Stripe
-e faz saques diretamente pelo Stripe Express Dashboard.
+A liquidação é gerenciada automaticamente pelo Pagar.me conforme
+o cronograma configurado no recipient. O entregador autônomo recebe
+via transfer da Mallora após a alocação no pedido (estágio 2) e a
+liquidação ocorre conforme o calendário da conta bancária cadastrada.
 
 -----
 
@@ -60,9 +60,10 @@ interface EntregaHistorico {
   payout_status?: string
 }
 
-interface SaldoStripe {
+interface SaldoPagarme {
   disponivel: number
   pendente: number
+  transferido: number
 }
 
 export default function TelaGanhos() {
@@ -70,8 +71,7 @@ export default function TelaGanhos() {
   const [periodo, setPeriodo] = useState<Periodo>('semana')
   const [resumo, setResumo] = useState<Resumo | null>(null)
   const [historico, setHistorico] = useState<EntregaHistorico[]>([])
-  const [saldoStripe, setSaldoStripe] = useState<SaldoStripe | null>(null)
-  const [linkExpress, setLinkExpress] = useState<string | null>(null)
+  const [saldoPagarme, setSaldoPagarme] = useState<SaldoPagarme | null>(null)
   const [carregando, setCarregando] = useState(true)
   const [atualizando, setAtualizando] = useState(false)
 
@@ -146,15 +146,15 @@ export default function TelaGanhos() {
     setCarregando(false)
   }
 
-  async function carregarSaldoStripe() {
-    if (!courier?.stripe_account_id || !courier?.stripe_onboarding_ok) return
+  async function carregarSaldoPagarme() {
+    if (!courier?.pagarme_onboarding_status || courier.pagarme_onboarding_status !== 'active') return
 
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
 
     try {
       const resposta = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/courier-stripe-info`,
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/courier-pagarme-balance`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -164,8 +164,7 @@ export default function TelaGanhos() {
 
       if (resposta.ok) {
         const dados = await resposta.json()
-        setSaldoStripe(dados.saldo)
-        setLinkExpress(dados.link_express)
+        setSaldoPagarme(dados.saldo)
       }
     } catch {
       // Ignorar erros de conectividade — saldo não é crítico
@@ -173,12 +172,12 @@ export default function TelaGanhos() {
   }
 
   useEffect(() => {
-    Promise.all([carregarDados(), carregarSaldoStripe()])
+    Promise.all([carregarDados(), carregarSaldoPagarme()])
   }, [periodo])
 
   const onRefresh = useCallback(async () => {
     setAtualizando(true)
-    await Promise.all([carregarDados(), carregarSaldoStripe()])
+    await Promise.all([carregarDados(), carregarSaldoPagarme()])
     setAtualizando(false)
   }, [periodo])
 
@@ -212,12 +211,9 @@ export default function TelaGanhos() {
         <Text className="text-2xl font-bold text-[#1A4D3A]">Ganhos</Text>
       </View>
 
-      {/* Saldo Stripe */}
-      {courier?.stripe_onboarding_ok && (
-        <CardSaldoStripe
-          saldo={saldoStripe}
-          linkExpress={linkExpress}
-        />
+      {/* Saldo Pagar.me */}
+      {courier?.pagarme_onboarding_status === 'active' && (
+        <CardSaldoPagarme saldo={saldoPagarme} />
       )}
 
       {/* Próximo repasse */}
@@ -324,32 +320,31 @@ export default function TelaGanhos() {
 
 -----
 
-## COMPONENTE CARD SALDO STRIPE
+## COMPONENTE CARD SALDO PAGARME
 
-### components/CardSaldoStripe.tsx (apps/mobile-courier)
+### components/CardSaldoPagarme.tsx (apps/mobile-courier)
 
 ```typescript
-import { View, Text, TouchableOpacity, Linking, ActivityIndicator } from 'react-native'
+import { View, Text, ActivityIndicator } from 'react-native'
 import { formatarReais } from '@mallora/lib'
 
 interface Props {
-  saldo: { disponivel: number; pendente: number } | null
-  linkExpress: string | null
+  saldo: { disponivel: number; pendente: number; transferido: number } | null
 }
 
-export function CardSaldoStripe({ saldo, linkExpress }: Props) {
+export function CardSaldoPagarme({ saldo }: Props) {
   return (
     <View className="mx-5 mb-4 bg-white rounded-2xl border border-gray-100 p-5">
       <Text className="text-xs font-semibold text-gray-400 uppercase mb-3">
-        Conta de recebimentos
+        Conta de recebimentos (Pagar.me)
       </Text>
 
       {saldo ? (
-        <>
-          <View className="flex-row gap-4 mb-4">
+        <View className="gap-3">
+          <View className="flex-row gap-4">
             <View className="flex-1">
               <Text className="text-xs text-gray-400 mb-0.5">
-                Disponível para saque
+                Disponível
               </Text>
               <Text className="text-xl font-bold text-[#1A4D3A]">
                 {formatarReais(saldo.disponivel)}
@@ -364,19 +359,10 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
               </Text>
             </View>
           </View>
-
-          {linkExpress && (
-            <TouchableOpacity
-              onPress={() => Linking.openURL(linkExpress)}
-              className="bg-[#1A4D3A] py-3 rounded-xl items-center"
-              activeOpacity={0.85}
-            >
-              <Text className="text-white font-semibold text-sm">
-                Acessar conta e sacar
-              </Text>
-            </TouchableOpacity>
-          )}
-        </>
+          <Text className="text-xs text-gray-300 leading-4">
+            Liquidação automática conforme cronograma da conta bancária cadastrada.
+          </Text>
+        </View>
       ) : (
         <View className="items-center py-3">
           <ActivityIndicator color="#4CAF82" />
@@ -385,10 +371,6 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
           </Text>
         </View>
       )}
-
-      <Text className="text-xs text-gray-300 text-center mt-3 leading-4">
-        Saques via Stripe. Dados bancários gerenciados com segurança.
-      </Text>
     </View>
   )
 }
@@ -476,21 +458,18 @@ export function EntregaHistoricoCard({ entrega }: { entrega: Entrega }) {
 
 -----
 
-## EDGE FUNCTION — COURIER STRIPE INFO
+## EDGE FUNCTION — COURIER PAGARME INFO
 
-A busca do saldo Stripe e o link do Express Dashboard não podem
-ser feitos diretamente do app mobile (exigem chave secreta).
-É necessária uma Edge Function para isso.
+A busca do saldo do recipient Pagar.me não pode ser feita diretamente do app
+mobile (exige chave secreta). Uma Edge Function realiza a chamada à API do
+Pagar.me e retorna apenas os dados necessários para o app exibir o saldo e
+redirecionar ao painel de saques.
 
-### supabase/functions/courier-stripe-info/index.ts
+### supabase/functions/courier-pagarme-info/index.ts
 
 ```typescript
-import Stripe from 'https://esm.sh/stripe@14'
 import { getSupabaseAdmin, getAuthenticatedUser, corsHeaders } from '../helpers/auth.ts'
-
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-  apiVersion: '2024-04-10',
-})
+import { pagarmeGet } from '../helpers/pagarme.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -503,34 +482,27 @@ Deno.serve(async (req) => {
 
     const { data: courier } = await supabase
       .from('couriers')
-      .select('id, stripe_account_id, stripe_onboarding_ok')
+      .select('id, pagarme_recipient_id, pagarme_onboarding_status')
       .eq('user_id', user.id)
       .single()
 
-    if (!courier?.stripe_account_id || !courier.stripe_onboarding_ok) {
+    if (!courier?.pagarme_recipient_id || courier.pagarme_onboarding_status !== 'active') {
       return new Response(
-        JSON.stringify({ saldo: null, link_express: null }),
+        JSON.stringify({ saldo: null }),
         { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
       )
     }
 
-    const [saldoStripe, linkExpress] = await Promise.all([
-      stripe.balance.retrieve({
-        stripeAccount: courier.stripe_account_id,
-      }),
-      stripe.accounts.createLoginLink(courier.stripe_account_id),
-    ])
-
-    const disponivel = saldoStripe.available.find((b) => b.currency === 'brl')
-    const pendente = saldoStripe.pending.find((b) => b.currency === 'brl')
+    // Buscar saldo do recipient no Pagar.me
+    const saldo = await pagarmeGet(`/recipients/${courier.pagarme_recipient_id}/balance`)
 
     return new Response(
       JSON.stringify({
         saldo: {
-          disponivel: disponivel?.amount ?? 0,
-          pendente: pendente?.amount ?? 0,
+          disponivel: saldo.available_amount ?? 0,
+          a_receber: saldo.waiting_funds_amount ?? 0,
+          transferido: saldo.transferred_amount ?? 0,
         },
-        link_express: linkExpress.url,
       }),
       { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
@@ -569,26 +541,27 @@ export default function TelaPerfil() {
   const { courier, user, limpar: limparAuth } = useAuthStore()
   const { setAtiva } = useEntregaStore()
   const { limpar: limparLoc } = useLocalizacaoStore()
-  const [abrindoStripe, setAbrindoStripe] = useState(false)
+  const [carregandoSaldo, setCarregandoSaldo] = useState(false)
 
-  async function handleAbrirStripe() {
-    if (!courier?.stripe_account_id) return
+  async function handleCarregarSaldo() {
+    if (!courier?.pagarme_recipient_id) return
 
-    setAbrindoStripe(true)
+    setCarregandoSaldo(true)
 
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session) { setAbrindoStripe(false); return }
+    if (!session) { setCarregandoSaldo(false); return }
 
     const resposta = await fetch(
-      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/courier-stripe-info`,
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/courier-pagarme-info`,
       { headers: { Authorization: `Bearer ${session.access_token}` } }
     )
 
     const dados = await resposta.json()
-    setAbrindoStripe(false)
+    setCarregandoSaldo(false)
 
-    if (dados.link_express) {
-      Linking.openURL(dados.link_express)
+    // Exibir saldo em modal ou atualizar estado local
+    if (dados.saldo) {
+      // setSaldo(dados.saldo) — implementar via useState conforme tela
     }
   }
 
@@ -658,7 +631,7 @@ export default function TelaPerfil() {
         </View>
       </View>
 
-      {/* Status do KYC e conta Stripe */}
+      {/* Status do KYC e conta Pagar.me */}
       <View className="bg-white mx-5 mb-4 rounded-2xl p-4 border border-gray-100">
         <Text className="text-sm font-semibold text-gray-700 mb-3">
           Conta de recebimentos
@@ -667,31 +640,31 @@ export default function TelaPerfil() {
         <View className="flex-row items-center gap-3 mb-3">
           <View
             className={`w-3 h-3 rounded-full flex-shrink-0 ${
-              courier?.stripe_onboarding_ok ? 'bg-[#4CAF82]' : 'bg-amber-400'
+              courier?.pagarme_onboarding_status === 'active' ? 'bg-[#4CAF82]' : 'bg-amber-400'
             }`}
           />
           <Text className="text-sm text-gray-700">
-            {courier?.stripe_onboarding_ok
+            {courier?.pagarme_onboarding_status === 'active'
               ? 'Conta verificada e ativa'
               : 'Verificação pendente'}
           </Text>
         </View>
 
-        {courier?.stripe_onboarding_ok ? (
+        {courier?.pagarme_onboarding_status === 'active' ? (
           <TouchableOpacity
-            onPress={handleAbrirStripe}
-            disabled={abrindoStripe}
+            onPress={handleCarregarSaldo}
+            disabled={carregandoSaldo}
             className="border border-[#4CAF82] py-2.5 rounded-xl
               items-center disabled:opacity-50"
             activeOpacity={0.75}
           >
             <Text className="text-[#4CAF82] text-sm font-semibold">
-              {abrindoStripe ? 'Abrindo...' : 'Acessar conta Stripe'}
+              {carregandoSaldo ? 'Carregando...' : 'Ver saldo disponível'}
             </Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            onPress={() => router.push('/stripe-onboarding')}
+            onPress={() => router.push('/kyc-onboarding')}
             className="bg-[#F5A623] py-2.5 rounded-xl items-center"
             activeOpacity={0.85}
           >
@@ -776,7 +749,7 @@ async function carregarRepasses() {
 
   const { data } = await supabase
     .from('payouts')
-    .select('id, valor_liquido, status, data_prevista, data_referencia, stripe_transfer_id, total_pedidos')
+    .select('id, valor_liquido, status, data_prevista, data_referencia, pagarme_transfer_id, total_pedidos')
     .eq('courier_id', courier.id)
     .order('criado_em', { ascending: false })
     .limit(10)
@@ -845,26 +818,25 @@ deve receber uma push notification. Isso é configurado no arquivo 23
 
 O entregador vê na tela de ganhos:
 
-- Saldo atualizado na conta Stripe
+- Saldo do recipient atualizado no Pagar.me
 - Repasse aparecendo como “Recebido” no histórico
 
 -----
 
 ## CHECKLIST DO MODULO
 
-- [ ] Edge Function `courier-stripe-info` deployada e testada
-- [ ] `stripe.balance.retrieve` com `stripeAccount` — requer Express Account ativa
-- [ ] `stripe.accounts.createLoginLink` — link expira em poucos minutos, gerar sob demanda
-- [ ] Tela de ganhos busca dados em paralelo com `Promise.all`
-- [ ] Saldo Stripe carregado via Edge Function — nunca expor chave secreta no app
+- [ ] Edge Function `courier-pagarme-info` deployada e testada
+- [ ] `GET /recipients/{id}/balance` no Pagar.me — requer recipient com `status = active`
+- [ ] Tela de ganhos busca dados com `useEffect` no mount
+- [ ] Saldo Pagar.me carregado via Edge Function — nunca expor `PAGARME_API_KEY` no app
 - [ ] Logout garante que o entregador fica offline no banco antes de deslogar
 - [ ] Histórico de entregas filtrado por período com query ao Supabase
 - [ ] Card de entrega mostra status com cores distintas por estado
 - [ ] Média por entrega calculada apenas quando `entregas_concluidas > 0`
-- [ ] Repasses com `status = 'agendado'` mostram data prevista do D+1
+- [ ] Repasses com `status = 'agendado'` mostram data prevista
 - [ ] Push notification ao receber repasse (implementado no arquivo 23)
-- [ ] Entregadores tipo `proprio` podem não ter Stripe — CardSaldoStripe
-  condicionado a `courier.stripe_onboarding_ok`
+- [ ] Entregadores tipo `proprio` podem não ter recipient Pagar.me — seção de saldo
+  condicionada a `courier.pagarme_onboarding_status === 'active'`
 
 -----
 

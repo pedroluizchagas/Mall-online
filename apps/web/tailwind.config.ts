@@ -2,74 +2,67 @@ import type { Config } from 'tailwindcss'
 
 const config: Config = {
   content: [
-    './app/**/*.{ts,tsx}',
-    './components/**/*.{ts,tsx}',
+    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './components/**/*.{js,ts,jsx,tsx,mdx}',
+    './app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
-      colors: {
-        brand: {
-          50:  '#f0f9f4',
-          100: '#dcf0e6',
-          200: '#bbe2cf',
-          300: '#8ecdb1',
-          400: '#5cb38d',
-          500: '#4CAF82',
-          600: '#2d8a60',
-          700: '#266f4e',
-          800: '#1A4D3A',
-          900: '#163d2e',
-          950: '#0c2a1f',
-        },
-        surface: {
-          base: '#FFF8ED',
-          card: '#FFFFFF',
-          muted: '#EFEFEF',
-          main: '#EFEFEF',
-        },
-        sidebar: {
-          bg:      '#151515',
-          hover:   '#1f1f1f',
-          search:  '#1f1f1f',
-          card:    '#1c1c1c',
-          border:  '#1e1e1e',
-          section: '#383838',
-          item:    '#555555',
-          'item-hover': '#888888',
-        },
-      },
       fontFamily: {
-        sans: ['var(--font-dm-sans)', 'var(--font-geist-sans)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
       },
-      boxShadow: {
-        card:    '0 1px 3px 0 rgb(0 0 0 / .06), 0 1px 2px -1px rgb(0 0 0 / .06)',
-        'card-hover': '0 4px 16px 0 rgb(0 0 0 / .08), 0 1px 3px -1px rgb(0 0 0 / .06)',
-        sidebar: '1px 0 0 0 rgb(255 255 255 / .06)',
+      colors: {
+        shell: 'var(--shell)',
+        sidebar: {
+          DEFAULT: 'var(--sidebar)',
+          2: 'var(--sidebar-2)',
+          line: 'var(--sidebar-line)',
+          ink: 'var(--sidebar-ink)',
+          'ink-2': 'var(--sidebar-ink-2)',
+          'ink-3': 'var(--sidebar-ink-3)',
+        },
+        bg: {
+          DEFAULT: 'var(--bg)',
+          2: 'var(--bg-2)',
+          3: 'var(--bg-3)',
+        },
+        ink: {
+          DEFAULT: 'var(--ink)',
+          2: 'var(--ink-2)',
+          3: 'var(--ink-3)',
+        },
+        line: {
+          DEFAULT: 'var(--line)',
+          2: 'var(--line-2)',
+        },
+        brick: {
+          DEFAULT: 'var(--brick)',
+          dk: 'var(--brick-dk)',
+          lt: 'var(--brick-lt)',
+          ink: 'var(--brick-ink)',
+        },
+        mustard: 'var(--mustard)',
+        leaf: 'var(--leaf)',
+        berry: 'var(--berry)',
+        sky: 'var(--sky)',
+        ok: 'var(--ok)',
+        warn: 'var(--warn)',
+        err: 'var(--err)',
       },
       borderRadius: {
-        '2xl': '1rem',
-        '3xl': '1.5rem',
+        sm: 'var(--r-sm)',
+        md: 'var(--r-md)',
+        lg: 'var(--r-lg)',
+        xl: 'var(--r-xl)',
       },
-      transitionDuration: {
-        '180': '180ms',
-      },
-      animation: {
-        'fade-in': 'fadeIn 0.2s ease-out',
-        'slide-up': 'slideUp 0.25s ease-out',
-      },
-      keyframes: {
-        fadeIn: {
-          '0%':   { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
-        slideUp: {
-          '0%':   { opacity: '0', transform: 'translateY(6px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
       },
     },
   },
   plugins: [],
 }
-
 export default config

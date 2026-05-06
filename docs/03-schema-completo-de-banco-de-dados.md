@@ -128,24 +128,25 @@ conforme o plano contratado.
 
 ```sql
 CREATE TABLE tenants (
-  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id               UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  nome_responsavel      TEXT NOT NULL,
-  cpf_cnpj              TEXT,
-  telefone              TEXT,
-  email                 TEXT NOT NULL,
-  slug                  TEXT UNIQUE,           -- identificador único na URL
-  stripe_customer_id    TEXT UNIQUE,           -- Customer ID no Stripe (para Billing)
-  stripe_account_id     TEXT UNIQUE,           -- Express Account ID no Stripe (para receber)
-  stripe_onboarding_ok  BOOLEAN NOT NULL DEFAULT false,  -- KYC concluído
-  ativo                 BOOLEAN NOT NULL DEFAULT true,
-  criado_em             TIMESTAMPTZ NOT NULL DEFAULT now(),
-  atualizado_em         TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id                     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  nome_responsavel            TEXT NOT NULL,
+  cpf_cnpj                    TEXT,
+  telefone                    TEXT,
+  email                       TEXT NOT NULL,
+  slug                        TEXT UNIQUE,         -- identificador único na URL
+  stripe_customer_id          TEXT UNIQUE,         -- Customer ID no Stripe Billing (assinatura)
+  pagarme_recipient_id        TEXT UNIQUE,         -- Recipient ID no Pagar.me (split de pedidos)
+  pagarme_onboarding_status   TEXT NOT NULL DEFAULT 'registration',
+                                                   -- registration, affiliation, active, refused, suspended, blocked
+  ativo                       BOOLEAN NOT NULL DEFAULT true,
+  criado_em                   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  atualizado_em               TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_tenants_user_id ON tenants(user_id);
 CREATE INDEX idx_tenants_stripe_customer ON tenants(stripe_customer_id);
-CREATE INDEX idx_tenants_stripe_account ON tenants(stripe_account_id);
+CREATE INDEX idx_tenants_pagarme_recipient ON tenants(pagarme_recipient_id);
 ```
 
 -----
@@ -297,32 +298,34 @@ Entregadores cadastrados na plataforma.
 
 ```sql
 CREATE TABLE couriers (
-  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id               UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  tenant_id             UUID REFERENCES tenants(id) ON DELETE SET NULL, -- NULL = autônomo
-  tipo                  courier_type NOT NULL DEFAULT 'autonomo',
-  nome                  TEXT NOT NULL,
-  cpf                   TEXT,
-  telefone              TEXT,
-  foto_url              TEXT,
-  cnh_numero            TEXT,
-  cnh_foto_url          TEXT,
-  veiculo_tipo          TEXT,                 -- moto, bicicleta, carro, a_pe
-  veiculo_placa         TEXT,
-  status                courier_status NOT NULL DEFAULT 'pendente',
-  online                BOOLEAN NOT NULL DEFAULT false,
-  stripe_account_id     TEXT UNIQUE,          -- Express Account ID (para receber)
-  stripe_onboarding_ok  BOOLEAN NOT NULL DEFAULT false,
-  aprovado_em           TIMESTAMPTZ,
-  aprovado_por          UUID REFERENCES auth.users(id),
-  criado_em             TIMESTAMPTZ NOT NULL DEFAULT now(),
-  atualizado_em         TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id                     UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  tenant_id                   UUID REFERENCES tenants(id) ON DELETE SET NULL, -- NULL = autônomo
+  tipo                        courier_type NOT NULL DEFAULT 'autonomo',
+  nome                        TEXT NOT NULL,
+  cpf                         TEXT,
+  telefone                    TEXT,
+  foto_url                    TEXT,
+  cnh_numero                  TEXT,
+  cnh_foto_url                TEXT,
+  veiculo_tipo                TEXT,                 -- moto, bicicleta, carro, a_pe
+  veiculo_placa               TEXT,
+  status                      courier_status NOT NULL DEFAULT 'pendente',
+  online                      BOOLEAN NOT NULL DEFAULT false,
+  pagarme_recipient_id        TEXT UNIQUE,          -- Recipient Pagar.me (recebimento)
+  pagarme_onboarding_status   TEXT NOT NULL DEFAULT 'registration',
+                                                    -- registration, affiliation, active, refused, suspended, blocked
+  aprovado_em                 TIMESTAMPTZ,
+  aprovado_por                UUID REFERENCES auth.users(id),
+  criado_em                   TIMESTAMPTZ NOT NULL DEFAULT now(),
+  atualizado_em               TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_couriers_user ON couriers(user_id);
 CREATE INDEX idx_couriers_tenant ON couriers(tenant_id);
 CREATE INDEX idx_couriers_status ON couriers(status);
 CREATE INDEX idx_couriers_online ON couriers(online) WHERE online = true;
+CREATE INDEX idx_couriers_pagarme_recipient ON couriers(pagarme_recipient_id);
 ```
 
 -----
@@ -347,7 +350,9 @@ CREATE TABLE orders (
   troco_para              INTEGER,             -- em centavos, se pagamento em dinheiro
   endereco_entrega        JSONB NOT NULL,      -- snapshot do endereço no momento do pedido
   observacoes             TEXT,
-  stripe_payment_intent_id TEXT UNIQUE,        -- pi_xxx (NULL se pagamento offline)
+  pagarme_order_id        TEXT UNIQUE,         -- or_xxx (NULL se pagamento offline)
+  pagarme_charge_id       TEXT UNIQUE,         -- ch_xxx
+  valor_estornado         INTEGER NOT NULL DEFAULT 0,
   cancelado_em            TIMESTAMPTZ,
   motivo_cancelamento     TEXT,
   criado_em               TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -358,7 +363,8 @@ CREATE INDEX idx_orders_consumer ON orders(consumer_id);
 CREATE INDEX idx_orders_store ON orders(store_id);
 CREATE INDEX idx_orders_tenant ON orders(tenant_id);
 CREATE INDEX idx_orders_status ON orders(status);
-CREATE INDEX idx_orders_payment_intent ON orders(stripe_payment_intent_id);
+CREATE INDEX idx_orders_pagarme_order ON orders(pagarme_order_id);
+CREATE INDEX idx_orders_pagarme_charge ON orders(pagarme_charge_id);
 CREATE INDEX idx_orders_criado_em ON orders(criado_em DESC);
 ```
 
@@ -392,20 +398,21 @@ Atribuição de um entregador a um pedido.
 
 ```sql
 CREATE TABLE delivery_assignments (
-  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id        UUID NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
-  courier_id      UUID NOT NULL REFERENCES couriers(id),
-  tenant_id       UUID NOT NULL REFERENCES tenants(id),
-  status          delivery_status NOT NULL DEFAULT 'pendente',
-  valor_entrega   INTEGER NOT NULL DEFAULT 0, -- em centavos (valor que o entregador recebe)
-  aceito_em       TIMESTAMPTZ,
-  coletado_em     TIMESTAMPTZ,
-  entregue_em     TIMESTAMPTZ,
-  cancelado_em    TIMESTAMPTZ,
-  comprovante_url TEXT,                       -- foto de confirmação de entrega
-  codigo_confirmacao TEXT,                    -- código alternativo de confirmação
-  criado_em       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  atualizado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id              UUID NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+  courier_id            UUID NOT NULL REFERENCES couriers(id),
+  tenant_id             UUID NOT NULL REFERENCES tenants(id),
+  status                delivery_status NOT NULL DEFAULT 'pendente',
+  valor_entrega         INTEGER NOT NULL DEFAULT 0, -- em centavos (valor que o entregador recebe)
+  aceito_em             TIMESTAMPTZ,
+  coletado_em           TIMESTAMPTZ,
+  entregue_em           TIMESTAMPTZ,
+  cancelado_em          TIMESTAMPTZ,
+  comprovante_url       TEXT,                       -- foto de confirmação de entrega
+  codigo_confirmacao    TEXT,                       -- código alternativo de confirmação
+  pagarme_transfer_id   TEXT UNIQUE,                -- tr_xxx (estágio 2 — taxa de entrega)
+  criado_em             TIMESTAMPTZ NOT NULL DEFAULT now(),
+  atualizado_em         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_assignments_order ON delivery_assignments(order_id);
@@ -445,29 +452,31 @@ Registro de todos os repasses financeiros realizados pela plataforma.
 
 ```sql
 CREATE TABLE payouts (
-  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tipo                TEXT NOT NULL,          -- 'lojista' ou 'entregador'
-  tenant_id           UUID REFERENCES tenants(id),
-  courier_id          UUID REFERENCES couriers(id),
-  valor_bruto         INTEGER NOT NULL,       -- em centavos (soma dos pedidos)
-  taxa_antecipacao    INTEGER NOT NULL DEFAULT 0, -- em centavos (R$0,75 × pedidos antecipados)
-  valor_liquido       INTEGER NOT NULL,       -- valor_bruto - taxa_antecipacao
-  total_pedidos       INTEGER NOT NULL DEFAULT 0,
-  status              payout_status NOT NULL DEFAULT 'agendado',
-  antecipado          BOOLEAN NOT NULL DEFAULT false,
-  data_referencia     DATE NOT NULL,          -- data dos pedidos agrupados
-  data_prevista       DATE NOT NULL,          -- D+1, D+2 ou D+7
-  stripe_transfer_id  TEXT UNIQUE,            -- tr_xxx após execução
-  erro_mensagem       TEXT,                   -- preenchido se status = 'falhou'
-  processado_em       TIMESTAMPTZ,
-  criado_em           TIMESTAMPTZ NOT NULL DEFAULT now(),
-  atualizado_em       TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tipo                     TEXT NOT NULL,          -- 'lojista' ou 'entregador'
+  tenant_id                UUID REFERENCES tenants(id),
+  courier_id               UUID REFERENCES couriers(id),
+  valor_bruto              INTEGER NOT NULL,       -- em centavos
+  taxa_antecipacao         INTEGER NOT NULL DEFAULT 0, -- taxa Pagar.me da antecipação
+  valor_liquido            INTEGER NOT NULL,       -- valor_bruto - taxa_antecipacao
+  total_pedidos            INTEGER NOT NULL DEFAULT 0,
+  status                   payout_status NOT NULL DEFAULT 'agendado',
+  antecipado               BOOLEAN NOT NULL DEFAULT false,
+  data_referencia          DATE NOT NULL,
+  data_prevista            DATE NOT NULL,
+  pagarme_transfer_id      TEXT UNIQUE,            -- tr_xxx (transfer estágio 2)
+  pagarme_anticipation_id  TEXT UNIQUE,            -- ant_xxx (antecipação manual, opcional)
+  erro_mensagem            TEXT,
+  processado_em            TIMESTAMPTZ,
+  criado_em                TIMESTAMPTZ NOT NULL DEFAULT now(),
+  atualizado_em            TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_payouts_tenant ON payouts(tenant_id);
 CREATE INDEX idx_payouts_courier ON payouts(courier_id);
 CREATE INDEX idx_payouts_status ON payouts(status);
 CREATE INDEX idx_payouts_data_prevista ON payouts(data_prevista);
+CREATE INDEX idx_payouts_pagarme_transfer ON payouts(pagarme_transfer_id);
 ```
 
 -----
@@ -478,16 +487,17 @@ Solicitações de antecipação de repasse feitas pelo lojista.
 
 ```sql
 CREATE TABLE payout_advance_requests (
-  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id         UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
-  payout_id         UUID REFERENCES payouts(id),
-  total_pedidos     INTEGER NOT NULL,
-  taxa_total        INTEGER NOT NULL,         -- total_pedidos × 75 centavos
-  valor_estimado    INTEGER NOT NULL,         -- valor bruto estimado do repasse
-  status            TEXT NOT NULL DEFAULT 'pendente', -- pendente, aprovada, rejeitada, executada
-  solicitado_em     TIMESTAMPTZ NOT NULL DEFAULT now(),
-  processado_em     TIMESTAMPTZ,
-  criado_em         TIMESTAMPTZ NOT NULL DEFAULT now()
+  id                       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id                UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  payout_id                UUID REFERENCES payouts(id),
+  total_pedidos            INTEGER NOT NULL DEFAULT 0,
+  taxa_total               INTEGER NOT NULL,         -- taxa cobrada pelo Pagar.me
+  valor_estimado           INTEGER NOT NULL,         -- valor bruto antecipado
+  pagarme_anticipation_id  TEXT UNIQUE,              -- ant_xxx
+  status                   TEXT NOT NULL DEFAULT 'pendente', -- pendente, aprovada, rejeitada, executada
+  solicitado_em            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  processado_em            TIMESTAMPTZ,
+  criado_em                TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_advance_requests_tenant ON payout_advance_requests(tenant_id);

@@ -64,13 +64,7 @@ do app com a barra de navegação inferior.
           "locationAlwaysAndWhenInUsePermission": "Usamos sua localização para mostrar lojas próximas."
         }
       ],
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.mallora.consumer",
-          "enableGooglePay": true
-        }
-      ]
+      "react-native-webview"
     ],
     "scheme": "mallora-consumer"
   }
@@ -144,19 +138,12 @@ export const supabase = createClient<Database>(
 
 -----
 
-## CONFIGURACAO DO STRIPE REACT NATIVE
+## CONFIGURACAO DO CHECKOUT PAGAR.ME
 
-### lib/stripe.ts
-
-```typescript
-import { StripeProvider } from '@stripe/stripe-react-native'
-
-export const STRIPE_PUBLISHABLE_KEY =
-  process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-
-// Usado no _layout.tsx raiz para envolver o app inteiro
-export { StripeProvider }
-```
+O app do consumidor não usa SDK nativo do Pagar.me. O checkout é
+feito via tokenização de cartão com Pagar.me.js (carregado em WebView)
+ou via exibição de QR code Pix gerado pela Edge Function. Não é
+necessário nenhum provider global de pagamento no `_layout.tsx`.
 
 -----
 
@@ -200,8 +187,6 @@ import { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { StripeProvider } from '@stripe/stripe-react-native'
-import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe'
 import { useAuthStore } from '@/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 
@@ -227,25 +212,23 @@ export default function LayoutRaiz() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
-        <StatusBar style="dark" />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="loja/[slug]"
-            options={{ presentation: 'card' }}
-          />
-          <Stack.Screen
-            name="checkout"
-            options={{ presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="pedido/[id]"
-            options={{ presentation: 'card' }}
-          />
-        </Stack>
-      </StripeProvider>
+      <StatusBar style="dark" />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="loja/[slug]"
+          options={{ presentation: 'card' }}
+        />
+        <Stack.Screen
+          name="checkout"
+          options={{ presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="pedido/[id]"
+          options={{ presentation: 'card' }}
+        />
+      </Stack>
     </GestureHandlerRootView>
   )
 }
@@ -1073,7 +1056,7 @@ Supabase Dashboard
 - [ ] NativeWind configurado com o preset no `tailwind.config.js`
 - [ ] Scheme `mallora-consumer` registrado no `app.json`
 - [ ] URL de callback do Magic Link adicionada no Supabase Dashboard
-- [ ] `StripeProvider` envolvendo o app inteiro no `_layout.tsx` raiz
+- [ ] `react-native-webview` instalado e listado nos plugins do app.json
 - [ ] `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` no `.env.local`
 - [ ] `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` no `.env.local`
 - [ ] Permissão de localização adicionada no `app.json` (usada em telas futuras)

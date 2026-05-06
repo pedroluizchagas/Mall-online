@@ -4,9 +4,11 @@ import { useEffect, useState } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { formatarReais } from '@mallora/lib'
 import type { DadosOnboarding } from '../page'
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 
 interface Props {
   dadosIniciais: Partial<DadosOnboarding>
+  carregando: boolean
   onAvancar: (dados: Partial<DadosOnboarding>) => void
   onVoltar: () => void
 }
@@ -22,15 +24,7 @@ interface Plano {
   tem_antecipacao: boolean
 }
 
-function IconCheck() {
-  return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
-    </svg>
-  )
-}
-
-export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props) {
+export function EtapaEscolhaPlano({ dadosIniciais, carregando, onAvancar, onVoltar }: Props) {
   const [planos, setPlanos] = useState<Plano[]>([])
   const [planoSelecionado, setPlanoSelecionado] = useState(dadosIniciais.plan_id ?? '')
   const [erro, setErro] = useState('')
@@ -57,19 +51,21 @@ export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props)
   }
 
   return (
-    <div>
-      <div className="mb-7">
-        <h2 className="text-2xl font-bold text-brand-800 tracking-tight">
-          Escolha seu plano
+    <div className="w-full">
+      <div className="mb-10 text-center lg:text-left">
+        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 mb-3">
+          Escolha seu Plano
         </h2>
-        <p className="text-gray-400 text-sm mt-1.5">
-          Selecione o plano que melhor atende seu negócio. Você pode mudar depois.
+        <p className="text-zinc-500 text-lg">
+          Selecione o plano ideal para escalar o seu negócio.
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {planos.map(plano => {
-          const selecionado = planoSelecionado === plano.id
+          const isSelected = planoSelecionado === plano.id
+          const isPremium = plano.preco_mensal > 50 // Just a simple logic to highlight a plan
+
           return (
             <button
               key={plano.id}
@@ -78,79 +74,109 @@ export function EtapaEscolhaPlano({ dadosIniciais, onAvancar, onVoltar }: Props)
                 setPlanoSelecionado(plano.id)
                 setErro('')
               }}
-              className="w-full text-left rounded-xl transition-all duration-150"
-              style={{
-                padding: '16px 18px',
-                border: selecionado ? '2px solid #4CAF82' : '2px solid #f0f0f0',
-                background: selecionado ? 'rgba(76,175,130,0.04)' : '#fafafa',
-              }}
+              className={`relative w-full text-left p-6 rounded-2xl border-2 transition-all duration-300 ${
+                isSelected
+                  ? 'border-[#C1F148] bg-[#C1F148]/[0.05] shadow-[0_8px_30px_rgba(193,241,72,0.15)] scale-[1.02]'
+                  : 'border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white'
+              }`}
             >
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-2.5">
-                  {/* Radio visual */}
-                  <div
-                    className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
-                    style={{
-                      border: selecionado ? '2px solid #4CAF82' : '2px solid #d1d5db',
-                    }}
-                  >
-                    {selecionado && (
-                      <div className="w-2 h-2 rounded-full" style={{ background: '#4CAF82' }} />
-                    )}
-                  </div>
-                  <h3 className="font-semibold text-sm text-brand-800">{plano.nome}</h3>
+              {isPremium && (
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-zinc-900 text-[#C1F148] px-3 py-1 text-xs font-semibold rounded-full tracking-wide">
+                  MAIS POPULAR
                 </div>
-                <div className="text-right">
-                  <span className="text-lg font-bold text-brand-800">
-                    {formatarReais(plano.preco_mensal)}
+              )}
+              
+              <div className="mb-6">
+                <h3 className={`font-semibold text-lg mb-2 ${isSelected ? 'text-zinc-900' : 'text-zinc-900'}`}>
+                  {plano.nome}
+                </h3>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-bold text-zinc-900">
+                    {plano.preco_mensal === 0 ? 'Sob Consulta' : formatarReais(plano.preco_mensal)}
                   </span>
-                  <span className="text-xs text-gray-400 block">/mês</span>
+                  {plano.preco_mensal > 0 && <span className="text-zinc-500 font-medium">/mês</span>}
                 </div>
               </div>
 
-              <ul className="space-y-1.5 ml-6">
-                {[
-                  `Até ${plano.max_lojas} ${plano.max_lojas === 1 ? 'loja' : 'lojas'}`,
-                  `Até ${plano.max_produtos} produtos`,
-                  ...(plano.tem_estoque ? ['Controle de estoque'] : []),
-                  ...(plano.tem_relatorios ? ['Relatórios avançados'] : []),
-                  ...(plano.tem_antecipacao ? ['Antecipação de recebíveis'] : []),
-                ].map(item => (
-                  <li
-                    key={item}
-                    className="flex items-center gap-2 text-xs"
-                    style={{ color: selecionado ? '#266f4e' : '#9ca3af' }}
-                  >
-                    <span style={{ color: selecionado ? '#4CAF82' : '#d1d5db' }}>
-                      <IconCheck />
-                    </span>
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-zinc-600 text-sm">
+                    Até <strong className="font-semibold text-zinc-900">{plano.max_lojas}</strong> {plano.max_lojas === 1 ? 'loja' : 'lojas'}
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                    <Check className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="text-zinc-600 text-sm">
+                    Até <strong className="font-semibold text-zinc-900">{plano.max_produtos}</strong> produtos
+                  </span>
+                </div>
+                {plano.tem_estoque && (
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-zinc-600 text-sm">Controle de estoque</span>
+                  </div>
+                )}
+                {plano.tem_relatorios && (
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-zinc-600 text-sm">Relatórios avançados</span>
+                  </div>
+                )}
+                {plano.tem_antecipacao && (
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 rounded-full p-0.5 ${isSelected ? 'bg-[#C1F148] text-zinc-900' : 'bg-gray-100 text-gray-400'}`}>
+                      <Check className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-zinc-600 text-sm">Antecipação de recebíveis</span>
+                  </div>
+                )}
+              </div>
             </button>
           )
         })}
       </div>
 
       {erro && (
-        <p className="text-xs text-red-500 mt-3">{erro}</p>
+        <div className="mb-6 p-4 rounded-xl bg-red-50 text-red-600 text-sm font-medium text-center border border-red-100">
+          {erro}
+        </div>
       )}
 
-      <div className="flex gap-3 mt-6">
+      <div className="pt-4 flex items-center justify-between gap-4">
         <button
           type="button"
           onClick={onVoltar}
-          className="flex-1 border border-gray-200 text-gray-500 py-3 rounded-xl font-medium hover:bg-gray-50 active:scale-[0.98] transition-all duration-150 text-sm"
+          className="flex items-center gap-2 px-6 py-4 rounded-xl font-medium text-zinc-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
         >
+          <ArrowLeft className="w-5 h-5" />
           Voltar
         </button>
         <button
           type="button"
           onClick={handleSubmit}
-          className="flex-1 btn-primary"
+          disabled={carregando}
+          className="flex items-center gap-2 bg-[#C1F148] text-zinc-900 px-8 py-4 rounded-xl font-semibold hover:bg-[#aee623] transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[#C1F148]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
         >
-          Continuar
+          {carregando ? (
+            <>
+              Criando conta...
+              <div className="w-5 h-5 border-2 border-zinc-900 border-t-transparent rounded-full animate-spin" />
+            </>
+          ) : (
+            <>
+              Configurar Conta
+              <ArrowRight className="w-5 h-5" />
+            </>
+          )}
         </button>
       </div>
     </div>

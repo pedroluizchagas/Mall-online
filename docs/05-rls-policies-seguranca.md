@@ -171,7 +171,7 @@ CREATE POLICY "subscriptions_select_admin"
   TO authenticated
   USING (is_admin());
 
--- Modificações apenas via service_role (webhooks Stripe e Edge Functions)
+-- Modificações apenas via service_role (webhooks Pagar.me / Stripe Billing e Edge Functions)
 -- Nenhuma policy de INSERT/UPDATE/DELETE para authenticated
 -- O service_role bypassa RLS por padrão no Supabase
 ```
@@ -452,7 +452,7 @@ CREATE POLICY "orders_update_lojista"
   TO authenticated
   USING (tenant_id = my_tenant_id());
 
--- Atualizações de payment_status apenas via service_role (webhooks Stripe)
+-- Atualizações de payment_status apenas via service_role (webhooks Pagar.me)
 ```
 
 -----
@@ -631,7 +631,7 @@ CREATE POLICY "payouts_select_admin"
   TO authenticated
   USING (is_admin());
 
--- INSERT e UPDATE apenas via service_role (Edge Function daily-payouts)
+-- INSERT e UPDATE apenas via service_role (Edge Functions transfer-to-courier, request-advance, pagarme-webhook)
 ```
 
 -----
@@ -813,11 +813,14 @@ CREATE TRIGGER trigger_limite_produtos
    dentro de Edge Functions no servidor.
 1. Toda Edge Function valida o JWT do usuário antes de executar qualquer
    operação. Requisições sem JWT válido retornam 401.
-1. Webhooks do Stripe são verificados com `stripe.webhooks.constructEvent`
-   usando o `STRIPE_WEBHOOK_SECRET`. Requisições sem assinatura válida
-   retornam 400 sem processar nada.
-1. Campos sensíveis como `stripe_account_id`, `cpf`, `cnpj` e `cnh_numero`
-   nunca são retornados em queries públicas — as policies garantem isso.
+1. Webhooks do Pagar.me são verificados via HMAC SHA-256 com o cabeçalho
+   `X-Hub-Signature` usando `PAGARME_WEBHOOK_SECRET`. Webhooks do Stripe
+   Billing são verificados com `stripe.webhooks.constructEvent` usando
+   `STRIPE_WEBHOOK_SECRET`. Requisições sem assinatura válida retornam 400
+   sem processar nada.
+1. Campos sensíveis como `pagarme_recipient_id`, `stripe_customer_id`,
+   `cpf`, `cnpj` e `cnh_numero` nunca são retornados em queries públicas —
+   as policies garantem isso.
 1. A policy de `courier_locations` garante que o consumidor só enxerga
    a localização do entregador enquanto a entrega está ativa
    (status `aceita` ou `coletada`). Após entrega, a posição deixa de
@@ -828,4 +831,4 @@ CREATE TRIGGER trigger_limite_produtos
 -----
 
 *Arquivo 05 de 29 — Índice Mestre disponível no arquivo 00*
-*Próximo: 06 — Arquitetura Stripe Connect e Modelo Financeiro*
+*Próximo: 06 — Arquitetura Pagar.me e Modelo Financeiro*

@@ -47,21 +47,27 @@ Três fontes de receita:
 MODELO DE PAGAMENTO — NAO ALTERAR
 =============================================================
 
-Mecanismo Stripe: Separate Charges and Transfers
-Merchant of Record: plataforma
-Contas conectadas: Express Accounts (lojistas e entregadores autônomos)
+Gateway de pedidos: Pagar.me (split nativo brasileiro)
+Gateway de assinaturas: Stripe Billing (cobranças mensais dos lojistas)
 
-Fluxo financeiro:
-  Consumidor paga → plataforma recebe tudo
-  Stripe desconta taxa (~3,8% + R$0,39 para cartão BR)
-  Plataforma retém R$1,00 (platform_fee_amount)
-  Entregador recebe taxa de entrega em D+1 (cron daily-payouts)
-  Lojista recebe o restante em D+7 (cron daily-payouts)
-  Lojista pode antecipar para D+2 pagando R$0,75 por pedido
+Fluxo financeiro (pedidos via Pagar.me):
+  Consumidor paga → Pagar.me distribui via split_rules
+  Pagar.me desconta MDR (~2,99% cartão / 0% Pix)
+  Stage 1: split entre Mallora + lojista (delivery fee fica na Mallora)
+  Stage 2: transfer Mallora → recipient entregador ao alocar courier
+  Mallora retém R$1,00 (platform_fee_amount) de cada pedido
 
-Cron de repasses: Supabase Scheduled Edge Function
+Liquidação Pagar.me (crédito): D+29+2 (ou D+15 com antecipação)
+Liquidação Pagar.me (Pix): D+0
+
+Recipients Pagar.me:
+  mallora_recipient_id   → conta Mallora (recebe comissão e taxa entrega)
+  tenant pagarme_recipient_id  → cada lojista
+  courier pagarme_recipient_id → cada entregador (recebe após alocação)
+
+Cron de repasses internos: Supabase Scheduled Edge Function
   daily-payouts roda às 03:00 UTC (00:00 Brasília)
-  Processa três passes: D+1 entregadores, D+7 lojistas, D+2 antecipações
+  Controle interno de status de repasse; liquidação via Pagar.me
 
 =============================================================
 STACK TECNICA — NAO ALTERAR SEM JUSTIFICATIVA
@@ -82,7 +88,7 @@ App consumidor (apps/mobile-consumer):
   React Native 0.74
   Expo Router 3
   NativeWind 4
-  @stripe/stripe-react-native
+  react-native-webview (checkout Pagar.me via webview)
   Expo Notifications
   Expo Location
   react-native-maps
@@ -118,15 +124,15 @@ Existentes (migration_001 aplicada):
   tenants, stores, products, orders, consumers
 
 Novas (migrations 002-005 pendentes):
-  -- migration_002: campos Stripe
-  tenants.stripe_customer_id, stripe_account_id, stripe_onboarding_ok
+  -- migration_002: campos gateways
+  tenants.stripe_customer_id, pagarme_recipient_id, pagarme_onboarding_status
   tenant_subscriptions.stripe_subscription_id, billing_status
-  orders.stripe_payment_intent_id, payment_status, platform_fee_amount
+  orders.pagarme_order_id, pagarme_charge_id, payment_status, platform_fee_amount
   plans.stripe_product_id, stripe_price_id
 
   -- migration_003: entregador
   couriers (id, user_id, tenant_id, tipo, nome, status, online,
-           stripe_account_id, stripe_onboarding_ok)
+           pagarme_recipient_id, pagarme_onboarding_status)
   delivery_assignments (id, order_id, courier_id, tenant_id,
                        status, valor_entrega, comprovante_url)
   courier_locations (id, courier_id UNIQUE, assignment_id,
@@ -135,7 +141,7 @@ Novas (migrations 002-005 pendentes):
   -- migration_004: financeiro
   payouts (id, tipo, tenant_id, courier_id, valor_bruto,
           taxa_antecipacao, valor_liquido, status, antecipado,
-          data_referencia, data_prevista, stripe_transfer_id)
+          data_referencia, data_prevista, pagarme_transfer_id)
   payout_advance_requests (id, tenant_id, total_pedidos,
                           taxa_total, valor_estimado, status)
   push_tokens (id, user_id, courier_id, token, plataforma, app)
@@ -151,15 +157,17 @@ Helpers: my_tenant_id(), my_consumer_id(), my_courier_id(), is_admin()
 EDGE FUNCTIONS EXISTENTES
 =============================================================
 
-onboard-tenant        Cria tenant + loja + Stripe Customer + Express Account
-onboard-courier       Cria Express Account para entregador aprovado
-create-payment-intent Cria PaymentIntent (Separate Charges)
-create-subscription   Cria Stripe Subscription após KYC
-stripe-webhook        Processa todos os eventos Stripe
-daily-payouts         Cron: repasses D+1, D+7 e antecipações D+2
-request-advance       Lojista solicita antecipação de repasse
+onboard-tenant        Cria tenant + loja + recipient Pagar.me + Stripe Customer
+onboard-courier       Cria recipient Pagar.me + solicita link KYC ao entregador
+create-pagarme-order  Cria Order Pagar.me com split_rules (stage 1)
+transfer-to-courier   Executa transfer Pagar.me → recipient entregador (stage 2)
+create-subscription   Cria Stripe Subscription (Billing) após onboarding
+stripe-webhook        Processa eventos Stripe Billing apenas
+pagarme-webhook       Processa eventos Pagar.me (pedidos, recipients, transfers)
+daily-payouts         Cron: controle interno de status de repasses
+request-advance       Lojista solicita antecipação de recebíveis Pagar.me
 notify-order-update   Envia push notifications via Expo Push API
-courier-stripe-info   Retorna saldo e link Express do entregador
+courier-pagarme-info  Retorna saldo do recipient Pagar.me do entregador
 cleanup-locations     Limpa courier_locations com assignment_id desatualizado
 
 =============================================================
@@ -181,9 +189,9 @@ CONVENCOES DE CODIGO — SEGUIR SEMPRE
    createSupabaseClient() → Client Components (browser)
    Nunca usar createSupabaseServer() em Client Components
 
-5. Stripe — todas as operações apenas no servidor
-   Nunca importar ou usar stripe em arquivos client-side
-   Nunca expor STRIPE_SECRET_KEY ao cliente
+5. Pagar.me e Stripe — todas as operações apenas no servidor
+   Nunca importar ou usar chaves de gateway em arquivos client-side
+   Nunca expor PAGARME_API_KEY ou STRIPE_SECRET_KEY ao cliente
 
 6. Valores monetários — SEMPRE em centavos (integer)
    Nunca usar float para dinheiro
@@ -210,7 +218,8 @@ CONVENCOES DE CODIGO — SEGUIR SEMPRE
 10. Segurança:
     Verificar JWT em todas as Edge Functions
     Verificar role admin em todas as operações administrativas
-    Verificar assinatura de webhook Stripe antes de processar
+    Verificar assinatura HMAC de webhook Pagar.me (x-hub-signature) antes de processar
+    Verificar assinatura de webhook Stripe (stripe-signature) antes de processar
     Usar service_role apenas dentro de Edge Functions
 
 =============================================================
@@ -240,7 +249,8 @@ apps/
     components/ui/        Componentes shadcn
     components/dashboard/ Componentes específicos
     lib/supabase/         server.ts, client.ts, middleware.ts
-    lib/stripe/           server.ts
+    lib/stripe/           server.ts (apenas Billing)
+    lib/pagarme/          helpers.ts (pagarmePost, pagarmeGet)
     lib/actions/          Server Actions
     lib/validations/      Schemas Zod
 
@@ -248,7 +258,7 @@ apps/
     app/(auth)/           Login consumidor
     app/(tabs)/           Home, Buscar, Pedidos, Perfil
     app/loja/[slug].tsx   Página da loja
-    app/checkout.tsx      Checkout + Stripe Payment Sheet
+    app/checkout.tsx      Checkout + Pagar.me (webview ou redirect)
     app/pedido/[id].tsx   Acompanhamento em tempo real
     components/           LojaCard, ModalProduto, etc.
     store/                useAuthStore, useCartStore, useOrderStore
@@ -291,7 +301,6 @@ apps/web/.env.local:
 apps/mobile-consumer/.env.local:
   EXPO_PUBLIC_SUPABASE_URL
   EXPO_PUBLIC_SUPABASE_ANON_KEY
-  EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY
   EXPO_PUBLIC_APP_URL
   EXPO_PUBLIC_PROJECT_ID
 
@@ -302,10 +311,12 @@ apps/mobile-courier/.env.local:
   EXPO_PUBLIC_PROJECT_ID
 
 Supabase Edge Functions secrets:
+  PAGARME_API_KEY
+  PAGARME_WEBHOOK_SECRET
+  PAGARME_RECIPIENT_ID_MALLORA
   STRIPE_SECRET_KEY
   STRIPE_WEBHOOK_SECRET
   APP_URL
-  WEBHOOK_SECRET
 
 =============================================================
 FLUXO OBRIGATORIO ANTES DE CADA TAREFA
@@ -326,10 +337,11 @@ FLUXO OBRIGATORIO ANTES DE CADA TAREFA
 
 6. Verificar se o RLS cobre a operação para todos os atores relevantes
 
-7. Para operações Stripe:
-   Verificar se stripe_account_id existe antes de prosseguir
-   Verificar se stripe_onboarding_ok = true antes de transfer
-   Valores sempre em centavos
+7. Para operações Pagar.me:
+   Verificar se pagarme_recipient_id existe antes de prosseguir
+   Verificar se pagarme_onboarding_status = 'active' antes de split/transfer
+   Valores sempre em centavos (integer)
+   Autenticar via HTTP Basic: base64('ak_xxx:') como Authorization header
 
 8. Para operações de localização:
    Verificar assignment_id antes de transmitir
@@ -343,7 +355,7 @@ TAREFA ATUAL
 
 Exemplos:
 
-"Fase 0.2 — Aplicar a migration_002 com os campos Stripe
+"Fase 0.2 — Aplicar a migration_002 com os campos Pagar.me
  no banco. Arquivo de referência: 04 — Migrations SQL"
 
 "Fase 1 — Implementar o wizard de onboarding do lojista.
@@ -352,17 +364,17 @@ Exemplos:
 "Fase 2.4 — Implementar a gestão de pedidos em tempo real
  no dashboard. Arquivo de referência: 12 — Dashboard Pedidos"
 
-"Fase 3 — Implementar o fluxo de checkout com Stripe
- Payment Sheet no app do consumidor.
- Arquivo de referência: 17 — Carrinho e Checkout Stripe"
+"Fase 3 — Implementar o fluxo de checkout com Pagar.me
+ no app do consumidor.
+ Arquivo de referência: 17 — Consumer App Carrinho e Checkout Pagar.me"
 
 "Fase 4 — Implementar o app do entregador: tela de entregas
  disponíveis e entrega ativa.
  Arquivo de referência: 20 — Entregador App Core"
 
 "Bug: a tela de ganhos do entregador não está mostrando o
- saldo Stripe. Verificar a Edge Function courier-stripe-info
- e o componente CardSaldoStripe."
+ saldo. Verificar a Edge Function courier-pagarme-info
+ e o componente CardSaldoPagarme."
 =============================================================
 ```
 

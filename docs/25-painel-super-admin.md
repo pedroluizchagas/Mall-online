@@ -229,7 +229,7 @@ export async function getTenants(filtro?: {
     .from('tenants')
     .select(`
       id, nome_responsavel, email, telefone, ativo,
-      stripe_onboarding_ok, criado_em,
+      pagarme_onboarding_status, criado_em,
       stores (id, nome),
       tenant_subscriptions (
         billing_status, trial_termina_em, periodo_fim,
@@ -298,7 +298,7 @@ export async function getEntregadores(filtro?: {
     .select(`
       id, nome, telefone, cpf, foto_url, cnh_foto_url,
       tipo, status, veiculo_tipo, veiculo_placa,
-      stripe_onboarding_ok, criado_em, aprovado_em,
+      pagarme_onboarding_status, criado_em, aprovado_em,
       tenants (nome_responsavel)
     `)
     .order('criado_em', { ascending: false })
@@ -710,7 +710,7 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
               Assinatura
             </th>
             <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Stripe KYC
+              Pagar.me KYC
             </th>
             <th className="text-left px-4 py-3 text-gray-500 font-medium">
               Cadastro
@@ -762,12 +762,12 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
                 <td className="px-4 py-3">
                   <span
                     className={`text-xs font-medium ${
-                      tenant.stripe_onboarding_ok
+                      tenant.pagarme_onboarding_status === 'active'
                         ? 'text-green-600'
                         : 'text-amber-500'
                     }`}
                   >
-                    {tenant.stripe_onboarding_ok ? 'Verificado' : 'Pendente'}
+                    {tenant.pagarme_onboarding_status === 'active' ? 'Verificado' : 'Pendente'}
                   </span>
                 </td>
 
@@ -921,7 +921,7 @@ export function TabelaEntregadores({
               CNH
             </th>
             <th className="text-left px-4 py-3 text-gray-500 font-medium">
-              Stripe
+              Pagar.me
             </th>
             <th className="text-left px-4 py-3 text-gray-500 font-medium">
               Cadastro
@@ -984,12 +984,12 @@ export function TabelaEntregadores({
               <td className="px-4 py-3">
                 <span
                   className={`text-xs font-medium ${
-                    courier.stripe_onboarding_ok
+                    courier.pagarme_onboarding_status === 'active'
                       ? 'text-green-600'
                       : 'text-amber-500'
                   }`}
                 >
-                  {courier.stripe_onboarding_ok ? 'OK' : 'Pendente'}
+                  {courier.pagarme_onboarding_status === 'active' ? 'OK' : 'Pendente'}
                 </span>
               </td>
 

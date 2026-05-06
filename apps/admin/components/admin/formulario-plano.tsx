@@ -3,6 +3,8 @@
 import { useTransition, useState } from 'react'
 import { criarPlano } from '@/lib/actions/admin'
 
+const inputClass = 'w-full border rounded-md px-3 py-2.5 text-[13px] text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+
 export function FormularioPlano() {
   const [isPending, startTransition] = useTransition()
   const [erro, setErro] = useState<string | null>(null)
@@ -29,20 +31,20 @@ export function FormularioPlano() {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
+          <label className="block text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
             Nome do plano *
           </label>
           <input
             name="nome"
             required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+            className={inputClass}
+            style={{ borderColor: 'var(--line)' }}
             placeholder="Ex: Básico, Pro, Enterprise"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
+          <label className="block text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
             Preço mensal (R$) *
           </label>
           <input
@@ -51,62 +53,46 @@ export function FormularioPlano() {
             min="0"
             step="0.01"
             required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+            className={inputClass}
+            style={{ borderColor: 'var(--line)' }}
             placeholder="0.00"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Descrição</label>
+        <label className="block text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+          Descrição
+        </label>
         <input
           name="descricao"
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
-            focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
+          className={inputClass}
+          style={{ borderColor: 'var(--line)' }}
           placeholder="Descrição breve do plano"
         />
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Máx. lojas</label>
-          <input
-            name="max_lojas"
-            type="number"
-            min="1"
-            defaultValue="1"
-            required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">Máx. produtos</label>
-          <input
-            name="max_produtos"
-            type="number"
-            min="1"
-            defaultValue="30"
-            required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">
-            Máx. entregadores
-          </label>
-          <input
-            name="max_entregadores"
-            type="number"
-            min="1"
-            defaultValue="1"
-            required
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm
-              focus:outline-none focus:ring-2 focus:ring-[#4CAF82]"
-          />
-        </div>
+        {[
+          { name: 'max_lojas', label: 'Máx. lojas', default: '1' },
+          { name: 'max_produtos', label: 'Máx. produtos', default: '30' },
+          { name: 'max_entregadores', label: 'Máx. entregadores', default: '1' },
+        ].map((field) => (
+          <div key={field.name}>
+            <label className="block text-[11px] font-semibold text-ink-3 uppercase tracking-wider mb-1.5">
+              {field.label}
+            </label>
+            <input
+              name={field.name}
+              type="number"
+              min="1"
+              defaultValue={field.default}
+              required
+              className={inputClass}
+              style={{ borderColor: 'var(--line)' }}
+            />
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-wrap gap-4">
@@ -120,18 +106,20 @@ export function FormularioPlano() {
               type="checkbox"
               name={feature.name}
               value="true"
-              className="w-4 h-4 accent-[#4CAF82]"
+              className="w-4 h-4 accent-brick-dk"
             />
-            <span className="text-sm text-gray-600">{feature.label}</span>
+            <span className="text-[13px] text-ink-2">{feature.label}</span>
           </label>
         ))}
       </div>
 
       {erro && (
-        <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{erro}</p>
+        <p className="text-[13px] rounded-md px-3 py-2" style={{ background: '#fde8e4', color: 'var(--err)' }}>
+          {erro}
+        </p>
       )}
       {sucesso && (
-        <p className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
+        <p className="text-[13px] rounded-md px-3 py-2" style={{ background: '#dcfce7', color: 'var(--ok)' }}>
           Plano criado e sincronizado no Stripe.
         </p>
       )}
@@ -139,8 +127,9 @@ export function FormularioPlano() {
       <button
         type="submit"
         disabled={isPending}
-        className="px-4 py-2 bg-[#1A4D3A] text-white text-sm font-medium rounded-lg
-          hover:bg-[#143d2e] disabled:opacity-50 transition-colors"
+        className="px-6 py-2.5 rounded-full text-[13px] font-bold
+          hover:opacity-90 transition-opacity disabled:opacity-50"
+        style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
       >
         {isPending ? 'Criando...' : 'Criar plano'}
       </button>

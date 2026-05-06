@@ -1,4 +1,5 @@
 import { formatarReais } from '@mallora/lib'
+import { Card } from '@/components/ui/card'
 
 interface Props {
   saldo: { disponivel: number; pendente: number } | null
@@ -8,33 +9,27 @@ interface Props {
 export function CardSaldoStripe({ saldo, linkExpress }: Props) {
   if (!saldo) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
-        <h3 className="font-semibold text-[#1A4D3A] mb-2">
-          Conta de recebimentos
-        </h3>
-        <p className="text-sm text-gray-400">
-          Configure sua conta Stripe para ver o saldo.
-        </p>
-      </div>
+      <Card>
+        <h3 className="font-semibold text-ink mb-2">Conta de recebimentos</h3>
+        <p className="text-sm text-ink-3">Configure sua conta Stripe para ver o saldo.</p>
+      </Card>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5">
-      <h3 className="font-semibold text-[#1A4D3A] mb-4">
-        Conta de recebimentos
-      </h3>
+    <Card>
+      <h3 className="font-semibold text-ink mb-4">Conta de recebimentos</h3>
 
       <div className="space-y-3">
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">Disponível para saque</span>
-          <span className="text-lg font-bold text-[#1A4D3A]">
+          <span className="text-sm text-ink-3">Disponível para saque</span>
+          <span className="text-lg font-bold text-ink">
             {formatarReais(saldo.disponivel)}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">Pendente de liberação</span>
-          <span className="text-base font-medium text-gray-600">
+          <span className="text-sm text-ink-3">Pendente de liberação</span>
+          <span className="text-base font-medium text-ink-2">
             {formatarReais(saldo.pendente)}
           </span>
         </div>
@@ -45,16 +40,16 @@ export function CardSaldoStripe({ saldo, linkExpress }: Props) {
           href={linkExpress}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 block w-full text-center bg-[#1A4D3A] text-white
-            py-2.5 rounded-lg text-sm font-medium hover:bg-[#163d2e] transition-colors"
+          className="mt-4 block w-full text-center py-2.5 rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
+          style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
         >
           Acessar conta e sacar
         </a>
       )}
 
-      <p className="text-xs text-gray-400 mt-2 text-center">
+      <p className="text-xs text-ink-3 mt-2 text-center">
         Saques processados pelo Stripe — dados bancários gerenciados com segurança.
       </p>
-    </div>
+    </Card>
   )
 }

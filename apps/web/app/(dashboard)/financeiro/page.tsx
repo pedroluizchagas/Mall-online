@@ -1,3 +1,4 @@
+import { Download } from 'lucide-react'
 import {
   getKpisFinanceiros,
   getFaturamentoDiario,
@@ -13,9 +14,9 @@ import { ListaRepasses } from '@/components/dashboard/lista-repasses'
 import { CardAntecipacao } from '@/components/dashboard/card-antecipacao'
 import { CardSaldoStripe } from '@/components/dashboard/card-saldo-stripe'
 import { TopProdutos } from '@/components/dashboard/top-produtos'
+import { Card } from '@/components/ui/card'
 
 export default async function PaginaFinanceiro() {
-  // Carregar tudo em paralelo
   const [
     kpisHoje,
     kpisMes,
@@ -37,39 +38,44 @@ export default async function PaginaFinanceiro() {
   ])
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-bold text-[#1A4D3A]">Financeiro</h1>
+    <div className="p-9 space-y-6 slide-up">
+      <div className="flex items-end justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="font-display text-[32px] m-0 leading-tight">Financeiro</h1>
+          <div className="text-ink-3 text-[13px] mt-0.5">
+            Conta conectada · Stripe Express ativo
+          </div>
+        </div>
+        <button
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors"
+        >
+          <Download className="w-3.5 h-3.5" /> Extrato
+        </button>
+      </div>
 
-      {/* KPIs do dia e do mês */}
       <KpisFinanceiros kpisHoje={kpisHoje} kpisMes={kpisMes} />
 
-      {/* Gráfico de faturamento dos últimos 30 dias */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
-        <h2 className="font-semibold text-[#1A4D3A] mb-4">
+      <Card>
+        <h2 className="font-bold text-base text-ink mb-4">
           Faturamento — últimos 30 dias
         </h2>
         <GraficoFaturamento dados={faturamentoDiario} />
-      </div>
+      </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Saldo na conta Stripe */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-[18px]">
         <CardSaldoStripe saldo={saldoStripe} linkExpress={linkExpress} />
-
-        {/* Antecipação de repasse */}
         <CardAntecipacao elegibilidade={pedidosElegiveis} />
       </div>
 
-      {/* Top produtos */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
-        <h2 className="font-semibold text-[#1A4D3A] mb-4">
+      <Card>
+        <h2 className="font-bold text-base text-ink mb-4">
           Produtos mais vendidos — últimos 30 dias
         </h2>
         <TopProdutos produtos={topProdutos} />
-      </div>
+      </Card>
 
-      {/* Histórico de repasses */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
-        <h2 className="font-semibold text-[#1A4D3A] mb-4">Repasses</h2>
+      <div>
+        <h2 className="font-bold text-base text-ink mb-4">Histórico de repasses</h2>
         <ListaRepasses
           repasses={repasses.repasses}
           totalPendente={repasses.total_pendente}

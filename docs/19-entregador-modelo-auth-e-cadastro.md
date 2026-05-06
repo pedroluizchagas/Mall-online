@@ -15,7 +15,7 @@ funcionalidades próprias.
 
 Este arquivo cobre o modelo de negócio do entregador, a configuração
 base do app, o fluxo de cadastro e aprovação, e o onboarding da
-conta Stripe Express para recebimento de pagamentos.
+recipient Pagar.me (com KYC e Prova de Vida) para recebimento de pagamentos.
 
 -----
 
@@ -27,15 +27,15 @@ conta Stripe Express para recebimento de pagamentos.
 - Atende exclusivamente pedidos daquele lojista
 - Aprovação feita pelo próprio lojista via dashboard
 - Remuneração combinada diretamente com o lojista (fora da plataforma no MVP)
-- Conta Stripe Express opcional — pode não precisar de repasse pela plataforma
+- Recipient Pagar.me opcional — no MVP pode receber fora da plataforma
 
 ### Tipo 2 — Autonomo da plataforma
 
 - Cadastrado diretamente na plataforma sem vínculo com lojista
 - Atende pedidos de qualquer lojista que use o pool da plataforma
 - Aprovação feita pelo admin via painel super admin
-- Recebe via Stripe Express — repasse automático D+1 pela plataforma
-- Precisa completar KYC no Stripe antes de receber pedidos pagos online
+- Recebe via recipient Pagar.me — transfer da Mallora após alocação no pedido (estágio 2)
+- Precisa completar KYC/Prova de Vida no Pagar.me antes de receber pedidos pagos online
 
 -----
 
@@ -132,14 +132,14 @@ app/
 │
 ├── aguardando-aprovacao.tsx     Tela exibida após cadastro, antes da aprovação
 │
-├── stripe-onboarding.tsx        Redireciona para Stripe Express Onboarding
+├── pagarme-onboarding.tsx       Onboarding KYC Pagar.me (recipient + Prova de Vida)
 │
 └── (tabs)/
     ├── _layout.tsx              Tab bar — bloqueada se não aprovado
     ├── index.tsx                Entregas disponíveis
     ├── ativa.tsx                Entrega em andamento
     ├── ganhos.tsx               Dashboard de ganhos
-    └── perfil.tsx               Perfil e conta Stripe
+    └── perfil.tsx               Perfil e conta Pagar.me
 ```
 
 -----
@@ -185,8 +185,8 @@ interface Courier {
   tipo: 'proprio' | 'autonomo'
   status: 'pendente' | 'aprovado' | 'reprovado' | 'suspenso'
   online: boolean
-  stripe_account_id?: string | null
-  stripe_onboarding_ok: boolean
+  pagarme_recipient_id?: string | null
+  pagarme_onboarding_status: string
   tenant_id?: string | null
 }
 
@@ -311,7 +311,7 @@ export default function LayoutRaiz() {
       .from('couriers')
       .select(
         'id, nome, telefone, foto_url, tipo, status, online, ' +
-        'stripe_account_id, stripe_onboarding_ok, tenant_id'
+        'pagarme_recipient_id, pagarme_onboarding_status, tenant_id'
       )
       .eq('user_id', userId)
       .single()
@@ -325,7 +325,7 @@ export default function LayoutRaiz() {
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="aguardando-aprovacao" />
-        <Stack.Screen name="stripe-onboarding" />
+        <Stack.Screen name="pagarme-onboarding" />
         <Stack.Screen
           name="entrega/[id]"
           options={{ presentation: 'card' }}
@@ -364,8 +364,8 @@ export default function LayoutAuth() {
       return <Redirect href="/aguardando-aprovacao" />
     }
     if (courier.status === 'aprovado') {
-      if (!courier.stripe_onboarding_ok && courier.tipo === 'autonomo') {
-        return <Redirect href="/stripe-onboarding" />
+      if (courier.pagarme_onboarding_status !== 'active' && courier.tipo === 'autonomo') {
+        return <Redirect href="/pagarme-onboarding" />
       }
       return <Redirect href="/(tabs)" />
     }
@@ -851,7 +851,7 @@ export default function EtapaDocumentos() {
         tipo: 'autonomo',
         status: 'pendente',
         online: false,
-        stripe_onboarding_ok: false,
+        pagarme_onboarding_status: false,
       })
       .select()
       .single()
@@ -1035,7 +1035,7 @@ export default function TelaAguardandoAprovacao() {
     const intervalo = setInterval(async () => {
       const { data } = await supabase
         .from('couriers')
-        .select('status, stripe_onboarding_ok')
+        .select('status, pagarme_onboarding_status')
         .eq('id', courier.id)
         .single()
 
@@ -1043,8 +1043,8 @@ export default function TelaAguardandoAprovacao() {
         setCourier({ ...courier, status: 'aprovado' })
         clearInterval(intervalo)
 
-        if (!data.stripe_onboarding_ok && courier.tipo === 'autonomo') {
-          router.replace('/stripe-onboarding')
+        if (data.pagarme_onboarding_status !== 'active' && courier.tipo === 'autonomo') {
+          router.replace('/pagarme-onboarding')
         } else {
           router.replace('/(tabs)')
         }
@@ -1111,9 +1111,14 @@ export default function TelaAguardandoAprovacao() {
 
 -----
 
-## TELA DE STRIPE ONBOARDING
+## TELA DE PAGARME ONBOARDING (KYC)
 
-### app/stripe-onboarding.tsx
+A Edge Function `onboard-courier` cria o recipient Pagar.me e devolve
+um `kyc_url`. O app abre esse URL no navegador externo. Após concluir
+a Prova de Vida, o webhook `recipient.status.changed` atualiza
+`pagarme_onboarding_status = 'active'` no banco.
+
+### app/pagarme-onboarding.tsx
 
 ```typescript
 import { useState } from 'react'
@@ -1128,12 +1133,12 @@ import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 
-export default function TelaStripeOnboarding() {
+export default function TelaKycPagarme() {
   const { courier, setCourier } = useAuthStore()
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
-  async function handleIniciarOnboarding() {
+  async function handleIniciarKyc() {
     setCarregando(true)
     setErro(null)
 
@@ -1159,12 +1164,14 @@ export default function TelaStripeOnboarding() {
     setCarregando(false)
 
     if (!resposta.ok) {
-      setErro(resultado.error ?? 'Erro ao iniciar configuração.')
+      setErro(resultado.error ?? 'Erro ao iniciar verificação.')
       return
     }
 
-    // Abrir URL do Stripe no navegador externo
-    await Linking.openURL(resultado.stripe_onboarding_url)
+    // Abrir link KYC do Pagar.me no navegador externo
+    if (resultado.kyc_url) {
+      await Linking.openURL(resultado.kyc_url)
+    }
   }
 
   async function handleVerificarStatus() {
@@ -1174,17 +1181,17 @@ export default function TelaStripeOnboarding() {
 
     const { data } = await supabase
       .from('couriers')
-      .select('stripe_onboarding_ok')
+      .select('pagarme_onboarding_status')
       .eq('id', courier.id)
       .single()
 
     setCarregando(false)
 
-    if (data?.stripe_onboarding_ok) {
-      setCourier({ ...courier, stripe_onboarding_ok: true })
+    if (data?.pagarme_onboarding_status === 'active') {
+      setCourier({ ...courier, pagarme_onboarding_status: 'active' })
       router.replace('/(tabs)')
     } else {
-      setErro('Configuração ainda não concluída. Verifique se completou todos os passos no Stripe.')
+      setErro('Verificação ainda não concluída. Complete todos os passos no Pagar.me e aguarde a análise.')
     }
   }
 
@@ -1200,8 +1207,8 @@ export default function TelaStripeOnboarding() {
       </Text>
 
       <Text className="text-gray-500 text-center leading-6 mb-8">
-        Para receber seus pagamentos, você precisa configurar sua conta
-        bancária na Stripe. O processo é rápido e seguro.
+        Para receber suas entregas, você precisa verificar sua identidade
+        e cadastrar sua conta bancária no Pagar.me. O processo é rápido e seguro.
       </Text>
 
       <View className="bg-white rounded-2xl p-5 w-full mb-6">
@@ -1212,7 +1219,7 @@ export default function TelaStripeOnboarding() {
           {[
             'CPF e dados pessoais',
             'Conta bancária (PIX ou conta corrente)',
-            'Celular para verificação',
+            'Selfie para Prova de Vida (Pagar.me KYC)',
           ].map((item, i) => (
             <View key={i} className="flex-row items-center gap-2">
               <View className="w-1.5 h-1.5 rounded-full bg-[#4CAF82]" />
@@ -1229,7 +1236,7 @@ export default function TelaStripeOnboarding() {
       )}
 
       <TouchableOpacity
-        onPress={handleIniciarOnboarding}
+        onPress={handleIniciarKyc}
         disabled={carregando}
         className="w-full bg-[#1A4D3A] py-4 rounded-2xl items-center
           mb-3 disabled:opacity-50"
@@ -1239,7 +1246,7 @@ export default function TelaStripeOnboarding() {
           <ActivityIndicator color="#fff" />
         ) : (
           <Text className="text-white font-bold text-base">
-            Configurar conta de recebimentos
+            Iniciar verificação (KYC)
           </Text>
         )}
       </TouchableOpacity>
@@ -1251,13 +1258,13 @@ export default function TelaStripeOnboarding() {
         activeOpacity={0.75}
       >
         <Text className="text-[#4CAF82] font-semibold text-sm">
-          Já configurei — verificar status
+          Já concluí — verificar status
         </Text>
       </TouchableOpacity>
 
       <Text className="text-xs text-gray-400 text-center mt-6 leading-5">
-        Seus dados bancários são armazenados com segurança pela Stripe.
-        A plataforma não tem acesso a essas informações.
+        Seus dados bancários são armazenados com segurança pelo Pagar.me.
+        A plataforma não tem acesso direto às informações da sua conta bancária.
       </Text>
     </View>
   )
@@ -1312,10 +1319,10 @@ CREATE POLICY "leitura_admin_courier"
 - [ ] URL de callback `mallora-courier://auth/callback` adicionada no Supabase Dashboard
 - [ ] Edge Function `onboard-courier` deployada (arquivo 07)
 - [ ] Polling de aprovação na tela `aguardando-aprovacao` — intervalo de 15 segundos
-- [ ] Entregador próprio pode pular o Stripe Onboarding no MVP (sem repasse online)
+- [ ] Entregador próprio pode pular o Pagar.me Onboarding no MVP (sem repasse online)
 - [ ] `useCadastroStore` limpo após conclusão do cadastro
-- [ ] Webhook `account.updated` do Stripe atualiza `stripe_onboarding_ok` no banco
-- [ ] Layout `(auth)` redireciona corretamente conforme status: pendente, aprovado sem Stripe, aprovado com Stripe
+- [ ] Webhook `recipient.status.changed` do Pagar.me atualiza `pagarme_onboarding_status` no banco
+- [ ] Layout `(auth)` redireciona corretamente conforme status: pendente, aprovado sem KYC, aprovado com KYC ativo
 
 -----
 

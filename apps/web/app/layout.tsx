@@ -1,17 +1,23 @@
-import type { Metadata } from 'next'
-import { DM_Sans } from 'next/font/google'
 import './globals.css'
+import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 
-const dmSans = DM_Sans({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-dm-sans',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-jakarta',
   display: 'swap',
 })
 
-export const metadata: Metadata = {
-  title: 'Mallora — Painel do Lojista',
-  description: 'Gerencie sua loja, pedidos e financeiro na plataforma Mallora.',
+const jetbrains = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
+  display: 'swap',
+})
+
+export const metadata = {
+  title: 'Mallevo — Painel do Lojista',
+  description: 'O shopping digital de Divinópolis',
 }
 
 export default function RootLayout({
@@ -20,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR">
-      <body className={`${dmSans.variable} antialiased`}>{children}</body>
+    <html lang="pt-BR" className={`${jakarta.variable} ${jetbrains.variable}`}>
+      <body>{children}</body>
     </html>
   )
 }

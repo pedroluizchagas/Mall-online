@@ -75,8 +75,8 @@ export default function LayoutTabs() {
 
   if (!user || !courier) return <Redirect href="/(auth)/entrar" />
   if (courier.status === 'pendente') return <Redirect href="/aguardando-aprovacao" />
-  if (courier.status === 'aprovado' && !courier.stripe_onboarding_ok && courier.tipo === 'autonomo') {
-    return <Redirect href="/stripe-onboarding" />
+  if (courier.status === 'aprovado' && courier.pagarme_onboarding_status !== 'active' && courier.tipo === 'autonomo') {
+    return <Redirect href="/pagarme-onboarding" />
   }
   if (['reprovado', 'suspenso'].includes(courier.status)) {
     return <Redirect href="/(auth)/entrar" />

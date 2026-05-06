@@ -2,21 +2,14 @@
 
 import { useTransition } from 'react'
 import { atualizarStatusTenant } from '@/lib/actions/admin'
+import { ExternalLink, ToggleLeft, ToggleRight } from 'lucide-react'
 
-const CORES_BILLING: Record<string, string> = {
-  trial: 'bg-blue-100 text-blue-700',
-  ativa: 'bg-green-100 text-green-700',
-  em_atraso: 'bg-amber-100 text-amber-700',
-  cancelada: 'bg-red-100 text-red-700',
-  suspensa: 'bg-gray-100 text-gray-700',
-}
-
-const LABELS_BILLING: Record<string, string> = {
-  trial: 'Trial',
-  ativa: 'Ativa',
-  em_atraso: 'Em atraso',
-  cancelada: 'Cancelada',
-  suspensa: 'Suspensa',
+const BADGES: Record<string, { bg: string; text: string; label: string }> = {
+  trial:     { bg: 'bg-sky/10',     text: 'text-sky',     label: 'Trial' },
+  ativa:     { bg: 'bg-ok/10',      text: 'text-ok',      label: 'Ativa' },
+  em_atraso: { bg: 'bg-warn/10',    text: 'text-warn',    label: 'Em atraso' },
+  cancelada: { bg: 'bg-err/10',     text: 'text-err',     label: 'Cancelada' },
+  suspensa:  { bg: 'bg-bg-3',       text: 'text-ink-3',   label: 'Suspensa' },
 }
 
 export function TabelaTenants({ tenants }: { tenants: any[] }) {
@@ -30,86 +23,101 @@ export function TabelaTenants({ tenants }: { tenants: any[] }) {
 
   if (tenants.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400">
-        Nenhum lojista encontrado.
+      <div className="bg-bg rounded-lg border border-line py-16 text-center" style={{ boxShadow: 'var(--shadow-sm)' }}>
+        <p className="text-ink-3 text-[13px]">Nenhum lojista encontrado.</p>
       </div>
     )
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-      <table className="w-full text-sm">
+    <div className="bg-bg rounded-lg border border-line overflow-hidden" style={{ boxShadow: 'var(--shadow-sm)' }}>
+      <table className="w-full text-[13px]">
         <thead>
-          <tr className="border-b border-gray-100">
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">Lojista</th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">Plano</th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">Assinatura</th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">Stripe KYC</th>
-            <th className="text-left px-4 py-3 text-gray-500 font-medium">Cadastro</th>
-            <th className="px-4 py-3"></th>
+          <tr className="border-b border-line bg-bg-2">
+            <th className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
+              Lojista
+            </th>
+            <th className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
+              Plano
+            </th>
+            <th className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
+              Assinatura
+            </th>
+            <th className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
+              Stripe KYC
+            </th>
+            <th className="text-left px-5 py-3.5 text-[10px] font-semibold text-ink-3 uppercase tracking-wider">
+              Cadastro
+            </th>
+            <th className="px-5 py-3.5" />
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-line">
           {tenants.map((tenant: any) => {
             const sub = tenant.tenant_subscriptions?.[0]
             const plano = sub?.plans
+            const badge = sub
+              ? (BADGES[sub.billing_status] ?? { bg: 'bg-bg-3', text: 'text-ink-3', label: sub.billing_status })
+              : null
 
             return (
-              <tr key={tenant.id} className="border-b border-gray-50 hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <p className="font-medium text-gray-800">{tenant.nome_responsavel}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{tenant.email}</p>
+              <tr key={tenant.id} className="hover:bg-bg-2 transition-colors">
+                <td className="px-5 py-4">
+                  <p className="font-semibold text-ink">{tenant.nome_responsavel}</p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">{tenant.email}</p>
                   {tenant.stores?.[0] && (
-                    <p className="text-xs text-gray-400">{tenant.stores[0].nome}</p>
+                    <p className="text-[11px] text-brick-dk mt-0.5">{tenant.stores[0].nome}</p>
                   )}
                 </td>
 
-                <td className="px-4 py-3 text-gray-700">{plano?.nome ?? '—'}</td>
+                <td className="px-5 py-4 text-ink-2">{plano?.nome ?? '—'}</td>
 
-                <td className="px-4 py-3">
-                  {sub ? (
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium
-                        ${CORES_BILLING[sub.billing_status] ?? 'bg-gray-100 text-gray-600'}`}
-                    >
-                      {LABELS_BILLING[sub.billing_status] ?? sub.billing_status}
+                <td className="px-5 py-4">
+                  {badge ? (
+                    <span className={`text-[11px] px-2.5 py-1 rounded-full font-bold ${badge.bg} ${badge.text}`}>
+                      {badge.label}
                     </span>
                   ) : (
-                    <span className="text-gray-400 text-xs">Sem assinatura</span>
+                    <span className="text-ink-3 text-[13px]">Sem assinatura</span>
                   )}
                 </td>
 
-                <td className="px-4 py-3">
-                  <span className={`text-xs font-medium ${
-                    tenant.stripe_onboarding_ok ? 'text-green-600' : 'text-amber-500'
+                <td className="px-5 py-4">
+                  <span className={`text-[11px] font-bold ${
+                    tenant.stripe_onboarding_ok ? 'text-ok' : 'text-warn'
                   }`}>
-                    {tenant.stripe_onboarding_ok ? 'Verificado' : 'Pendente'}
+                    {tenant.stripe_onboarding_ok ? '✓ Verificado' : '⏳ Pendente'}
                   </span>
                 </td>
 
-                <td className="px-4 py-3 text-xs text-gray-400">
+                <td className="px-5 py-4 text-[13px] text-ink-3">
                   {new Date(tenant.criado_em).toLocaleDateString('pt-BR')}
                 </td>
 
-                <td className="px-4 py-3">
+                <td className="px-5 py-4">
                   <div className="flex items-center gap-2">
                     <a
                       href={`/admin/lojistas/${tenant.id}`}
-                      className="text-xs text-[#4CAF82] hover:underline"
+                      className="flex items-center gap-1 text-[11px] text-brick-dk hover:text-ink font-medium transition-colors"
                     >
+                      <ExternalLink size={12} />
                       Ver
                     </a>
                     <button
                       onClick={() => handleToggle(tenant.id, tenant.ativo)}
                       disabled={isPending}
-                      className={`text-xs px-2 py-1 rounded-lg border transition-colors
-                        disabled:opacity-50 ${
+                      className={`flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-full border font-bold
+                        transition-all disabled:opacity-50 ${
                         tenant.ativo
-                          ? 'border-red-200 text-red-600 hover:bg-red-50'
-                          : 'border-green-200 text-green-600 hover:bg-green-50'
+                          ? 'border-err/30 text-err hover:bg-err/5'
+                          : 'border-ok/30 text-ok hover:bg-ok/5'
                       }`}
                     >
-                      {tenant.ativo ? 'Suspender' : 'Reativar'}
+                      {tenant.ativo ? (
+                        <><ToggleRight size={12} /> Suspender</>
+                      ) : (
+                        <><ToggleLeft size={12} /> Reativar</>
+                      )}
                     </button>
                   </div>
                 </td>

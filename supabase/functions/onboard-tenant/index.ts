@@ -1,6 +1,6 @@
 // supabase/functions/onboard-tenant/index.ts
 import Stripe from 'https://esm.sh/stripe@14'
-import { getSupabaseAdmin, getAuthenticatedUser, corsHeaders } from '../helpers/auth.ts'
+import { getSupabaseAdmin, corsHeaders } from '../helpers/auth.ts'
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   apiVersion: '2024-04-10',
@@ -12,33 +12,83 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const user = await getAuthenticatedUser(req)
     const body = await req.json()
     const {
       nome_responsavel,
       cpf_cnpj,
       telefone,
       email,
+      senha,
       nome_loja,
       categoria_id,
       endereco,
       plan_id,
     } = body
 
-    const supabase = getSupabaseAdmin()
-
-    // Verificar se tenant já existe para este usuário
-    const { data: tenantExistente } = await supabase
-      .from('tenants')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (tenantExistente) {
+    if (!email || !senha) {
       return new Response(
-        JSON.stringify({ error: 'Lojista já cadastrado' }),
+        JSON.stringify({ error: 'Email e senha são obrigatórios' }),
         { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
       )
+    }
+
+    const supabase = getSupabaseAdmin()
+
+    let userId: string
+    let isNewUser = false
+
+    // Tentar criar o usuário via admin SDK — sem enviar e-mail de confirmação
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password: senha,
+      email_confirm: true,
+      user_metadata: { nome: nome_responsavel, role: 'tenant' },
+    })
+
+    if (authError) {
+      if (
+        authError.message.includes('already been registered') ||
+        authError.message.includes('already registered')
+      ) {
+        // E-mail já existe em auth.users — verificar se é um usuário órfão (sem tenant)
+        const { data: existingUserId, error: rpcError } = await supabase.rpc(
+          'get_user_id_by_email',
+          { p_email: email }
+        )
+
+        if (rpcError || !existingUserId) {
+          return new Response(
+            JSON.stringify({ error: 'Este e-mail já está cadastrado. Faça login na plataforma.' }),
+            { status: 409, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
+          )
+        }
+
+        const { data: tenantExistente } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('user_id', existingUserId)
+          .single()
+
+        if (tenantExistente) {
+          return new Response(
+            JSON.stringify({ error: 'Este e-mail já está cadastrado. Faça login na plataforma.' }),
+            { status: 409, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
+          )
+        }
+
+        // Usuário órfão: auth criado mas tenant não. Atualizar senha e continuar.
+        await supabase.auth.admin.updateUserById(existingUserId, {
+          password: senha,
+          user_metadata: { nome: nome_responsavel, role: 'tenant' },
+        })
+        userId = existingUserId
+        isNewUser = false
+      } else {
+        throw authError
+      }
+    } else {
+      userId = authData.user.id
+      isNewUser = true
     }
 
     // Buscar plano selecionado
@@ -50,58 +100,86 @@ Deno.serve(async (req) => {
       .single()
 
     if (planoError || !plano) {
+      if (isNewUser) await supabase.auth.admin.deleteUser(userId)
       throw new Error('Plano não encontrado ou inativo')
     }
 
-    // Criar Stripe Customer (para Billing — assinatura mensal)
-    const stripeCustomer = await stripe.customers.create({
-      email,
-      name: nome_responsavel,
-      phone: telefone,
-      metadata: { user_id: user.id },
-    })
+    // Criar Stripe Customer (para billing) e Express Account (para repasses)
+    let stripeCustomerId: string
+    let stripeAccountId: string
+    try {
+      const stripeCustomer = await stripe.customers.create({
+        email,
+        name: nome_responsavel,
+        phone: telefone,
+        metadata: { user_id: userId },
+      })
+      stripeCustomerId = stripeCustomer.id
 
-    // Criar Express Account (para receber repasses)
-    const stripeAccount = await stripe.accounts.create({
-      type: 'express',
-      country: 'BR',
-      email,
-      capabilities: {
-        transfers: { requested: true },
-      },
-      metadata: { user_id: user.id },
-    })
+      const stripeAccount = await stripe.accounts.create({
+        type: 'express',
+        country: 'BR',
+        email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+        metadata: { user_id: userId },
+      })
+      stripeAccountId = stripeAccount.id
+    } catch (stripeError) {
+      if (isNewUser) await supabase.auth.admin.deleteUser(userId)
+      throw stripeError
+    }
 
-    // Criar tenant
-    const slug = nome_loja
+    // Gerar slug limpo a partir do nome da loja
+    const baseSlug = nome_loja
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
 
+    // Resolver colis\u00e3o de slug incrementando sufixo num\u00e9rico
+    async function resolverSlugDisponivel(base: string): Promise<string> {
+      const { data: existing } = await supabase
+        .from('stores')
+        .select('slug')
+        .like('slug', `${base}%`)
+
+      const slugsExistentes = new Set((existing ?? []).map((r: { slug: string }) => r.slug))
+      if (!slugsExistentes.has(base)) return base
+
+      let i = 2
+      while (slugsExistentes.has(`${base}-${i}`)) i++
+      return `${base}-${i}`
+    }
+
+    const storeSlug = await resolverSlugDisponivel(baseSlug)
+
     const { data: tenant, error: tenantError } = await supabase
       .from('tenants')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         nome_responsavel,
         cpf_cnpj,
         telefone,
         email,
-        slug: `${slug}-${Date.now()}`,
-        stripe_customer_id: stripeCustomer.id,
-        stripe_account_id: stripeAccount.id,
+        slug: `${baseSlug}-${Date.now()}`,
+        stripe_customer_id: stripeCustomerId,
+        stripe_account_id: stripeAccountId,
         stripe_onboarding_ok: false,
       })
       .select('id')
       .single()
 
-    if (tenantError) throw tenantError
+    if (tenantError) {
+      if (isNewUser) await supabase.auth.admin.deleteUser(userId)
+      throw tenantError
+    }
 
-    // Criar assinatura (trial) — subscription criada em create-subscription
-    // após KYC do Stripe ser concluído
     const trialTerminaEm = new Date()
-    trialTerminaEm.setDate(trialTerminaEm.getDate() + 14)
+    trialTerminaEm.setDate(trialTerminaEm.getDate() + 15)
 
     await supabase.from('tenant_subscriptions').insert({
       tenant_id: tenant.id,
@@ -111,35 +189,22 @@ Deno.serve(async (req) => {
       stripe_price_id: plano.stripe_price_id,
     })
 
-    // Criar primeira loja (bypassa o trigger de limite via service_role)
     const { data: store, error: storeError } = await supabase
       .from('stores')
       .insert({
         tenant_id: tenant.id,
         nome: nome_loja,
-        slug: `${slug}-${Date.now()}`,
+        slug: storeSlug,
         endereco,
-        global_category_id: categoria_id || null,
+        categoria_id: categoria_id ?? null,
       })
       .select('id')
       .single()
 
     if (storeError) throw storeError
 
-    // Gerar link de onboarding da Express Account
-    const accountLink = await stripe.accountLinks.create({
-      account: stripeAccount.id,
-      refresh_url: `${Deno.env.get('APP_URL')}/onboarding/stripe/retry`,
-      return_url: `${Deno.env.get('APP_URL')}/onboarding/stripe/callback`,
-      type: 'account_onboarding',
-    })
-
     return new Response(
-      JSON.stringify({
-        tenant_id: tenant.id,
-        store_id: store.id,
-        stripe_onboarding_url: accountLink.url,
-      }),
+      JSON.stringify({ tenant_id: tenant.id, store_id: store.id, store_slug: storeSlug }),
       { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
     )
   } catch (error) {

@@ -9,8 +9,9 @@
 ## VISÃO GERAL DA ARQUITETURA
 
 A plataforma é composta por três aplicações frontend independentes que compartilham
-um único backend Supabase. Toda comunicação com serviços externos (Stripe, push
-notifications) passa obrigatoriamente pelo backend — nunca pelo cliente.
+um único backend Supabase. Toda comunicação com serviços externos (Pagar.me,
+Stripe Billing, push notifications) passa obrigatoriamente pelo backend — nunca
+pelo cliente.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -34,14 +35,21 @@ notifications) passa obrigatoriamente pelo backend — nunca pelo cliente.
 │                                                                     │
 │  RLS por ator: lojista / consumidor / entregador / admin            │
 └──────────────────┬──────────────────────────┬───────────────────────┘
-                   │                          │
-       ┌───────────▼──────────┐   ┌───────────▼──────────┐
-       │       STRIPE         │   │   EXPO PUSH API       │
-       │                      │   │                       │
-       │  Connect (Express)   │   │  Notificações push    │
-       │  Billing             │   │  iOS e Android        │
-       │  Webhooks            │   │                       │
-       └──────────────────────┘   └───────────────────────┘
+                   │                          │            │
+       ┌───────────▼──────────┐   ┌───────────▼─────────┐  │
+       │      PAGAR.ME        │   │   STRIPE BILLING    │  │
+       │                      │   │                     │  │
+       │  Orders + split      │   │  Customer + Sub     │  │
+       │  Recipients (KYC)    │   │  Webhooks           │  │
+       │  Transfers           │   │  (apenas assinatura)│  │
+       │  Webhooks (HMAC)     │   │                     │  │
+       └──────────────────────┘   └─────────────────────┘  │
+                                                            │
+                                  ┌─────────────────────┐  │
+                                  │   EXPO PUSH API     │◄─┘
+                                  │  Notificações push  │
+                                  │  iOS e Android      │
+                                  └─────────────────────┘
 ```
 
 -----
@@ -55,21 +63,35 @@ entre lojista, consumidor e entregador é feita via Row Level Security (RLS),
 não via projetos separados. Isso reduz custo operacional, simplifica deploys
 e mantém consistência dos dados em tempo real.
 
-### Separate Charges and Transfers no Stripe
+### Pagar.me como gateway de pedidos
 
-O modelo de split de pagamento escolhido é Separate Charges and Transfers
-porque a plataforma precisa de dois destinatários por transação (lojista e
-entregador). O Destination Charge suporta apenas um destinatário por transação.
-Com Separate Charges and Transfers a plataforma recebe tudo primeiro e depois
-faz transfers individuais para cada conta Express — o que também facilita o
-controle de antecipação e o tratamento de estornos.
+O Pagar.me processa todos os pagamentos de pedidos. A escolha sobre Stripe
+Connect deve-se a três fatores: (1) suporte nativo a Pix; (2) split com
+recebedores em contas bancárias brasileiras (Stripe Connect não suporta);
+(3) liquidação automática conforme calendário do método, com antecipação
+contratada por recipient via API.
 
-### Repasse por cron (não atômico por transação)
+A plataforma é Merchant of Record: na criação da Order, define `split_rules`
+com Mallora e lojista (estágio 1). Após o lojista alocar um entregador
+autônomo, a Edge Function executa um Transfer da Mallora para o recipient
+do entregador (estágio 2). Esse modelo de dois estágios resolve a
+particularidade operacional de o motoboy ser conhecido apenas após o
+checkout do consumidor.
 
-Os repasses são processados por um cron job (Supabase Scheduled Edge Function)
-que roda toda meia-noite. Isso simplifica a arquitetura, permite agrupar
-múltiplos pedidos num único transfer e facilita o tratamento de cancelamentos
-que podem ocorrer após o pagamento.
+### Stripe Billing apenas para assinatura
+
+A mensalidade do lojista (R$X via planos Básico/Profissional/Premium)
+permanece no Stripe Billing — Customer + Subscription com cobrança
+recorrente. Não há sobreposição com Pagar.me: as duas integrações
+operam em domínios separados.
+
+### Liquidação automática (sem cron próprio)
+
+O Pagar.me opera a liquidação automaticamente conforme o calendário do
+método de pagamento (Pix D+0, cartão D+29+2 ou D+15 com antecipação) e
+o plano configurado por recipient. A Mallora não opera mais um cron
+diário de repasses — apenas registra as transferências do estágio 2 e
+as antecipações manuais na tabela `payouts` para fins de auditoria.
 
 ### Next.js App Router com Server Components
 
@@ -105,7 +127,7 @@ em npm.
 |Tailwind CSS   |3.x              |Estilização         |
 |shadcn/ui      |latest           |Componentes UI      |
 |Supabase JS    |2.x              |Cliente banco/auth  |
-|Stripe JS      |latest           |Cliente pagamentos  |
+|Stripe JS      |latest           |Customer Portal (Billing)|
 |React Hook Form|7.x              |Formulários         |
 |Zod            |3.x              |Validação de schemas|
 |Zustand        |4.x              |Estado global leve  |
@@ -121,7 +143,6 @@ em npm.
 |Expo Router                |3.x   |Navegação         |
 |NativeWind                 |4.x   |Tailwind para RN  |
 |Supabase JS                |2.x   |Cliente banco/auth|
-|@stripe/stripe-react-native|latest|Payment Sheet     |
 |Expo Notifications         |latest|Push notifications|
 |React Hook Form            |7.x   |Formulários       |
 |Zod                        |3.x   |Validação         |
@@ -150,8 +171,8 @@ em npm.
 |Supabase Auth        |Autenticação dos 4 atores                   |
 |Supabase Storage     |Fotos de produtos, logos, comprovantes      |
 |Supabase Realtime    |Pedidos ao vivo, localização do entregador  |
-|Edge Functions (Deno)|Lógica de negócio, integrações Stripe       |
-|Scheduled Functions  |Cron de repasses (daily-payouts, meia-noite)|
+|Edge Functions (Deno)|Lógica de negócio, integrações Pagar.me e Stripe Billing|
+|Scheduled Functions  |Tarefas de manutenção e reconciliação eventual           |
 |Row Level Security   |Isolamento de dados por ator e tenant       |
 
 ### Packages Compartilhados
@@ -167,7 +188,8 @@ em npm.
 |--------------|------------------|-----------------------------|
 |Vercel Pro    |$20/mês           |Hosting do Next.js, CI/CD    |
 |Supabase Pro  |$25/mês           |Backend completo em produção |
-|Stripe Connect|Pay-as-you-go     |Pagamentos e repasses        |
+|Pagar.me      |Pay-as-you-go     |Pagamentos de pedidos, split, liquidação |
+|Stripe Billing|Pay-as-you-go     |Assinatura mensal do lojista |
 |Expo EAS      |Free/Pay-as-you-go|Build e distribuição dos apps|
 |Expo Push     |Gratuito          |Notificações push            |
 
@@ -192,7 +214,8 @@ em npm.
 │   │   │   └── dashboard/          Componentes específicos
 │   │   ├── lib/
 │   │   │   ├── supabase/           server.ts, client.ts, middleware.ts
-│   │   │   ├── stripe/             helpers Stripe server-side
+│   │   │   ├── pagarme/            helpers Pagar.me server-side
+│   │   │   ├── stripe/             helpers Stripe Billing server-side
 │   │   │   ├── actions/            Server Actions
 │   │   │   └── validations/        Schemas Zod
 │   │   └── public/
@@ -235,9 +258,11 @@ em npm.
 │   └── functions/                  Edge Functions (Deno)
 │       ├── onboard-tenant/
 │       ├── onboard-courier/
-│       ├── create-payment-intent/
-│       ├── stripe-webhook/
-│       ├── daily-payouts/
+│       ├── create-pagarme-order/
+│       ├── transfer-to-courier/
+│       ├── pagarme-webhook/
+│       ├── stripe-webhook/         (apenas Stripe Billing)
+│       ├── create-subscription/
 │       ├── request-advance/
 │       └── notify-order-update/
 │
@@ -273,24 +298,29 @@ App do entregador (Expo Location)
       → Dashboard do lojista recebe coordenadas e atualiza mini-mapa
 ```
 
-### Pagamento e repasse
+### Pagamento e split
 
 ```
 Consumidor finaliza checkout
-      → App chama Edge Function create-payment-intent
-      → Edge Function cria PaymentIntent no Stripe (server-side)
-      → App abre Stripe Payment Sheet com o client_secret
-      → Consumidor confirma pagamento
-      → Stripe dispara webhook payment_intent.succeeded
-      → Edge Function stripe-webhook atualiza payment_status no banco
+      → App chama Edge Function create-pagarme-order
+      → Edge Function cria Order no Pagar.me com split estágio 1
+        (Mallora + lojista; taxa de entrega temporariamente na Mallora)
+      → Resposta: qr_code (Pix) ou status (cartão)
+      → App exibe QR code ou confirmação de cartão
+      → Consumidor paga
+      → Pagar.me dispara webhook order.paid (HMAC SHA-256)
+      → Edge Function pagarme-webhook atualiza payment_status no banco
       → Pedido confirmado
 
-Cron meia-noite (daily-payouts)
-      → Busca pedidos entregues do dia com payment_status = 'paid'
-      → Para cada entregador autônomo: Transfer Stripe D+1
-      → Para cada lojista: agrupa pedidos, calcula valor, agenda Transfer D+7
-      → Para lojistas com antecipação aprovada: Transfer D+2 com desconto R$0,75/pedido
-      → Registra em tabela payouts
+Lojista aceita e atribui entregador autônomo
+      → Edge Function transfer-to-courier
+      → POST /core/v5/transfers (Mallora → recipient do entregador)
+      → Registra em payouts (estágio 2)
+
+Liquidação automática (gerenciada pelo Pagar.me)
+      → Pix: D+0 para o saldo do recipient; transferência conforme cronograma
+      → Cartão: D+29+2 padrão; D+15 com antecipação automática habilitada
+      → Antecipação manual via Edge Function request-advance
 ```
 
 -----
@@ -318,7 +348,7 @@ Detalhes completos das políticas estão no arquivo 05.
 1. Tipos gerados do Supabase em `packages/types/supabase.ts`
 1. Server Components por padrão no Next.js; Client Components apenas quando necessário
 1. Mutations via Server Actions — não criar rotas API para operações simples
-1. Toda operação Stripe acontece no servidor — nunca expor chaves no cliente
+1. Toda operação Pagar.me e Stripe Billing acontece no servidor — nunca expor chaves secretas no cliente
 1. Valores monetários sempre em centavos (integer) — nunca float
 1. Nomes de variáveis de domínio em português: `pedido`, `loja`, `produto`, `entrega`, `repasse`
 1. Comentários em português

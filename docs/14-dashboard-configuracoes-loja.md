@@ -11,8 +11,8 @@
 O módulo de configurações permite ao lojista gerenciar todos os aspectos
 operacionais da sua loja: dados de exibição, horários de funcionamento,
 taxas e raio de entrega, métodos de pagamento aceitos e a configuração
-de entregadores. Há também uma seção de conta Stripe para o lojista
-verificar o status do onboarding e acessar o Express Dashboard.
+de entregadores. Há também uma seção de conta de recebimentos (Pagar.me)
+para o lojista verificar o status do recipient e atualizar dados bancários.
 
 As configurações são divididas em abas na mesma página para evitar
 navegação fragmentada.
@@ -51,7 +51,7 @@ export async function getDadosLoja() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, nome_responsavel, email, telefone, cpf_cnpj, stripe_account_id, stripe_onboarding_ok')
+    .select('id, nome_responsavel, email, telefone, cpf_cnpj, pagarme_recipient_id, pagarme_onboarding_status')
     .single()
 
   if (!tenant) return null
@@ -262,14 +262,10 @@ export async function atualizarEndereco(formData: FormData) {
 
 ```typescript
 import { getDadosLoja } from '@/lib/actions/lojas'
-import { getLinkExpressDashboard } from '@/lib/actions/financeiro'
 import { ConfiguracoesAbas } from '@/components/dashboard/configuracoes-abas'
 
 export default async function PaginaConfiguracoes() {
-  const [dadosLoja, linkExpress] = await Promise.all([
-    getDadosLoja(),
-    getLinkExpressDashboard(),
-  ])
+  const dadosLoja = await getDadosLoja()
 
   if (!dadosLoja?.loja) {
     return (
@@ -287,7 +283,6 @@ export default async function PaginaConfiguracoes() {
       <ConfiguracoesAbas
         loja={dadosLoja.loja}
         tenant={dadosLoja.tenant}
-        linkExpress={linkExpress}
       />
     </div>
   )
@@ -308,23 +303,22 @@ import { AbaGeral } from './config/aba-geral'
 import { AbaHorarios } from './config/aba-horarios'
 import { AbaEntrega } from './config/aba-entrega'
 import { AbaPagamentos } from './config/aba-pagamentos'
-import { AbaStripe } from './config/aba-stripe'
+import { AbaRecebimentos } from './config/aba-recebimentos'
 
 const ABAS = [
   { id: 'geral', label: 'Dados gerais' },
   { id: 'horarios', label: 'Horários' },
   { id: 'entrega', label: 'Entrega' },
   { id: 'pagamentos', label: 'Pagamentos' },
-  { id: 'stripe', label: 'Conta Stripe' },
+  { id: 'recebimentos', label: 'Conta de recebimentos' },
 ]
 
 interface Props {
   loja: any
   tenant: any
-  linkExpress: string | null
 }
 
-export function ConfiguracoesAbas({ loja, tenant, linkExpress }: Props) {
+export function ConfiguracoesAbas({ loja, tenant }: Props) {
   const [abaAtiva, setAbaAtiva] = useState('geral')
 
   return (
@@ -350,8 +344,8 @@ export function ConfiguracoesAbas({ loja, tenant, linkExpress }: Props) {
       {abaAtiva === 'horarios' && <AbaHorarios horarios={loja.horarios} />}
       {abaAtiva === 'entrega' && <AbaEntrega loja={loja} />}
       {abaAtiva === 'pagamentos' && <AbaPagamentos loja={loja} />}
-      {abaAtiva === 'stripe' && (
-        <AbaStripe tenant={tenant} linkExpress={linkExpress} />
+      {abaAtiva === 'recebimentos' && (
+        <AbaRecebimentos tenant={tenant} />
       )}
     </div>
   )
@@ -1045,7 +1039,7 @@ const METODOS = [
   {
     id: 'aceita_cartao_online',
     label: 'Cartão ou PIX online',
-    descricao: 'Pagamento via Stripe no app — necessário conta Stripe ativa',
+    descricao: 'Pagamento via Pagar.me no app — necessário recipient ativo',
   },
 ]
 
@@ -1143,22 +1137,30 @@ export function AbaPagamentos({ loja }: { loja: any }) {
 
 -----
 
-## ABA STRIPE
+## ABA RECEBIMENTOS (PAGAR.ME)
 
-### components/dashboard/config/aba-stripe.tsx
+### components/dashboard/config/aba-recebimentos.tsx
 
 ```typescript
-import { formatarReais } from '@mallora/lib'
+const LABELS_STATUS: Record<string, { label: string; cor: string; descricao: string }> = {
+  registration: { label: 'Cadastro em análise', cor: 'bg-amber-400', descricao: 'Aguardando análise inicial dos seus dados.' },
+  affiliation:  { label: 'Em afiliação', cor: 'bg-amber-400', descricao: 'Aguardando habilitação junto aos adquirentes.' },
+  active:       { label: 'Conta ativa',  cor: 'bg-green-500', descricao: 'Você está pronto para receber pagamentos.' },
+  refused:      { label: 'Cadastro recusado', cor: 'bg-red-500', descricao: 'Entre em contato com o suporte para revisar.' },
+  suspended:    { label: 'Conta suspensa', cor: 'bg-red-500', descricao: 'Entre em contato com o suporte.' },
+  blocked:      { label: 'Conta bloqueada', cor: 'bg-red-500', descricao: 'Entre em contato com o suporte.' },
+}
 
 interface Props {
   tenant: {
-    stripe_account_id: string | null
-    stripe_onboarding_ok: boolean
+    pagarme_recipient_id: string | null
+    pagarme_onboarding_status: string
   }
-  linkExpress: string | null
 }
 
-export function AbaStripe({ tenant, linkExpress }: Props) {
+export function AbaRecebimentos({ tenant }: Props) {
+  const status = LABELS_STATUS[tenant.pagarme_onboarding_status] ?? LABELS_STATUS.registration
+
   return (
     <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-6">
       <div>
@@ -1166,75 +1168,57 @@ export function AbaStripe({ tenant, linkExpress }: Props) {
           Conta de recebimentos
         </h2>
         <p className="text-sm text-gray-500">
-          Sua conta Stripe Express para receber os repasses da plataforma.
+          Seu recipient no Pagar.me — recebe diretamente os splits dos pedidos.
         </p>
       </div>
 
-      {/* Status do onboarding */}
       <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl">
-        <div
-          className={`w-3 h-3 rounded-full flex-shrink-0 ${
-            tenant.stripe_onboarding_ok ? 'bg-green-500' : 'bg-amber-400'
-          }`}
-        />
+        <div className={`w-3 h-3 rounded-full flex-shrink-0 ${status.cor}`} />
         <div>
-          <p className="text-sm font-medium text-gray-700">
-            {tenant.stripe_onboarding_ok
-              ? 'Conta verificada e ativa'
-              : 'Verificação pendente'}
-          </p>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {tenant.stripe_onboarding_ok
-              ? 'Você está pronto para receber repasses.'
-              : 'Complete o cadastro para receber pagamentos.'}
-          </p>
+          <p className="text-sm font-medium text-gray-700">{status.label}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{status.descricao}</p>
         </div>
       </div>
 
-      {/* ID da conta (para suporte) */}
-      {tenant.stripe_account_id && (
+      {tenant.pagarme_recipient_id && (
         <div>
-          <p className="text-xs text-gray-400 mb-1">ID da conta Stripe</p>
+          <p className="text-xs text-gray-400 mb-1">ID do recipient (Pagar.me)</p>
           <p className="text-sm font-mono text-gray-600 bg-gray-50 px-3 py-2
             rounded-lg">
-            {tenant.stripe_account_id}
+            {tenant.pagarme_recipient_id}
           </p>
         </div>
       )}
 
-      {/* Ações */}
       <div className="space-y-2">
-        {!tenant.stripe_onboarding_ok && (
+        {tenant.pagarme_onboarding_status !== 'active' && (
           <a
-            href="/onboarding/stripe/retry"
+            href="/onboarding/recebimentos/kyc"
             className="block w-full text-center bg-[#F5A623] text-white py-2.5
               rounded-lg text-sm font-medium hover:bg-[#e09520] transition-colors"
           >
-            Completar verificação
+            Completar verificação (KYC)
           </a>
         )}
 
-        {tenant.stripe_onboarding_ok && linkExpress && (
-          <a
-            href={linkExpress}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block w-full text-center bg-[#1A4D3A] text-white py-2.5
-              rounded-lg text-sm font-medium hover:bg-[#163d2e] transition-colors"
-          >
-            Acessar conta Stripe
-          </a>
-        )}
+        <a
+          href="/dashboard/configuracoes/recebimentos/dados-bancarios"
+          className="block w-full text-center border border-gray-200 text-[#1A4D3A]
+            py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+        >
+          Atualizar dados bancários ou chave Pix
+        </a>
       </div>
 
       <div className="text-xs text-gray-400 space-y-1">
         <p>
-          Seus dados bancários são armazenados com segurança pela Stripe.
-          A plataforma não tem acesso aos dados da sua conta bancária.
+          Seus dados bancários são armazenados com segurança pelo Pagar.me.
+          A plataforma não tem acesso direto aos dados da sua conta bancária.
         </p>
         <p>
-          Para suporte relacionado a pagamentos, acesse o Stripe Express
-          Dashboard ou entre em contato com o suporte da plataforma.
+          Liquidação automática: Pix instantâneo, cartão D+29+2 ou D+15 com
+          antecipação automática. Configure seu plano de antecipação no painel
+          financeiro.
         </p>
       </div>
     </div>
@@ -1250,9 +1234,9 @@ export function AbaStripe({ tenant, linkExpress }: Props) {
 - [ ] Cache busting na URL das imagens com `?t=Date.now()` para forçar atualização
 - [ ] Horários salvos como JSONB — verificar tipo `HorariosFuncionamento` no arquivo 03
 - [ ] Aba de entrega distingue pool da plataforma vs entregadores próprios
-- [ ] Aba de pagamentos — `aceita_cartao_online` só deve ser habilitado se `stripe_onboarding_ok = true`
-- [ ] Aba Stripe exibe link para completar onboarding se KYC pendente
-- [ ] `getLinkExpressDashboard` chama `stripe.accounts.createLoginLink` — link expira em poucos minutos, gerar sob demanda
+- [ ] Aba de pagamentos — `aceita_cartao_online` só deve ser habilitado se `pagarme_onboarding_status = 'active'`
+- [ ] Aba de recebimentos exibe link para KYC se `pagarme_onboarding_status` ≠ `active`
+- [ ] Atualização de dados bancários chama `PUT /core/v5/recipients/{id}/default-bank-account` via Server Action
 - [ ] Campos ocultos preservam valores não editados em cada aba para não sobrescrever dados da loja
 - [ ] Cidade padrão pré-preenchida como “Divinópolis” no campo de endereço
 
