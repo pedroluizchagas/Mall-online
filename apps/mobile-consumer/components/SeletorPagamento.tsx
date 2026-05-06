@@ -23,9 +23,15 @@ interface OpcaoPagamento {
 const OPCOES: OpcaoPagamento[] = [
   {
     id: 'online_cartao',
-    label: 'Cartão ou PIX online',
-    descricao: 'Pague agora com segurança via Stripe',
+    label: 'Cartão de crédito',
+    descricao: 'Parcele em até 12x — pagamento seguro Pagar.me',
     condicao: (l) => l.aceita_cartao_online,
+  },
+  {
+    id: 'online_pix',
+    label: 'Pix',
+    descricao: 'Aprovação imediata via QR Code',
+    condicao: (l) => l.aceita_pix,
   },
   {
     id: 'dinheiro',
