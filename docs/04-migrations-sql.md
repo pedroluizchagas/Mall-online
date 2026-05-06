@@ -527,6 +527,126 @@ CREATE TRIGGER trigger_decrementar_estoque
 
 -----
 
+## MIGRATION 006 — Pagar.me fields e webhook idempotency
+
+### Status: PENDENTE (cutover Stripe Connect → Pagar.me)
+
+Arquivo: `20240106000000_migration_006_pagarme_fields.sql`
+
+Adiciona os campos Pagar.me em todas as tabelas afetadas pelo cutover do
+gateway de pedidos (Stripe Connect → Pagar.me) e cria a tabela de log de
+eventos de webhook usada para garantir idempotência.
+
+Os campos `stripe_*` legados (ex.: `stripe_account_id`, `stripe_payment_intent_id`,
+`stripe_transfer_id` em `payouts`/`delivery_assignments`) são **mantidos**
+nesta migration. Eles serão derrubados em uma `migration_007` separada,
+após o cutover concluído e validação em produção.
+
+```sql
+-- ============================================================
+-- UP
+-- ============================================================
+
+-- Lojistas (recipient + status de onboarding Pagar.me)
+ALTER TABLE tenants
+  ADD COLUMN pagarme_recipient_id      TEXT UNIQUE,
+  ADD COLUMN pagarme_onboarding_status TEXT NOT NULL DEFAULT 'pending';
+
+-- Entregadores autônomos (recipient + status de onboarding Pagar.me)
+ALTER TABLE couriers
+  ADD COLUMN pagarme_recipient_id      TEXT UNIQUE,
+  ADD COLUMN pagarme_onboarding_status TEXT NOT NULL DEFAULT 'pending';
+
+-- Pedidos (Order + Charge gerados na Pagar.me)
+ALTER TABLE orders
+  ADD COLUMN pagarme_order_id  TEXT UNIQUE,
+  ADD COLUMN pagarme_charge_id TEXT UNIQUE;
+
+-- Estágio 2: transfer da taxa de entrega para o entregador
+ALTER TABLE delivery_assignments
+  ADD COLUMN pagarme_transfer_id TEXT UNIQUE;
+
+-- Repasses (auditoria de transfers Pagar.me)
+ALTER TABLE payouts
+  ADD COLUMN pagarme_transfer_id TEXT UNIQUE;
+
+-- Idempotência de webhooks Pagar.me
+CREATE TABLE webhook_events_log (
+  event_id     TEXT PRIMARY KEY,
+  tipo         TEXT NOT NULL,
+  processed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  payload      JSONB
+);
+
+CREATE INDEX idx_webhook_events_log_tipo
+  ON webhook_events_log(tipo);
+
+CREATE INDEX idx_webhook_events_log_processed_at
+  ON webhook_events_log(processed_at DESC);
+
+-- Índices Pagar.me
+CREATE INDEX idx_tenants_pagarme_recipient
+  ON tenants(pagarme_recipient_id);
+
+CREATE INDEX idx_couriers_pagarme_recipient
+  ON couriers(pagarme_recipient_id);
+
+CREATE INDEX idx_orders_pagarme_order
+  ON orders(pagarme_order_id);
+
+CREATE INDEX idx_orders_pagarme_charge
+  ON orders(pagarme_charge_id);
+
+CREATE INDEX idx_assignments_pagarme_transfer
+  ON delivery_assignments(pagarme_transfer_id);
+
+CREATE INDEX idx_payouts_pagarme_transfer
+  ON payouts(pagarme_transfer_id);
+
+-- ============================================================
+-- DOWN
+-- ============================================================
+
+-- DROP INDEX IF EXISTS idx_payouts_pagarme_transfer;
+-- DROP INDEX IF EXISTS idx_assignments_pagarme_transfer;
+-- DROP INDEX IF EXISTS idx_orders_pagarme_charge;
+-- DROP INDEX IF EXISTS idx_orders_pagarme_order;
+-- DROP INDEX IF EXISTS idx_couriers_pagarme_recipient;
+-- DROP INDEX IF EXISTS idx_tenants_pagarme_recipient;
+-- DROP INDEX IF EXISTS idx_webhook_events_log_processed_at;
+-- DROP INDEX IF EXISTS idx_webhook_events_log_tipo;
+-- DROP TABLE IF EXISTS webhook_events_log;
+-- ALTER TABLE payouts              DROP COLUMN IF EXISTS pagarme_transfer_id;
+-- ALTER TABLE delivery_assignments DROP COLUMN IF EXISTS pagarme_transfer_id;
+-- ALTER TABLE orders
+--   DROP COLUMN IF EXISTS pagarme_order_id,
+--   DROP COLUMN IF EXISTS pagarme_charge_id;
+-- ALTER TABLE couriers
+--   DROP COLUMN IF EXISTS pagarme_recipient_id,
+--   DROP COLUMN IF EXISTS pagarme_onboarding_status;
+-- ALTER TABLE tenants
+--   DROP COLUMN IF EXISTS pagarme_recipient_id,
+--   DROP COLUMN IF EXISTS pagarme_onboarding_status;
+```
+
+### Compatibilidade com migration_002
+
+A migration_002 já declara `pagarme_recipient_id` e
+`pagarme_onboarding_status` em `tenants` com `IF NOT EXISTS` — em ambientes
+que aplicaram a 002, a 006 vira parcialmente no-op nesses campos. A 006
+permanece autoritativa para todos os outros (`couriers`, `orders.pagarme_*`,
+`delivery_assignments.pagarme_transfer_id`, `payouts.pagarme_transfer_id`,
+`webhook_events_log`).
+
+Após o cutover concluído, a `migration_007` (não documentada aqui) removerá
+os campos `stripe_*` legados (`stripe_account_id`, `stripe_payment_intent_id`,
+`stripe_transfer_id` em `payouts`/`delivery_assignments`). Os campos do
+Stripe Billing (`stripe_customer_id`, `stripe_subscription_id`,
+`stripe_price_id`, `stripe_product_id`) **não** serão removidos — continuam
+em uso pela assinatura mensal.
+
+-----
+
 ## TRIGGER: atualizado_em automatico
 
 Aplicar em todas as tabelas que possuem a coluna `atualizado_em`.

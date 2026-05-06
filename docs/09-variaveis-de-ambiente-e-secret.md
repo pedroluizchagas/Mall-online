@@ -48,10 +48,19 @@ Usada apenas dentro de Edge Functions e Server Actions com `createClient` server
 |`PAGARME_API_KEY`                 |Apenas servidor / Edge Functions     |Pagar.me Dashboard > Developer > API Keys                           |
 |`PAGARME_WEBHOOK_SECRET`          |Edge Function pagarme-webhook        |Pagar.me Dashboard > Developer > Webhooks > Signing secret          |
 |`PAGARME_PLATFORM_RECIPIENT_ID`   |Apenas servidor / Edge Functions     |`rp_xxx` do recipient principal da Mallora (criado no onboarding)   |
+|`EXPO_PUBLIC_PAGARME_APPID`       |Apps mobile (tokenização client-side)|Pagar.me Dashboard > Developer > Public API Key (`appId` para `/tokens`)|
 
 Em desenvolvimento, usar chaves `ak_test_` e webhook secret de sandbox. A
 `PAGARME_API_KEY` nunca aparece no cliente — somente em Edge Functions e
-Server Actions. A tokenização de cartão pode ser feita server-side no MVP.
+Server Actions.
+
+A `EXPO_PUBLIC_PAGARME_APPID` é a chave **pública** usada pelos apps mobile
+para tokenizar cartões diretamente na Pagar.me
+(`POST https://api.pagar.me/core/v5/tokens?appId=<appId>`). Esse `appId`
+só permite tokenizar — não dá acesso a Orders, recipients, saldos ou
+qualquer leitura de dados — e por isso é seguro embutir no bundle do app.
+**Não há tokenização server-side**: a Edge Function `create-pagarme-order`
+recebe apenas `card_token` + `installments`, nunca número/CVV/data crus.
 
 ### Stripe Billing (apenas assinatura mensal)
 
@@ -146,8 +155,10 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx
 # URL da aplicação web (para deep links e callbacks)
 EXPO_PUBLIC_APP_URL=http://localhost:3000
 
-# Pagar.me não tem chave pública mobile — pagamentos passam pela
-# Edge Function create-pagarme-order, sem credenciais no cliente.
+# Pagar.me — appId público para tokenização client-side de cartão.
+# Usado em POST https://api.pagar.me/core/v5/tokens?appId=...
+# A chave secreta (ak_test_/ak_live_) NUNCA é embutida no app.
+EXPO_PUBLIC_PAGARME_APPID=app_id_publico_aqui
 ```
 
 -----
@@ -285,7 +296,8 @@ configuradas no arquivo `eas.json` e no dashboard do Expo.
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br"
+        "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br",
+        "EXPO_PUBLIC_PAGARME_APPID": "app_id_sandbox"
       }
     },
     "preview": {
@@ -293,14 +305,16 @@ configuradas no arquivo `eas.json` e no dashboard do Expo.
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br"
+        "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br",
+        "EXPO_PUBLIC_PAGARME_APPID": "app_id_sandbox"
       }
     },
     "production": {
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_APP_URL": "https://mallora.com.br"
+        "EXPO_PUBLIC_APP_URL": "https://mallora.com.br",
+        "EXPO_PUBLIC_PAGARME_APPID": "app_id_producao"
       }
     }
   },
@@ -434,6 +448,7 @@ STRIPE_WEBHOOK_SECRET=whsec_sua_chave_aqui
 # Expo (mobile)
 EXPO_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-aqui
+EXPO_PUBLIC_PAGARME_APPID=seu-app-id-publico-aqui
 
 # Aplicacao
 APP_URL=http://localhost:3000

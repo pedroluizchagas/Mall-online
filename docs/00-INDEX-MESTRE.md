@@ -122,6 +122,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 - `migration_003` — módulo entregador (`couriers`, `delivery_assignments`, `courier_locations`)
 - `migration_004` — módulo financeiro (`payouts`, `payout_advance_requests`, `platform_fee_amount`)
 - `migration_005` — módulo estoque (`stock_movements`, campos `stock_quantity`, `track_stock`)
+- `migration_006` — cutover Pagar.me: `tenants.pagarme_*`, `couriers.pagarme_*`, `orders.pagarme_order_id` / `pagarme_charge_id`, `delivery_assignments.pagarme_transfer_id`, `payouts.pagarme_transfer_id` e `webhook_events_log` (idempotência de webhooks). Campos `stripe_*` legados serão derrubados em `migration_007` pós-cutover.
 - Cada migration com rollback (`down`)
 - *Tokens est.: ~5.000*
 
@@ -282,7 +283,8 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 - Seleção e confirmação de endereço (endereços salvos + novo)
 - Seleção de forma de pagamento: cartão online (Pagar.me) · Pix (Pagar.me) · dinheiro na entrega · cartão na entrega
 - Tela de Pix com QR code/copia-e-cola e expiração
-- Tela de cartão com tokenização opcional ou Pagar.me Checkout server-side
+- Tela de cartão com tokenização **client-side** via API pública de tokens da Pagar.me (`POST /core/v5/tokens?appId=$EXPO_PUBLIC_PAGARME_APPID`) — número/CVV nunca trafegam pelo backend
+- Seletor de parcelas (1x à vista até 12x — juros Pagar.me cobrados do consumidor, `installment_type: 'customer'`)
 - Chamada à Edge Function `create-pagarme-order` para criação da Order com split
 - Observações do pedido
 - Atualização do `payment_status` via webhook Pagar.me (Realtime)
@@ -473,7 +475,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 |Tamanho médio por arquivo|~4.200 tokens                                                 |
 |Atores cobertos          |Plataforma · Lojista · Consumidor · Entregador                |
 |Apps cobertos            |web (Next.js) · mobile-consumer (Expo) · mobile-courier (Expo)|
-|Migrations cobertas      |5 (001 já aplicada + 4 pendentes)                             |
+|Migrations cobertas      |6 (001 já aplicada + 002..005 pendentes + 006 cutover Pagar.me)|
 |Edge Functions cobertas  |8 (Pagar.me + Stripe Billing)                                 |
 
 -----

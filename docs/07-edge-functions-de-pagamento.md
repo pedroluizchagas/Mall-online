@@ -415,6 +415,27 @@ Chamada pelo app do consumidor ao iniciar o checkout. Cria a Order no Pagar.me
 com split entre Mallora e lojista (estágio 1). A taxa de entrega fica
 temporariamente no recipient da Mallora até a alocação do entregador.
 
+**Compliance PCI:** o app **nunca** envia número de cartão, CVV ou data de
+validade para esta Edge Function. Em pagamento com cartão o app gera um
+`card_token` chamando diretamente a API pública de tokens da Pagar.me
+(`POST https://api.pagar.me/core/v5/tokens?appId=$PAGARME_PUBLIC_APPID`) e
+envia apenas esse token + `installments` no body. Não há tokenização
+server-side — qualquer payload com dados crus de cartão deve ser rejeitado.
+
+Body esperado:
+
+```json
+{
+  "store_id": "uuid",
+  "itens": [{ "product_id": "uuid", "quantidade": 1, "observacoes": "..." }],
+  "endereco_entrega": { "...": "..." },
+  "observacoes": "opcional",
+  "payment_method": "pix" | "credit_card",
+  "card_token": "card_token_xxx (obrigatório se credit_card)",
+  "installments": 1
+}
+```
+
 ```typescript
 // supabase/functions/create-pagarme-order/index.ts
 import { getSupabaseAdmin, getAuthenticatedUser, corsHeaders,
@@ -427,8 +448,39 @@ Deno.serve(async (req) => {
 
   try {
     const user = await getAuthenticatedUser(req)
-    const body = await req.json()
+    const body: {
+      store_id: string
+      itens: Array<{ product_id: string; quantidade: number; observacoes?: string }>
+      endereco_entrega: unknown
+      observacoes?: string
+      payment_method: 'pix' | 'credit_card'
+      card_token?: string
+      installments?: number
+    } = await req.json()
     const { store_id, itens, endereco_entrega, observacoes, payment_method, card_token } = body
+
+    // O app NUNCA envia número/CVV ao backend. Em pagamento com cartão a Edge
+    // Function aceita apenas o card_token gerado client-side via API pública
+    // de tokens da Pagar.me (POST /core/v5/tokens?appId=PAGARME_PUBLIC_APPID).
+    if (payment_method === 'credit_card' && !card_token) {
+      throw new Error('card_token obrigatório para pagamento com cartão')
+    }
+
+    // Parcelamento — motivação principal da migração para Pagar.me.
+    // 1x à vista (default) sem juros; 2x..12x com juros Pagar.me cobrados do
+    // consumidor (installment_type: 'customer'). Apenas cartão de crédito
+    // suporta parcelamento.
+    const installmentsRequested = body.installments ?? 1
+    if (
+      !Number.isInteger(installmentsRequested) ||
+      installmentsRequested < 1 ||
+      installmentsRequested > 12
+    ) {
+      throw new Error('installments deve ser inteiro entre 1 e 12')
+    }
+    if (payment_method !== 'credit_card' && installmentsRequested !== 1) {
+      throw new Error('Parcelamento disponível apenas em cartão de crédito')
+    }
 
     const supabase = getSupabaseAdmin()
 
@@ -575,7 +627,10 @@ Deno.serve(async (req) => {
         payment_method: payment_method,
         credit_card: {
           card_token: card_token,
-          installments: 1,
+          installments: installmentsRequested,
+          // 'customer' = juros Pagar.me cobrados do consumidor
+          // 'merchant' = juros absorvidos pela Mallora (não usado no MVP)
+          installment_type: 'customer',
           statement_descriptor: 'Mallora',
         },
         amount: total,
@@ -749,36 +804,85 @@ Deno.serve(async (req) => {
 ## FUNCTION 5 — pagarme-webhook
 
 Ponto de entrada para todos os eventos do Pagar.me. Verifica a assinatura HMAC
-do webhook antes de processar qualquer evento.
+do webhook antes de processar qualquer evento e garante idempotência via
+`webhook_events_log` (criada na migration_006 — ver doc 04).
+
+A assinatura chega no header `x-hub-signature` no formato `sha256=<hex>`. Se a
+configuração do endpoint na Pagar.me usar `x-pagarme-signature` (nome
+alternativo encontrado em alguns ambientes), o mesmo valor `sha256=<hex>` é
+enviado nesse header — basta ler o que estiver presente.
 
 ```typescript
 // supabase/functions/pagarme-webhook/index.ts
 import { getSupabaseAdmin } from '../helpers/auth.ts'
 
-function hmacSha256(key: string, data: string): string {
+// HMAC-SHA256 hex usando webcrypto (Deno).
+async function hmacSha256Hex(key: string, data: string): Promise<string> {
   const encoder = new TextEncoder()
-  return crypto.subtle
-    .importKey('raw', encoder.encode(key), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-    .then((k) => crypto.subtle.sign('HMAC', k, encoder.encode(data)))
-    .then((sig) =>
-      Array.from(new Uint8Array(sig))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
-    ) as any
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(key),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(data))
+  return Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+// Comparação em tempo constante (Deno não expõe crypto.subtle.timingSafeEqual,
+// portanto implementamos equivalente sobre os bytes).
+function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  }
+  return diff === 0
 }
 
 Deno.serve(async (req) => {
   const secret = Deno.env.get('PAGARME_WEBHOOK_SECRET')!
-  const signature = req.headers.get('x-hub-signature') ?? ''
+  // Aceita os dois nomes de header possíveis (Pagar.me usa x-hub-signature
+  // por padrão; alguns ambientes expõem como x-pagarme-signature).
+  const signatureHeader =
+    req.headers.get('x-hub-signature') ??
+    req.headers.get('x-pagarme-signature') ??
+    ''
   const body = await req.text()
 
-  const expectedSig = `sha256=${await hmacSha256(secret, body)}`
-  if (signature !== expectedSig) {
+  const computed = await hmacSha256Hex(secret, body)
+  const expected = `sha256=${computed}`
+  if (!timingSafeEqualHex(signatureHeader, expected)) {
     return new Response('Assinatura inválida', { status: 400 })
   }
 
   const event = JSON.parse(body)
   const supabase = getSupabaseAdmin()
+
+  // Idempotência: registrar event_id antes de processar. Se já existe,
+  // retornamos 200 para que o Pagar.me não reentregue o mesmo evento.
+  const eventId: string | undefined = event.id
+  if (!eventId) {
+    return new Response('Evento sem id', { status: 400 })
+  }
+
+  const { error: insertError } = await supabase
+    .from('webhook_events_log')
+    .insert({ event_id: eventId, tipo: event.type, payload: event })
+
+  if (insertError) {
+    // Postgres unique_violation = 23505 → evento já processado, ignorar.
+    if ((insertError as any).code === '23505') {
+      return new Response(JSON.stringify({ received: true, duplicated: true }), {
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+    console.error('Falha ao registrar webhook_events_log:', insertError)
+    return new Response('Erro interno', { status: 500 })
+  }
 
   try {
     switch (event.type) {
