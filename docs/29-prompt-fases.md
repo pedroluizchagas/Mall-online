@@ -100,6 +100,53 @@ Critério de aceite:
 
 -----
 
+### PROMPT — Fase 0.2.5: Migração Pagar.me — cutover (migration_006)
+
+```
+Tarefa: Aplicar a migration_006 que faz o cutover do gateway de
+pedidos de Stripe Connect para Pagar.me.
+
+Referência: arquivo 04 — Migrations SQL (seção MIGRATION 006)
+            arquivo 30 — Integração Pagar.me
+
+Passos:
+1. Criar supabase/migrations/20240106000000_migration_006_pagarme_fields.sql
+   com o conteúdo da migration_006 do arquivo 04. Inclui:
+     - tenants.pagarme_recipient_id + pagarme_onboarding_status
+     - couriers.pagarme_recipient_id + pagarme_onboarding_status
+     - orders.pagarme_order_id + pagarme_charge_id
+     - delivery_assignments.pagarme_transfer_id
+     - payouts.pagarme_transfer_id
+     - tabela webhook_events_log (event_id PK, tipo, processed_at, payload)
+
+2. Manter os campos stripe_* legados (stripe_account_id,
+   stripe_payment_intent_id, stripe_transfer_id em payouts e
+   delivery_assignments). Eles serão removidos em migration_007
+   pós-cutover.
+
+3. Executar: supabase db push
+
+4. Verificar com: supabase migration list
+   migration_006 deve aparecer como 'applied'.
+
+5. Regenerar tipos TypeScript: pnpm types:generate
+
+6. Configurar secret EXPO_PUBLIC_PAGARME_APPID no eas.json e nos
+   .env.local dos apps mobile (consumer principalmente — o courier
+   não tokeniza cartão, mas a var pode ficar disponível por consistência).
+
+Critério de aceite:
+- supabase migration list mostra migration_006 como applied
+- Tabela webhook_events_log existe com event_id como PK
+- pgsql: SELECT pagarme_recipient_id FROM tenants LIMIT 1; não dá erro
+- pgsql: SELECT pagarme_transfer_id FROM payouts LIMIT 1; não dá erro
+- pnpm types:generate gera tipos para webhook_events_log e novos campos
+- A Edge Function pagarme-webhook insere em webhook_events_log antes
+  de processar e ignora duplicatas via unique_violation (23505)
+```
+
+-----
+
 ### PROMPT — Fase 0.3: Edge Function onboard-tenant
 
 ```

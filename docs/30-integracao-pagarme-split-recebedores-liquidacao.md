@@ -400,8 +400,16 @@ captura. Adotada no MVP.
 URL: https://xxxxxxxxxxxx.supabase.co/functions/v1/pagarme-webhook
 ```
 
-A assinatura HMAC-SHA256 chega no header `x-hub-signature` no formato
-`sha256=<hex>`. Verificar usando `PAGARME_WEBHOOK_SECRET`.
+A assinatura HMAC-SHA256 chega no header `x-hub-signature` (ou
+`x-pagarme-signature` em alguns ambientes) no formato `sha256=<hex>`.
+Verificar usando `PAGARME_WEBHOOK_SECRET` com comparação em tempo
+constante. A implementação correta da função HMAC está documentada no
+doc 07 (Function 5 — `pagarme-webhook`).
+
+Idempotência: cada evento é registrado em `webhook_events_log` (PK
+`event_id`) antes de qualquer side-effect — reentregas do Pagar.me são
+detectadas via `unique_violation` e respondidas com 200 sem reprocessar.
+Tabela criada na migration_006 (ver doc 04).
 
 ### Eventos e ações
 
@@ -554,10 +562,46 @@ vercel env add STRIPE_SECRET_KEY production
 
 ### App mobile
 
-O Pagar.me não possui chave pública equivalente ao `pk_` do Stripe. A
-tokenização de cartão no app é feita pelo SDK Pagar.me React Native, que
-retorna um `card_token` enviado ao backend. A chave de API nunca é embutida
-no app.
+**Compliance PCI — regra absoluta:** o app **nunca** envia número de cartão,
+CVV ou data de validade para a Edge Function da Mallora. A captura visual dos
+campos do cartão é feita na UI do app, mas eles saem do dispositivo apenas
+em uma única chamada HTTPS — direto para a Pagar.me, no endpoint público de
+tokens:
+
+```
+POST https://api.pagar.me/core/v5/tokens?appId=$EXPO_PUBLIC_PAGARME_APPID
+```
+
+Esse endpoint usa o `appId` público (variável `EXPO_PUBLIC_PAGARME_APPID` —
+ver doc 09) e retorna um `card_token` no formato `token_xxx`. Esse token é
+o **único** dado relacionado ao cartão que o app envia para a Edge Function
+`create-pagarme-order`, junto com o número de parcelas:
+
+```json
+POST /functions/v1/create-pagarme-order
+{
+  "store_id": "...",
+  "payment_method": "credit_card",
+  "card_token": "token_xxx",
+  "installments": 3
+}
+```
+
+Pontos de implementação:
+
+- Não existe SDK obrigatório — basta um `fetch` direto para o endpoint de
+  tokens. (O SDK oficial Pagar.me React Native pode ser usado se preferido,
+  mas a integração funciona com `fetch` puro.)
+- A `EXPO_PUBLIC_PAGARME_APPID` é uma chave pública específica para a rota
+  `/tokens`. Ela só permite tokenizar — não dá acesso a Orders, recipients,
+  saldos ou qualquer leitura de dados.
+- A `PAGARME_API_KEY` (secret, `ak_test_*` / `ak_live_*`) **nunca** é
+  embutida no app — fica apenas nas Edge Functions.
+- A Edge Function rejeita qualquer payload que contenha número/CVV de
+  cartão. **Não** há tokenização server-side.
+
+A implementação concreta do componente `FormularioCartao` está documentada
+no doc 17.
 
 -----
 

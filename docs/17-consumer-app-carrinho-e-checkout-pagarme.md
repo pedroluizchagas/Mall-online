@@ -44,8 +44,13 @@ app/checkout.tsx (modal)
 
   [se pagamento online — cartão]
     → coleta dados do cartão no app (formulário com validação Luhn)
-    → chama Edge Function create-pagarme-order com payment_method='credit_card'
-       (a Edge Function tokeniza no servidor e cria a Order)
+    → app tokeniza o cartão chamando diretamente a API pública
+       POST https://api.pagar.me/core/v5/tokens?appId=$EXPO_PUBLIC_PAGARME_APPID
+       (compliance PCI: número/CVV nunca trafegam pela Mallora)
+    → seleciona parcelamento (1x sem juros até 12x — juros Pagar.me cobrados
+       do consumidor)
+    → chama Edge Function create-pagarme-order com payment_method='credit_card',
+       enviando apenas { card_token, installments }
     → resposta inclui status imediato (paid | failed | pending)
     → se paid: redireciona; se failed: exibe motivo da recusa
 
@@ -81,6 +86,8 @@ import { formatarReais } from '@mallora/lib'
 import { ItemCarrinhoCard } from '@/components/ItemCarrinhoCard'
 import { SeletorEndereco } from '@/components/SeletorEndereco'
 import { SeletorPagamento } from '@/components/SeletorPagamento'
+import { SeletorParcelas } from '@/components/SeletorParcelas'
+import { FormularioCartao } from '@/components/FormularioCartao'
 import type { Endereco } from '@mallora/types'
 
 type FormaPagamento =
@@ -110,6 +117,8 @@ export default function TelaCheckout() {
     useState<FormaPagamento>('online_cartao')
   const [trocoPara, setTrocoPara] = useState('')
   const [observacoes, setObservacoes] = useState('')
+  const [installments, setInstallments] = useState<number>(1)
+  const [cardToken, setCardToken] = useState<string | null>(null)
   const [processando, setProcessando] = useState(false)
   const [etapa, setEtapa] = useState<'revisao' | 'processando' | 'concluido'>(
     'revisao'
@@ -192,20 +201,19 @@ export default function TelaCheckout() {
     }
   }
 
-  async function fluxoPagamentoOnline(
-    dadosCartao?: {
-      number: string
-      holder_name: string
-      exp_month: number
-      exp_year: number
-      cvv: string
-    }
-  ) {
+  async function fluxoPagamentoOnline() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) throw new Error('Sessão expirada. Faça login novamente.')
 
     const payment_method = formaPagamento === 'online_pix' ? 'pix' : 'credit_card'
 
+    if (payment_method === 'credit_card' && !cardToken) {
+      throw new Error('Informe os dados do cartão antes de continuar.')
+    }
+
+    // O app NUNCA envia dados crus do cartão. O cardToken é gerado pelo
+    // FormularioCartao chamando POST /core/v5/tokens?appId=... diretamente
+    // na Pagar.me. Aqui mandamos apenas { card_token, installments }.
     const resposta = await fetch(
       `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/create-pagarme-order`,
       {
@@ -226,8 +234,8 @@ export default function TelaCheckout() {
           endereco_entrega: enderecoSelecionado,
           observacoes: observacoes.trim() || undefined,
           payment_method,
-          card: dadosCartao,
-          installments: 1,
+          card_token: payment_method === 'credit_card' ? cardToken : undefined,
+          installments: payment_method === 'credit_card' ? installments : 1,
         }),
       }
     )
@@ -387,6 +395,24 @@ export default function TelaCheckout() {
             loja={loja}
             selecionado={formaPagamento}
             onSelecionar={setFormaPagamento}
+          />
+        )}
+
+        {/* Cartão online — formulário com tokenização Pagar.me */}
+        {formaPagamento === 'online_cartao' && (
+          <FormularioCartao
+            onTokenGerado={setCardToken}
+            onLimpar={() => setCardToken(null)}
+          />
+        )}
+
+        {/* Parcelamento — apenas em cartão online */}
+        {formaPagamento === 'online_cartao' && (
+          <SeletorParcelas
+            total={total()}
+            selecionado={installments}
+            onSelecionar={setInstallments}
+            maxParcelas={12}
           />
         )}
 
@@ -1002,6 +1028,236 @@ export function SeletorPagamento({ loja, selecionado, onSelecionar }: Props) {
 
 -----
 
+## COMPONENTE FORMULARIO DE CARTAO (TOKENIZACAO CLIENT-SIDE)
+
+### components/FormularioCartao.tsx
+
+Coleta dados do cartão na UI do app e chama **diretamente** a API pública de
+tokens da Pagar.me usando o `appId` público
+(`EXPO_PUBLIC_PAGARME_APPID` — ver doc 09). Apenas o `card_token` resultante
+sai do app; nada de número/CVV/data de validade transita pela Mallora.
+
+A `EXPO_PUBLIC_PAGARME_APPID` é uma chave **pública** específica para a rota
+`/tokens` — ela só serve para tokenizar e não dá acesso a nenhum dado de
+ordens, recipients ou saldos. É segura para embutir no bundle.
+
+```typescript
+// components/FormularioCartao.tsx
+import { useState } from 'react'
+import { View, Text, TextInput, ActivityIndicator } from 'react-native'
+
+interface Props {
+  onTokenGerado: (cardToken: string) => void
+  onLimpar: () => void
+}
+
+export function FormularioCartao({ onTokenGerado, onLimpar }: Props) {
+  const [number, setNumber] = useState('')
+  const [holderName, setHolderName] = useState('')
+  const [exp, setExp] = useState('') // MM/AA
+  const [cvv, setCvv] = useState('')
+  const [tokenizando, setTokenizando] = useState(false)
+  const [erro, setErro] = useState<string | null>(null)
+  const [tokenizado, setTokenizado] = useState(false)
+
+  function passaLuhn(num: string) {
+    const dig = num.replace(/\D/g, '')
+    if (dig.length < 13 || dig.length > 19) return false
+    let sum = 0
+    let alt = false
+    for (let i = dig.length - 1; i >= 0; i--) {
+      let n = parseInt(dig[i], 10)
+      if (alt) {
+        n *= 2
+        if (n > 9) n -= 9
+      }
+      sum += n
+      alt = !alt
+    }
+    return sum % 10 === 0
+  }
+
+  async function tokenizar() {
+    setErro(null)
+    if (!passaLuhn(number)) return setErro('Número de cartão inválido.')
+    if (!holderName.trim()) return setErro('Informe o nome impresso no cartão.')
+    const [mm, aa] = exp.split('/')
+    if (!mm || !aa) return setErro('Validade no formato MM/AA.')
+    if (cvv.length < 3) return setErro('CVV inválido.')
+
+    setTokenizando(true)
+    try {
+      const appId = process.env.EXPO_PUBLIC_PAGARME_APPID
+      const res = await fetch(
+        `https://api.pagar.me/core/v5/tokens?appId=${appId}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'card',
+            card: {
+              number: number.replace(/\D/g, ''),
+              holder_name: holderName.trim(),
+              exp_month: parseInt(mm, 10),
+              exp_year: 2000 + parseInt(aa, 10),
+              cvv,
+            },
+          }),
+        },
+      )
+      const dados = await res.json()
+      if (!res.ok || !dados.id) {
+        throw new Error(dados.message ?? 'Falha ao validar cartão.')
+      }
+      onTokenGerado(dados.id) // formato: 'token_xxx'
+      setTokenizado(true)
+    } catch (e: any) {
+      setErro(e.message ?? 'Não foi possível validar o cartão.')
+      onLimpar()
+    } finally {
+      setTokenizando(false)
+    }
+  }
+
+  if (tokenizado) {
+    return (
+      <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
+        <Text className="text-sm font-semibold text-gray-700 mb-1">
+          Cartão validado
+        </Text>
+        <Text className="text-xs text-gray-400">
+          Final {number.replace(/\D/g, '').slice(-4)} — {holderName}
+        </Text>
+      </View>
+    )
+  }
+
+  return (
+    <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4 gap-3">
+      <Text className="text-sm font-semibold text-gray-700">
+        Dados do cartão
+      </Text>
+      <TextInput
+        value={number}
+        onChangeText={setNumber}
+        onBlur={tokenizar}
+        placeholder="Número do cartão"
+        keyboardType="numeric"
+        maxLength={19}
+        className="border border-gray-200 rounded-xl px-4 py-3 text-sm"
+      />
+      <TextInput
+        value={holderName}
+        onChangeText={setHolderName}
+        placeholder="Nome impresso no cartão"
+        autoCapitalize="characters"
+        className="border border-gray-200 rounded-xl px-4 py-3 text-sm"
+      />
+      <View className="flex-row gap-3">
+        <TextInput
+          value={exp}
+          onChangeText={setExp}
+          placeholder="MM/AA"
+          keyboardType="numeric"
+          maxLength={5}
+          className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-sm"
+        />
+        <TextInput
+          value={cvv}
+          onChangeText={setCvv}
+          placeholder="CVV"
+          keyboardType="numeric"
+          maxLength={4}
+          secureTextEntry
+          className="w-28 border border-gray-200 rounded-xl px-4 py-3 text-sm"
+        />
+      </View>
+      {tokenizando && <ActivityIndicator color="#1A4D3A" />}
+      {erro && <Text className="text-xs text-red-500">{erro}</Text>}
+    </View>
+  )
+}
+```
+
+-----
+
+## COMPONENTE SELETOR DE PARCELAS
+
+### components/SeletorParcelas.tsx
+
+Renderizado apenas quando `formaPagamento === 'online_cartao'`. Permite
+escolher entre 1x à vista (sem juros) e 2x..12x (juros Pagar.me cobrados do
+consumidor — `installment_type: 'customer'` na payload da Edge Function).
+
+```typescript
+// components/SeletorParcelas.tsx
+import { View, Text, TouchableOpacity } from 'react-native'
+import { formatarReais } from '@mallora/lib'
+
+interface Props {
+  total: number       // total do pedido em centavos
+  selecionado: number
+  onSelecionar: (n: number) => void
+  maxParcelas?: number
+}
+
+export function SeletorParcelas({
+  total,
+  selecionado,
+  onSelecionar,
+  maxParcelas = 12,
+}: Props) {
+  // 1x sem juros; demais com taxa Pagar.me repassada ao consumidor.
+  // Os valores definitivos vêm do contrato Pagar.me — usamos uma estimativa
+  // visual aqui, mas o Pagar.me recalcula no momento da Order com a taxa real.
+  const opcoes = Array.from({ length: maxParcelas }, (_, i) => i + 1).map((n) => {
+    const valorParcela = Math.round(total / n)
+    const label =
+      n === 1
+        ? `1x à vista — ${formatarReais(total)} (sem juros)`
+        : `${n}x ${formatarReais(valorParcela)} (juros Pagar.me)`
+    return { n, label }
+  })
+
+  return (
+    <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
+      <Text className="text-sm font-semibold text-gray-700 mb-3">
+        Parcelamento
+      </Text>
+      <View className="gap-2">
+        {opcoes.map(({ n, label }) => (
+          <TouchableOpacity
+            key={n}
+            onPress={() => onSelecionar(n)}
+            className={`flex-row items-center gap-3 p-3 rounded-2xl border
+              ${selecionado === n
+                ? 'border-verde-medio bg-green-50'
+                : 'border-gray-100'
+              }`}
+            activeOpacity={0.75}
+          >
+            <View
+              className={`w-5 h-5 rounded-full border-2 items-center justify-center
+                ${selecionado === n
+                  ? 'border-verde-medio'
+                  : 'border-gray-300'
+                }`}
+            >
+              {selecionado === n && (
+                <View className="w-2.5 h-2.5 rounded-full bg-verde-medio" />
+              )}
+            </View>
+            <Text className="text-sm text-gray-800 flex-1">{label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  )
+}
+```
+
+-----
+
 ## TELA DE PIX
 
 Pix exige uma tela dedicada que apresenta:
@@ -1092,7 +1348,9 @@ quando aplicável.
 - [ ] Edge Function `create-pagarme-order` deployada (arquivo 07)
 - [ ] Webhook `pagarme-webhook` registrado para `order.paid` e `order.payment_failed`
 - [ ] Tela de Pix com Realtime subscribe em `orders.id` para atualização automática
-- [ ] Tela de cartão com validação Luhn antes de chamar a Edge Function
+- [ ] `FormularioCartao` tokeniza client-side via `https://api.pagar.me/core/v5/tokens?appId=$EXPO_PUBLIC_PAGARME_APPID` — número/CVV nunca trafegam pelo backend
+- [ ] `SeletorParcelas` exibido apenas em `online_cartao`, com 1x..12x e `installments` enviado à Edge Function
+- [ ] Edge Function recebe apenas `card_token + installments` no body de cartão
 - [ ] Pagamentos offline criam o pedido diretamente sem chamar o Pagar.me
 - [ ] `platform_fee_amount = 100` (R$1,00) sempre definido ao criar pedido offline
 - [ ] Busca de CEP via ViaCEP funciona offline — tratar falha silenciosamente
