@@ -140,9 +140,11 @@ export const supabase = createClient<Database>(
 
 ## CONFIGURACAO DO CHECKOUT PAGAR.ME
 
-O app do consumidor não usa SDK nativo do Pagar.me. O checkout é
-feito via tokenização de cartão com Pagar.me.js (carregado em WebView)
-ou via exibição de QR code Pix gerado pela Edge Function. Não é
+O app do consumidor não usa SDK nativo do Pagar.me. O checkout faz
+tokenização do cartão via chamada `fetch` direto ao endpoint público
+`POST https://api.pagar.me/core/v5/tokens?appId=$EXPO_PUBLIC_PAGARME_APPID`
+(detalhes no doc 17 — `FormularioCartao` + `tokenizarCartao()`), e
+para Pix exibe o QR code retornado pela Edge Function. Não é
 necessário nenhum provider global de pagamento no `_layout.tsx`.
 
 -----

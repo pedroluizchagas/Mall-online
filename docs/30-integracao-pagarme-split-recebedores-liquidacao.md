@@ -552,12 +552,32 @@ vercel env add PAGARME_API_KEY production
 vercel env add STRIPE_SECRET_KEY production
 ```
 
-### App mobile
+### App mobile (tokenização client-side — obrigatório)
 
-O Pagar.me não possui chave pública equivalente ao `pk_` do Stripe. A
-tokenização de cartão no app é feita pelo SDK Pagar.me React Native, que
-retorna um `card_token` enviado ao backend. A chave de API nunca é embutida
-no app.
+O Pagar.me não possui chave pública equivalente ao `pk_` do Stripe, mas
+oferece um `appId` público (formato `appid_test_xxx` / `appid_live_xxx`)
+para tokenização do cartão diretamente no cliente.
+
+**Regra inegociável:** o número do cartão e o CVV **nunca** trafegam
+pelo backend Mallora ou pelo Supabase. O app:
+
+1. Coleta os dados em formulário próprio (com validação Luhn local).
+2. Chama `POST https://api.pagar.me/core/v5/tokens?appId=$EXPO_PUBLIC_PAGARME_APPID`
+   com o body `{ type: 'card', card: { number, holder_name, exp_month, exp_year, cvv } }`.
+3. Recebe `{ id: 'token_xxx' }` (validade ~15 minutos).
+4. Envia **apenas** `card_token` + `installments` para a Edge Function
+   `create-pagarme-order`.
+
+Variável de ambiente correspondente (ver doc 09):
+
+```bash
+EXPO_PUBLIC_PAGARME_APPID=appid_test_xxx   # sandbox
+EXPO_PUBLIC_PAGARME_APPID=appid_live_xxx   # produção
+```
+
+A `PAGARME_API_KEY` (`ak_*`) **nunca** é embutida no bundle do app. O
+`appId` público pode ser exposto — sua única função é identificar a
+conta Pagar.me que receberá o token.
 
 -----
 

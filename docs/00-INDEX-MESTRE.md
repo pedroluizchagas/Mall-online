@@ -24,6 +24,11 @@
 |**Liquidação entregador**|D+1 (transfer estágio 2 da Mallora para o recipient)   |
 |**Repasses operacionais**|Liquidação automática Pagar.me (sem cron próprio)      |
 |**Migration 001**     |Aplicada                                                |
+|**Migration 006**     |Pendente — cutover Pagar.me (campos + webhook_events_log)|
+|**Migration 007**     |Pendente — drop Stripe Connect (pós-cutover)            |
+|**Parcelamento**      |1x..12x via `installment_type: 'customer'` (juros pela Pagar.me)|
+|**Tokenização cartão**|Client-side via `EXPO_PUBLIC_PAGARME_APPID` (PCI)       |
+|**Idempotência webhook**|Tabela `webhook_events_log` (event.id PK)              |
 |**Paleta**            |Verde Minas: `#1A4D3A` · `#4CAF82` · `#F5A623` · `#FFF8ED`|
 
 -----
@@ -118,12 +123,14 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 **`04` — Migrations SQL**
 
 - `migration_001` — já aplicada (documentada como referência)
-- `migration_002` — campos de pagamento (`pagarme_recipient_id`, `pagarme_onboarding_status`, `stripe_customer_id`, `billing_status`, `payment_status`, `pagarme_order_id`, `pagarme_charge_id`, etc.)
+- `migration_002` — campos de pagamento (versão aspiracional Pagar.me; em produção foi aplicada com nomes Stripe Connect — corrigido pela `migration_006`)
 - `migration_003` — módulo entregador (`couriers`, `delivery_assignments`, `courier_locations`)
 - `migration_004` — módulo financeiro (`payouts`, `payout_advance_requests`, `platform_fee_amount`)
 - `migration_005` — módulo estoque (`stock_movements`, campos `stock_quantity`, `track_stock`)
+- `migration_006` — **cutover Pagar.me**: adiciona `pagarme_recipient_id`, `pagarme_onboarding_status`, `pagarme_order_id`, `pagarme_charge_id`, `pagarme_transfer_id`, `pagarme_anticipation_id` e cria `webhook_events_log` (idempotência de webhook). Mantém os campos Stripe Connect legados durante a janela de cutover.
+- `migration_007` — pós-cutover: drop dos campos Stripe Connect (`stripe_account_id`, `stripe_onboarding_ok`, `stripe_payment_intent_id`, `stripe_transfer_id`). Stripe Billing permanece intacto.
 - Cada migration com rollback (`down`)
-- *Tokens est.: ~5.000*
+- *Tokens est.: ~5.500*
 
 **`05` — RLS, Policies & Segurança**
 
@@ -282,7 +289,8 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 - Seleção e confirmação de endereço (endereços salvos + novo)
 - Seleção de forma de pagamento: cartão online (Pagar.me) · Pix (Pagar.me) · dinheiro na entrega · cartão na entrega
 - Tela de Pix com QR code/copia-e-cola e expiração
-- Tela de cartão com tokenização opcional ou Pagar.me Checkout server-side
+- Tela de cartão com tokenização **client-side** via `EXPO_PUBLIC_PAGARME_APPID` (PCI — número/CVV nunca passam pelo backend)
+- Seletor de parcelas 1x..12x (`installment_type: 'customer'` — juros pela Pagar.me a partir da 2ª parcela)
 - Chamada à Edge Function `create-pagarme-order` para criação da Order com split
 - Observações do pedido
 - Atualização do `payment_status` via webhook Pagar.me (Realtime)

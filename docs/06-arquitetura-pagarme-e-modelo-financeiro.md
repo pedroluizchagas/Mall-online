@@ -158,10 +158,15 @@ Pix:
   → Pagar.me dispara webhook order.paid (e charge.paid).
 
 Cartão:
-  → Cliente preenche dados na UI Pagar.me Checkout (server-side) ou
-    via tokenização cliente para envio ao backend.
-  → Pagar.me autoriza e captura.
-  → Webhook order.paid disparado.
+  → Cliente preenche dados em formulário próprio do app
+    (FormularioCartao). O app chama POST /core/v5/tokens?appId=...
+    direto na Pagar.me e recebe um card_token (PCI — número/CVV
+    nunca passam pelo backend Mallora).
+  → App envia card_token + installments (1..12) para a Edge
+    Function create-pagarme-order.
+  → Pagar.me autoriza e captura conforme installment_type:
+    'customer' (juros pela Pagar.me a partir da 2a parcela).
+  → Webhook order.paid / charge.paid disparado.
 ```
 
 A Edge Function `pagarme-webhook` valida a assinatura HMAC do webhook,

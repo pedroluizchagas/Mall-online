@@ -48,10 +48,13 @@ Usada apenas dentro de Edge Functions e Server Actions com `createClient` server
 |`PAGARME_API_KEY`                 |Apenas servidor / Edge Functions     |Pagar.me Dashboard > Developer > API Keys                           |
 |`PAGARME_WEBHOOK_SECRET`          |Edge Function pagarme-webhook        |Pagar.me Dashboard > Developer > Webhooks > Signing secret          |
 |`PAGARME_PLATFORM_RECIPIENT_ID`   |Apenas servidor / Edge Functions     |`rp_xxx` do recipient principal da Mallora (criado no onboarding)   |
+|`EXPO_PUBLIC_PAGARME_APPID`       |App mobile-consumer (tokenização)    |Pagar.me Dashboard > Developer > App IDs (`appid_test_*` / `appid_live_*`)|
 
 Em desenvolvimento, usar chaves `ak_test_` e webhook secret de sandbox. A
 `PAGARME_API_KEY` nunca aparece no cliente — somente em Edge Functions e
-Server Actions. A tokenização de cartão pode ser feita server-side no MVP.
+Server Actions. A tokenização do cartão é **obrigatoriamente** feita no
+cliente via `POST /core/v5/tokens?appId=$EXPO_PUBLIC_PAGARME_APPID`; o
+backend recebe apenas `card_token`. Nunca enviar número/CVV ao Supabase.
 
 ### Stripe Billing (apenas assinatura mensal)
 
@@ -146,8 +149,10 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxx
 # URL da aplicação web (para deep links e callbacks)
 EXPO_PUBLIC_APP_URL=http://localhost:3000
 
-# Pagar.me não tem chave pública mobile — pagamentos passam pela
-# Edge Function create-pagarme-order, sem credenciais no cliente.
+# Pagar.me — appId público para tokenização de cartão no cliente.
+# É público por design (identifica a conta da Mallora ao tokenizar).
+# Número/CVV nunca passam pelo backend.
+EXPO_PUBLIC_PAGARME_APPID=appid_test_xxx
 ```
 
 -----
@@ -425,6 +430,7 @@ SUPABASE_PROJECT_ID=seu-project-id-aqui
 PAGARME_API_KEY=ak_test_sua_chave_aqui
 PAGARME_WEBHOOK_SECRET=whsec_sua_chave_aqui
 PAGARME_PLATFORM_RECIPIENT_ID=rp_test_recipient_mallora
+EXPO_PUBLIC_PAGARME_APPID=appid_test_sua_app_aqui
 
 # Stripe Billing (assinatura mensal)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_sua_chave_aqui
@@ -463,8 +469,9 @@ EXPO_PUBLIC_APP_URL=http://localhost:3000
 - [ ] Registrar webhook de produção no Stripe Dashboard (apenas eventos de Billing)
 - [ ] Confirmar que `PAGARME_WEBHOOK_SECRET` e `STRIPE_WEBHOOK_SECRET` de produção estão corretos
 - [ ] Confirmar `PAGARME_PLATFORM_RECIPIENT_ID` aponta para o `rp_live_` da Mallora
+- [ ] Trocar `EXPO_PUBLIC_PAGARME_APPID` para `appid_live_*` no build de produção do mobile-consumer
 - [ ] Confirmar que `APP_URL` aponta para o domínio de produção
-- [ ] Verificar que nenhuma chave de teste (`ak_test_`, `pk_test_`, `sk_test_`) está no ambiente de produção
+- [ ] Verificar que nenhuma chave de teste (`ak_test_`, `pk_test_`, `sk_test_`, `appid_test_`) está no ambiente de produção
 
 -----
 

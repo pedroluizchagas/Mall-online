@@ -527,6 +527,197 @@ CREATE TRIGGER trigger_decrementar_estoque
 
 -----
 
+## MIGRATION 006 — Cutover Pagar.me (campos + log de webhooks)
+
+### Status: PENDENTE — primeiro passo da migracao Pagar.me
+
+Arquivo: `20260506000001_migration_006_pagarme_fields.sql`
+
+A `migration_002` aplicada em produção foi escrita ainda no modelo
+Stripe Connect (campos `stripe_account_id`, `stripe_onboarding_ok`,
+`stripe_payment_intent_id`, `stripe_transfer_id`). A `migration_006` é
+o **primeiro passo do cutover para Pagar.me**: adiciona as colunas
+`pagarme_*` em paralelo aos campos Stripe Connect legados (que serão
+mantidos durante a janela de cutover e derrubados pela `migration_007`
+depois de validada a migração).
+
+Também cria a tabela `webhook_events_log`, que garante idempotência
+do `pagarme-webhook` — cada evento da Pagar.me tem um `id` único e
+qualquer reentrada (retry, replay) é descartada com base nessa tabela.
+
+```sql
+-- ============================================================
+-- UP
+-- ============================================================
+
+-- Campos Pagar.me em tenants (lojista)
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS pagarme_recipient_id      TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS pagarme_onboarding_status TEXT NOT NULL DEFAULT 'pending';
+
+-- Campos Pagar.me em couriers (entregador autonomo)
+ALTER TABLE couriers
+  ADD COLUMN IF NOT EXISTS pagarme_recipient_id      TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS pagarme_onboarding_status TEXT NOT NULL DEFAULT 'pending';
+
+-- Campos Pagar.me em orders
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS pagarme_order_id  TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS pagarme_charge_id TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS valor_estornado   INTEGER NOT NULL DEFAULT 0;
+
+-- Estagio 2 do split: Transfer da Mallora para o entregador
+ALTER TABLE delivery_assignments
+  ADD COLUMN IF NOT EXISTS pagarme_transfer_id TEXT UNIQUE;
+
+-- Auditoria de transfers em payouts (alem do stripe_transfer_id legado)
+ALTER TABLE payouts
+  ADD COLUMN IF NOT EXISTS pagarme_transfer_id     TEXT UNIQUE,
+  ADD COLUMN IF NOT EXISTS pagarme_anticipation_id TEXT UNIQUE;
+
+-- Indices novos
+CREATE INDEX IF NOT EXISTS idx_tenants_pagarme_recipient
+  ON tenants(pagarme_recipient_id);
+
+CREATE INDEX IF NOT EXISTS idx_couriers_pagarme_recipient
+  ON couriers(pagarme_recipient_id);
+
+CREATE INDEX IF NOT EXISTS idx_orders_pagarme_order
+  ON orders(pagarme_order_id);
+
+CREATE INDEX IF NOT EXISTS idx_orders_pagarme_charge
+  ON orders(pagarme_charge_id);
+
+CREATE INDEX IF NOT EXISTS idx_assignments_pagarme_transfer
+  ON delivery_assignments(pagarme_transfer_id);
+
+CREATE INDEX IF NOT EXISTS idx_payouts_pagarme_transfer
+  ON payouts(pagarme_transfer_id);
+
+-- Tabela de log/idempotencia de webhooks Pagar.me
+-- Cada evento tem id unico (event.id na payload). O pagarme-webhook
+-- insere ANTES de processar; conflito de PK = duplicata, retorna
+-- 200 sem reprocessar.
+CREATE TABLE IF NOT EXISTS webhook_events_log (
+  event_id     TEXT PRIMARY KEY,
+  tipo         TEXT NOT NULL,
+  payload      JSONB,
+  processed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_events_tipo
+  ON webhook_events_log(tipo);
+
+CREATE INDEX IF NOT EXISTS idx_webhook_events_processed
+  ON webhook_events_log(processed_at DESC);
+
+-- RLS — apenas service_role acessa
+ALTER TABLE webhook_events_log ENABLE ROW LEVEL SECURITY;
+
+-- Backfill: quem ja tinha stripe_onboarding_ok = true é considerado
+-- 'pending' no Pagar.me até passar pelo novo onboarding. Não há
+-- mapeamento automático de Stripe Connect → Pagar.me recipient.
+-- Tenants/couriers existentes precisarão refazer o onboarding via
+-- onboard-tenant / onboard-courier para obter pagarme_recipient_id.
+
+-- ============================================================
+-- DOWN
+-- ============================================================
+
+-- DROP INDEX IF EXISTS idx_webhook_events_processed;
+-- DROP INDEX IF EXISTS idx_webhook_events_tipo;
+-- DROP TABLE IF EXISTS webhook_events_log;
+--
+-- DROP INDEX IF EXISTS idx_payouts_pagarme_transfer;
+-- DROP INDEX IF EXISTS idx_assignments_pagarme_transfer;
+-- DROP INDEX IF EXISTS idx_orders_pagarme_charge;
+-- DROP INDEX IF EXISTS idx_orders_pagarme_order;
+-- DROP INDEX IF EXISTS idx_couriers_pagarme_recipient;
+-- DROP INDEX IF EXISTS idx_tenants_pagarme_recipient;
+--
+-- ALTER TABLE payouts
+--   DROP COLUMN IF EXISTS pagarme_transfer_id,
+--   DROP COLUMN IF EXISTS pagarme_anticipation_id;
+--
+-- ALTER TABLE delivery_assignments
+--   DROP COLUMN IF EXISTS pagarme_transfer_id;
+--
+-- ALTER TABLE orders
+--   DROP COLUMN IF EXISTS pagarme_order_id,
+--   DROP COLUMN IF EXISTS pagarme_charge_id,
+--   DROP COLUMN IF EXISTS valor_estornado;
+--
+-- ALTER TABLE couriers
+--   DROP COLUMN IF EXISTS pagarme_recipient_id,
+--   DROP COLUMN IF EXISTS pagarme_onboarding_status;
+--
+-- ALTER TABLE tenants
+--   DROP COLUMN IF EXISTS pagarme_recipient_id,
+--   DROP COLUMN IF EXISTS pagarme_onboarding_status;
+```
+
+### Observação importante
+
+Os campos `stripe_account_id`, `stripe_onboarding_ok`,
+`stripe_payment_intent_id` e `stripe_transfer_id` (Stripe Connect)
+**permanecem** no schema após a `migration_006` — são derrubados
+apenas pela `migration_007` depois do cutover validado em
+produção, garantindo plano de rollback durante a janela de migração.
+
+Os campos `stripe_customer_id`, `stripe_subscription_id`,
+`stripe_price_id`, `stripe_product_id` (Stripe Billing) **continuam
+em uso** indefinidamente — Stripe Billing segue como gateway da
+assinatura mensal do lojista.
+
+-----
+
+## MIGRATION 007 — Drop dos campos Stripe Connect (pos-cutover)
+
+### Status: PENDENTE — somente apos validacao do cutover Pagar.me
+
+Arquivo: `<timestamp>_migration_007_drop_stripe_connect.sql`
+
+Executar **somente** quando:
+
+- nenhum tenant ativo dependa mais de `stripe_account_id`;
+- todas as orders abertas tenham `pagarme_order_id` populado;
+- todos os payouts pendentes tenham `pagarme_transfer_id`;
+- já tiver passado pelo menos um ciclo completo de pagamentos via
+  Pagar.me em produção sem rollback.
+
+```sql
+-- ============================================================
+-- UP
+-- ============================================================
+
+ALTER TABLE tenants
+  DROP COLUMN IF EXISTS stripe_account_id,
+  DROP COLUMN IF EXISTS stripe_onboarding_ok;
+
+ALTER TABLE couriers
+  DROP COLUMN IF EXISTS stripe_account_id,
+  DROP COLUMN IF EXISTS stripe_onboarding_ok;
+
+ALTER TABLE orders
+  DROP COLUMN IF EXISTS stripe_payment_intent_id;
+
+ALTER TABLE payouts
+  DROP COLUMN IF EXISTS stripe_transfer_id;
+
+DROP INDEX IF EXISTS idx_tenants_stripe_account;
+DROP INDEX IF EXISTS idx_couriers_stripe;
+DROP INDEX IF EXISTS idx_orders_payment_intent;
+
+-- ============================================================
+-- DOWN — recriar exige restore de backup; nao reversivel via SQL puro
+-- ============================================================
+```
+
+`stripe_customer_id`, `stripe_subscription_id`, `stripe_price_id` e
+`stripe_product_id` permanecem intactos — Stripe Billing continua ativo.
+
+-----
+
 ## TRIGGER: atualizado_em automatico
 
 Aplicar em todas as tabelas que possuem a coluna `atualizado_em`.
