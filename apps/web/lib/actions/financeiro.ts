@@ -1,13 +1,29 @@
 'use server'
 
-import Stripe from 'stripe'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { calcularTaxaAntecipacao } from '@mallora/lib'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-04-10',
-})
+async function chamarEdgeFunction<T>(nome: string): Promise<T | null> {
+  const supabase = createSupabaseServer()
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) return null
+
+  try {
+    const resposta = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/${nome}`,
+      {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        cache: 'no-store',
+      }
+    )
+    if (!resposta.ok) return null
+    return (await resposta.json()) as T
+  } catch {
+    return null
+  }
+}
 
 // KPIs financeiros do período
 export async function getKpisFinanceiros(periodo: 'hoje' | 'semana' | 'mes') {
@@ -204,57 +220,60 @@ export async function getRepasses(filtro: 'pendentes' | 'concluidos' | 'todos' =
   }
 }
 
-// Saldo na conta Stripe Express do lojista
-export async function getSaldoStripe() {
+// Saldo do recipient Pagar.me do lojista (em centavos)
+export async function getRecipientBalance() {
   const supabase = createSupabaseServer()
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('stripe_account_id, stripe_onboarding_ok')
-    .single()
-
-  if (!tenant || !tenant.stripe_onboarding_ok || !tenant.stripe_account_id) {
-    return null
-  }
-
-  try {
-    const saldo = await stripe.balance.retrieve({
-      stripeAccount: tenant.stripe_account_id,
-    })
-
-    const disponivel = saldo.available.find((b) => b.currency === 'brl')
-    const pendente = saldo.pending.find((b) => b.currency === 'brl')
-
-    return {
-      disponivel: disponivel?.amount ?? 0,
-      pendente: pendente?.amount ?? 0,
+    .select('pagarme_recipient_id, pagarme_onboarding_status')
+    .single() as {
+      data: {
+        pagarme_recipient_id: string | null
+        pagarme_onboarding_status: string
+      } | null
     }
-  } catch {
+
+  if (!tenant || tenant.pagarme_onboarding_status !== 'active' || !tenant.pagarme_recipient_id) {
     return null
   }
+
+  return chamarEdgeFunction<{
+    available: number
+    waiting_funds: number
+    transferred: number
+  }>('pagarme-balance')
 }
 
-// Link para o Stripe Express Dashboard (saques)
-export async function getLinkExpressDashboard() {
+// Antecipações (anticipations) do recipient Pagar.me
+export async function listAnticipations() {
   const supabase = createSupabaseServer()
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('stripe_account_id, stripe_onboarding_ok')
-    .single()
+    .select('pagarme_recipient_id, pagarme_onboarding_status')
+    .single() as {
+      data: {
+        pagarme_recipient_id: string | null
+        pagarme_onboarding_status: string
+      } | null
+    }
 
-  if (!tenant || !tenant.stripe_onboarding_ok || !tenant.stripe_account_id) {
-    return null
+  if (!tenant || tenant.pagarme_onboarding_status !== 'active' || !tenant.pagarme_recipient_id) {
+    return []
   }
 
-  try {
-    const link = await stripe.accounts.createLoginLink(
-      tenant.stripe_account_id
-    )
-    return link.url
-  } catch {
-    return null
-  }
+  const resultado = await chamarEdgeFunction<{
+    anticipations: Array<{
+      id: string
+      amount: number
+      status: string
+      created_at: string
+      payment_date: string | null
+    }>
+  }>('pagarme-anticipations')
+
+  return resultado?.anticipations ?? []
 }
 
 // Pedidos elegíveis para antecipação
@@ -263,10 +282,15 @@ export async function getPedidosElegiveis() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, stripe_onboarding_ok')
-    .single()
+    .select('id, pagarme_onboarding_status')
+    .single() as {
+      data: {
+        id: string
+        pagarme_onboarding_status: string
+      } | null
+    }
 
-  if (!tenant || !tenant.stripe_onboarding_ok) {
+  if (!tenant || tenant.pagarme_onboarding_status !== 'active') {
     return { elegivel: false, motivo: 'Configure sua conta de recebimentos primeiro', pedidos: 0, valor_bruto: 0, taxa: 0, valor_liquido: 0 }
   }
 

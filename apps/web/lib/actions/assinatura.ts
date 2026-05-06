@@ -13,7 +13,7 @@ export async function getDadosAssinatura() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('stripe_customer_id, stripe_onboarding_ok')
+    .select('stripe_customer_id, pagarme_onboarding_status')
     .single()
 
   const { data: sub } = await supabase

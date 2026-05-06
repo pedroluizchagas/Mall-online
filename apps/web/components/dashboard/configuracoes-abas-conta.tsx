@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { AbaMeusDados } from './config/aba-meus-dados'
 import { AbaAssinatura } from './config/aba-assinatura'
-import { AbaStripe } from './config/aba-stripe'
+import { AbaPagarme } from './config/aba-pagarme'
 
 const ABAS = [
   { id: 'dados', label: 'Meus dados' },
@@ -19,13 +19,12 @@ interface Props {
     cpf_cnpj: string
   }
   tenant: any
-  linkExpress: string | null
   assinatura: any
   faturas: any[]
   linkPortal: string | null
 }
 
-export function ConfiguracoesAbasConta({ dadosConta, tenant, linkExpress, assinatura, faturas, linkPortal }: Props) {
+export function ConfiguracoesAbasConta({ dadosConta, tenant, assinatura, faturas, linkPortal }: Props) {
   const [abaAtiva, setAbaAtiva] = useState('dados')
 
   return (
@@ -58,9 +57,7 @@ export function ConfiguracoesAbasConta({ dadosConta, tenant, linkExpress, assina
           linkPortal={linkPortal}
         />
       )}
-      {abaAtiva === 'recebimentos' && (
-        <AbaStripe tenant={tenant} linkExpress={linkExpress} />
-      )}
+      {abaAtiva === 'recebimentos' && <AbaPagarme tenant={tenant} />}
     </div>
   )
 }

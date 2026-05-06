@@ -38,7 +38,9 @@ export async function getDadosLoja() {
 
   const { data: tenant } = await supabase
     .from('tenants')
-    .select('id, nome_responsavel, email, telefone, cpf_cnpj, stripe_account_id, stripe_onboarding_ok')
+    .select(
+      'id, nome_responsavel, email, telefone, cpf_cnpj, pagarme_recipient_id, pagarme_onboarding_status, pagarme_kyc_link'
+    )
     .single()
 
   if (!tenant) return null

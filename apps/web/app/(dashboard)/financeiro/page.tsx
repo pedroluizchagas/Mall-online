@@ -4,15 +4,14 @@ import {
   getFaturamentoDiario,
   getTopProdutos,
   getRepasses,
-  getSaldoStripe,
-  getLinkExpressDashboard,
+  getRecipientBalance,
   getPedidosElegiveis,
 } from '@/lib/actions/financeiro'
 import { KpisFinanceiros } from '@/components/dashboard/kpis-financeiros'
 import { GraficoFaturamento } from '@/components/dashboard/grafico-faturamento'
 import { ListaRepasses } from '@/components/dashboard/lista-repasses'
 import { CardAntecipacao } from '@/components/dashboard/card-antecipacao'
-import { CardSaldoStripe } from '@/components/dashboard/card-saldo-stripe'
+import { CardSaldoPagarme } from '@/components/dashboard/card-saldo-pagarme'
 import { TopProdutos } from '@/components/dashboard/top-produtos'
 import { Card } from '@/components/ui/card'
 
@@ -23,8 +22,7 @@ export default async function PaginaFinanceiro() {
     faturamentoDiario,
     topProdutos,
     repasses,
-    saldoStripe,
-    linkExpress,
+    saldoPagarme,
     pedidosElegiveis,
   ] = await Promise.all([
     getKpisFinanceiros('hoje'),
@@ -32,8 +30,7 @@ export default async function PaginaFinanceiro() {
     getFaturamentoDiario(),
     getTopProdutos(),
     getRepasses(),
-    getSaldoStripe(),
-    getLinkExpressDashboard(),
+    getRecipientBalance(),
     getPedidosElegiveis(),
   ])
 
@@ -43,7 +40,7 @@ export default async function PaginaFinanceiro() {
         <div>
           <h1 className="font-display text-[32px] m-0 leading-tight">Financeiro</h1>
           <div className="text-ink-3 text-[13px] mt-0.5">
-            Conta conectada · Stripe Express ativo
+            Conta conectada · Pagar.me ativa
           </div>
         </div>
         <button
@@ -63,7 +60,7 @@ export default async function PaginaFinanceiro() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-[18px]">
-        <CardSaldoStripe saldo={saldoStripe} linkExpress={linkExpress} />
+        <CardSaldoPagarme saldo={saldoPagarme} />
         <CardAntecipacao elegibilidade={pedidosElegiveis} />
       </div>
 

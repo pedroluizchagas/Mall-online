@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import type { Database } from '@mallora/types'
-import { BannerStripePendente } from '@/components/dashboard/banner-stripe-pendente'
+import { BannerRecebimentosPendente } from '@/components/dashboard/banner-recebimentos-pendente'
 import { ToastBoasVindas } from '@/components/dashboard/toast-boas-vindas'
 import { SidebarDashboard } from '@/components/dashboard/sidebar'
 
@@ -23,8 +23,8 @@ export default async function LayoutDashboard({
 
   const { data: tenants, error: tenantError } = (await supabase
     .from('tenants')
-    .select('id, stripe_onboarding_ok')
-    .limit(1)) as { data: Pick<Tenant, 'id' | 'stripe_onboarding_ok'>[] | null; error: any }
+    .select('id, pagarme_onboarding_status')
+    .limit(1)) as { data: Pick<Tenant, 'id' | 'pagarme_onboarding_status'>[] | null; error: any }
 
   const tenant = tenants?.[0]
 
@@ -82,7 +82,7 @@ export default async function LayoutDashboard({
             </div>
           )}
 
-          {!tenant.stripe_onboarding_ok && <BannerStripePendente />}
+          {tenant.pagarme_onboarding_status !== 'active' && <BannerRecebimentosPendente />}
 
           <main className="flex-1 overflow-y-auto min-h-0">
             {!assinaturaAtiva && assinatura?.billing_status === 'cancelada' ? (

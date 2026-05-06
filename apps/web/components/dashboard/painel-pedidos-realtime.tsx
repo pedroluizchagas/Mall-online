@@ -296,9 +296,10 @@ function OrderDetail({ order }: { order: Pedido | null }) {
 
   function onAction(novo: OrderStatus) {
     setErro(null)
-    startTransition(async () => {
-      const r = await atualizarStatusPedido(order!.id, novo)
-      if (r.erro) setErro(r.erro)
+    startTransition(() => {
+      void atualizarStatusPedido(order!.id, novo).then((r) => {
+        if (r.erro) setErro(r.erro)
+      })
     })
   }
 

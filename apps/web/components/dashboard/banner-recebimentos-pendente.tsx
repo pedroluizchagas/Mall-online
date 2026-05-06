@@ -1,6 +1,6 @@
 import { CreditCard, ArrowRight } from 'lucide-react'
 
-export function BannerStripePendente() {
+export function BannerRecebimentosPendente() {
   return (
     <div
       className="px-6 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 flex-shrink-0"
@@ -18,12 +18,12 @@ export function BannerStripePendente() {
             Configure seus recebimentos para começar a vender
           </p>
           <p className="text-xs leading-tight mt-0.5" style={{ opacity: 0.6 }}>
-            Sua loja está pronta. Falta conectar a conta bancária via Stripe para receber pagamentos.
+            Sua loja está pronta. Falta concluir a verificação Pagar.me para receber pagamentos.
           </p>
         </div>
       </div>
       <a
-        href="/onboarding/stripe/retry"
+        href="/configuracoes/conta"
         className="flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0"
         style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
       >

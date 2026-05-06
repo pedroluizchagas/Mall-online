@@ -62,9 +62,10 @@ export function PedidoCard({
 
   function handleAcao(status: string) {
     setErro(null)
-    startTransition(async () => {
-      const resultado = await atualizarStatusPedido(pedido.id, status as any)
-      if (resultado.erro) setErro(resultado.erro)
+    startTransition(() => {
+      void atualizarStatusPedido(pedido.id, status as any).then((resultado) => {
+        if (resultado.erro) setErro(resultado.erro)
+      })
     })
   }
 

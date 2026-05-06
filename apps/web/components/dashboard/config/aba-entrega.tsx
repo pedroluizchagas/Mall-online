@@ -1,7 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { useFormState, useFormStatus } from 'react-dom'
 import { atualizarConfigEntrega, atualizarEndereco } from '@/lib/actions/lojas'
 
 const inputClass =
@@ -22,8 +21,8 @@ function BotaoSalvar({ label }: { label: string }) {
 }
 
 export function AbaEntrega({ loja }: { loja: any }) {
-  const [estadoEntrega, dispatchEntrega] = useActionState(atualizarConfigEntrega, null)
-  const [estadoEndereco, dispatchEndereco] = useActionState(atualizarEndereco, null)
+  const [estadoEntrega, dispatchEntrega] = useFormState(atualizarConfigEntrega, null)
+  const [estadoEndereco, dispatchEndereco] = useFormState(atualizarEndereco, null)
 
   return (
     <div className="space-y-6">

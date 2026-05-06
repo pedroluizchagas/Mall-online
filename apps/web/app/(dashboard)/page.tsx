@@ -20,10 +20,10 @@ export default async function PaginaInicio() {
 
   const { data: tenants } = await supabase
     .from('tenants')
-    .select('id, stripe_onboarding_ok')
+    .select('id, pagarme_onboarding_status')
     .limit(1)
 
-  const tenant = tenants?.[0]
+  const tenant = tenants?.[0] as { id: string; pagarme_onboarding_status: string } | undefined
   const tenantId = tenant?.id ?? ''
 
   const [{ data: loja }, { count: totalProdutos }] = await Promise.all([
@@ -41,15 +41,15 @@ export default async function PaginaInicio() {
   const horariosConfigurados = !!(loja?.horarios && Object.keys(loja.horarios as object).length > 0)
   const entregaConfigurada = !!(loja?.taxa_entrega !== null && loja?.raio_entrega_km && loja.raio_entrega_km > 0)
   const temProdutos = (totalProdutos ?? 0) > 0
-  const stripeOk = !!tenant?.stripe_onboarding_ok
+  const recebimentosOk = tenant?.pagarme_onboarding_status === 'active'
 
-  const setupCompleto = stripeOk && temProdutos && horariosConfigurados && entregaConfigurada
+  const setupCompleto = recebimentosOk && temProdutos && horariosConfigurados && entregaConfigurada
 
   if (!setupCompleto) {
     return (
       <SetupWizard
         nomeLoja={loja?.nome ?? 'Minha loja'}
-        stripeOk={stripeOk}
+        recebimentosOk={recebimentosOk}
         temProdutos={temProdutos}
         horariosConfigurados={horariosConfigurados}
         entregaConfigurada={entregaConfigurada}

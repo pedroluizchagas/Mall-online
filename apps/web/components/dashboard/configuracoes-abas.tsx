@@ -5,23 +5,22 @@ import { AbaGeral } from './config/aba-geral'
 import { AbaHorarios } from './config/aba-horarios'
 import { AbaEntrega } from './config/aba-entrega'
 import { AbaPagamentos } from './config/aba-pagamentos'
-import { AbaStripe } from './config/aba-stripe'
+import { AbaPagarme } from './config/aba-pagarme'
 
 const ABAS = [
   { id: 'geral', label: 'Dados gerais' },
   { id: 'horarios', label: 'Horários' },
   { id: 'entrega', label: 'Entrega' },
   { id: 'pagamentos', label: 'Pagamentos' },
-  { id: 'stripe', label: 'Conta Stripe' },
+  { id: 'pagarme', label: 'Conta Pagar.me' },
 ]
 
 interface Props {
   loja: any
   tenant: any
-  linkExpress: string | null
 }
 
-export function ConfiguracoesAbas({ loja, tenant, linkExpress }: Props) {
+export function ConfiguracoesAbas({ loja, tenant }: Props) {
   const [abaAtiva, setAbaAtiva] = useState('geral')
 
   return (
@@ -50,9 +49,7 @@ export function ConfiguracoesAbas({ loja, tenant, linkExpress }: Props) {
       {abaAtiva === 'horarios' && <AbaHorarios horarios={loja.horarios} />}
       {abaAtiva === 'entrega' && <AbaEntrega loja={loja} />}
       {abaAtiva === 'pagamentos' && <AbaPagamentos loja={loja} />}
-      {abaAtiva === 'stripe' && (
-        <AbaStripe tenant={tenant} linkExpress={linkExpress} />
-      )}
+      {abaAtiva === 'pagarme' && <AbaPagarme tenant={tenant} />}
     </div>
   )
 }
