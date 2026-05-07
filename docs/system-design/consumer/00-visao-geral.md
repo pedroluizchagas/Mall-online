@@ -80,12 +80,12 @@ O escopo é **puramente visual e de organização de UI**. Nenhuma feature é ad
 | `00-visao-geral.md` | este documento | feito |
 | `01-tokens.md` | `consumer-design.ts` completo + tabelas de cor / raio / tipografia / spacing / motion | feito |
 | `02-iconografia.md` | `ConsumerIcon` — lista de ícones, mapeamento `lucide → consumer-icon`, padrão de stroke | feito |
-| `03-componentes-base.md` | Botao, Input, Card, Badge, Chip, Skeleton, EmptyState, LoadingState | pendente |
-| `04-componentes-dominio.md` | LojaCard(H), ProdutoCard, ItemCarrinhoCard, PedidoCard, ModalProduto, BannerCarousel, SeletorEndereco, SeletorPagamento, MapaEntregador, NotificacoesPopup | pendente |
-| `05-shell-app.md` | tab bar flutuante, header pattern, layouts (`_layout.tsx`, `(auth)`, `(tabs)`), splash | pendente |
-| `06-status-pedido.md` | `lib/status-pedido.ts` — single source of truth dos 7 estados | pendente |
-| `07-telas.md` | Redesenho tela-a-tela (home, buscar, explorar, pedidos, perfil, loja, checkout, pedido, boas-vindas, entrar) | pendente |
-| `08-roadmap.md` | Sequência de PRs/fases, dependências, checklist de aceite | pendente |
+| `03-componentes-base.md` | Botao, Input, Card, Badge, Chip, Skeleton, EmptyState, LoadingState | feito |
+| `04-componentes-dominio.md` | LojaCard(H), ProdutoCard, ItemCarrinhoCard, PedidoCard, ModalProduto, BannerCarousel, SeletorEndereco, SeletorPagamento, MapaEntregador, NotificacoesPopup | feito |
+| `05-shell-app.md` | tab bar flutuante, header pattern, layouts (`_layout.tsx`, `(auth)`, `(tabs)`), splash | feito |
+| `06-status-pedido.md` | `lib/status-pedido.ts` — single source of truth dos 7 estados | feito |
+| `07-telas.md` | Redesenho tela-a-tela (home, buscar, explorar, pedidos, perfil, loja, checkout, pedido, boas-vindas, entrar) | feito |
+| `08-roadmap.md` | Sequência de PRs/fases, dependências, checklist de aceite | feito |
 
 ## 7. Sequência de execução (resumo)
 
