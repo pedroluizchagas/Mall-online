@@ -1,18 +1,17 @@
 import { useState, useCallback, useRef } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  Image,
-} from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, Image } from 'react-native'
 import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { LojaCard } from '@/components/LojaCard'
+import { HeaderTela } from '@/components/HeaderTela'
+import { Input } from '@/components/ui/Input'
+import { LoadingState } from '@/components/ui/LoadingState'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { formatarReais } from '@mallora/lib'
 import { consumerDesign } from '@/lib/consumer-design'
+
+const { colors, radius, spacing, shadow } = consumerDesign
 
 interface ResultadoLoja {
   tipo: 'loja'
@@ -109,110 +108,167 @@ export default function TelaBuscar() {
     debounceRef.current = setTimeout(() => buscar(texto), 400)
   }
 
-  return (
-    <View className="flex-1 bg-creme">
-      {/* Header com input */}
-      <View className="px-5 pt-14 pb-4 bg-creme">
-        <Text className="text-xl font-bold text-verde-profundo mb-4">
-          Buscar
-        </Text>
+  function limparTermo() {
+    setTermo('')
+    setResultados([])
+    setBuscaFeita(false)
+  }
 
-        <View className="bg-white border border-gray-100 rounded-2xl
-          px-4 py-3 flex-row items-center gap-3">
-          <TextInput
-            value={termo}
-            onChangeText={handleTexto}
-            placeholder="Lojas, restaurantes ou produtos..."
-            placeholderTextColor="#9CA3AF"
-            className="flex-1 text-base text-gray-800"
-            autoFocus
-            returnKeyType="search"
-            onSubmitEditing={() => buscar(termo)}
-          />
-          {buscando && <ActivityIndicator size="small" color="#1A4D3A" />}
-        </View>
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <HeaderTela variante="voltar" titulo="Buscar" />
+
+      <View style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
+        <Input
+          valor={termo}
+          aoMudar={handleTexto}
+          placeholder="Lojas, restaurantes ou produtos..."
+          iconeEsquerda="search"
+          autoFocus
+          autoCapitalize="none"
+          acessorioDireita={
+            termo ? (
+              <TouchableOpacity onPress={limparTermo} activeOpacity={0.7}>
+                <ConsumerIcon name="close" size={18} color={colors.inkSoft} />
+              </TouchableOpacity>
+            ) : null
+          }
+        />
       </View>
 
-      {/* Resultados */}
-      <FlatList
-        data={resultados}
-        keyExtractor={(item) => `${item.tipo}-${item.id}`}
-        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: consumerDesign.spacing.tabBarHeight }}
-        keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={
-          buscaFeita && !buscando ? (
-            <View className="py-12 items-center">
-              <Text className="text-gray-400 text-base">
-                Nenhum resultado para "{termo}"
+      {buscando ? (
+        <LoadingState altura={120} />
+      ) : (
+        <FlatList
+          data={resultados}
+          keyExtractor={(item) => `${item.tipo}-${item.id}`}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingBottom: spacing.tabBarHeight,
+            gap: 12,
+          }}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={
+            resultados.length > 0 ? (
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '700',
+                  color: colors.inkMuted,
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                  paddingVertical: 4,
+                  paddingHorizontal: 8,
+                }}
+              >
+                {resultados.length}{' '}
+                {resultados.length === 1 ? 'resultado' : 'resultados'}
               </Text>
-              <Text className="text-gray-300 text-sm mt-1">
-                Tente outro termo de busca
-              </Text>
-            </View>
-          ) : !buscaFeita && termo.length === 0 ? (
-            <View className="py-12 items-center">
-              <Text className="text-gray-300 text-base">
-                Digite para buscar lojas ou produtos
-              </Text>
-            </View>
-          ) : null
-        }
-        ListHeaderComponent={
-          resultados.length > 0 ? (
-            <Text className="text-sm text-gray-400 mb-2">
-              {resultados.length} resultado{resultados.length !== 1 ? 's' : ''}
-            </Text>
-          ) : null
-        }
-        renderItem={({ item }) => {
-          if (item.tipo === 'loja') {
-            return (
-              <LojaCard
-                loja={item}
-                onPress={() => router.push(`/loja/${item.slug}`)}
-              />
-            )
+            ) : null
           }
+          ListEmptyComponent={
+            buscaFeita && !buscando ? (
+              <EmptyState
+                icone="search"
+                titulo="Nada encontrado"
+                descricao={`Tente buscar por outra loja, produto ou categoria.`}
+              />
+            ) : termo.length === 0 ? (
+              <EmptyState
+                icone="search"
+                titulo="O que você procura?"
+                descricao="Digite o nome de uma loja ou produto para começar."
+              />
+            ) : null
+          }
+          renderItem={({ item }) => {
+            if (item.tipo === 'loja') {
+              return (
+                <LojaCard
+                  loja={item}
+                  onPress={() => router.push(`/loja/${item.slug}`)}
+                />
+              )
+            }
 
-          // Resultado de produto
-          return (
-            <TouchableOpacity
-              onPress={() => router.push(`/loja/${item.store_slug}`)}
-              className="bg-white rounded-2xl p-4 flex-row items-center gap-3"
-              activeOpacity={0.85}
-            >
-              <View className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
-                {item.foto_url ? (
-                  <Image
-                    source={{ uri: item.foto_url }}
-                    style={{ width: 56, height: 56 }}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View className="flex-1 items-center justify-center">
-                    <Text className="text-gray-200 text-lg">?</Text>
-                  </View>
-                )}
-              </View>
-
-              <View className="flex-1 min-w-0">
-                <Text
-                  className="text-sm font-semibold text-gray-800"
-                  numberOfLines={1}
-                >
-                  {item.nome}
-                </Text>
-                <Text className="text-xs text-gray-400 mt-0.5" numberOfLines={1}>
-                  {item.store_nome}
-                </Text>
-                <Text className="text-sm font-bold text-verde-profundo mt-1">
-                  {formatarReais(item.preco)}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )
-        }}
-      />
+            return <ResultadoProdutoItem produto={item} />
+          }}
+        />
+      )}
     </View>
+  )
+}
+
+function ResultadoProdutoItem({ produto }: { produto: ResultadoProduto }) {
+  return (
+    <TouchableOpacity
+      onPress={() => router.push(`/loja/${produto.store_slug}`)}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
+      style={[
+        {
+          backgroundColor: colors.surface,
+          borderRadius: radius.lg,
+          padding: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+        },
+        shadow.soft,
+      ]}
+    >
+      <View
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: radius.md,
+          backgroundColor: colors.canvasAlt,
+          overflow: 'hidden',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {produto.foto_url ? (
+          <Image
+            source={{ uri: produto.foto_url }}
+            style={{ width: 56, height: 56 }}
+            resizeMode="cover"
+          />
+        ) : (
+          <ConsumerIcon name="bag" size={22} color={colors.inkSoft} />
+        )}
+      </View>
+
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text
+          style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}
+          numberOfLines={1}
+        >
+          {produto.nome}
+        </Text>
+        <Text
+          style={{
+            fontSize: 12,
+            color: colors.inkMuted,
+            marginTop: 2,
+            fontWeight: '500',
+          }}
+          numberOfLines={1}
+        >
+          {produto.store_nome}
+        </Text>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: '800',
+            color: colors.ink,
+            marginTop: 4,
+          }}
+        >
+          {formatarReais(produto.preco)}
+        </Text>
+      </View>
+
+      <ConsumerIcon name="chevron-right" size={16} color={colors.inkSoft} />
+    </TouchableOpacity>
   )
 }

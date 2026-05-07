@@ -7,28 +7,27 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { router } from 'expo-router'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-  MapPin,
-  Bell,
-  Search,
-  ChevronDown,
-  ShoppingBag,
-  ChevronRight,
-} from 'lucide-react-native'
 import { supabase } from '@/lib/supabase'
+import { HeaderTela } from '@/components/HeaderTela'
 import { BannerCarousel } from '@/components/BannerCarousel'
 import { LojaCardH } from '@/components/LojaCardH'
-import { NotificacoesPopup, NOTIFICACOES_NAO_LIDAS } from '@/components/NotificacoesPopup'
+import {
+  NotificacoesPopup,
+  NOTIFICACOES_NAO_LIDAS,
+} from '@/components/NotificacoesPopup'
+import { Skeleton } from '@/components/ui/Skeleton'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { Card } from '@/components/ui/Card'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
 import { formatarReais } from '@mallora/lib'
-import { consumerDesign } from '@/lib/consumer-design'
+import { consumerDesign, softColor } from '@/lib/consumer-design'
+import { metaDoStatus, ehAtivo } from '@/lib/status-pedido'
+import { BANNERS_MOCK } from '@/lib/banners-mock'
 
-// ─────────────────────────────────────────────────────────
-// Types
-// ─────────────────────────────────────────────────────────
+const { colors, radius, spacing, shadow } = consumerDesign
+
 interface Loja {
   id: string
   nome: string
@@ -38,276 +37,235 @@ interface Loja {
   tempo_entrega: number | null
 }
 
-interface Categoria {
-  id: string
-  nome: string
-  icone: string | null
-}
+/**
+ * Seções temáticas do home. Stores são chunked sequencialmente em
+ * grupos do tamanho de SECAO_SIZE; cada grupo é exibido com o
+ * título/subtítulo abaixo (na ordem da array).
+ */
+const SECOES = [
+  { titulo: 'Praça de Alimentação', subtitulo: 'Restaurantes, fast food e cafés' },
+  { titulo: 'Essenciais do Dia a Dia', subtitulo: 'Mercado, farmácia e bebidas' },
+  { titulo: 'Moda & Beleza', subtitulo: 'Roupas, calçados e cosméticos' },
+  { titulo: 'Tecnologia & Eletrônicos', subtitulo: 'Celulares, informática e games' },
+  { titulo: 'Casa & Vida', subtitulo: 'Decoração, pet shop e papelaria' },
+] as const
+
+const SECAO_SIZE = 6
 
 // ─────────────────────────────────────────────────────────
-// Design tokens
+// Sub-componentes locais
 // ─────────────────────────────────────────────────────────
-const GRADIENTES_CATS = [
-  '#C75B3A', '#1A4D3A', '#3D5B9E', '#8A6B1E',
-  '#8A2867', '#4A38A8', '#7A5535', '#007055',
-]
 
-const ICONES_PADRAO: [string, string][] = [
-  ['restaurante', '🍽️'], ['alimentação', '🍽️'], ['comida', '🍽️'],
-  ['mercado', '🛒'], ['supermercado', '🛒'],
-  ['farmácia', '💊'], ['saúde', '💊'],
-  ['bebida', '🍻'],
-  ['moda', '👗'], ['roupa', '👗'],
-  ['eletrônico', '📱'], ['tech', '📱'],
-  ['pet', '🐾'],
-  ['casa', '🏠'], ['decoração', '🏠'],
-]
-
-function getIcone(nome: string, icone: string | null): string {
-  if (icone) return icone
-  const lower = nome.toLowerCase()
-  for (const [key, emoji] of ICONES_PADRAO) {
-    if (lower.includes(key)) return emoji
-  }
-  return '🏪'
-}
-
-// ─────────────────────────────────────────────────────────
-// Sub-componentes
-// ─────────────────────────────────────────────────────────
-function SectionHeader({
-  title,
-  onVerTudo,
-}: {
-  title: string
-  onVerTudo?: () => void
-}) {
+function BotaoBell({ aoTocar }: { aoTocar: () => void }) {
   return (
-    <View
+    <TouchableOpacity
+      onPress={aoTocar}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: radius.sm,
+        backgroundColor: colors.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        position: 'relative',
+      }}
+    >
+      <ConsumerIcon name="bell" size={18} color={colors.ink} />
+      {NOTIFICACOES_NAO_LIDAS > 0 && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 8,
+            right: 9,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: colors.danger,
+            borderWidth: 1.5,
+            borderColor: colors.canvas,
+          }}
+        />
+      )}
+    </TouchableOpacity>
+  )
+}
+
+function BarraBusca() {
+  return (
+    <TouchableOpacity
+      onPress={() => router.push('/(tabs)/buscar')}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 24,
-        paddingTop: 28,
-        paddingBottom: 14,
+        gap: 10,
+        backgroundColor: colors.surface,
+        borderRadius: radius.pill,
+        paddingHorizontal: 18,
+        paddingVertical: 13,
+        marginHorizontal: 24,
+        marginTop: 4,
+        marginBottom: 12,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View
-          style={{
-            width: 3,
-            height: 20,
-            borderRadius: 2,
-            backgroundColor: '#1A4D3A',
-          }}
-        />
+      <ConsumerIcon name="search" size={17} color={colors.inkSoft} />
+      <Text
+        style={{
+          fontSize: 14,
+          color: colors.inkSoft,
+          fontWeight: '500',
+          flex: 1,
+        }}
+      >
+        O que você procura hoje?
+      </Text>
+    </TouchableOpacity>
+  )
+}
+
+function CardPedidoAtivo({
+  pedidoId,
+  statusAtual,
+}: {
+  pedidoId: string
+  statusAtual: string
+}) {
+  const meta = metaDoStatus(statusAtual)
+
+  return (
+    <View style={{ paddingHorizontal: 16, paddingTop: 4 }}>
+      <TouchableOpacity
+        onPress={() => router.push(`/pedido/${pedidoId}`)}
+        activeOpacity={consumerDesign.opacity.pressed}
+      >
+        <Card variante="escuro" raio="lg" preenchimento="md">
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                backgroundColor: softColor(meta.cor),
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ConsumerIcon name={meta.icone} size={20} color={meta.cor} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: '700',
+                  color: colors.inkSoft,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                }}
+              >
+                Pedido em andamento
+              </Text>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: colors.white,
+                  marginTop: 2,
+                }}
+              >
+                {meta.rotuloLongo}
+              </Text>
+            </View>
+            <ConsumerIcon name="chevron-right" size={20} color={colors.inkSoft} />
+          </View>
+        </Card>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+function SecaoLojas({
+  titulo,
+  subtitulo,
+  lojas,
+}: {
+  titulo: string
+  subtitulo: string
+  lojas: Loja[]
+}) {
+  if (lojas.length === 0) return null
+
+  return (
+    <View style={{ paddingTop: 28 }}>
+      <View style={{ paddingHorizontal: 24, marginBottom: 14 }}>
         <Text
           style={{
-            fontFamily: 'serif',
-            fontSize: 20,
-            fontWeight: '600',
-            color: '#1C1C19',
+            fontSize: 22,
+            fontWeight: '800',
+            color: colors.ink,
+            letterSpacing: -0.3,
           }}
         >
-          {title}
+          {titulo}
+        </Text>
+        <Text
+          style={{
+            fontSize: 13,
+            color: colors.inkMuted,
+            fontWeight: '500',
+            marginTop: 2,
+          }}
+        >
+          {subtitulo}
         </Text>
       </View>
-      {onVerTudo && (
-        <TouchableOpacity
-          onPress={onVerTudo}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
-          activeOpacity={0.6}
-        >
-          <Text style={{ fontSize: 13, fontWeight: '600', color: '#287D5C' }}>
-            Ver tudo
-          </Text>
-          <ChevronRight size={14} color="#287D5C" />
-        </TouchableOpacity>
-      )}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+      >
+        {lojas.map((loja) => (
+          <LojaCardH
+            key={loja.id}
+            loja={loja}
+            onPress={() => router.push(`/loja/${loja.slug}`)}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  )
+}
+
+function SkeletonSecao() {
+  return (
+    <View style={{ paddingTop: 28 }}>
+      <View style={{ paddingHorizontal: 24, marginBottom: 14, gap: 8 }}>
+        <Skeleton largura="60%" altura={24} raio={6} />
+        <Skeleton largura="40%" altura={14} raio={4} />
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+      >
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} largura={220} altura={200} raio={radius.lg} />
+        ))}
+      </ScrollView>
     </View>
   )
 }
 
 // ─────────────────────────────────────────────────────────
-// Metadados dos pisos (subcategorias e filtros)
+// Tela
 // ─────────────────────────────────────────────────────────
-type SubCat = { nome: string; emoji: string; cor: string }
-interface AndarMeta {
-  label: string
-  nome: string
-  desc: string
-  cor: string
-  cozinhas?: string[]
-  subs?: SubCat[]
-}
 
-const FLOOR_METADATA: AndarMeta[] = [
-  {
-    label: 'Térreo',
-    nome: 'Praça de Alimentação',
-    desc: 'Restaurantes, fast food, padarias e cafés',
-    cor: '#C75B3A',
-    cozinhas: ['Todos', 'Brasileira', 'Pizza', 'Hambúrguer', 'Japonesa', 'Açaí', 'Saudável'],
-  },
-  {
-    label: '1º Piso',
-    nome: 'Essenciais do Dia a Dia',
-    desc: 'Mercado, farmácia, bebidas e conveniência',
-    cor: '#287D5C',
-    subs: [
-      { nome: 'Mercado', emoji: '🛒', cor: '#287D5C' },
-      { nome: 'Farmácia', emoji: '💊', cor: '#5B8DEF' },
-      { nome: 'Bebidas', emoji: '🍺', cor: '#F5A623' },
-    ],
-  },
-  {
-    label: '2º Piso',
-    nome: 'Moda & Beleza',
-    desc: 'Roupas, calçados, acessórios e cosméticos',
-    cor: '#B44580',
-    subs: [
-      { nome: 'Roupas', emoji: '👗', cor: '#D45B9E' },
-      { nome: 'Calçados', emoji: '👟', cor: '#8B5E3C' },
-      { nome: 'Cosméticos', emoji: '💄', cor: '#A855C7' },
-    ],
-  },
-  {
-    label: '3º Piso',
-    nome: 'Tecnologia & Eletrônicos',
-    desc: 'Celulares, informática, games e acessórios',
-    cor: '#5040C0',
-    subs: [
-      { nome: 'Celulares', emoji: '📱', cor: '#6C5CE7' },
-      { nome: 'Informática', emoji: '💻', cor: '#2E6B8A' },
-      { nome: 'Games', emoji: '🎮', cor: '#E8654A' },
-    ],
-  },
-  {
-    label: '4º Piso',
-    nome: 'Casa & Vida',
-    desc: 'Decoração, pet shop, papelaria e utilidades',
-    cor: '#008F70',
-    subs: [
-      { nome: 'Decoração', emoji: '🏠', cor: '#00B894' },
-      { nome: 'Pet Shop', emoji: '🐾', cor: '#A67C52' },
-      { nome: 'Papelaria', emoji: '✏️', cor: '#E8654A' },
-    ],
-  },
-]
-
-// ─────────────────────────────────────────────────────────
-// Filtros de culinária (Térreo)
-// ─────────────────────────────────────────────────────────
-function FiltrosCulinaria({ itens }: { itens: string[] }) {
-  const [ativo, setAtivo] = useState(0)
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 14, gap: 8 }}
-    >
-      {itens.map((item, i) => {
-        const on = i === ativo
-        return (
-          <TouchableOpacity
-            key={i}
-            onPress={() => setAtivo(i)}
-            activeOpacity={0.75}
-            style={{
-              paddingHorizontal: 16,
-              paddingVertical: 9,
-              borderRadius: 100,
-              flexShrink: 0,
-              backgroundColor: on ? '#1A4D3A' : '#FFFFFF',
-              borderWidth: on ? 0 : 1.5,
-              borderColor: 'rgba(26,26,23,0.08)',
-              shadowColor: on ? '#1A4D3A' : '#000',
-              shadowOpacity: on ? 0.22 : 0,
-              shadowRadius: on ? 8 : 0,
-              shadowOffset: { width: 0, height: 3 },
-              elevation: on ? 3 : 0,
-            }}
-          >
-            <Text
-              style={{
-                fontSize: 12.5,
-                fontWeight: '600',
-                color: on ? '#FFF' : '#3D3D36',
-              }}
-            >
-              {item}
-            </Text>
-          </TouchableOpacity>
-        )
-      })}
-    </ScrollView>
-  )
-}
-
-// ─────────────────────────────────────────────────────────
-// Linha de subcategorias (demais pisos)
-// ─────────────────────────────────────────────────────────
-function SubcategoriaRow({ subs }: { subs: SubCat[] }) {
-  return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 14, gap: 8 }}
-    >
-      {subs.map((sub, i) => (
-        <TouchableOpacity
-          key={i}
-          activeOpacity={0.75}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 8,
-            paddingHorizontal: 14,
-            paddingVertical: 8,
-            borderRadius: 100,
-            backgroundColor: '#FFFFFF',
-            borderWidth: 1,
-            borderColor: 'rgba(26,26,23,0.07)',
-            shadowColor: '#000',
-            shadowOpacity: 0.04,
-            shadowRadius: 4,
-            shadowOffset: { width: 0, height: 1 },
-            elevation: 1,
-          }}
-        >
-          <View
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: 9,
-              backgroundColor: sub.cor,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text style={{ fontSize: 13 }}>{sub.emoji}</Text>
-          </View>
-          <Text style={{ fontSize: 12, fontWeight: '600', color: '#3D3D36' }}>
-            {sub.nome}
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
-  )
-}
-
-// ─────────────────────────────────────────────────────────
-// Tela principal
-// ─────────────────────────────────────────────────────────
 export default function TelaHome() {
   const [lojas, setLojas] = useState<Loja[]>([])
-  const [categorias, setCategorias] = useState<Categoria[]>([])
   const [carregando, setCarregando] = useState(true)
   const [atualizando, setAtualizando] = useState(false)
   const [notificacoesAbertas, setNotificacoesAbertas] = useState(false)
 
-  const insets = useSafeAreaInsets()
   const totalItens = useCartStore((s) => s.totalItens())
   const total = useCartStore((s) => s.total())
   const consumer = useAuthStore((s) => s.consumer)
@@ -316,22 +274,13 @@ export default function TelaHome() {
   const primeiroNome = consumer?.nome?.split(' ')[0] ?? ''
 
   async function carregarDados() {
-    const [resLojas, resCats] = await Promise.all([
-      supabase
-        .from('stores')
-        .select('id, nome, slug, logo_url, taxa_entrega, tempo_entrega')
-        .eq('ativo', true)
-        .limit(40),
-      supabase
-        .from('categories')
-        .select('id, nome, icone')
-        .is('tenant_id', null)
-        .eq('ativa', true)
-        .order('ordem'),
-    ])
+    const { data } = await supabase
+      .from('stores')
+      .select('id, nome, slug, logo_url, taxa_entrega, tempo_entrega')
+      .eq('ativo', true)
+      .limit(40)
 
-    setLojas(resLojas.data ?? [])
-    setCategorias(resCats.data ?? [])
+    setLojas(data ?? [])
     setCarregando(false)
   }
 
@@ -345,689 +294,105 @@ export default function TelaHome() {
     setAtualizando(false)
   }, [])
 
-  // Divide lojas em "andares" de ~6 para criar seções visuais
-  const ANDAR_SIZE = 6
-  const andares = carregando
-    ? []
-    : lojas.reduce<Loja[][]>((acc, loja, i) => {
-        const andar = Math.floor(i / ANDAR_SIZE)
-        if (!acc[andar]) acc[andar] = []
-        acc[andar].push(loja)
-        return acc
-      }, [])
+  // Divide lojas em seções de SECAO_SIZE
+  const grupos = lojas.reduce<Loja[][]>((acc, loja, i) => {
+    const indice = Math.floor(i / SECAO_SIZE)
+    if (!acc[indice]) acc[indice] = []
+    acc[indice].push(loja)
+    return acc
+  }, [])
 
+  const mostraPedidoAtivo = pedidoAtivoId && statusAtual && ehAtivo(statusAtual)
+  const espacoFinal =
+    totalItens > 0 ? spacing.tabBarHeight + 64 : spacing.tabBarHeight
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F4F0EB' }}>
-
-      {/* ══════════════════════════════
-          HEADER FIXO
-      ══════════════════════════════ */}
-      <View
-        style={{
-          paddingTop: insets.top + 6,
-          paddingHorizontal: 24,
-          backgroundColor: '#F4F0EB',
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <HeaderTela
+        variante="principal"
+        rotuloLocalizacao={
+          primeiroNome ? `Olá, ${primeiroNome}` : 'Entregar em'
+        }
+        textoLocalizacao="Divinópolis"
+        aoTocarLocalizacao={() => {
+          /* TODO: abrir seletor de endereço (deferido) */
         }}
-      >
-        {/* Localização + Notificações */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 14,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                backgroundColor: '#1A4D3A',
-                alignItems: 'center',
-                justifyContent: 'center',
-                shadowColor: '#1A4D3A',
-                shadowOpacity: 0.32,
-                shadowRadius: 8,
-                shadowOffset: { width: 0, height: 3 },
-                elevation: 4,
-              }}
-            >
-              <MapPin size={17} color="#FFF" />
-            </View>
+        acaoDireita={<BotaoBell aoTocar={() => setNotificacoesAbertas(true)} />}
+      />
 
-            <TouchableOpacity activeOpacity={0.7}>
-              <Text
-                style={{
-                  fontSize: 10,
-                  fontWeight: '600',
-                  color: '#8A8A7E',
-                  letterSpacing: 0.9,
-                  textTransform: 'uppercase',
-                  marginBottom: 2,
-                }}
-              >
-                {primeiroNome ? `Olá, ${primeiroNome}` : 'Entregar em'}
-              </Text>
-              <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}
-              >
-                <Text
-                  style={{
-                    fontSize: 15,
-                    fontWeight: '700',
-                    color: '#1C1C19',
-                    letterSpacing: -0.3,
-                  }}
-                >
-                  Divinópolis
-                </Text>
-                <ChevronDown size={14} color="#8A8A7E" />
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => setNotificacoesAbertas(true)}
-            activeOpacity={0.7}
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: 14,
-              backgroundColor: '#FFFFFF',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderWidth: 1.5,
-              borderColor: 'rgba(26,26,23,0.07)',
-              shadowColor: '#000',
-              shadowOpacity: 0.05,
-              shadowRadius: 6,
-              shadowOffset: { width: 0, height: 2 },
-              elevation: 2,
-            }}
-          >
-            <Bell size={19} color="#3D3D36" strokeWidth={1.8} />
-            {NOTIFICACOES_NAO_LIDAS > 0 && (
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 8,
-                  right: 9,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: '#C75B3A',
-                  borderWidth: 1.5,
-                  borderColor: '#FFFFFF',
-                }}
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Busca */}
-        <TouchableOpacity
-          onPress={() => router.push('/(tabs)/buscar')}
-          activeOpacity={0.75}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 10,
-            backgroundColor: '#FFFFFF',
-            borderRadius: 100,
-            paddingHorizontal: 18,
-            paddingVertical: 13,
-            marginBottom: 4,
-            shadowColor: '#000',
-            shadowOpacity: 0.05,
-            shadowRadius: 10,
-            shadowOffset: { width: 0, height: 2 },
-            elevation: 2,
-          }}
-        >
-          <Search size={17} color="#8A8A7E" />
-          <Text
-            style={{
-              fontSize: 14,
-              color: '#B0B0A5',
-              fontWeight: '500',
-              flex: 1,
-            }}
-          >
-            O que você procura hoje?
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* ══════════════════════════════
-          CONTEÚDO SCROLLÁVEL
-      ══════════════════════════════ */}
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: espacoFinal }}
         refreshControl={
           <RefreshControl
             refreshing={atualizando}
             onRefresh={onRefresh}
-            tintColor="#1A4D3A"
+            tintColor={colors.ink}
           />
         }
       >
-        {/* ── Banner Carousel (3 slides, auto-rotate 4s) ── */}
-        <View style={{ paddingTop: 20 }}>
-          <BannerCarousel />
-        </View>
+        <BarraBusca />
 
-        {/* ── Pedido ativo ── */}
-        {pedidoAtivoId && (
-          <View style={{ paddingHorizontal: 24, paddingTop: 14 }}>
-            <TouchableOpacity
-              onPress={() => router.push(`/pedido/${pedidoAtivoId}`)}
-              activeOpacity={0.88}
-              style={{
-                padding: 16,
-                borderRadius: 18,
-                backgroundColor: '#287D5C',
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 14,
-                overflow: 'hidden',
-                shadowColor: '#1A4D3A',
-                shadowOpacity: 0.28,
-                shadowRadius: 12,
-                shadowOffset: { width: 0, height: 4 },
-                elevation: 5,
-              }}
-            >
-              <View
-                style={{
-                  position: 'absolute',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 3,
-                  backgroundColor: 'rgba(255,255,255,0.1)',
-                }}
-              >
-                <View
-                  style={{
-                    width: '45%',
-                    height: '100%',
-                    backgroundColor: '#D4A04A',
-                    borderRadius: 2,
-                  }}
-                />
-              </View>
-
-              <View
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: 14,
-                  backgroundColor: 'rgba(255,255,255,0.12)',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text style={{ fontSize: 22 }}>🛵</Text>
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '700',
-                    color: '#FFF',
-                    marginBottom: 2,
-                  }}
-                >
-                  Pedido a caminho
-                </Text>
-                <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.58)' }}>
-                  {statusAtual ?? 'Em preparo'} · Toque para rastrear
-                </Text>
-              </View>
-
-              <View
-                style={{
-                  paddingHorizontal: 14,
-                  paddingVertical: 8,
-                  borderRadius: 100,
-                  backgroundColor: '#D4A04A',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: '700',
-                    color: '#1C1C19',
-                  }}
-                >
-                  Rastrear
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
+        {mostraPedidoAtivo && (
+          <CardPedidoAtivo pedidoId={pedidoAtivoId!} statusAtual={statusAtual!} />
         )}
 
-        {/* ── Grid de Categorias ── */}
-        <SectionHeader title="Categorias" />
+        <View style={{ paddingTop: 16 }}>
+          <BannerCarousel banners={BANNERS_MOCK} />
+        </View>
 
-        {carregando ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              paddingHorizontal: 16,
-              gap: 10,
-              paddingBottom: 8,
-            }}
-          >
-            {Array.from({ length: 8 }).map((_, i) => (
-              <View
-                key={i}
-                style={{
-                  width: '22%',
-                  aspectRatio: 0.85,
-                  borderRadius: 18,
-                  backgroundColor: 'rgba(26,26,23,0.06)',
-                }}
-              />
-            ))}
-          </View>
-        ) : categorias.length > 0 ? (
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              paddingHorizontal: 16,
-              gap: 10,
-              paddingBottom: 8,
-            }}
-          >
-            {categorias.slice(0, 8).map((cat, i) => {
-              const cor = GRADIENTES_CATS[i % GRADIENTES_CATS.length]
-              const emoji = getIcone(cat.nome, cat.icone)
-              return (
-                <View
-                  key={cat.id}
-                  style={{
-                    width: '22%',
-                    alignItems: 'center',
-                    gap: 8,
-                    paddingTop: 14,
-                    paddingBottom: 10,
-                    paddingHorizontal: 4,
-                    borderRadius: 18,
-                    backgroundColor: '#FFFFFF',
-                    borderWidth: 1,
-                    borderColor: 'rgba(26,26,23,0.06)',
-                    shadowColor: '#000',
-                    shadowOpacity: 0.04,
-                    shadowRadius: 4,
-                    elevation: 1,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 14,
-                      backgroundColor: cor,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      shadowColor: cor,
-                      shadowOpacity: 0.38,
-                      shadowRadius: 8,
-                      shadowOffset: { width: 0, height: 3 },
-                      elevation: 3,
-                    }}
-                  >
-                    <Text style={{ fontSize: 20 }}>{emoji}</Text>
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 10.5,
-                      fontWeight: '600',
-                      color: '#3D3D36',
-                      textAlign: 'center',
-                    }}
-                    numberOfLines={2}
-                  >
-                    {cat.nome}
-                  </Text>
-                </View>
-              )
-            })}
-          </View>
-        ) : null}
-
-        {/* ── Seções de lojas (andares) ── */}
         {carregando
-          ? Array.from({ length: 2 }).map((_, i) => (
-              <View key={i} style={{ paddingBottom: 32 }}>
-                <View
-                  style={{
-                    marginHorizontal: 24,
-                    marginTop: 28,
-                    marginBottom: 16,
-                    height: 90,
-                    borderRadius: 20,
-                    backgroundColor: 'rgba(26,26,23,0.06)',
-                  }}
-                />
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    gap: 14,
-                    paddingHorizontal: 24,
-                  }}
-                >
-                  {Array.from({ length: 3 }).map((_, j) => (
-                    <View
-                      key={j}
-                      style={{
-                        width: 220,
-                        height: 200,
-                        borderRadius: 20,
-                        backgroundColor: 'rgba(26,26,23,0.06)',
-                      }}
-                    />
-                  ))}
-                </View>
-              </View>
-            ))
-          : andares.map((lojasDoAndar, i) => {
-              const meta = FLOOR_METADATA[i % FLOOR_METADATA.length]
-
+          ? Array.from({ length: 2 }).map((_, i) => <SkeletonSecao key={i} />)
+          : grupos.map((lojasDaSecao, i) => {
+              const meta = SECOES[i % SECOES.length]
               return (
-                <View key={i} style={{ paddingBottom: 32, paddingTop: 20 }}>
-                  {/* Banner do andar */}
-                  <View
-                    style={{
-                      marginHorizontal: 24,
-                      marginBottom: 12,
-                      borderRadius: 20,
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <View
-                      style={{
-                        paddingVertical: 18,
-                        paddingLeft: 24,
-                        paddingRight: 20,
-                        backgroundColor: meta.cor,
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {/* Barra lateral */}
-                      <View
-                        style={{
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: 4,
-                          backgroundColor: 'rgba(255,255,255,0.22)',
-                        }}
-                      />
-                      {/* Círculo decorativo */}
-                      <View
-                        style={{
-                          position: 'absolute',
-                          right: -24,
-                          top: -24,
-                          width: 100,
-                          height: 100,
-                          borderRadius: 50,
-                          backgroundColor: 'rgba(255,255,255,0.07)',
-                        }}
-                      />
-
-                      {/* Tag do andar */}
-                      <View
-                        style={{
-                          alignSelf: 'flex-start',
-                          paddingHorizontal: 10,
-                          paddingVertical: 4,
-                          borderRadius: 100,
-                          backgroundColor: 'rgba(255,255,255,0.14)',
-                          marginBottom: 10,
-                        }}
-                      >
-                        <Text
-                          style={{
-                            fontSize: 10,
-                            fontWeight: '700',
-                            color: 'rgba(255,255,255,0.88)',
-                            letterSpacing: 1.2,
-                            textTransform: 'uppercase',
-                          }}
-                        >
-                          {meta.label}
-                        </Text>
-                      </View>
-
-                      <Text
-                        style={{
-                          fontFamily: 'serif',
-                          fontSize: 22,
-                          fontWeight: '600',
-                          color: '#FFFFFF',
-                          lineHeight: 26,
-                        }}
-                      >
-                        {meta.nome}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: 'rgba(255,255,255,0.55)',
-                          marginTop: 3,
-                        }}
-                      >
-                        {meta.desc}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Filtros: culinária (Térreo) ou subcategorias */}
-                  {meta.cozinhas ? (
-                    <FiltrosCulinaria itens={meta.cozinhas} />
-                  ) : meta.subs ? (
-                    <SubcategoriaRow subs={meta.subs} />
-                  ) : null}
-
-                  {/* Cards em scroll horizontal */}
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    decelerationRate="fast"
-                    contentContainerStyle={{ paddingHorizontal: 24, gap: 14 }}
-                  >
-                    {lojasDoAndar.map((loja) => (
-                      <LojaCardH
-                        key={loja.id}
-                        loja={loja}
-                        onPress={() => router.push(`/loja/${loja.slug}`)}
-                      />
-                    ))}
-                  </ScrollView>
-                </View>
+                <SecaoLojas
+                  key={i}
+                  titulo={meta.titulo}
+                  subtitulo={meta.subtitulo}
+                  lojas={lojasDaSecao}
+                />
               )
             })}
-
-        {/* ── Estado vazio ── */}
-        {!carregando && lojas.length === 0 && (
-          <View
-            style={{ alignItems: 'center', paddingVertical: 48, gap: 10 }}
-          >
-            <Text style={{ fontSize: 40 }}>🏪</Text>
-            <Text
-              style={{
-                fontSize: 14,
-                color: '#8A8A7E',
-                textAlign: 'center',
-              }}
-            >
-              Nenhuma loja disponível no momento.
-            </Text>
-          </View>
-        )}
-
-        {/* ── Rodapé ── */}
-        <View
-          style={{
-            alignItems: 'center',
-            paddingTop: 8,
-            paddingBottom:
-              totalItens > 0
-                ? consumerDesign.spacing.tabBarHeight + 16
-                : consumerDesign.spacing.tabBarHeight,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-              paddingHorizontal: 20,
-              paddingVertical: 10,
-              borderRadius: 100,
-              backgroundColor: 'rgba(26,77,58,0.05)',
-            }}
-          >
-            <View
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: 3,
-                backgroundColor: '#4CAF82',
-              }}
-            />
-            <Text
-              style={{
-                fontFamily: 'serif',
-                fontSize: 13,
-                fontWeight: '500',
-                color: '#B0B0A5',
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-              }}
-            >
-              Mallora
-            </Text>
-            <View
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: 3,
-                backgroundColor: '#4CAF82',
-              }}
-            />
-          </View>
-          <Text style={{ fontSize: 11, color: '#D0D0C5', marginTop: 5 }}>
-            O shopping digital de Divinópolis
-          </Text>
-        </View>
       </ScrollView>
 
-      {/* ══════════════════════════════
-          NOTIFICAÇÕES
-      ══════════════════════════════ */}
+      {/* Barra do carrinho fixa acima da tab bar */}
+      {totalItens > 0 && (
+        <TouchableOpacity
+          onPress={() => router.push('/checkout')}
+          activeOpacity={consumerDesign.opacity.pressed}
+          style={[
+            {
+              position: 'absolute',
+              left: 16,
+              right: 16,
+              bottom: spacing.tabBarHeight,
+              height: 56,
+              borderRadius: radius.pill,
+              backgroundColor: colors.accent,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+            },
+            shadow.floating,
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <ConsumerIcon name="bag" size={18} color={colors.ink} strokeWidth={2.1} />
+            <Text style={{ fontSize: 14, fontWeight: '800', color: colors.ink }}>
+              {totalItens} {totalItens === 1 ? 'item' : 'itens'}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: colors.ink }}>
+            {formatarReais(total)}
+          </Text>
+        </TouchableOpacity>
+      )}
+
       <NotificacoesPopup
         visivel={notificacoesAbertas}
         onFechar={() => setNotificacoesAbertas(false)}
       />
-
-      {/* ══════════════════════════════
-          CARRINHO FLUTUANTE
-      ══════════════════════════════ */}
-      {totalItens > 0 && (
-        <View
-          style={{ position: 'absolute', bottom: 20, left: 20, right: 20 }}
-          pointerEvents="box-none"
-        >
-          <TouchableOpacity
-            onPress={() => router.push('/checkout')}
-            activeOpacity={0.88}
-            style={{
-              backgroundColor: '#1A4D3A',
-              borderRadius: 18,
-              paddingHorizontal: 20,
-              paddingVertical: 16,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              shadowColor: '#1A4D3A',
-              shadowOpacity: 0.5,
-              shadowRadius: 22,
-              shadowOffset: { width: 0, height: 8 },
-              elevation: 10,
-            }}
-          >
-            <View
-              style={{
-                width: 32,
-                height: 32,
-                borderRadius: 10,
-                backgroundColor: 'rgba(255,255,255,0.14)',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <ShoppingBag size={16} color="#FFF" />
-            </View>
-
-            <Text
-              style={{
-                flex: 1,
-                textAlign: 'center',
-                fontSize: 14.5,
-                fontWeight: '700',
-                color: '#FFF',
-              }}
-            >
-              Ver sacola
-            </Text>
-
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-            >
-              <View
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 7,
-                  backgroundColor: '#D4A04A',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 10,
-                    fontWeight: '800',
-                    color: '#FFF',
-                  }}
-                >
-                  {totalItens}
-                </Text>
-              </View>
-              <Text
-                style={{
-                  fontSize: 13.5,
-                  fontWeight: '600',
-                  color: 'rgba(255,255,255,0.72)',
-                }}
-              >
-                {formatarReais(total)}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   )
 }
