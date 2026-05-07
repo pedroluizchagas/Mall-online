@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Animated, StyleSheet } from 'react-native'
 import LottieView from 'lottie-react-native'
+import { consumerDesign } from '@/lib/consumer-design'
 
 interface Props {
   onFim: () => void
@@ -8,6 +9,7 @@ interface Props {
 
 export function SplashAnimado({ onFim }: Props) {
   const opacidade = useRef(new Animated.Value(1)).current
+  const { colors } = consumerDesign
 
   function handleAnimacaoFim() {
     Animated.timing(opacidade, {
@@ -18,7 +20,12 @@ export function SplashAnimado({ onFim }: Props) {
   }
 
   return (
-    <Animated.View style={[styles.container, { opacity: opacidade }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        { opacity: opacidade, backgroundColor: colors.ink },
+      ]}
+    >
       <LottieView
         source={require('../assets/shopping cart.json')}
         autoPlay
@@ -33,7 +40,6 @@ export function SplashAnimado({ onFim }: Props) {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#F4F0EB',
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -7,10 +7,12 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 import { registrarPushToken, useNotificacaoListener } from '@/lib/notificacoes'
 import { SplashAnimado } from '@/components/SplashAnimado'
+import { consumerDesign } from '@/lib/consumer-design'
 
 export default function LayoutRaiz() {
   const { setUser, setCarregando } = useAuthStore()
   const [splashVisivel, setSplashVisivel] = useState(true)
+  const { colors } = consumerDesign
 
   useNotificacaoListener()
 
@@ -34,8 +36,13 @@ export default function LayoutRaiz() {
   }, [])
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false }} />
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.canvas },
+        }}
+      />
       <StatusBar style="dark" />
       {splashVisivel && (
         <SplashAnimado onFim={() => setSplashVisivel(false)} />

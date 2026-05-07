@@ -12,6 +12,7 @@ import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { LojaCard } from '@/components/LojaCard'
 import { formatarReais } from '@mallora/lib'
+import { consumerDesign } from '@/lib/consumer-design'
 
 interface ResultadoLoja {
   tipo: 'loja'
@@ -136,7 +137,7 @@ export default function TelaBuscar() {
       <FlatList
         data={resultados}
         keyExtractor={(item) => `${item.tipo}-${item.id}`}
-        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: consumerDesign.spacing.tabBarHeight }}
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           buscaFeita && !buscando ? (

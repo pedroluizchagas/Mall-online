@@ -24,6 +24,7 @@ import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
 import { formatarReais } from '@mallora/lib'
+import { consumerDesign } from '@/lib/consumer-design'
 
 // ─────────────────────────────────────────────────────────
 // Types
@@ -880,7 +881,10 @@ export default function TelaHome() {
           style={{
             alignItems: 'center',
             paddingTop: 8,
-            paddingBottom: totalItens > 0 ? 112 : 40,
+            paddingBottom:
+              totalItens > 0
+                ? consumerDesign.spacing.tabBarHeight + 16
+                : consumerDesign.spacing.tabBarHeight,
           }}
         >
           <View
