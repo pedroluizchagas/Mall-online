@@ -1,20 +1,22 @@
 import { useState } from 'react'
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native'
+import { View, Text, StatusBar } from 'react-native'
 import { router, useLocalSearchParams } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
+import { Botao } from '@/components/ui/Botao'
+import { Input } from '@/components/ui/Input'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { consumerDesign } from '@/lib/consumer-design'
+
+const { colors, radius } = consumerDesign
 
 export default function TelaVerificar() {
   const { email } = useLocalSearchParams<{ email: string }>()
+  const insets = useSafeAreaInsets()
   const [codigo, setCodigo] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [reenviando, setReenviando] = useState(false)
-  const [erro, setErro] = useState<string | null>(null)
+  const [erro, setErro] = useState<string | undefined>(undefined)
 
   async function handleVerificar() {
     if (codigo.length !== 6) {
@@ -23,7 +25,7 @@ export default function TelaVerificar() {
     }
 
     setCarregando(true)
-    setErro(null)
+    setErro(undefined)
 
     const { error } = await supabase.auth.verifyOtp({
       email,
@@ -44,7 +46,7 @@ export default function TelaVerificar() {
   async function handleReenviar() {
     if (!email) return
     setReenviando(true)
-    setErro(null)
+    setErro(undefined)
     await supabase.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: true },
@@ -54,71 +56,104 @@ export default function TelaVerificar() {
   }
 
   return (
-    <View className="flex-1 bg-creme px-6 pt-24 pb-10">
-      <View className="items-center mb-10">
-        <View className="w-20 h-20 bg-verde-medio/20 rounded-full items-center justify-center mb-6">
-          <Text className="text-4xl">✉️</Text>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.surfaceDark,
+        paddingHorizontal: 24,
+        paddingTop: insets.top + 64,
+        paddingBottom: insets.bottom + 24,
+      }}
+    >
+      <StatusBar barStyle="light-content" />
+
+      <View style={{ alignItems: 'center', marginBottom: 32 }}>
+        <View
+          style={{
+            width: 80,
+            height: 80,
+            borderRadius: radius.pill,
+            backgroundColor: colors.accentSoft,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <ConsumerIcon
+            name="check-circle"
+            size={36}
+            color={colors.accent}
+            strokeWidth={1.8}
+          />
         </View>
 
-        <Text className="text-2xl font-bold text-verde-profundo text-center mb-3">
+        <Text
+          style={{
+            fontSize: 26,
+            fontWeight: '800',
+            color: colors.white,
+            letterSpacing: -0.5,
+            textAlign: 'center',
+            marginBottom: 12,
+          }}
+        >
           Verifique seu email
         </Text>
-        <Text className="text-gray-500 text-center leading-6">
-          Enviamos um código de 6 dígitos para{'\n'}
-          <Text className="font-medium text-gray-700">{email}</Text>
-        </Text>
-      </View>
-
-      <View className="mb-6">
-        <Text className="text-sm font-medium text-gray-700 mb-1.5">
-          Código de verificação
-        </Text>
-        <TextInput
-          value={codigo}
-          onChangeText={(t) => {
-            setCodigo(t.replace(/\D/g, '').slice(0, 6))
-            setErro(null)
+        <Text
+          style={{
+            fontSize: 15,
+            color: colors.inkSoft,
+            textAlign: 'center',
+            lineHeight: 22,
+            fontWeight: '500',
           }}
-          placeholder="000000"
-          keyboardType="number-pad"
-          maxLength={6}
-          className="border border-gray-200 rounded-xl px-4 py-3.5 text-2xl text-center tracking-widest text-gray-800 bg-white"
-          placeholderTextColor="#9CA3AF"
-        />
-        {erro && <Text className="text-red-500 text-sm mt-2">{erro}</Text>}
+        >
+          Enviamos um código de 6 dígitos para{'\n'}
+          <Text style={{ fontWeight: '700', color: colors.white }}>
+            {email}
+          </Text>
+        </Text>
       </View>
 
-      <TouchableOpacity
-        onPress={handleVerificar}
-        disabled={carregando || codigo.length !== 6}
-        className="bg-verde-profundo py-4 rounded-2xl items-center mb-4"
-        activeOpacity={0.85}
-      >
-        {carregando ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text className="text-white font-semibold text-base">Confirmar</Text>
-        )}
-      </TouchableOpacity>
+      <Input
+        rotulo="Código de verificação"
+        valor={codigo}
+        aoMudar={(t) => {
+          setCodigo(t.replace(/\D/g, '').slice(0, 6))
+          setErro(undefined)
+        }}
+        placeholder="000000"
+        tipo="numero"
+        maxLength={6}
+        fundoEscuro
+        erro={erro}
+      />
 
-      <TouchableOpacity
-        onPress={handleReenviar}
-        disabled={reenviando}
-        className="py-3 items-center"
-        activeOpacity={0.7}
-      >
-        <Text className="text-sm text-verde-medio">
-          {reenviando ? 'Reenviando...' : 'Reenviar código'}
-        </Text>
-      </TouchableOpacity>
+      <View style={{ flex: 1 }} />
 
-      <TouchableOpacity
-        onPress={() => router.back()}
-        className="py-3 items-center mt-2"
-        activeOpacity={0.7}
-      >
-        <Text className="text-sm text-gray-400">Voltar e trocar email</Text>
-      </TouchableOpacity>
+      <View style={{ gap: 8 }}>
+        <Botao
+          label="Confirmar"
+          variante="primario"
+          tamanho="lg"
+          carregando={carregando}
+          desabilitado={codigo.length !== 6}
+          onPress={handleVerificar}
+        />
+        <Botao
+          label={reenviando ? 'Reenviando...' : 'Reenviar código'}
+          variante="ghost"
+          tamanho="md"
+          desabilitado={reenviando}
+          onPress={handleReenviar}
+        />
+        <Botao
+          label="Voltar e trocar email"
+          variante="ghost"
+          tamanho="md"
+          onPress={() => router.back()}
+        />
+      </View>
     </View>
   )
 }

@@ -3,15 +3,23 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
   Image,
   Share,
   Alert,
+  ActivityIndicator,
 } from 'react-native'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { formatarReais } from '@mallora/lib'
+import { HeaderTela } from '@/components/HeaderTela'
+import { Botao } from '@/components/ui/Botao'
+import { Card } from '@/components/ui/Card'
+import { LoadingState } from '@/components/ui/LoadingState'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { consumerDesign } from '@/lib/consumer-design'
+
+const { colors, radius } = consumerDesign
 
 interface PixOrder {
   id: string
@@ -62,8 +70,6 @@ export default function TelaCheckoutPix() {
     }
   }, [order_id])
 
-  // Realtime: aguardar payment_status='pago' e redirecionar para a tela
-  // de acompanhamento do pedido.
   useEffect(() => {
     if (!order_id) return
 
@@ -104,102 +110,205 @@ export default function TelaCheckoutPix() {
 
   if (carregando) {
     return (
-      <View className="flex-1 bg-creme items-center justify-center">
-        <ActivityIndicator size="large" color="#1A4D3A" />
-        <Text className="text-gray-500 mt-4">Gerando seu Pix...</Text>
+      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+        <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+        <LoadingState modo="tela" mensagem="Gerando seu Pix..." />
       </View>
     )
   }
 
   if (erro || !pedido) {
     return (
-      <View className="flex-1 bg-creme items-center justify-center px-6">
-        <Text className="text-base font-semibold text-gray-700 mb-2 text-center">
-          {erro ?? 'Pedido não encontrado.'}
-        </Text>
-        <TouchableOpacity onPress={() => router.replace('/')}>
-          <Text className="text-verde-medio">Voltar ao início</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+        <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+        <HeaderTela variante="voltar" titulo="Pagamento via Pix" />
+        <EmptyState
+          icone="info"
+          titulo="Não foi possível abrir o pagamento"
+          descricao={erro ?? 'Pedido não encontrado.'}
+          acao={{
+            label: 'Voltar ao início',
+            aoTocar: () => router.replace('/'),
+          }}
+        />
       </View>
     )
   }
 
-  const aguardandoQr =
-    !pedido.pagarme_qr_code_url || !pedido.pagarme_qr_code
+  const aguardandoQr = !pedido.pagarme_qr_code_url || !pedido.pagarme_qr_code
 
   return (
-    <View className="flex-1 bg-creme">
-      <Stack.Screen options={{ presentation: 'modal' }} />
-
-      <View className="flex-row items-center justify-between px-5 pt-14 pb-4 bg-white border-b border-gray-100">
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Text className="text-verde-medio text-base">Fechar</Text>
-        </TouchableOpacity>
-        <Text className="text-base font-bold text-verde-profundo">
-          Pagamento via Pix
-        </Text>
-        <View className="w-12" />
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+      <HeaderTela variante="voltar" titulo="Pagamento via Pix" />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-        <View className="bg-white border-t border-b border-gray-100 px-5 py-6 items-center">
-          <Text className="text-sm text-gray-400 mb-1">Total a pagar</Text>
-          <Text className="text-2xl font-bold text-verde-profundo mb-6">
-            {formatarReais(pedido.total)}
-          </Text>
+        {/* QR code central */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+          <Card preenchimento="lg">
+            <View style={{ alignItems: 'center', gap: 16 }}>
+              <View style={{ alignItems: 'center', gap: 4 }}>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '700',
+                    color: colors.inkSoft,
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Total a pagar
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 28,
+                    fontWeight: '800',
+                    color: colors.ink,
+                    letterSpacing: -0.5,
+                  }}
+                >
+                  {formatarReais(pedido.total)}
+                </Text>
+              </View>
 
-          {aguardandoQr ? (
-            <View className="items-center py-10">
-              <ActivityIndicator size="large" color="#1A4D3A" />
-              <Text className="text-gray-500 mt-4">
-                Aguardando emissão do QR Code...
+              {aguardandoQr ? (
+                <View
+                  style={{
+                    width: 240,
+                    height: 240,
+                    backgroundColor: colors.canvasAlt,
+                    borderRadius: radius.md,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 12,
+                  }}
+                >
+                  <ActivityIndicator size="large" color={colors.ink} />
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: colors.inkMuted,
+                      fontWeight: '500',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Aguardando QR Code...
+                  </Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: pedido.pagarme_qr_code_url! }}
+                  style={{
+                    width: 240,
+                    height: 240,
+                    backgroundColor: colors.white,
+                    borderRadius: radius.md,
+                  }}
+                  resizeMode="contain"
+                />
+              )}
+
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: colors.inkMuted,
+                  textAlign: 'center',
+                  fontWeight: '500',
+                  lineHeight: 18,
+                }}
+              >
+                Aponte o app do seu banco para o QR Code ou copie o código
+                abaixo.
               </Text>
             </View>
-          ) : (
-            <Image
-              source={{ uri: pedido.pagarme_qr_code_url! }}
-              style={{ width: 240, height: 240 }}
-              resizeMode="contain"
-            />
-          )}
-
-          <Text className="text-xs text-gray-400 mt-4 text-center">
-            Aponte o app do seu banco para o QR Code ou copie o código abaixo.
-          </Text>
+          </Card>
         </View>
 
+        {/* Pix copia e cola */}
         {!aguardandoQr && (
-          <View className="bg-white border-t border-b border-gray-100 px-5 py-5 mt-4">
-            <Text className="text-sm font-semibold text-gray-700 mb-2">
+          <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '700',
+                color: colors.inkMuted,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                marginBottom: 12,
+                paddingHorizontal: 8,
+              }}
+            >
               Pix Copia e Cola
             </Text>
-            <Text
-              selectable
-              className="text-xs text-gray-700 border border-gray-200 rounded-xl px-4 py-3 bg-gray-50"
-            >
-              {pedido.pagarme_qr_code}
-            </Text>
-
-            <TouchableOpacity
-              onPress={compartilharCodigo}
-              className="bg-verde-profundo py-3 rounded-2xl items-center mt-3"
-              activeOpacity={0.85}
-            >
-              <Text className="text-white font-bold text-sm">
-                Copiar / Compartilhar código
-              </Text>
-            </TouchableOpacity>
+            <Card preenchimento="md">
+              <View style={{ gap: 12 }}>
+                <Text
+                  selectable
+                  style={{
+                    fontSize: 12,
+                    color: colors.ink,
+                    fontFamily:
+                      'monospace',
+                    backgroundColor: colors.canvasAlt,
+                    padding: 12,
+                    borderRadius: radius.sm,
+                    fontWeight: '500',
+                  }}
+                >
+                  {pedido.pagarme_qr_code}
+                </Text>
+                <Botao
+                  label="Copiar / Compartilhar código"
+                  variante="primario"
+                  tamanho="md"
+                  iconeEsquerda="send"
+                  onPress={compartilharCodigo}
+                />
+              </View>
+            </Card>
           </View>
         )}
 
-        <View className="bg-white border-t border-b border-gray-100 px-5 py-5 mt-4">
-          <View className="flex-row items-center gap-2">
-            <ActivityIndicator size="small" color="#1A4D3A" />
-            <Text className="text-sm text-gray-700 flex-1">
-              Aguardando confirmação do pagamento. Esta tela atualiza
-              automaticamente.
-            </Text>
-          </View>
+        {/* Status de aguardando pagamento */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          <Card preenchimento="md">
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <View
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 18,
+                  backgroundColor: colors.accentSoft,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ConsumerIcon
+                  name="clock"
+                  size={18}
+                  color={colors.accent}
+                />
+              </View>
+              <Text
+                style={{
+                  flex: 1,
+                  fontSize: 13,
+                  color: colors.ink,
+                  fontWeight: '500',
+                  lineHeight: 18,
+                }}
+              >
+                Aguardando confirmação do pagamento. Esta tela atualiza
+                automaticamente.
+              </Text>
+            </View>
+          </Card>
         </View>
       </ScrollView>
     </View>
