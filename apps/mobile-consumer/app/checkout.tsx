@@ -235,7 +235,7 @@ export default function TelaCheckout() {
       .from('orders')
       .insert({
         consumer_id: consumer_data.id,
-        store_id,
+        store_id: store_id!,
         tenant_id: loja.tenant_id,
         status: 'novo',
         payment_status: 'pendente',

@@ -395,6 +395,7 @@ export type Database = {
           pagarme_charge_id: string | null
           pagarme_order_id: string | null
           pagarme_qr_code: string | null
+          pagarme_qr_code_expires_at: string | null
           pagarme_qr_code_url: string | null
           payment_status: string
           platform_fee_amount: number
@@ -421,6 +422,7 @@ export type Database = {
           pagarme_charge_id?: string | null
           pagarme_order_id?: string | null
           pagarme_qr_code?: string | null
+          pagarme_qr_code_expires_at?: string | null
           pagarme_qr_code_url?: string | null
           payment_status?: string
           platform_fee_amount?: number
@@ -447,6 +449,7 @@ export type Database = {
           pagarme_charge_id?: string | null
           pagarme_order_id?: string | null
           pagarme_qr_code?: string | null
+          pagarme_qr_code_expires_at?: string | null
           pagarme_qr_code_url?: string | null
           payment_status?: string
           platform_fee_amount?: number

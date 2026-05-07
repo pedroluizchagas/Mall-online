@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, Alert } from 'react-native'
 import { supabase } from '@/lib/supabase'
-import type { Endereco } from '@mallora/types'
+import type { Endereco, Json } from '@mallora/types'
 import { Card } from '@/components/ui/Card'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
@@ -33,7 +33,7 @@ export function GerenciarEnderecos({ enderecos, onAtualizar }: Props) {
           if (user) {
             await supabase
               .from('consumers')
-              .update({ enderecos: novos })
+              .update({ enderecos: novos as unknown as Json })
               .eq('user_id', user.id)
           }
 

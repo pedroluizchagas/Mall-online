@@ -5,8 +5,8 @@ import type { Endereco } from '@mallora/types'
 interface ConsumerProfile {
   id: string
   nome: string
-  telefone?: string
-  foto_url?: string
+  telefone?: string | null
+  foto_url?: string | null
   enderecos: Endereco[]
 }
 
