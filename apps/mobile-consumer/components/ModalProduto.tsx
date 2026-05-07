@@ -4,14 +4,27 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  TextInput,
   Modal,
   ScrollView,
   Dimensions,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { useCartStore } from '@/store/useCartStore'
 import { formatarReais } from '@mallora/lib'
+import { Botao } from '@/components/ui/Botao'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { consumerDesign } from '@/lib/consumer-design'
 
+/**
+ * Bottom-sheet de detalhe do produto + adicionar ao carrinho.
+ *
+ * Spec: docs/system-design/consumer/04-componentes-dominio.md §6
+ */
+
+const { colors, radius, shadow } = consumerDesign
 const { height } = Dimensions.get('window')
 
 interface Produto {
@@ -45,14 +58,13 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
 
   const preco = produto.preco_promocional ?? produto.preco
   const totalItem = preco * quantidade
+  const temPromo = !!produto.preco_promocional
 
   function handleAdicionar() {
-    // Se tem itens de outra loja, confirmar antes de trocar
     if (storeAtual && storeAtual !== loja.id) {
       setTrocandoLoja(true)
       return
     }
-
     confirmarAdicao()
   }
 
@@ -75,156 +87,329 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
   }
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="slide"
-      onRequestClose={onFechar}
-    >
-      <TouchableOpacity
-        className="flex-1 bg-black/40"
-        activeOpacity={1}
-        onPress={onFechar}
-      />
+    <Modal visible transparent animationType="slide" onRequestClose={onFechar}>
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+        {/* Overlay */}
+        <TouchableOpacity
+          style={{
+            ...StyleSheetAbsoluteFill,
+            backgroundColor: `rgba(17, 18, 22, ${consumerDesign.opacity.overlay})`,
+          }}
+          activeOpacity={1}
+          onPress={onFechar}
+        />
 
-      <View
-        className="bg-white rounded-t-3xl overflow-hidden"
-        style={{ maxHeight: height * 0.85 }}
-      >
-        <ScrollView bounces={false}>
-          {/* Foto */}
-          {produto.foto_url && (
-            <Image
-              source={{ uri: produto.foto_url }}
-              className="w-full h-52"
-              resizeMode="cover"
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: radius.xl,
+            borderTopRightRadius: radius.xl,
+            overflow: 'hidden',
+            maxHeight: height * 0.88,
+          }}
+        >
+          {/* Drag handle */}
+          <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.line,
+              }}
             />
-          )}
+          </View>
 
-          <View className="p-5">
-            <Text className="text-xl font-bold text-gray-800">
-              {produto.nome}
-            </Text>
+          {/* Botão fechar */}
+          <TouchableOpacity
+            onPress={onFechar}
+            activeOpacity={0.7}
+            style={[
+              {
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                zIndex: 10,
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: colors.surface,
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+              shadow.soft,
+            ]}
+          >
+            <ConsumerIcon name="close" size={18} color={colors.ink} strokeWidth={2.2} />
+          </TouchableOpacity>
 
-            {produto.descricao && (
-              <Text className="text-gray-500 mt-2 leading-6">
-                {produto.descricao}
-              </Text>
+          <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
+            {/* Foto */}
+            {produto.foto_url ? (
+              <Image
+                source={{ uri: produto.foto_url }}
+                style={{ width: '100%', height: 240, backgroundColor: colors.canvasAlt }}
+                resizeMode="cover"
+              />
+            ) : (
+              <View
+                style={{
+                  width: '100%',
+                  height: 240,
+                  backgroundColor: colors.canvasAlt,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ConsumerIcon name="bag" size={56} color={colors.inkSoft} />
+              </View>
             )}
 
-            <View className="flex-row items-center gap-2 mt-3">
-              <Text className="text-xl font-bold text-verde-profundo">
-                {formatarReais(preco)}
-              </Text>
-              {produto.preco_promocional && (
-                <Text className="text-base text-gray-300 line-through">
-                  {formatarReais(produto.preco)}
+            <View style={{ padding: 20, gap: 16 }}>
+              {/* Título + preço */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 16,
+                }}
+              >
+                <Text
+                  style={{
+                    flex: 1,
+                    fontSize: 20,
+                    fontWeight: '800',
+                    color: colors.ink,
+                    letterSpacing: -0.3,
+                  }}
+                >
+                  {produto.nome}
+                </Text>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text
+                    style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}
+                  >
+                    {formatarReais(preco)}
+                  </Text>
+                  {temPromo && (
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: colors.inkSoft,
+                        textDecorationLine: 'line-through',
+                      }}
+                    >
+                      {formatarReais(produto.preco)}
+                    </Text>
+                  )}
+                </View>
+              </View>
+
+              {produto.descricao && (
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: colors.inkMuted,
+                    lineHeight: 20,
+                    fontWeight: '500',
+                  }}
+                >
+                  {produto.descricao}
                 </Text>
               )}
-            </View>
 
-            {/* Observações */}
-            <View className="mt-5">
-              <Text className="text-sm font-medium text-gray-700 mb-2">
-                Observações (opcional)
-              </Text>
-              <TextInput
-                value={observacoes}
-                onChangeText={setObservacoes}
-                placeholder="Ex: sem cebola, ponto da carne..."
-                placeholderTextColor="#9CA3AF"
-                multiline
-                numberOfLines={2}
-                className="border border-gray-200 rounded-xl px-4 py-3
-                  text-sm text-gray-700"
-                style={{ textAlignVertical: 'top' }}
-              />
-            </View>
+              {/* Observações */}
+              <View style={{ marginTop: 4 }}>
+                <Input
+                  rotulo="Observações (opcional)"
+                  valor={observacoes}
+                  aoMudar={setObservacoes}
+                  placeholder="Ex.: sem cebola, ponto da carne..."
+                  multilinha
+                  maxLength={140}
+                />
+              </View>
 
-            {/* Quantidade */}
-            <View className="flex-row items-center justify-between mt-5">
-              <Text className="text-sm font-medium text-gray-700">
-                Quantidade
-              </Text>
-              <View className="flex-row items-center gap-4">
-                <TouchableOpacity
-                  onPress={() => setQuantidade((q) => Math.max(1, q - 1))}
-                  className="w-9 h-9 rounded-full border border-gray-200
-                    items-center justify-center"
-                  activeOpacity={0.7}
+              {/* Quantidade + total */}
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginTop: 4,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}
                 >
-                  <Text className="text-xl text-gray-600 leading-none">−</Text>
-                </TouchableOpacity>
-
-                <Text className="text-lg font-bold text-gray-800 w-6 text-center">
-                  {quantidade}
+                  Quantidade
                 </Text>
-
-                <TouchableOpacity
-                  onPress={() => setQuantidade((q) => q + 1)}
-                  className="w-9 h-9 rounded-full bg-verde-profundo
-                    items-center justify-center"
-                  activeOpacity={0.7}
-                >
-                  <Text className="text-xl text-white leading-none">+</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                  <BotaoQty
+                    icone="minus"
+                    desabilitado={quantidade === 1}
+                    aoTocar={() => setQuantidade((q) => Math.max(1, q - 1))}
+                  />
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: '800',
+                      color: colors.ink,
+                      width: 28,
+                      textAlign: 'center',
+                    }}
+                  >
+                    {quantidade}
+                  </Text>
+                  <BotaoQty
+                    icone="plus"
+                    aoTocar={() => setQuantidade((q) => q + 1)}
+                    primario
+                  />
+                </View>
               </View>
             </View>
-          </View>
-        </ScrollView>
+          </ScrollView>
 
-        {/* Botão adicionar */}
-        <View className="px-5 pb-8 pt-3 border-t border-gray-50">
-          <TouchableOpacity
-            onPress={handleAdicionar}
-            className="bg-verde-profundo py-4 rounded-2xl flex-row
-              items-center justify-between px-5"
-            activeOpacity={0.85}
+          {/* CTA fixo */}
+          <View
+            style={{
+              paddingHorizontal: 16,
+              paddingTop: 12,
+              paddingBottom: 24,
+              borderTopWidth: 1,
+              borderTopColor: colors.line,
+            }}
           >
-            <Text className="text-white font-bold text-base">
-              Adicionar ao carrinho
-            </Text>
-            <Text className="text-verde-medio/80 font-semibold">
-              {formatarReais(totalItem)}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <Botao
+              label={`Adicionar — ${formatarReais(totalItem)}`}
+              onPress={handleAdicionar}
+              variante="primario"
+              tamanho="lg"
+              iconeDireita="bag"
+            />
+          </View>
+        </KeyboardAvoidingView>
       </View>
 
-      {/* Diálogo de confirmação de troca de loja */}
+      {/* Diálogo de troca de loja */}
       {trocandoLoja && (
         <Modal visible transparent animationType="fade">
-          <View className="flex-1 bg-black/50 items-center justify-center px-6">
-            <View className="bg-white rounded-2xl p-6 w-full">
-              <Text className="text-base font-bold text-gray-800 mb-2">
-                Trocar de loja?
-              </Text>
-              <Text className="text-sm text-gray-500 mb-5">
-                Seu carrinho atual será esvaziado para adicionar itens
-                de {loja.nome}.
-              </Text>
-              <View className="gap-2">
-                <TouchableOpacity
-                  onPress={confirmarAdicao}
-                  className="bg-verde-profundo py-3 rounded-xl items-center"
-                  activeOpacity={0.85}
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: `rgba(17, 18, 22, 0.5)`,
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+            }}
+          >
+            <Card raio="lg" preenchimento="lg" semBorda estilo={{ width: '100%', maxWidth: 360 }}>
+              <View style={{ alignItems: 'flex-start', gap: 12 }}>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: `rgba(242, 184, 75, 0.18)`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
                 >
-                  <Text className="text-white font-semibold">
-                    Esvaziar e trocar
+                  <ConsumerIcon name="info" size={22} color={colors.warning} />
+                </View>
+                <Text
+                  style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}
+                >
+                  Trocar de loja?
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: colors.inkMuted,
+                    lineHeight: 20,
+                    fontWeight: '500',
+                  }}
+                >
+                  Seu carrinho atual será esvaziado para adicionar itens de{' '}
+                  <Text style={{ fontWeight: '700', color: colors.ink }}>
+                    {loja.nome}
                   </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setTrocandoLoja(false)}
-                  className="py-3 rounded-xl items-center"
-                  activeOpacity={0.7}
+                  .
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    gap: 8,
+                    marginTop: 8,
+                    alignSelf: 'stretch',
+                  }}
                 >
-                  <Text className="text-gray-500">Cancelar</Text>
-                </TouchableOpacity>
+                  <View style={{ flex: 1 }}>
+                    <Botao
+                      label="Cancelar"
+                      onPress={() => setTrocandoLoja(false)}
+                      variante="ghost"
+                      tamanho="md"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Botao
+                      label="Trocar"
+                      onPress={confirmarAdicao}
+                      variante="primario"
+                      tamanho="md"
+                    />
+                  </View>
+                </View>
               </View>
-            </View>
+            </Card>
           </View>
         </Modal>
       )}
     </Modal>
   )
+}
+
+function BotaoQty({
+  icone,
+  aoTocar,
+  desabilitado,
+  primario,
+}: {
+  icone: 'plus' | 'minus'
+  aoTocar: () => void
+  desabilitado?: boolean
+  primario?: boolean
+}) {
+  const fundo = primario ? colors.ink : colors.surfaceMuted
+  const cor = primario ? colors.accent : colors.ink
+  return (
+    <TouchableOpacity
+      onPress={aoTocar}
+      disabled={desabilitado}
+      activeOpacity={0.75}
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: fundo,
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity: desabilitado ? consumerDesign.opacity.disabled : 1,
+      }}
+    >
+      <ConsumerIcon name={icone} size={16} color={cor} strokeWidth={2.2} />
+    </TouchableOpacity>
+  )
+}
+
+const StyleSheetAbsoluteFill = {
+  position: 'absolute' as const,
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
 }
