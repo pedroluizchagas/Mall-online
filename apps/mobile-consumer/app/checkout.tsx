@@ -1,14 +1,7 @@
 import { useEffect, useState } from 'react'
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  TextInput,
-  Alert,
-  ActivityIndicator,
-} from 'react-native'
+import { View, Text, ScrollView, Alert } from 'react-native'
 import { router, Stack } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { tokenizarCartao } from '@/lib/pagarme'
 import { useCartStore } from '@/store/useCartStore'
@@ -19,8 +12,20 @@ import { ItemCarrinhoCard } from '@/components/ItemCarrinhoCard'
 import { SeletorEndereco } from '@/components/SeletorEndereco'
 import { SeletorPagamento } from '@/components/SeletorPagamento'
 import { SeletorParcelas } from '@/components/SeletorParcelas'
-import { FormularioCartao, type DadosCartao } from '@/components/FormularioCartao'
+import {
+  FormularioCartao,
+  type DadosCartao,
+} from '@/components/FormularioCartao'
+import { HeaderTela } from '@/components/HeaderTela'
+import { Botao } from '@/components/ui/Botao'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { LoadingState } from '@/components/ui/LoadingState'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { consumerDesign } from '@/lib/consumer-design'
 import type { Endereco } from '@mallora/types'
+
+const { colors } = consumerDesign
 
 type FormaPagamento =
   | 'online_cartao'
@@ -29,6 +34,7 @@ type FormaPagamento =
   | 'cartao_maquininha'
 
 export default function TelaCheckout() {
+  const insets = useSafeAreaInsets()
   const {
     itens,
     store_id,
@@ -65,7 +71,9 @@ export default function TelaCheckout() {
     async function carregarLoja() {
       const { data } = await supabase
         .from('stores')
-        .select('id, nome, taxa_entrega, aceita_dinheiro, aceita_pix, aceita_cartao_maquininha, aceita_cartao_online')
+        .select(
+          'id, nome, taxa_entrega, aceita_dinheiro, aceita_pix, aceita_cartao_maquininha, aceita_cartao_online'
+        )
         .eq('id', store_id!)
         .single()
 
@@ -87,7 +95,6 @@ export default function TelaCheckout() {
     }
   }, [store_id])
 
-  // Reset installments when leaving card flow
   useEffect(() => {
     if (formaPagamento !== 'online_cartao') {
       setInstallments(1)
@@ -185,14 +192,9 @@ export default function TelaCheckout() {
   async function fluxoCartao() {
     if (!dadosCartao) throw new Error('Dados do cartão ausentes.')
 
-    // 1) Tokenizar diretamente na Pagar.me — o número do cartão NUNCA sai
-    //    daqui em direção à nossa Edge Function ou ao Supabase.
     const token = await tokenizarCartao(dadosCartao)
-
-    // 2) Limpar dados sensíveis em memória assim que o token for emitido.
     setDadosCartao(null)
 
-    // 3) Enviar somente o card_token para o backend.
     const resultado = await chamarCreatePagarmeOrder({
       ...payloadBase(),
       forma_pagamento: 'online_cartao',
@@ -271,31 +273,40 @@ export default function TelaCheckout() {
     router.replace(`/pedido/${pedido.id}`)
   }
 
-  if (itens.length === 0 && etapa !== 'processando') {
+  if (etapa === 'processando') {
     return (
-      <View className="flex-1 bg-creme items-center justify-center px-6">
-        <Text className="text-lg font-semibold text-gray-500 mb-2">
-          Carrinho vazio
-        </Text>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text className="text-verde-medio">Voltar às lojas</Text>
-        </TouchableOpacity>
-      </View>
+      <>
+        <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+        <LoadingState
+          modo="tela"
+          variante="escuro"
+          mensagem="Processando seu pedido..."
+        />
+      </>
     )
   }
 
-  if (etapa === 'processando') {
+  if (itens.length === 0) {
     return (
-      <View className="flex-1 bg-creme items-center justify-center">
-        <ActivityIndicator size="large" color="#1A4D3A" />
-        <Text className="text-gray-500 mt-4">Processando seu pedido...</Text>
+      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+        <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+        <HeaderTela variante="voltar" titulo="Seu pedido" />
+        <EmptyState
+          icone="bag"
+          titulo="Carrinho vazio"
+          descricao="Adicione itens para fazer um pedido."
+          acao={{
+            label: 'Voltar às lojas',
+            aoTocar: () => router.back(),
+          }}
+        />
       </View>
     )
   }
 
   const labelBotao = (() => {
     if (formaPagamento === 'online_cartao') {
-      return `Pagar ${formatarReais(total())} em ${installments}x`
+      return `Pagar ${formatarReais(total())} em ${installments}×`
     }
     if (formaPagamento === 'online_pix') {
       return `Gerar Pix de ${formatarReais(total())}`
@@ -303,35 +314,63 @@ export default function TelaCheckout() {
     return `Fazer pedido — ${formatarReais(total())}`
   })()
 
-  return (
-    <View className="flex-1 bg-creme">
-      <Stack.Screen options={{ presentation: 'modal' }} />
+  const qtdTotal = itens.reduce((a, i) => a + i.quantidade, 0)
 
-      <View className="flex-row items-center justify-between px-5 pt-14 pb-4 bg-white border-b border-gray-100">
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7}>
-          <Text className="text-verde-medio text-base">Fechar</Text>
-        </TouchableOpacity>
-        <Text className="text-base font-bold text-verde-profundo">
-          Seu pedido
-        </Text>
-        <View className="w-12" />
-      </View>
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
+
+      <HeaderTela variante="voltar" titulo="Seu pedido" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
       >
-        <View className="px-5 py-4">
-          <Text className="text-sm text-gray-400">Pedido em</Text>
-          <Text className="text-base font-bold text-verde-profundo">
+        {/* Loja */}
+        <View style={{ paddingHorizontal: 24, paddingTop: 4 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              fontWeight: '700',
+              color: colors.inkSoft,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              marginBottom: 4,
+            }}
+          >
+            Pedido em
+          </Text>
+          <Text
+            style={{
+              fontSize: 20,
+              fontWeight: '800',
+              color: colors.ink,
+              letterSpacing: -0.3,
+            }}
+          >
             {store_nome}
           </Text>
         </View>
 
-        <View className="bg-white border-t border-b border-gray-100 mb-4">
-          {itens.map((item) => (
-            <ItemCarrinhoCard key={item.product_id} item={item} />
-          ))}
+        {/* Itens */}
+        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: colors.inkMuted,
+              letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              marginBottom: 12,
+            }}
+          >
+            Seus itens
+          </Text>
+          <Card preenchimento="sm" sombra="soft">
+            {itens.map((item) => (
+              <ItemCarrinhoCard key={item.product_id} item={item} />
+            ))}
+          </Card>
         </View>
 
         <SeletorEndereco
@@ -360,82 +399,133 @@ export default function TelaCheckout() {
         )}
 
         {formaPagamento === 'dinheiro' && (
-          <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Troco para quanto? (opcional)
-            </Text>
-            <TextInput
-              value={trocoPara}
-              onChangeText={setTrocoPara}
+          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+            <Input
+              rotulo="Troco para quanto? (opcional)"
+              valor={trocoPara}
+              aoMudar={setTrocoPara}
               placeholder={`Ex: ${formatarReais(total() + 500)}`}
-              placeholderTextColor="#9CA3AF"
-              keyboardType="decimal-pad"
-              className="border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-700"
+              tipo="numero"
             />
           </View>
         )}
 
-        <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
-          <Text className="text-sm font-medium text-gray-700 mb-2">
-            Observações do pedido (opcional)
-          </Text>
-          <TextInput
-            value={observacoes}
-            onChangeText={setObservacoes}
+        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+          <Input
+            rotulo="Observações do pedido (opcional)"
+            valor={observacoes}
+            aoMudar={setObservacoes}
             placeholder="Ex: interfone 201, deixar com porteiro..."
-            placeholderTextColor="#9CA3AF"
-            multiline
-            numberOfLines={2}
-            className="border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-700"
-            style={{ textAlignVertical: 'top' }}
+            multilinha
+            maxLength={200}
           />
         </View>
 
-        <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
-          <Text className="text-sm font-semibold text-gray-700 mb-3">
+        {/* Resumo */}
+        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: colors.inkMuted,
+              letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              marginBottom: 12,
+            }}
+          >
             Resumo
           </Text>
-          <View className="gap-2">
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-500">
-                Subtotal ({itens.reduce((a, i) => a + i.quantidade, 0)} itens)
-              </Text>
-              <Text className="text-sm text-gray-700">
-                {formatarReais(subtotal())}
-              </Text>
+          <Card preenchimento="md" sombra="soft">
+            <View style={{ gap: 8 }}>
+              <LinhaResumo
+                rotulo={`Subtotal (${qtdTotal} ${qtdTotal === 1 ? 'item' : 'itens'})`}
+                valor={formatarReais(subtotal())}
+              />
+              <LinhaResumo
+                rotulo="Taxa de entrega"
+                valor={
+                  store_taxa_entrega === 0
+                    ? 'Grátis'
+                    : formatarReais(store_taxa_entrega)
+                }
+                valorAccent={store_taxa_entrega === 0}
+              />
+              <View
+                style={{
+                  height: 1,
+                  backgroundColor: colors.line,
+                  marginVertical: 4,
+                }}
+              />
+              <LinhaResumo
+                rotulo="Total"
+                valor={formatarReais(total())}
+                destacado
+              />
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-500">Taxa de entrega</Text>
-              <Text className="text-sm text-gray-700">
-                {store_taxa_entrega === 0
-                  ? 'Grátis'
-                  : formatarReais(store_taxa_entrega)}
-              </Text>
-            </View>
-            <View className="flex-row justify-between pt-2 border-t border-gray-100">
-              <Text className="text-base font-bold text-gray-800">Total</Text>
-              <Text className="text-base font-bold text-verde-profundo">
-                {formatarReais(total())}
-              </Text>
-            </View>
-          </View>
+          </Card>
         </View>
       </ScrollView>
 
-      <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-5 pb-8 pt-4">
-        <TouchableOpacity
+      {/* CTA fixo */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: colors.line,
+          paddingHorizontal: 16,
+          paddingTop: 12,
+          paddingBottom: insets.bottom + 12,
+        }}
+      >
+        <Botao
+          label={labelBotao}
           onPress={handleFazerPedido}
-          disabled={processando}
-          className="bg-verde-profundo py-4 rounded-2xl items-center disabled:opacity-50"
-          activeOpacity={0.85}
-        >
-          {processando ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text className="text-white font-bold text-base">{labelBotao}</Text>
-          )}
-        </TouchableOpacity>
+          variante="primario"
+          tamanho="lg"
+          iconeDireita={formaPagamento === 'online_pix' ? 'phone' : 'check'}
+          carregando={processando}
+        />
       </View>
+    </View>
+  )
+}
+
+function LinhaResumo({
+  rotulo,
+  valor,
+  destacado,
+  valorAccent,
+}: {
+  rotulo: string
+  valor: string
+  destacado?: boolean
+  valorAccent?: boolean
+}) {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+      <Text
+        style={{
+          fontSize: destacado ? 16 : 14,
+          fontWeight: destacado ? '800' : '500',
+          color: destacado ? colors.ink : colors.inkMuted,
+        }}
+      >
+        {rotulo}
+      </Text>
+      <Text
+        style={{
+          fontSize: destacado ? 16 : 14,
+          fontWeight: destacado ? '800' : '600',
+          color: valorAccent ? colors.success : colors.ink,
+        }}
+      >
+        {valor}
+      </Text>
     </View>
   )
 }

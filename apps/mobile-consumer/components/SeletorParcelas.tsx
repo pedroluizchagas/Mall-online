@@ -1,5 +1,9 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { formatarReais } from '@mallora/lib'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { consumerDesign, softColor } from '@/lib/consumer-design'
+
+const { colors, radius } = consumerDesign
 
 interface Props {
   total: number
@@ -35,44 +39,81 @@ export function SeletorParcelas({
   })
 
   return (
-    <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
-      <Text className="text-sm font-semibold text-gray-700 mb-3">
+    <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: '700',
+          color: colors.inkMuted,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+          marginBottom: 12,
+        }}
+      >
         Parcelamento
       </Text>
 
       <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 260 }}>
-        <View className="gap-2">
+        <View style={{ gap: 8 }}>
           {opcoes.map((op) => {
             const ativo = selecionado === op.n
             return (
               <TouchableOpacity
                 key={op.n}
                 onPress={() => onSelecionar(op.n)}
-                className={`flex-row items-center gap-3 p-3 rounded-2xl border ${
-                  ativo
-                    ? 'border-verde-medio bg-green-50'
-                    : 'border-gray-100'
-                }`}
-                activeOpacity={0.75}
+                activeOpacity={consumerDesign.opacity.pressedSoft}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: 14,
+                  borderRadius: radius.md,
+                  backgroundColor: ativo ? softColor(colors.accent) : colors.surface,
+                  borderWidth: ativo ? 1.5 : 1,
+                  borderColor: ativo ? colors.accent : colors.line,
+                }}
               >
                 <View
-                  className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
-                    ativo ? 'border-verde-medio' : 'border-gray-300'
-                  }`}
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    borderWidth: 2,
+                    borderColor: ativo ? colors.ink : colors.line,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: ativo ? colors.ink : 'transparent',
+                  }}
                 >
                   {ativo && (
-                    <View className="w-2.5 h-2.5 rounded-full bg-verde-medio" />
+                    <ConsumerIcon
+                      name="check"
+                      size={12}
+                      color={colors.accent}
+                      strokeWidth={2.5}
+                    />
                   )}
                 </View>
 
-                <View className="flex-1 flex-row items-center justify-between">
-                  <Text className="text-sm font-semibold text-gray-800">
-                    {op.n}x de {formatarReais(op.valorParcela)}
+                <View
+                  style={{
+                    flex: 1,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Text
+                    style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}
+                  >
+                    {op.n}× de {formatarReais(op.valorParcela)}
                   </Text>
                   <Text
-                    className={`text-xs ${
-                      op.semJuros ? 'text-verde-medio' : 'text-gray-400'
-                    }`}
+                    style={{
+                      fontSize: 12,
+                      fontWeight: '600',
+                      color: op.semJuros ? colors.success : colors.inkMuted,
+                    }}
                   >
                     {op.semJuros
                       ? 'sem juros'
@@ -85,9 +126,15 @@ export function SeletorParcelas({
         </View>
       </ScrollView>
 
-      <Text className="text-xs text-gray-400 mt-3">
-        Valores indicativos. O valor final pode variar conforme o emissor do
-        cartão.
+      <Text
+        style={{
+          fontSize: 12,
+          color: colors.inkSoft,
+          marginTop: 12,
+          fontWeight: '500',
+        }}
+      >
+        Valores indicativos. O valor final pode variar conforme o emissor do cartão.
       </Text>
     </View>
   )
