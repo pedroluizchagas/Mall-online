@@ -5,11 +5,18 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
-  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import type { Endereco } from '@mallora/types'
+import { Botao } from '@/components/ui/Botao'
+import { Input } from '@/components/ui/Input'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { consumerDesign, softColor } from '@/lib/consumer-design'
+
+const { colors, radius, shadow } = consumerDesign
 
 interface Props {
   enderecos: Endereco[]
@@ -57,7 +64,8 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
     setSalvando(true)
 
     const enderecoCompleto: Endereco = {
-      apelido: novoEndereco.apelido || `Endereço ${(enderecos.length ?? 0) + 1}`,
+      apelido:
+        novoEndereco.apelido || `Endereço ${(enderecos.length ?? 0) + 1}`,
       rua: novoEndereco.rua!,
       numero: novoEndereco.numero!,
       complemento: novoEndereco.complemento,
@@ -69,7 +77,9 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
 
     const novosEnderecos = [...(enderecos ?? []), enderecoCompleto]
 
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) return
 
     await supabase
@@ -87,236 +97,343 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
     setSalvando(false)
   }
 
+  function fecharModal() {
+    setModalAberto(false)
+    setAdicionando(false)
+  }
+
   return (
-    <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
-      <Text className="text-sm font-semibold text-gray-700 mb-3">
+    <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: '700',
+          color: colors.inkMuted,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+          marginBottom: 12,
+        }}
+      >
         Endereço de entrega
       </Text>
 
       {selecionado ? (
         <TouchableOpacity
           onPress={() => setModalAberto(true)}
-          className="flex-row items-center justify-between"
-          activeOpacity={0.75}
+          activeOpacity={consumerDesign.opacity.pressedSoft}
+          style={[
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              backgroundColor: colors.surface,
+              borderRadius: radius.lg,
+              padding: 16,
+              borderWidth: 1,
+              borderColor: colors.line,
+            },
+            shadow.soft,
+          ]}
         >
-          <View className="flex-1 mr-3">
-            <Text className="text-sm font-medium text-gray-800">
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: colors.accentSoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ConsumerIcon name="pin" size={18} color={colors.accent} />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text
+              style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}
+              numberOfLines={1}
+            >
               {selecionado.apelido ?? selecionado.rua}
             </Text>
-            <Text className="text-xs text-gray-400 mt-0.5">
+            <Text
+              style={{ fontSize: 13, color: colors.inkMuted, fontWeight: '500' }}
+              numberOfLines={1}
+            >
               {selecionado.rua}, {selecionado.numero}
               {selecionado.complemento ? ` — ${selecionado.complemento}` : ''}
             </Text>
-            <Text className="text-xs text-gray-400">
+            <Text
+              style={{ fontSize: 12, color: colors.inkSoft, fontWeight: '500' }}
+              numberOfLines={1}
+            >
               {selecionado.bairro} — {selecionado.cidade}
             </Text>
           </View>
-          <Text className="text-verde-medio text-sm">Alterar</Text>
+          <ConsumerIcon name="chevron-right" size={16} color={colors.inkSoft} />
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity
+        <Botao
+          label="Selecionar endereço"
+          variante="secundario"
+          tamanho="md"
+          iconeEsquerda="pin"
           onPress={() => setModalAberto(true)}
-          className="border-2 border-dashed border-gray-200 rounded-xl py-4 items-center"
-          activeOpacity={0.75}
-        >
-          <Text className="text-verde-medio text-sm font-medium">
-            Selecionar endereço de entrega
-          </Text>
-        </TouchableOpacity>
+        />
       )}
 
-      {/* Modal de endereços */}
-      <Modal
-        visible={modalAberto}
-        animationType="slide"
-        transparent
-        onRequestClose={() => {
+      <ModalEnderecos
+        visivel={modalAberto}
+        adicionando={adicionando}
+        enderecos={enderecos}
+        selecionado={selecionado}
+        novoEndereco={novoEndereco}
+        salvando={salvando}
+        onFechar={fecharModal}
+        onSelecionar={(end) => {
+          onSelecionar(end)
           setModalAberto(false)
-          setAdicionando(false)
         }}
-      >
+        onAdicionar={() => setAdicionando(true)}
+        onCancelarAdicao={() => setAdicionando(false)}
+        onCampoMudou={(campo, valor) => {
+          setNovoEndereco((p) => ({ ...p, [campo]: valor }))
+        }}
+        onCepMudou={(cep) => {
+          setNovoEndereco((p) => ({ ...p, cep }))
+          buscarCep(cep)
+        }}
+        onSalvar={salvarEndereco}
+      />
+    </View>
+  )
+}
+
+interface ModalEnderecosProps {
+  visivel: boolean
+  adicionando: boolean
+  enderecos: Endereco[]
+  selecionado: Endereco | null
+  novoEndereco: Partial<Endereco>
+  salvando: boolean
+  onFechar: () => void
+  onSelecionar: (endereco: Endereco) => void
+  onAdicionar: () => void
+  onCancelarAdicao: () => void
+  onCampoMudou: (campo: keyof Endereco, valor: string) => void
+  onCepMudou: (cep: string) => void
+  onSalvar: () => void
+}
+
+function ModalEnderecos({
+  visivel,
+  adicionando,
+  enderecos,
+  selecionado,
+  novoEndereco,
+  salvando,
+  onFechar,
+  onSelecionar,
+  onAdicionar,
+  onCancelarAdicao,
+  onCampoMudou,
+  onCepMudou,
+  onSalvar,
+}: ModalEnderecosProps) {
+  return (
+    <Modal
+      visible={visivel}
+      animationType="slide"
+      transparent
+      onRequestClose={onFechar}
+    >
+      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
         <TouchableOpacity
-          className="flex-1 bg-black/40"
-          activeOpacity={1}
-          onPress={() => {
-            setModalAberto(false)
-            setAdicionando(false)
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: `rgba(17, 18, 22, ${consumerDesign.opacity.overlay})`,
           }}
+          activeOpacity={1}
+          onPress={onFechar}
         />
 
-        <View className="bg-white rounded-t-3xl max-h-3/4">
-          <View className="px-5 pt-5 pb-3 border-b border-gray-100">
-            <Text className="text-base font-bold text-verde-profundo">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={{
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: radius.xl,
+            borderTopRightRadius: radius.xl,
+            maxHeight: '85%',
+            overflow: 'hidden',
+          }}
+        >
+          <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+            <View
+              style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: colors.line,
+              }}
+            />
+          </View>
+
+          <View
+            style={{
+              paddingHorizontal: 20,
+              paddingTop: 12,
+              paddingBottom: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.line,
+            }}
+          >
+            <Text
+              style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}
+            >
               {adicionando ? 'Novo endereço' : 'Endereços salvos'}
             </Text>
           </View>
 
           <ScrollView
-            contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
+            contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}
             keyboardShouldPersistTaps="handled"
           >
             {!adicionando ? (
               <>
-                {enderecos.map((end, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    onPress={() => {
-                      onSelecionar(end)
-                      setModalAberto(false)
-                    }}
-                    className={`p-4 rounded-2xl border mb-3 ${
-                      selecionado === end
-                        ? 'border-verde-medio bg-green-50'
-                        : 'border-gray-100 bg-white'
-                    }`}
-                    activeOpacity={0.75}
-                  >
-                    <Text className="text-sm font-semibold text-gray-800">
-                      {end.apelido ?? end.rua}
-                    </Text>
-                    <Text className="text-xs text-gray-500 mt-0.5">
-                      {end.rua}, {end.numero}
-                      {end.complemento ? ` — ${end.complemento}` : ''}
-                    </Text>
-                    <Text className="text-xs text-gray-400">
-                      {end.bairro} — {end.cidade}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                {enderecos.map((end, i) => {
+                  const ativo = selecionado === end
+                  return (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => onSelecionar(end)}
+                      activeOpacity={consumerDesign.opacity.pressedSoft}
+                      style={{
+                        padding: 16,
+                        borderRadius: radius.md,
+                        borderWidth: ativo ? 1.5 : 1,
+                        borderColor: ativo ? colors.accent : colors.line,
+                        backgroundColor: ativo
+                          ? softColor(colors.accent)
+                          : colors.surface,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontSize: 14,
+                          fontWeight: '700',
+                          color: colors.ink,
+                        }}
+                      >
+                        {end.apelido ?? end.rua}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 13,
+                          color: colors.inkMuted,
+                          marginTop: 2,
+                          fontWeight: '500',
+                        }}
+                      >
+                        {end.rua}, {end.numero}
+                        {end.complemento ? ` — ${end.complemento}` : ''}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: colors.inkSoft,
+                          fontWeight: '500',
+                        }}
+                      >
+                        {end.bairro} — {end.cidade}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
 
-                <TouchableOpacity
-                  onPress={() => setAdicionando(true)}
-                  className="border-2 border-dashed border-gray-200 rounded-2xl py-4 items-center mt-2"
-                  activeOpacity={0.75}
-                >
-                  <Text className="text-verde-medio text-sm font-medium">
-                    Adicionar novo endereço
-                  </Text>
-                </TouchableOpacity>
+                <Botao
+                  label="Adicionar novo endereço"
+                  variante="secundario"
+                  tamanho="md"
+                  iconeEsquerda="plus"
+                  onPress={onAdicionar}
+                />
               </>
             ) : (
-              <View className="gap-4">
-                <View>
-                  <Text className="text-xs font-medium text-gray-600 mb-1">
-                    Apelido (opcional)
-                  </Text>
-                  <TextInput
-                    value={novoEndereco.apelido ?? ''}
-                    onChangeText={(t) =>
-                      setNovoEndereco((p) => ({ ...p, apelido: t }))
-                    }
-                    placeholder="Ex: Casa, Trabalho"
-                    placeholderTextColor="#9CA3AF"
-                    className="border border-gray-200 rounded-xl px-4 py-3 text-sm"
-                  />
-                </View>
-
-                <View>
-                  <Text className="text-xs font-medium text-gray-600 mb-1">
-                    CEP
-                  </Text>
-                  <TextInput
-                    value={novoEndereco.cep ?? ''}
-                    onChangeText={(t) => {
-                      setNovoEndereco((p) => ({ ...p, cep: t }))
-                      buscarCep(t)
-                    }}
-                    placeholder="00000-000"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="numeric"
-                    maxLength={9}
-                    className="border border-gray-200 rounded-xl px-4 py-3 text-sm"
-                  />
-                </View>
-
-                <View className="flex-row gap-3">
-                  <View className="flex-1">
-                    <Text className="text-xs font-medium text-gray-600 mb-1">
-                      Rua
-                    </Text>
-                    <TextInput
-                      value={novoEndereco.rua ?? ''}
-                      onChangeText={(t) =>
-                        setNovoEndereco((p) => ({ ...p, rua: t }))
-                      }
+              <>
+                <Input
+                  rotulo="Apelido (opcional)"
+                  valor={novoEndereco.apelido ?? ''}
+                  aoMudar={(t) => onCampoMudou('apelido', t)}
+                  placeholder="Ex.: Casa, Trabalho"
+                />
+                <Input
+                  rotulo="CEP"
+                  valor={novoEndereco.cep ?? ''}
+                  aoMudar={onCepMudou}
+                  placeholder="00000-000"
+                  tipo="numero"
+                  maxLength={9}
+                />
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  <View style={{ flex: 1 }}>
+                    <Input
+                      rotulo="Rua"
+                      valor={novoEndereco.rua ?? ''}
+                      aoMudar={(t) => onCampoMudou('rua', t)}
                       placeholder="Nome da rua"
-                      placeholderTextColor="#9CA3AF"
-                      className="border border-gray-200 rounded-xl px-4 py-3 text-sm"
                     />
                   </View>
-                  <View className="w-24">
-                    <Text className="text-xs font-medium text-gray-600 mb-1">
-                      Número
-                    </Text>
-                    <TextInput
-                      value={novoEndereco.numero ?? ''}
-                      onChangeText={(t) =>
-                        setNovoEndereco((p) => ({ ...p, numero: t }))
-                      }
+                  <View style={{ width: 100 }}>
+                    <Input
+                      rotulo="Número"
+                      valor={novoEndereco.numero ?? ''}
+                      aoMudar={(t) => onCampoMudou('numero', t)}
                       placeholder="123"
-                      placeholderTextColor="#9CA3AF"
-                      keyboardType="numeric"
-                      className="border border-gray-200 rounded-xl px-4 py-3 text-sm"
+                      tipo="numero"
                     />
                   </View>
                 </View>
+                <Input
+                  rotulo="Complemento (opcional)"
+                  valor={novoEndereco.complemento ?? ''}
+                  aoMudar={(t) => onCampoMudou('complemento', t)}
+                  placeholder="Apto, bloco, referência..."
+                />
+                <Input
+                  rotulo="Bairro"
+                  valor={novoEndereco.bairro ?? ''}
+                  aoMudar={(t) => onCampoMudou('bairro', t)}
+                  placeholder="Nome do bairro"
+                />
 
-                <View>
-                  <Text className="text-xs font-medium text-gray-600 mb-1">
-                    Complemento (opcional)
-                  </Text>
-                  <TextInput
-                    value={novoEndereco.complemento ?? ''}
-                    onChangeText={(t) =>
-                      setNovoEndereco((p) => ({ ...p, complemento: t }))
-                    }
-                    placeholder="Apto, bloco, referência..."
-                    placeholderTextColor="#9CA3AF"
-                    className="border border-gray-200 rounded-xl px-4 py-3 text-sm"
-                  />
+                <View
+                  style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Botao
+                      label="Cancelar"
+                      variante="ghost"
+                      tamanho="md"
+                      onPress={onCancelarAdicao}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Botao
+                      label="Salvar"
+                      variante="primario"
+                      tamanho="md"
+                      carregando={salvando}
+                      onPress={onSalvar}
+                    />
+                  </View>
                 </View>
-
-                <View>
-                  <Text className="text-xs font-medium text-gray-600 mb-1">
-                    Bairro
-                  </Text>
-                  <TextInput
-                    value={novoEndereco.bairro ?? ''}
-                    onChangeText={(t) =>
-                      setNovoEndereco((p) => ({ ...p, bairro: t }))
-                    }
-                    placeholder="Nome do bairro"
-                    placeholderTextColor="#9CA3AF"
-                    className="border border-gray-200 rounded-xl px-4 py-3 text-sm"
-                  />
-                </View>
-
-                <View className="flex-row gap-2 mt-2">
-                  <TouchableOpacity
-                    onPress={() => setAdicionando(false)}
-                    className="flex-1 border border-gray-200 py-3.5 rounded-2xl items-center"
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-gray-500 text-sm font-medium">
-                      Cancelar
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={salvarEndereco}
-                    disabled={salvando}
-                    className="flex-1 bg-verde-profundo py-3.5 rounded-2xl items-center disabled:opacity-50"
-                    activeOpacity={0.85}
-                  >
-                    <Text className="text-white text-sm font-semibold">
-                      {salvando ? 'Salvando...' : 'Salvar'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
+              </>
             )}
           </ScrollView>
-        </View>
-      </Modal>
-    </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
   )
 }

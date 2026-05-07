@@ -1,4 +1,8 @@
 import { View, Text, TouchableOpacity } from 'react-native'
+import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
+import { consumerDesign, softColor } from '@/lib/consumer-design'
+
+const { colors, radius } = consumerDesign
 
 type FormaPagamento =
   | 'online_cartao'
@@ -17,6 +21,7 @@ interface OpcaoPagamento {
   id: FormaPagamento
   label: string
   descricao: string
+  icone: ConsumerIconName
   condicao: (loja: Loja) => boolean
 }
 
@@ -25,24 +30,28 @@ const OPCOES: OpcaoPagamento[] = [
     id: 'online_cartao',
     label: 'Cartão de crédito',
     descricao: 'Parcele em até 12x — pagamento seguro Pagar.me',
+    icone: 'wallet',
     condicao: (l) => l.aceita_cartao_online,
   },
   {
     id: 'online_pix',
     label: 'Pix',
     descricao: 'Aprovação imediata via QR Code',
+    icone: 'phone',
     condicao: (l) => l.aceita_pix,
   },
   {
     id: 'dinheiro',
     label: 'Dinheiro na entrega',
     descricao: 'Pague ao receber seu pedido',
+    icone: 'cash',
     condicao: (l) => l.aceita_dinheiro,
   },
   {
     id: 'cartao_maquininha',
     label: 'Cartão na maquininha',
     descricao: 'Débito ou crédito na entrega',
+    icone: 'wallet',
     condicao: (l) => l.aceita_cartao_maquininha,
   },
 ]
@@ -57,49 +66,93 @@ export function SeletorPagamento({ loja, selecionado, onSelecionar }: Props) {
   const opcoesDisponiveis = OPCOES.filter((op) => op.condicao(loja))
 
   return (
-    <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
-      <Text className="text-sm font-semibold text-gray-700 mb-3">
-        Forma de pagamento
+    <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: '700',
+          color: colors.inkMuted,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+          marginBottom: 12,
+        }}
+      >
+        Pagamento
       </Text>
 
-      <View className="gap-2">
-        {opcoesDisponiveis.map((opcao) => (
-          <TouchableOpacity
-            key={opcao.id}
-            onPress={() => onSelecionar(opcao.id)}
-            className={`flex-row items-center gap-3 p-4 rounded-2xl border ${
-              selecionado === opcao.id
-                ? 'border-verde-medio bg-green-50'
-                : 'border-gray-100'
-            }`}
-            activeOpacity={0.75}
-          >
-            {/* Radio visual */}
-            <View
-              className={`w-5 h-5 rounded-full border-2 items-center justify-center ${
-                selecionado === opcao.id
-                  ? 'border-verde-medio'
-                  : 'border-gray-300'
-              }`}
+      <View style={{ gap: 8 }}>
+        {opcoesDisponiveis.map((opcao) => {
+          const ativo = selecionado === opcao.id
+          return (
+            <TouchableOpacity
+              key={opcao.id}
+              onPress={() => onSelecionar(opcao.id)}
+              activeOpacity={consumerDesign.opacity.pressedSoft}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 12,
+                padding: 16,
+                borderRadius: radius.md,
+                backgroundColor: ativo ? softColor(colors.accent) : colors.surface,
+                borderWidth: ativo ? 1.5 : 1,
+                borderColor: ativo ? colors.accent : colors.line,
+              }}
             >
-              {selecionado === opcao.id && (
-                <View className="w-2.5 h-2.5 rounded-full bg-verde-medio" />
-              )}
-            </View>
+              <View
+                style={{
+                  width: 22,
+                  height: 22,
+                  borderRadius: 11,
+                  borderWidth: 2,
+                  borderColor: ativo ? colors.ink : colors.line,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: ativo ? colors.ink : 'transparent',
+                }}
+              >
+                {ativo && (
+                  <ConsumerIcon
+                    name="check"
+                    size={12}
+                    color={colors.accent}
+                    strokeWidth={2.5}
+                  />
+                )}
+              </View>
 
-            <View className="flex-1">
-              <Text className="text-sm font-semibold text-gray-800">
-                {opcao.label}
-              </Text>
-              <Text className="text-xs text-gray-400 mt-0.5">
-                {opcao.descricao}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+              <ConsumerIcon name={opcao.icone} size={20} color={colors.ink} />
+
+              <View style={{ flex: 1, gap: 2 }}>
+                <Text
+                  style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}
+                >
+                  {opcao.label}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: colors.inkMuted,
+                    fontWeight: '500',
+                  }}
+                >
+                  {opcao.descricao}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          )
+        })}
 
         {opcoesDisponiveis.length === 0 && (
-          <Text className="text-sm text-gray-400 text-center py-3">
+          <Text
+            style={{
+              fontSize: 14,
+              color: colors.inkMuted,
+              textAlign: 'center',
+              paddingVertical: 16,
+              fontWeight: '500',
+            }}
+          >
             Nenhuma forma de pagamento disponível.
           </Text>
         )}

@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TextInput } from 'react-native'
+import { View, Text } from 'react-native'
+import { Input } from '@/components/ui/Input'
+import { consumerDesign } from '@/lib/consumer-design'
+
+const { colors } = consumerDesign
 
 export interface DadosCartao {
   number: string
@@ -93,95 +97,87 @@ export function FormularioCartao({ onChange }: Props) {
   }, [valido, numeroLimpo, titular, expMonth, expYear, cvv])
 
   const erroNumero =
-    tocado.numero && !numeroValido ? 'Número de cartão inválido.' : null
+    tocado.numero && !numeroValido ? 'Número de cartão inválido.' : undefined
   const erroTitular =
-    tocado.titular && !titularOk ? 'Informe o nome impresso no cartão.' : null
+    tocado.titular && !titularOk ? 'Informe o nome impresso no cartão.' : undefined
   const erroValidade =
-    tocado.validade && !validadeOk ? 'Validade inválida.' : null
-  const erroCvv = tocado.cvv && !cvvOk ? 'CVV inválido.' : null
+    tocado.validade && !validadeOk ? 'Validade inválida.' : undefined
+  const erroCvv = tocado.cvv && !cvvOk ? 'CVV inválido.' : undefined
 
   return (
-    <View className="bg-white border-t border-b border-gray-100 px-5 py-4 mt-4">
-      <Text className="text-sm font-semibold text-gray-700 mb-3">
+    <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: '700',
+          color: colors.inkMuted,
+          letterSpacing: 0.5,
+          textTransform: 'uppercase',
+          marginBottom: 12,
+        }}
+      >
         Dados do cartão
       </Text>
 
-      <View className="gap-3">
-        <View>
-          <TextInput
-            value={numero}
-            onChangeText={(v) => setNumero(formatarNumero(v))}
-            onBlur={() => setTocado((t) => ({ ...t, numero: true }))}
-            placeholder="Número do cartão"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="number-pad"
-            autoComplete="cc-number"
-            className={`border rounded-xl px-4 py-3 text-base text-gray-700 ${
-              erroNumero ? 'border-red-400' : 'border-gray-200'
-            }`}
-          />
-          {erroNumero && (
-            <Text className="text-xs text-red-500 mt-1">{erroNumero}</Text>
-          )}
-        </View>
+      <View style={{ gap: 12 }}>
+        <Input
+          valor={numero}
+          aoMudar={(v) => {
+            setNumero(formatarNumero(v))
+            if (!tocado.numero) setTocado((t) => ({ ...t, numero: true }))
+          }}
+          placeholder="Número do cartão"
+          tipo="numero"
+          erro={erroNumero}
+          maxLength={23}
+        />
 
-        <View>
-          <TextInput
-            value={titular}
-            onChangeText={setTitular}
-            onBlur={() => setTocado((t) => ({ ...t, titular: true }))}
-            placeholder="Nome impresso no cartão"
-            placeholderTextColor="#9CA3AF"
-            autoCapitalize="characters"
-            autoComplete="cc-name"
-            className={`border rounded-xl px-4 py-3 text-base text-gray-700 ${
-              erroTitular ? 'border-red-400' : 'border-gray-200'
-            }`}
-          />
-          {erroTitular && (
-            <Text className="text-xs text-red-500 mt-1">{erroTitular}</Text>
-          )}
-        </View>
+        <Input
+          valor={titular}
+          aoMudar={setTitular}
+          placeholder="Nome impresso no cartão"
+          autoCapitalize="characters"
+          erro={erroTitular}
+        />
 
-        <View className="flex-row gap-3">
-          <View className="flex-1">
-            <TextInput
-              value={validade}
-              onChangeText={(v) => setValidade(formatarValidade(v))}
-              onBlur={() => setTocado((t) => ({ ...t, validade: true }))}
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <Input
+              valor={validade}
+              aoMudar={(v) => {
+                setValidade(formatarValidade(v))
+                if (!tocado.validade)
+                  setTocado((t) => ({ ...t, validade: true }))
+              }}
               placeholder="MM/AA"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              autoComplete="cc-exp"
-              className={`border rounded-xl px-4 py-3 text-base text-gray-700 ${
-                erroValidade ? 'border-red-400' : 'border-gray-200'
-              }`}
+              tipo="numero"
+              erro={erroValidade}
+              maxLength={5}
             />
-            {erroValidade && (
-              <Text className="text-xs text-red-500 mt-1">{erroValidade}</Text>
-            )}
           </View>
-          <View className="flex-1">
-            <TextInput
-              value={cvv}
-              onChangeText={(v) => setCvv(v.replace(/\D/g, '').slice(0, 4))}
-              onBlur={() => setTocado((t) => ({ ...t, cvv: true }))}
+          <View style={{ flex: 1 }}>
+            <Input
+              valor={cvv}
+              aoMudar={(v) => {
+                setCvv(v.replace(/\D/g, '').slice(0, 4))
+                if (!tocado.cvv) setTocado((t) => ({ ...t, cvv: true }))
+              }}
               placeholder="CVV"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="number-pad"
-              autoComplete="cc-csc"
-              secureTextEntry
-              className={`border rounded-xl px-4 py-3 text-base text-gray-700 ${
-                erroCvv ? 'border-red-400' : 'border-gray-200'
-              }`}
+              tipo="senha"
+              erro={erroCvv}
+              maxLength={4}
             />
-            {erroCvv && (
-              <Text className="text-xs text-red-500 mt-1">{erroCvv}</Text>
-            )}
           </View>
         </View>
 
-        <Text className="text-xs text-gray-400 mt-1">
+        <Text
+          style={{
+            fontSize: 12,
+            color: colors.inkSoft,
+            fontWeight: '500',
+            lineHeight: 18,
+          }}
+        >
           Seus dados são tokenizados diretamente pela Pagar.me. Nem o app nem
           nossos servidores armazenam o número do cartão.
         </Text>
