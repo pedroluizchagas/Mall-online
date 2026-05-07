@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/Card'
 import { Botao } from '@/components/ui/Botao'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
+import type { Endereco } from '@mallora/types'
 
 const { colors, radius, spacing } = consumerDesign
 
@@ -36,7 +37,10 @@ export default function TelaPerfil() {
         .eq('user_id', u.id)
         .single()
       if (data) {
-        useAuthStore.getState().setConsumer(data)
+        useAuthStore.getState().setConsumer({
+          ...data,
+          enderecos: (data.enderecos ?? []) as unknown as Endereco[],
+        })
       }
     }
     setAtualizando(false)

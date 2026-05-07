@@ -17,7 +17,7 @@ interface ResultadoLoja {
   tipo: 'loja'
   id: string
   nome: string
-  slug: string
+  slug: string | null
   logo_url: string | null
   taxa_entrega: number
   tempo_entrega: number | null
@@ -31,7 +31,7 @@ interface ResultadoProduto {
   descricao: string | null
   preco: number
   foto_url: string | null
-  store_slug: string
+  store_slug: string | null
   store_nome: string
 }
 
@@ -186,7 +186,9 @@ export default function TelaBuscar() {
               return (
                 <LojaCard
                   loja={item}
-                  onPress={() => router.push(`/loja/${item.slug}`)}
+                  onPress={() => {
+                    if (item.slug) router.push(`/loja/${item.slug}`)
+                  }}
                 />
               )
             }
@@ -202,7 +204,9 @@ export default function TelaBuscar() {
 function ResultadoProdutoItem({ produto }: { produto: ResultadoProduto }) {
   return (
     <TouchableOpacity
-      onPress={() => router.push(`/loja/${produto.store_slug}`)}
+      onPress={() => {
+        if (produto.store_slug) router.push(`/loja/${produto.store_slug}`)
+      }}
       activeOpacity={consumerDesign.opacity.pressedSoft}
       style={[
         {

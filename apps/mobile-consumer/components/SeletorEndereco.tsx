@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
-import type { Endereco } from '@mallora/types'
+import type { Endereco, Json } from '@mallora/types'
 import { Botao } from '@/components/ui/Botao'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
@@ -84,7 +84,7 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
 
     await supabase
       .from('consumers')
-      .update({ enderecos: novosEnderecos })
+      .update({ enderecos: novosEnderecos as unknown as Json })
       .eq('user_id', user.id)
 
     if (consumer) {
