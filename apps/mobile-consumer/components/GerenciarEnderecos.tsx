@@ -2,6 +2,11 @@ import { useState } from 'react'
 import { View, Text, TouchableOpacity, Alert } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import type { Endereco } from '@mallora/types'
+import { Card } from '@/components/ui/Card'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { consumerDesign, softColor } from '@/lib/consumer-design'
+
+const { colors, radius } = consumerDesign
 
 interface Props {
   enderecos: Endereco[]
@@ -41,48 +46,130 @@ export function GerenciarEnderecos({ enderecos, onAtualizar }: Props) {
 
   if (enderecos.length === 0) {
     return (
-      <View className="bg-gray-50 px-5 py-4 border-b border-gray-100">
-        <Text className="text-sm text-gray-400 text-center py-3">
-          Nenhum endereço salvo ainda.
-        </Text>
-        <Text className="text-xs text-gray-300 text-center">
-          Adicione um endereço ao fazer seu próximo pedido.
-        </Text>
+      <View style={{ paddingHorizontal: 24, paddingTop: 8 }}>
+        <Card preenchimento="md" sombra="none">
+          <View style={{ alignItems: 'center', paddingVertical: 16, gap: 6 }}>
+            <View
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                backgroundColor: colors.accentSoft,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 4,
+              }}
+            >
+              <ConsumerIcon name="pin" size={20} color={colors.accent} />
+            </View>
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: '700',
+                color: colors.ink,
+              }}
+            >
+              Nenhum endereço salvo
+            </Text>
+            <Text
+              style={{
+                fontSize: 13,
+                color: colors.inkMuted,
+                textAlign: 'center',
+                fontWeight: '500',
+              }}
+            >
+              Adicione um endereço ao fazer seu próximo pedido.
+            </Text>
+          </View>
+        </Card>
       </View>
     )
   }
 
   return (
-    <View className="bg-gray-50 border-b border-gray-100">
+    <View style={{ paddingHorizontal: 24, paddingTop: 8, gap: 8 }}>
       {enderecos.map((end, i) => (
-        <View
-          key={i}
-          className="flex-row items-start justify-between px-5 py-4 border-b border-gray-100"
-        >
-          <View className="flex-1 mr-3">
-            <Text className="text-sm font-semibold text-gray-800">
-              {end.apelido ?? end.rua}
-            </Text>
-            <Text className="text-xs text-gray-500 mt-0.5">
-              {end.rua}, {end.numero}
-              {end.complemento ? ` — ${end.complemento}` : ''}
-            </Text>
-            <Text className="text-xs text-gray-400">
-              {end.bairro} — {end.cidade}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => handleRemover(i)}
-            disabled={removendo === i}
-            className="py-1"
-            activeOpacity={0.7}
+        <Card key={i} preenchimento="md" sombra="none">
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 12,
+            }}
           >
-            <Text className="text-red-400 text-xs font-medium">
-              {removendo === i ? '...' : 'Remover'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                backgroundColor: colors.accentSoft,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ConsumerIcon name="pin" size={16} color={colors.accent} />
+            </View>
+
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '700',
+                  color: colors.ink,
+                }}
+              >
+                {end.apelido ?? end.rua}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: colors.inkMuted,
+                  fontWeight: '500',
+                }}
+                numberOfLines={1}
+              >
+                {end.rua}, {end.numero}
+                {end.complemento ? ` — ${end.complemento}` : ''}
+              </Text>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: colors.inkSoft,
+                  fontWeight: '500',
+                }}
+                numberOfLines={1}
+              >
+                {end.bairro} — {end.cidade}
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => handleRemover(i)}
+              disabled={removendo === i}
+              activeOpacity={consumerDesign.opacity.pressedSoft}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: radius.pill,
+                backgroundColor: softColor(colors.danger),
+                opacity: removendo === i ? consumerDesign.opacity.disabled : 1,
+              }}
+            >
+              <Text
+                style={{
+                  color: colors.danger,
+                  fontSize: 11,
+                  fontWeight: '700',
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                }}
+              >
+                {removendo === i ? '...' : 'Remover'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Card>
       ))}
     </View>
   )

@@ -4,39 +4,53 @@ import {
   Text,
   FlatList,
   Dimensions,
-  TouchableOpacity,
+  StatusBar,
 } from 'react-native'
 import { router } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Botao } from '@/components/ui/Botao'
+import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
+import { consumerDesign } from '@/lib/consumer-design'
+
+const { colors, radius } = consumerDesign
 
 const { width } = Dimensions.get('window')
 
-const SLIDES = [
+interface Slide {
+  id: string
+  icone: ConsumerIconName
+  titulo: string
+  descricao: string
+}
+
+const SLIDES: Slide[] = [
   {
     id: '1',
+    icone: 'bag',
     titulo: 'Seu bairro na palma da mão',
     descricao:
-      'Peça de restaurantes, mercados e lojas locais de Divinópolis sem sair de casa.',
-    cor: '#1A4D3A',
+      'Peça de restaurantes, mercados e lojas locais sem sair de casa.',
   },
   {
     id: '2',
+    icone: 'store',
     titulo: 'Apoie o comércio local',
     descricao:
-      'Cada pedido fortalece um negócio da sua cidade. Sem taxas absurdas para os lojistas.',
-    cor: '#4CAF82',
+      'Cada pedido fortalece um negócio da sua cidade.',
   },
   {
     id: '3',
+    icone: 'spark',
     titulo: 'Rápido e seguro',
     descricao:
-      'Pague com cartão ou PIX. Acompanhe o entregador em tempo real até sua porta.',
-    cor: '#F5A623',
+      'Pague com cartão ou Pix. Acompanhe sua entrega em tempo real.',
   },
 ]
 
 export default function TelaBoasVindas() {
   const [indiceAtual, setIndiceAtual] = useState(0)
   const listRef = useRef<FlatList>(null)
+  const insets = useSafeAreaInsets()
 
   function handleProximo() {
     if (indiceAtual < SLIDES.length - 1) {
@@ -48,7 +62,9 @@ export default function TelaBoasVindas() {
   }
 
   return (
-    <View className="flex-1 bg-creme">
+    <View style={{ flex: 1, backgroundColor: colors.surfaceDark }}>
+      <StatusBar barStyle="light-content" />
+
       <FlatList
         ref={listRef}
         data={SLIDES}
@@ -59,66 +75,108 @@ export default function TelaBoasVindas() {
           const index = Math.round(e.nativeEvent.contentOffset.x / width)
           setIndiceAtual(index)
         }}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View
-            style={{ width }}
-            className="flex-1 items-center justify-center px-8"
+            style={{
+              width,
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+              paddingHorizontal: 32,
+            }}
           >
             <View
-              className="w-48 h-48 rounded-full mb-10 items-center justify-center"
-              style={{ backgroundColor: item.cor + '20' }}
+              style={{
+                width: 96,
+                height: 96,
+                borderRadius: radius.pill,
+                backgroundColor: colors.accentSoft,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 32,
+              }}
             >
-              <View
-                className="w-24 h-24 rounded-full"
-                style={{ backgroundColor: item.cor }}
+              <ConsumerIcon
+                name={item.icone}
+                size={44}
+                color={colors.accent}
+                strokeWidth={1.6}
               />
             </View>
-
-            <Text className="text-2xl font-bold text-verde-profundo text-center mb-3">
+            <Text
+              style={{
+                fontSize: 32,
+                fontWeight: '800',
+                color: colors.white,
+                letterSpacing: -0.5,
+                textAlign: 'center',
+                marginBottom: 12,
+              }}
+            >
               {item.titulo}
             </Text>
-            <Text className="text-gray-500 text-center leading-6">
+            <Text
+              style={{
+                fontSize: 15,
+                color: colors.inkSoft,
+                textAlign: 'center',
+                lineHeight: 22,
+                maxWidth: 320,
+                fontWeight: '500',
+              }}
+            >
               {item.descricao}
             </Text>
           </View>
         )}
-        keyExtractor={(item) => item.id}
       />
 
-      {/* Indicadores de página */}
-      <View className="flex-row justify-center gap-2 mb-6">
+      {/* Indicadores */}
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 8,
+          marginBottom: 24,
+        }}
+      >
         {SLIDES.map((_, i) => (
           <View
             key={i}
-            className="h-2 rounded-full"
             style={{
+              height: 8,
+              borderRadius: 4,
               width: i === indiceAtual ? 20 : 8,
-              backgroundColor: i === indiceAtual ? '#1A4D3A' : '#D1D5DB',
+              backgroundColor:
+                i === indiceAtual ? colors.accent : colors.lineDark,
             }}
           />
         ))}
       </View>
 
-      {/* Botões */}
-      <View className="px-6 pb-10 gap-3">
-        <TouchableOpacity
+      {/* Ações */}
+      <View
+        style={{
+          paddingHorizontal: 24,
+          paddingBottom: insets.bottom + 24,
+          gap: 12,
+        }}
+      >
+        <Botao
+          label={indiceAtual < SLIDES.length - 1 ? 'Próximo' : 'Começar'}
+          variante="primario"
+          tamanho="lg"
           onPress={handleProximo}
-          className="bg-verde-profundo py-4 rounded-2xl items-center"
-          activeOpacity={0.85}
-        >
-          <Text className="text-white font-semibold text-base">
-            {indiceAtual < SLIDES.length - 1 ? 'Próximo' : 'Começar'}
-          </Text>
-        </TouchableOpacity>
-
+        />
         {indiceAtual < SLIDES.length - 1 && (
-          <TouchableOpacity
+          <Botao
+            label="Pular"
+            variante="ghost"
+            tamanho="md"
             onPress={() => router.replace('/(auth)/entrar')}
-            className="py-3 items-center"
-            activeOpacity={0.7}
-          >
-            <Text className="text-gray-400 text-sm">Pular</Text>
-          </TouchableOpacity>
+          />
         )}
       </View>
     </View>
