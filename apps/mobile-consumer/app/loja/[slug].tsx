@@ -7,11 +7,18 @@ import {
   Animated,
 } from 'react-native'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { formatarReais } from '@mallora/lib'
-import { Skeleton } from '@/components/Skeleton'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { ModalProduto } from '@/components/ModalProduto'
+import { ProdutoCard } from '@/components/ProdutoCard'
+import { Badge } from '@/components/ui/Badge'
+import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
+import { consumerDesign } from '@/lib/consumer-design'
+
+const { colors, radius, shadow } = consumerDesign
 
 interface Produto {
   id: string
@@ -25,18 +32,25 @@ interface Produto {
 }
 
 interface SecaoCardapio {
-  title: string
-  data: Produto[]
+  titulo: string
+  produtos: Produto[]
+}
+
+interface MetodoPagamento {
+  rotulo: string
+  ativo: boolean
 }
 
 export default function PaginaLoja() {
   const { slug } = useLocalSearchParams<{ slug: string }>()
+  const insets = useSafeAreaInsets()
   const [loja, setLoja] = useState<any>(null)
   const [secoes, setSecoes] = useState<SecaoCardapio[]>([])
   const [carregando, setCarregando] = useState(true)
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null)
   const scrollY = useRef(new Animated.Value(0)).current
   const totalItens = useCartStore((s) => s.totalItens())
+  const total = useCartStore((s) => s.total())
 
   useEffect(() => {
     async function carregar() {
@@ -60,7 +74,6 @@ export default function PaginaLoja() {
 
       setLoja(lojaData)
 
-      // Buscar produtos agrupados por categoria
       const { data: produtos } = await supabase
         .from('products')
         .select(`
@@ -73,7 +86,10 @@ export default function PaginaLoja() {
         .order('ordem')
 
       if (produtos) {
-        const grupos: Record<string, { titulo: string; ordem: number; produtos: Produto[] }> = {}
+        const grupos: Record<
+          string,
+          { titulo: string; ordem: number; produtos: Produto[] }
+        > = {}
 
         for (const produto of produtos) {
           const cat = (produto as any).categories
@@ -89,7 +105,7 @@ export default function PaginaLoja() {
 
         const secoesOrdenadas = Object.values(grupos)
           .sort((a, b) => a.ordem - b.ordem)
-          .map((g) => ({ title: g.titulo, data: g.produtos }))
+          .map((g) => ({ titulo: g.titulo, produtos: g.produtos }))
 
         setSecoes(secoesOrdenadas)
       }
@@ -100,18 +116,25 @@ export default function PaginaLoja() {
     carregar()
   }, [slug])
 
-  // Opacidade do header ao rolar
-  const headerOpacity = scrollY.interpolate({
+  // Header animado: bg muda de transparente → surface conforme rola
+  const headerBgOpacity = scrollY.interpolate({
     inputRange: [80, 160],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  })
+
+  const titleOpacity = scrollY.interpolate({
+    inputRange: [120, 180],
     outputRange: [0, 1],
     extrapolate: 'clamp',
   })
 
   if (carregando) {
     return (
-      <View className="flex-1 bg-creme">
-        <Skeleton largura="100%" altura={200} />
-        <View className="p-5 gap-3">
+      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Skeleton largura="100%" altura={200} raio={0} />
+        <View style={{ padding: 20, gap: 12 }}>
           <Skeleton largura="60%" altura={24} />
           <Skeleton largura="40%" altura={16} />
           <Skeleton largura="80%" altura={16} />
@@ -120,160 +143,277 @@ export default function PaginaLoja() {
     )
   }
 
-  return (
-    <View className="flex-1 bg-creme">
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          headerTransparent: true,
-          headerTitle: '',
-          headerBackTitle: '',
-          headerTintColor: '#1A4D3A',
-        }}
-      />
+  const metodos: MetodoPagamento[] = [
+    { rotulo: 'Dinheiro', ativo: !!loja?.aceita_dinheiro },
+    { rotulo: 'Pix', ativo: !!loja?.aceita_pix },
+    { rotulo: 'Cartão na entrega', ativo: !!loja?.aceita_cartao_maquininha },
+    { rotulo: 'Online (cartão / Pix)', ativo: !!loja?.aceita_cartao_online },
+  ].filter((m) => m.ativo)
 
-      {/* Header fixo com nome da loja (aparece ao rolar) */}
+  const espacoFinal = totalItens > 0 ? 120 : 40
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {/* Header animado fixo */}
       <Animated.View
-        style={{ opacity: headerOpacity }}
-        className="absolute top-0 left-0 right-0 z-10 bg-creme/95
-          pt-14 pb-3 px-5 border-b border-gray-100"
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 10,
+          paddingTop: insets.top + 6,
+          paddingHorizontal: 16,
+          paddingBottom: 12,
+          backgroundColor: colors.surface,
+          opacity: headerBgOpacity,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.line,
+        }}
+        pointerEvents="none"
+      />
+      <View
+        style={{
+          position: 'absolute',
+          top: insets.top + 6,
+          left: 16,
+          right: 16,
+          zIndex: 11,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+        }}
       >
-        <Text className="text-base font-bold text-verde-profundo">
+        <BotaoCircular icone="back" aoTocar={() => router.back()} />
+        <Animated.Text
+          style={{
+            flex: 1,
+            fontSize: 16,
+            fontWeight: '800',
+            color: colors.ink,
+            textAlign: 'center',
+            opacity: titleOpacity,
+            marginRight: 40,
+            letterSpacing: -0.2,
+          }}
+          numberOfLines={1}
+        >
           {loja?.nome}
-        </Text>
-      </Animated.View>
+        </Animated.Text>
+      </View>
 
       <Animated.ScrollView
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
+          { useNativeDriver: false }
         )}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: espacoFinal }}
       >
         {/* Banner */}
-        <View className="h-52 bg-gray-100">
+        <View style={{ height: 200, backgroundColor: colors.surfaceDark }}>
           {loja?.banner_url ? (
             <Image
               source={{ uri: loja.banner_url }}
-              className="w-full h-full"
+              style={{ width: '100%', height: '100%' }}
               resizeMode="cover"
             />
           ) : loja?.logo_url ? (
             <Image
               source={{ uri: loja.logo_url }}
-              className="w-full h-full"
+              style={{ width: '100%', height: '100%' }}
               resizeMode="contain"
             />
           ) : (
             <View
-              className="flex-1 items-center justify-center"
-              style={{ backgroundColor: '#1A4D3A20' }}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+              }}
             >
-              <Text className="text-6xl text-verde-profundo/20">?</Text>
+              <View
+                style={{
+                  position: 'absolute',
+                  right: -40,
+                  top: -40,
+                  width: 180,
+                  height: 180,
+                  borderRadius: 90,
+                  backgroundColor: colors.accentSoft,
+                }}
+              />
+              <Text
+                style={{
+                  color: colors.accent,
+                  fontSize: 96,
+                  fontWeight: '800',
+                  letterSpacing: -3,
+                  opacity: 0.85,
+                }}
+              >
+                {(loja?.nome ?? '?').charAt(0).toUpperCase()}
+              </Text>
             </View>
           )}
         </View>
 
-        {/* Info da loja */}
-        <View className="px-5 py-5 bg-white mb-2">
-          <Text className="text-xl font-bold text-gray-800 mb-1">
+        {/* Cabeçalho da loja */}
+        <View
+          style={{
+            backgroundColor: colors.surface,
+            paddingHorizontal: 24,
+            paddingVertical: 24,
+            gap: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 26,
+              fontWeight: '800',
+              color: colors.ink,
+              letterSpacing: -0.5,
+            }}
+          >
             {loja?.nome}
           </Text>
 
           {loja?.descricao && (
-            <Text className="text-sm text-gray-500 mb-3" numberOfLines={2}>
+            <Text
+              style={{
+                fontSize: 14,
+                color: colors.inkMuted,
+                fontWeight: '500',
+                lineHeight: 20,
+              }}
+              numberOfLines={3}
+            >
               {loja.descricao}
             </Text>
           )}
 
-          <View className="flex-row flex-wrap gap-3">
-            {loja?.tempo_entrega && (
-              <View className="bg-gray-50 rounded-lg px-3 py-1.5">
-                <Text className="text-xs text-gray-600">
-                  {loja.tempo_entrega} min
-                </Text>
-              </View>
+          <View
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}
+          >
+            {loja?.tempo_entrega !== null && loja?.tempo_entrega !== undefined && (
+              <LinhaMeta
+                icone="clock"
+                rotulo={`${loja.tempo_entrega} min`}
+                cor={colors.inkMuted}
+              />
             )}
-            <View className="bg-gray-50 rounded-lg px-3 py-1.5">
-              <Text className="text-xs text-gray-600">
-                {loja?.taxa_entrega === 0
+            <LinhaMeta
+              icone="truck"
+              rotulo={
+                loja?.taxa_entrega === 0
                   ? 'Frete grátis'
-                  : `Frete ${formatarReais(loja?.taxa_entrega ?? 0)}`}
+                  : formatarReais(loja?.taxa_entrega ?? 0)
+              }
+              cor={loja?.taxa_entrega === 0 ? colors.success : colors.inkMuted}
+            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: colors.success,
+                }}
+              />
+              <Text
+                style={{ fontSize: 13, color: colors.inkMuted, fontWeight: '600' }}
+              >
+                Aberto
               </Text>
             </View>
           </View>
 
-          {/* Métodos de pagamento */}
-          <View className="flex-row flex-wrap gap-1.5 mt-3">
-            {loja?.aceita_dinheiro && (
-              <Text className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                Dinheiro
-              </Text>
-            )}
-            {loja?.aceita_pix && (
-              <Text className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                PIX
-              </Text>
-            )}
-            {loja?.aceita_cartao_maquininha && (
-              <Text className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                Cartão na entrega
-              </Text>
-            )}
-            {loja?.aceita_cartao_online && (
-              <Text className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                Cartão ou PIX online
-              </Text>
-            )}
-          </View>
+          {metodos.length > 0 && (
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                gap: 6,
+                marginTop: 4,
+              }}
+            >
+              {metodos.map((m) => (
+                <Badge
+                  key={m.rotulo}
+                  rotulo={m.rotulo}
+                  cor={colors.inkMuted}
+                  tamanho="sm"
+                />
+              ))}
+            </View>
+          )}
         </View>
 
-        {/* Cardápio por seções */}
+        {/* Cardápio */}
         {secoes.map((secao) => (
-          <View key={secao.title} className="mb-2">
-            <View className="px-5 py-3 bg-gray-50">
-              <Text className="text-sm font-bold text-gray-500 uppercase tracking-wide">
-                {secao.title}
-              </Text>
-            </View>
+          <View
+            key={secao.titulo}
+            style={{ marginTop: 16, paddingHorizontal: 24 }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: '800',
+                color: colors.ink,
+                letterSpacing: -0.2,
+                marginBottom: 4,
+              }}
+            >
+              {secao.titulo}
+            </Text>
 
-            {secao.data.map((produto) => (
-              <ProdutoItem
+            {secao.produtos.map((produto) => (
+              <ProdutoCard
                 key={produto.id}
                 produto={produto}
-                onPress={() => setProdutoSelecionado(produto)}
+                aoTocar={() => setProdutoSelecionado(produto)}
               />
             ))}
           </View>
         ))}
-
-        <View className="h-32" />
       </Animated.ScrollView>
 
-      {/* Botão flutuante do carrinho */}
+      {/* FAB carrinho */}
       {totalItens > 0 && (
-        <View className="absolute bottom-6 left-5 right-5">
-          <TouchableOpacity
-            onPress={() => router.push('/checkout')}
-            className="bg-verde-profundo py-4 rounded-2xl flex-row
-              items-center justify-between px-5 shadow-lg"
-            activeOpacity={0.85}
-          >
-            <View className="bg-verde-medio w-7 h-7 rounded-full
-              items-center justify-center">
-              <Text className="text-white text-xs font-bold">
-                {totalItens}
-              </Text>
-            </View>
-            <Text className="text-white font-bold text-base">
-              Ver carrinho
+        <TouchableOpacity
+          onPress={() => router.push('/checkout')}
+          activeOpacity={consumerDesign.opacity.pressed}
+          style={[
+            {
+              position: 'absolute',
+              left: 16,
+              right: 16,
+              bottom: insets.bottom + 16,
+              height: 56,
+              borderRadius: radius.pill,
+              backgroundColor: colors.accent,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20,
+            },
+            shadow.floating,
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <ConsumerIcon name="bag" size={20} color={colors.ink} strokeWidth={2.1} />
+            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.ink }}>
+              {totalItens} {totalItens === 1 ? 'item' : 'itens'}
             </Text>
-            <Text className="text-verde-medio/60 text-sm">
-              {useCartStore.getState().store_nome}
-            </Text>
-          </TouchableOpacity>
-        </View>
+          </View>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.ink }}>
+            {formatarReais(total)}
+          </Text>
+        </TouchableOpacity>
       )}
 
       {/* Modal do produto */}
@@ -288,52 +428,49 @@ export default function PaginaLoja() {
   )
 }
 
-function ProdutoItem({
-  produto,
-  onPress,
+function BotaoCircular({
+  icone,
+  aoTocar,
 }: {
-  produto: Produto
-  onPress: () => void
+  icone: 'back'
+  aoTocar: () => void
 }) {
   return (
     <TouchableOpacity
-      onPress={onPress}
-      className="flex-row items-center gap-4 px-5 py-4 bg-white
-        border-b border-gray-50"
-      activeOpacity={0.75}
+      onPress={aoTocar}
+      activeOpacity={0.7}
+      style={[
+        {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: colors.surface,
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        shadow.soft,
+      ]}
     >
-      <View className="flex-1 min-w-0">
-        <Text className="text-sm font-semibold text-gray-800" numberOfLines={1}>
-          {produto.nome}
-        </Text>
-        {produto.descricao && (
-          <Text className="text-xs text-gray-400 mt-0.5" numberOfLines={2}>
-            {produto.descricao}
-          </Text>
-        )}
-        <View className="flex-row items-center gap-2 mt-1.5">
-          <Text className="text-sm font-bold text-verde-profundo">
-            {formatarReais(produto.preco_promocional ?? produto.preco)}
-          </Text>
-          {produto.preco_promocional && (
-            <Text className="text-xs text-gray-300 line-through">
-              {formatarReais(produto.preco)}
-            </Text>
-          )}
-        </View>
-      </View>
-
-      {produto.foto_url ? (
-        <Image
-          source={{ uri: produto.foto_url }}
-          className="w-20 h-20 rounded-xl"
-          resizeMode="cover"
-        />
-      ) : (
-        <View className="w-20 h-20 rounded-xl bg-gray-100 items-center justify-center">
-          <Text className="text-gray-200 text-2xl">?</Text>
-        </View>
-      )}
+      <ConsumerIcon name={icone} size={18} color={colors.ink} strokeWidth={2.1} />
     </TouchableOpacity>
+  )
+}
+
+function LinhaMeta({
+  icone,
+  rotulo,
+  cor,
+}: {
+  icone: 'clock' | 'truck'
+  rotulo: string
+  cor: string
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <ConsumerIcon name={icone} size={14} color={cor} />
+      <Text style={{ fontSize: 13, color: cor, fontWeight: '600' }}>
+        {rotulo}
+      </Text>
+    </View>
   )
 }
