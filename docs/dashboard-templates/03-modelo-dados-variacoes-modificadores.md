@@ -10,15 +10,18 @@
 
 Especificar **todas as alterações de schema** necessárias para suportar:
 
-1. Identificação do template ativo por loja (`stores.template_codigo`)
-2. Variações reais de produto (SKUs por combinação de opções)
-3. Modificadores (personalizações que não viram SKU)
-4. Migração do estoque para nível de variant
-5. Campos extras por nicho (lote/validade, ANVISA, garantia, etc.)
+1. **Slug estável em `categories`** (base do mapeamento categoria→template — ver `07`)
+2. **RLS de imutabilidade** da `categoria_id` para auto-serviço
+3. **Auditoria** de troca de categoria via admin (`store_categoria_changes`)
+4. Variações reais de produto (SKUs por combinação de opções)
+5. Modificadores (personalizações que não viram SKU)
+6. Migração do estoque para nível de variant
+7. Campos extras por nicho (lote/validade, ANVISA, garantia, etc.)
 
 **Princípios:**
 - Migrations **aditivas** — nada é destruído nem renomeado.
-- Lojistas atuais (template `food`) continuam funcionando sem mudar nenhuma linha.
+- Lojistas atuais continuam funcionando sem mudar nenhuma linha.
+- **Não existe coluna `stores.template_codigo`** — template é derivado de `categories.slug` em código (ver `02-arquitetura-templates.md`).
 - Novas tabelas seguem o padrão do schema atual (UUID, `tenant_id`, `created_at`, RLS por tenant).
 
 ---
@@ -27,9 +30,15 @@ Especificar **todas as alterações de schema** necessárias para suportar:
 
 ```
 ┌──────────────────┐
+│   categories     │
+│   + slug          │  ← UNIQUE para categorias globais
+└──────────────────┘
+         ▲
+         │ FK (já existe)
+┌────────┴─────────┐
 │     stores       │
-│  + template_      │
-│    codigo         │
+│  (categoria_id   │  ← RLS impede UPDATE em auto-serviço
+│   imutável)      │
 └────────┬─────────┘
          │
 ┌────────▼─────────┐
@@ -84,39 +93,58 @@ order_items  ← alterado: passa a ter variant_id (nullable) e modifiers (JSONB)
 
 ---
 
-## MIGRATION 014 — `template_codigo` em stores
+## MIGRATION 014 — `categories.slug` + RLS de imutabilidade
 
 ```sql
--- supabase/migrations/20260507000001_migration_014_stores_template.sql
+-- supabase/migrations/20260507000001_migration_014_categories_slug_imutabilidade.sql
 
--- 1) Enum reutilizável
-CREATE TYPE template_codigo_enum AS ENUM (
-  'food',
-  'fashion',
-  'pharmacy',
-  'pet',
-  'services',
-  'generic'
+-- 1) Slug estável em categories (base do mapeamento categoria→template)
+ALTER TABLE categories ADD COLUMN slug TEXT;
+
+-- 2) Unique apenas para categorias globais (tenant_id IS NULL)
+CREATE UNIQUE INDEX uq_categories_global_slug
+  ON categories(slug) WHERE tenant_id IS NULL;
+
+-- 3) RLS: lojista não pode trocar categoria_id em auto-serviço
+DROP POLICY IF EXISTS stores_update_self ON stores;
+
+CREATE POLICY stores_update_self ON stores FOR UPDATE
+  USING (tenant_id = current_tenant_id())
+  WITH CHECK (
+    tenant_id = current_tenant_id()
+    AND categoria_id IS NOT DISTINCT FROM (
+      SELECT categoria_id FROM stores AS s2 WHERE s2.id = stores.id
+    )
+  );
+-- Admin tem policy separada (ver migration_008 e migration_006)
+
+-- 4) Auditoria de troca de categoria via admin
+CREATE TABLE store_categoria_changes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id UUID NOT NULL REFERENCES stores(id),
+  categoria_anterior UUID,
+  categoria_nova UUID NOT NULL,
+  motivo TEXT NOT NULL,
+  changed_by UUID NOT NULL,                                     -- admin user_id
+  changed_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+CREATE INDEX idx_scc_store ON store_categoria_changes(store_id);
 
--- 2) Coluna na stores
-ALTER TABLE stores
-  ADD COLUMN template_codigo template_codigo_enum NOT NULL DEFAULT 'food';
-
--- 3) Backfill de lojas existentes (já é o default, mas explicit é melhor)
-UPDATE stores SET template_codigo = 'food' WHERE template_codigo IS NULL;
-
--- 4) Índice (consulta frequente em layout.tsx)
-CREATE INDEX idx_stores_template_codigo ON stores(template_codigo);
-
-COMMENT ON COLUMN stores.template_codigo IS
-  'Template do dashboard que controla módulos, campos e UX por nicho. Default food para retrocompatibilidade.';
+COMMENT ON COLUMN categories.slug IS
+  'Slug estável usado pelo mapeamento categoria→template em packages/lib/templates/mapping.ts.';
+COMMENT ON TABLE store_categoria_changes IS
+  'Histórico de troca de categoria de loja. Apenas super-admin pode alterar categoria_id de stores.';
 ```
 
 **Decisões:**
-- ENUM em vez de FK para tabela de templates: o registry vive no código, não no banco. ENUM dá type-safety SQL e basta.
-- `NOT NULL DEFAULT 'food'`: zero impacto em lojistas atuais.
-- Trocar template é um simples `UPDATE`.
+- **Não há coluna `stores.template_codigo`.** Template é derivado em código a partir de `categories.slug` (ver `02-arquitetura-templates.md`).
+- Slug é o **único campo estável** entre seed e código — nome pode mudar, slug não.
+- RLS bloqueia UPDATE de `categoria_id` para `tenant_user`; admin tem policy permissiva separada.
+- Tabela de auditoria preserva o histórico de toda troca administrativa.
+
+**Backfill obrigatório do seed:**
+
+Após aplicar a migration, rodar `apps/web/seed-categories.js` (versão reescrita com 20 itens — ver `07`). O seed é idempotente: faz `INSERT ... ON CONFLICT (slug) DO UPDATE` para nome e ícone.
 
 ---
 
@@ -469,7 +497,9 @@ Cada migration tem `DROP IF EXISTS` reverso comentado no rodapé:
 -- DROP TABLE product_option_groups;
 ```
 
-Migrations 014 (template_codigo) e 017 (order_items.variant_id) são **as mais sensíveis** — afetam tabelas com dados de produção. As demais criam tabelas novas sem dados.
+Migrations 014 (RLS de stores) e 017 (order_items.variant_id) são **as mais sensíveis** — alteram comportamento de tabelas com dados de produção. As demais criam tabelas novas sem dados.
+
+**Atenção em 014:** a policy `stores_update_self` é substituída. Se houver código no app/edge functions que **dependa** de fazer UPDATE em `categoria_id` via tenant_user, esse código precisa migrar para via super-admin (rota admin separada). Auditar antes de aplicar.
 
 ---
 
@@ -477,6 +507,7 @@ Migrations 014 (template_codigo) e 017 (order_items.variant_id) são **as mais s
 
 | Tabela | Função | Tenant-scoped | Indexada por |
 |--------|--------|:-:|---|
+| `store_categoria_changes` | Auditoria de troca de categoria via admin | ❌ (global) | store_id |
 | `product_option_groups` | "Tamanho", "Cor" | ✅ | product_id |
 | `product_options` | "M", "Preto" | ✅ | group_id |
 | `product_variants` | SKU real | ✅ | product_id, tenant_id |
@@ -486,26 +517,36 @@ Migrations 014 (template_codigo) e 017 (order_items.variant_id) são **as mais s
 | `product_lotes` | Lote/validade farmácia | ✅ | product_id, validade |
 
 **Colunas adicionadas:**
-- `stores.template_codigo` (ENUM, default `food`)
+- `categories.slug` (TEXT, UNIQUE para tenant_id IS NULL)
 - `order_items.variant_id` (UUID nullable)
 - `order_items.modifiers` (JSONB)
 - `stock_movements.variant_id` (UUID nullable)
 - `products.registro_anvisa`, `products.principio_ativo`, `products.exige_receita`, `products.categoria_regulatoria` (todas nullable)
+
+**RLS alterado:**
+- `stores` — UPDATE pelo lojista bloqueia `categoria_id` (imutável em auto-serviço).
 
 ---
 
 ## ORDEM DE APLICAÇÃO
 
 ```
-014 → template_codigo em stores
+014 → categories.slug + RLS imutabilidade + store_categoria_changes
+      [+ rodar seed-categories.js com 20 categorias]
 015 → product_variants (e dependências)
 016 → product_modifiers
 017 → order_items aceita variant + modifiers
-018 → stock_movements e trigger
-019 → pharmacy (Fase 5, pode ficar para depois)
+018 → stock_movements e trigger por variant
+019 → pharmacy: lotes + campos ANVISA (Fase 5, pode ficar para depois)
 ```
 
-Cada migration roda independente. 014 é pré-requisito para começar a usar templates; 015-018 destravam fashion; 019 destrava pharmacy.
+Cada migration roda independente. **014 é pré-requisito para começar a usar templates** (sem slug, mapeamento não funciona); 015-018 destravam fashion; 019 destrava pharmacy.
+
+**Ordem dentro da Fase 1:**
+1. Aplicar migration 014.
+2. Rodar `apps/web/seed-categories.js` reescrito (20 categorias, idempotente).
+3. Aplicar migrations 015-018.
+4. Codificar `mapping.ts`, `registry.ts`, `pisos.ts` em `packages/lib`.
 
 ---
 

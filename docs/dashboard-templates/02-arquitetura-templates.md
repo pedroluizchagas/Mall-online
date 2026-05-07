@@ -10,6 +10,17 @@
 
 Definir o **mecanismo central** que faz o dashboard se comportar de maneiras diferentes para cada lojista, sem fork de páginas, sem `if/else` espalhados e sem perder retrocompatibilidade. O resultado é um sistema **declarativo, testável e fácil de estender**: para adicionar um novo nicho, basta criar um objeto e registrá-lo.
 
+## PRINCÍPIO FUNDAMENTAL
+
+**O template não é armazenado no banco.** Ele é **derivado** da `categoria_id` da loja, via mapeamento estático em código (`packages/lib/templates/mapping.ts`). Isso significa:
+
+- Não existe coluna `stores.template_codigo`. Não existe migração para criá-la.
+- A `categoria_id` é a **única fonte da verdade** sobre que tipo de loja é.
+- Categoria é imutável em auto-serviço (RLS bloqueia UPDATE — ver `07-categorias-e-pisos.md`). Logo, template também é.
+- Trocar categoria de um lojista é operação de super-admin (ticket), não de auto-serviço.
+
+> Lojista que precise vender em outro nicho **cria nova loja** — planos Profissional+ permitem múltiplas lojas por tenant.
+
 ---
 
 ## DECISÃO PRINCIPAL: TEMPLATE DECLARATIVO
@@ -79,7 +90,7 @@ export interface DashboardTemplate {
 
 ---
 
-## REGISTRY CENTRALIZADO
+## REGISTRY CENTRALIZADO + MAPEAMENTO DE CATEGORIA
 
 Todos os templates ficam num **registry imutável**, indexado por código:
 
@@ -100,13 +111,49 @@ export const TEMPLATES = {
   services: templateServices,
   generic:  templateGeneric,
 } satisfies Record<TemplateCodigo, DashboardTemplate>;
+```
 
-export function getTemplate(codigo: TemplateCodigo | null): DashboardTemplate {
-  return TEMPLATES[codigo ?? 'food'];   // food é o fallback histórico
+E o **mapeamento categoria → template** (fonte da verdade em `07-categorias-e-pisos.md`):
+
+```ts
+// packages/lib/templates/mapping.ts
+export const CATEGORIA_SLUG_TO_TEMPLATE = {
+  'alimentos-bebidas':       'food',
+  'vestuario-calcados':      'fashion',
+  'acessorios-joias':        'fashion',
+  'farmacia-medicamentos':   'pharmacy',
+  'pet-shop':                'pet',
+  'saloes-estetica':         'services',
+  'saude-bem-estar':         'services',
+  'veterinaria':             'services',
+  'oficinas-manutencao':     'services',
+  'aulas-cursos':            'services',
+  // todas as outras 10 → 'generic'
+  'beleza-cosmeticos':       'generic',
+  'eletronicos-tecnologia':  'generic',
+  'casa-decoracao':          'generic',
+  'construcao-ferramentas':  'generic',
+  'papelaria-livraria':      'generic',
+  'brinquedos-presentes':    'generic',
+  'floricultura-plantas':    'generic',
+  'automotivo':              'generic',
+  'mercado-conveniencia':    'generic',
+  'outros':                  'generic',
+} as const satisfies Record<string, TemplateCodigo>;
+
+export function getTemplateBySlug(slug: string | null | undefined): DashboardTemplate {
+  const codigo = slug ? CATEGORIA_SLUG_TO_TEMPLATE[slug] : undefined;
+  return TEMPLATES[codigo ?? 'generic'];
+}
+
+export function getTemplateByStore(
+  store: { categoria?: { slug?: string } | null }
+): DashboardTemplate {
+  return getTemplateBySlug(store.categoria?.slug);
 }
 ```
 
-Cada arquivo (`food.ts`, `fashion.ts`, ...) exporta um objeto seguindo o contrato. Esse é o **único lugar** que descreve diferenças por nicho — toda UI consulta o registry.
+Cada arquivo (`food.ts`, `fashion.ts`, ...) exporta um objeto seguindo o contrato. Esse é o **único lugar** que descreve diferenças por nicho — toda UI consulta o registry via `getTemplateByStore()`.
 
 ---
 
@@ -114,15 +161,19 @@ Cada arquivo (`food.ts`, `fashion.ts`, ...) exporta um objeto seguindo o contrat
 
 ```
 packages/lib/templates/
-  ├── types.ts                # Contratos TypeScript
-  ├── registry.ts             # Registry central
-  ├── helpers.ts              # getTemplate(), isModuloHabilitado(), getCampoExtra()
+  ├── types.ts                # Contratos TypeScript (TemplateCodigo, DashboardTemplate)
+  ├── registry.ts             # Registry central (TEMPLATES)
+  ├── mapping.ts              # CATEGORIA_SLUG_TO_TEMPLATE + getTemplateBySlug/Store
+  ├── helpers.ts              # isModuloHabilitado(), getCampoExtra()
   ├── food.ts                 # Template food
   ├── fashion.ts              # Template fashion
   ├── pharmacy.ts             # Template pharmacy
   ├── pet.ts                  # Template pet
   ├── services.ts             # Template services
   └── generic.ts              # Template generic
+
+packages/lib/
+  └── pisos.ts                # Pisos curatoriais do consumer (9 itens, ver 07)
 ```
 
 Por que `packages/lib`? Porque tanto o dashboard (web) quanto o app consumer (mobile) precisam ler o template (consumer renderiza PDP de forma diferente). Mantém uma fonte única.
@@ -136,11 +187,11 @@ Por que `packages/lib`? Porque tanto o dashboard (web) quanto o app consumer (mo
 ```
 [lojista loga]
   ↓
-layout.tsx faz SELECT na stores do tenant
+layout.tsx faz SELECT na stores do tenant (com JOIN em categories)
   ↓
-pega stores.template_codigo (default 'food')
+store.categoria.slug
   ↓
-chama getTemplate(codigo) → retorna DashboardTemplate
+getTemplateByStore(store) → mapping → registry → DashboardTemplate
   ↓
 injeta via Context (TemplateProvider)
   ↓
@@ -149,12 +200,11 @@ todo componente filho usa useTemplate()
 
 ```tsx
 // apps/web/app/(dashboard)/layout.tsx (sketch)
-import { TemplateProvider } from '@mallevo/lib/templates';
-import { getTemplate } from '@mallevo/lib/templates';
+import { TemplateProvider, getTemplateByStore } from '@mallevo/lib/templates';
 
 export default async function DashboardLayout({ children }) {
-  const store = await getActiveStore();   // já existe
-  const template = getTemplate(store.template_codigo);
+  const store = await getActiveStore();   // já existe; agora com JOIN categories(slug)
+  const template = getTemplateByStore(store);
   return (
     <TemplateProvider value={template}>
       <Sidebar />
@@ -169,14 +219,16 @@ export default async function DashboardLayout({ children }) {
 ```
 [consumer abre PDP da loja X]
   ↓
-loja vem com store.template_codigo no payload
+loja vem com store.categoria.slug no payload
+  ↓
+getTemplateByStore(store) → DashboardTemplate
   ↓
 PDP escolhe layout: simples | variacao | cardapio | agendamento
 ```
 
 ### 3. Onboarding
 
-Quando o lojista cria a loja, o wizard sugere o template com base na `categoria_id` escolhida (mapeamento `categoriasGlobais` no template). Lojista pode aceitar ou trocar.
+Quando o lojista cria a loja, o wizard apresenta as **20 categorias** (com busca, ícone e exemplos — ver `07-categorias-e-pisos.md`). A escolha **define a categoria e, por consequência, o template**. O lojista é avisado de que **trocar é via suporte**.
 
 ---
 
@@ -245,10 +297,10 @@ export function getProdutoSchema(template: DashboardTemplate) {
 
 | Cenário | Comportamento |
 |---------|--------------|
-| `stores.template_codigo IS NULL` (lojistas existentes) | Migration faz backfill `'food'` para todos |
-| Template removido do registry (ex: deprecação futura) | Default volta a `'generic'` com warning logado |
+| `stores.categoria_id IS NULL` (loja antiga sem categoria) | `getTemplateByStore` retorna `generic` automaticamente. Onboarding é re-aberto na próxima sessão para forçar escolha. |
+| Categoria com slug não mapeado | Fallback para `generic` + log de warning (defesa em profundidade) |
 | Plano não comporta a feature do template (ex: lojista Básico em `fashion` cria 5 SKUs) | Plano vence: limite `max_produtos` se aplica ao total de variantes; UI explica e oferece upgrade |
-| Lojista troca de template (`food` → `fashion`) | Dados antigos preservados; campos sem uso ficam ocultos; products sem variant continuam vendáveis |
+| Super-admin troca categoria do lojista | Dashboard reflete mudança no próximo refresh; produtos legados ficam visíveis (campos não usados ocultos, dados preservados); evento gravado em `store_categoria_changes` |
 
 ---
 
@@ -270,19 +322,31 @@ O template **não substitui** o plano. Eles são ortogonais:
 
 ---
 
-## TROCA DE TEMPLATE
+## TROCA DE CATEGORIA (= TROCA DE TEMPLATE)
 
-Ações disponíveis:
-- **Onboarding inicial:** lojista escolhe o template no wizard.
-- **Migração assistida:** botão em `Configurações > Loja > Tipo de loja` permite trocar.
-- **Sugestão automática (Fase 6):** sistema detecta padrão de produtos cadastrados e sugere troca (ex: lojista em `generic` que cadastrou 20 produtos com variação 2D → "que tal virar `fashion`?").
+**Política:** lojista **não troca** em auto-serviço. Garantido por RLS:
 
-Ao trocar:
+```sql
+-- Detalhe completo em 07-categorias-e-pisos.md (seção "Troca de Categoria — Política")
+CREATE POLICY stores_update_self ON stores FOR UPDATE
+  USING (tenant_id = current_tenant_id())
+  WITH CHECK (
+    tenant_id = current_tenant_id()
+    AND categoria_id = (SELECT categoria_id FROM stores WHERE id = stores.id)
+  );
+```
 
-1. Confirmação modal: "Vamos trocar de `food` para `fashion`. Isso vai habilitar variações e mostrar novos campos. Seus produtos atuais continuam, e você pode adicionar variações depois."
-2. Update em `stores.template_codigo`.
-3. Sidebar e form atualizam imediatamente.
-4. Email de confirmação para o lojista.
+**Como o lojista muda de nicho:**
+- **Opção 1 (recomendada):** cria nova loja (planos Profissional+ permitem múltiplas lojas).
+- **Opção 2:** abre ticket de suporte → super-admin avalia → executa update (com motivo registrado em `store_categoria_changes`).
+
+**Auditoria:** toda mudança de categoria é gravada em `store_categoria_changes` com `motivo`, `changed_by` (admin), `categoria_anterior`, `categoria_nova`. Histórico permanente.
+
+**Por que essa restrição:**
+- Elimina classe inteira de bugs (lojista troca, produtos somem do app, agendamentos órfãos).
+- Garante que loja categorizada como "Vestuário" sempre tenha as features de fashion.
+- Reduz suporte: lojista não fica perdido escolhendo template.
+- Padroniza experiência do consumer (todas as lojas de moda funcionam igual).
 
 ---
 
@@ -306,21 +370,24 @@ test.each(Object.values(TEMPLATES))('template $codigo é válido', (template) =>
 
 ```
 ┌──────────────┐
-│  Onboarding  │  Wizard sugere template baseado em categoria_id
+│  Onboarding  │  Wizard mostra 20 categorias com busca/exemplos
 └──────┬───────┘
        │
        ▼
 ┌─────────────────────────────────────────────┐
-│  stores.template_codigo = 'fashion'         │
-│  stores.categoria_id = 'vestuario'          │
+│  stores.categoria_id = (id de Vestuário)    │
+│   → categories.slug = 'vestuario-calcados'  │
 └──────┬──────────────────────────────────────┘
        │
        ▼
-┌─────────────────────────────────────────────┐
-│ Lojista entra no dashboard                   │
-│ layout.tsx → getTemplate('fashion')          │
-│ → TemplateProvider injeta no contexto        │
-└──────┬───────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│ Lojista entra no dashboard                           │
+│ layout.tsx busca store + categoria.slug              │
+│ getTemplateByStore(store)                            │
+│   → mapping: vestuario-calcados → 'fashion'          │
+│   → registry: TEMPLATES['fashion']                    │
+│ TemplateProvider injeta no contexto                  │
+└──────┬───────────────────────────────────────────────┘
        │
        ├─► Sidebar: mostra/oculta menus
        ├─► Form produto: renderiza seções
@@ -330,8 +397,8 @@ test.each(Object.values(TEMPLATES))('template $codigo é válido', (template) =>
        ▼
 ┌─────────────────────────────────────────────┐
 │ Consumer abre loja no app mobile             │
-│ recebe store.template_codigo no payload      │
-│ PDP escolhe layout 'variacao'                │
+│ recebe store.categoria.slug no payload       │
+│ getTemplateByStore() → layout 'variacao'     │
 └──────────────────────────────────────────────┘
 ```
 
@@ -358,17 +425,20 @@ A escolha pelo **template declarativo registrado em `packages/lib`** dá:
 
 ## CHECKLIST DE IMPLEMENTAÇÃO TÉCNICA
 
-- [ ] Criar `packages/lib/templates/` com `types.ts` e `registry.ts`
+- [ ] Criar `packages/lib/templates/` com `types.ts`, `registry.ts` e `mapping.ts`
+- [ ] Criar `packages/lib/pisos.ts` com 9 pisos (ver `07`)
 - [ ] Implementar 6 templates (`food`, `fashion`, `pharmacy`, `pet`, `services`, `generic`)
 - [ ] Criar `TemplateProvider` (React Context) em `packages/lib`
 - [ ] Adicionar `useTemplate()` hook
-- [ ] Adicionar coluna `stores.template_codigo` (ver `03`)
-- [ ] Backfill `template_codigo='food'` para lojistas existentes
-- [ ] Sidebar consultando template
+- [ ] Adicionar coluna `categories.slug` + UNIQUE index (ver `03`)
+- [ ] Reescrever `apps/web/seed-categories.js` com 20 categorias
+- [ ] Sidebar consultando template via `getTemplateByStore()`
 - [ ] Form de produto consultando template (com seções condicionais)
-- [ ] Wizard de onboarding com sugestão de template
-- [ ] Página de troca de template em Configurações
-- [ ] Tests do registry e do form
+- [ ] Wizard de onboarding com 20 categorias, busca e exemplos
+- [ ] RLS impedindo lojista de trocar `categoria_id`
+- [ ] Tabela `store_categoria_changes` para auditoria de troca via admin
+- [ ] Painel admin: lista de lojas em "Outros" com botão reclassificar
+- [ ] Tests do registry, do mapping e do form
 - [ ] Atualizar `docs/03` apontando para `dashboard-templates/`
 
 ---

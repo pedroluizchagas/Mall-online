@@ -20,12 +20,12 @@ Quebrar a entrega dos templates em **fases incrementais**, cada uma entregando v
 
 | Fase | Foco | Duração | Status |
 |:-:|---|:-:|:-:|
-| **1** | Fundação: schema + registry + propagação | 3-5 dias | ⏳ |
-| **2** | Sidebar + onboarding condicional + página de troca | 3 dias | ⏳ |
+| **1** | Fundação: taxonomia (20 cat. + 9 pisos) + schema + registry | 4-6 dias | ⏳ |
+| **2** | Onboarding novo + sidebar condicional + form base | 2-3 dias | ⏳ |
 | **3** | Template `food` com modificadores (cardápio v2) | 5-7 dias | ⏳ |
 | **4** | Template `fashion` com variações (grade SKU) | 7-10 dias | ⏳ |
 | **5** | Templates `pet`, `services`, `pharmacy`, `generic` | 5-7 dias | ⏳ |
-| **6** | Migração assistida + telemetria + ajustes | 2-3 dias | ⏳ |
+| **6** | Painel admin "Outros" + telemetria de adoção | 2 dias | ⏳ |
 
 **Total estimado:** 25 a 35 dias úteis (~5-7 semanas com 1 dev full-time).
 
@@ -35,65 +35,77 @@ Quebrar a entrega dos templates em **fases incrementais**, cada uma entregando v
 
 ### Entregáveis
 
-- [ ] **Migration 014** (`stores.template_codigo`)
+- [ ] **Migration 014** (`categories.slug` + UNIQUE + RLS imutabilidade + `store_categoria_changes`)
+- [ ] **Reescrever** `apps/web/seed-categories.js` com 20 categorias (slug, nome, ícone)
+- [ ] Rodar seed em staging; validar dados
 - [ ] **Migration 015** (variants + options)
 - [ ] **Migration 016** (modifiers)
 - [ ] **Migration 017** (`order_items.variant_id` + `modifiers` JSONB)
 - [ ] **Migration 018** (estoque por variant + trigger)
 - [ ] `packages/lib/templates/types.ts` — contrato
 - [ ] `packages/lib/templates/registry.ts` — registry com 6 templates
+- [ ] `packages/lib/templates/mapping.ts` — `CATEGORIA_SLUG_TO_TEMPLATE` + `getTemplateBySlug/Store`
 - [ ] `packages/lib/templates/{food,fashion,pharmacy,pet,services,generic}.ts`
-- [ ] `packages/lib/templates/helpers.ts` — `getTemplate()`, `useTemplate()`
+- [ ] `packages/lib/templates/helpers.ts` — utilidades
+- [ ] `packages/lib/pisos.ts` — 9 pisos curatoriais
 - [ ] `TemplateProvider` + `useTemplate()` hook
-- [ ] Layout do dashboard busca template e injeta no contexto
-- [ ] Backfill: todos os lojistas atuais com `template_codigo='food'`
-- [ ] Edge function de `criar-pedido` aceita `variant_id` e `modifiers`
+- [ ] Layout do dashboard busca store+categoria e deriva template
+- [ ] Edge function de `criar-pedido` aceita `variant_id` e `modifiers` (opcionais)
+- [ ] Lojistas existentes sem `categoria_id` recebem prompt no próximo login para escolher
 
 ### Critérios de aceite
 
 - ✅ Aplicar migrations em staging não causa erro nem perda de dados
-- ✅ Lojista existente abre dashboard e tudo funciona como antes (template food, sem variant, sem modifier)
+- ✅ Tabela `categories` tem 20 entradas globais com slugs únicos após seed
+- ✅ Lojista existente com `categoria_id` válida abre dashboard normalmente; template correto é derivado
+- ✅ Lojista existente **sem** `categoria_id` cai em template `generic` e vê banner pedindo para completar onboarding
+- ✅ Tentativa de UPDATE em `categoria_id` por tenant_user é rejeitada pelo RLS
+- ✅ Admin consegue trocar `categoria_id` e o evento aparece em `store_categoria_changes`
 - ✅ Pedido é criado normalmente em loja food atual (sem variant_id, sem modifiers)
-- ✅ Tests do registry passam (`pnpm test packages/lib`)
+- ✅ Tests do registry e do mapping passam (`pnpm test packages/lib`)
 - ✅ Type-check passa em todo monorepo
 
 ### Riscos
 
 | Risco | Mitigação |
 |-------|-----------|
+| Seed muda categorias antigas e quebra lojas existentes | Seed é idempotente (`ON CONFLICT (slug) DO UPDATE`); categorias antigas sem slug ficam intactas até admin reclassificar |
+| RLS bloqueia operação legítima do app | Auditar todo UPDATE em stores; rotas que precisam mudar categoria viram via admin |
 | Trigger de estoque com bug crítico | Testar com 50+ pedidos sintéticos antes de promover; rollback ready |
-| Backfill quebra | Backfill é UPDATE simples com WHERE, fácil reverter |
 | Edge function quebra com payload novo | Manter compat com payload antigo (variant_id e modifiers opcionais) |
 
 ---
 
-## FASE 2 — SIDEBAR + ONBOARDING + TROCA
+## FASE 2 — ONBOARDING + SIDEBAR CONDICIONAL
 
 ### Entregáveis
 
 - [ ] `apps/web/components/dashboard/sidebar.tsx` consulta `useTemplate()` e oculta itens
 - [ ] Renomeia "Produtos" para `template.produto.labels.produtoPlural` na sidebar
-- [ ] Wizard de onboarding (dados-loja.tsx) sugere template baseado em `categoria_id` selecionada
-- [ ] Lojista pode confirmar ou trocar a sugestão
-- [ ] Página `Configurações > Loja > Tipo de loja` permite trocar template
-  - Modal com aviso de impacto (lê tabela do `04`)
-  - Confirma → `UPDATE stores SET template_codigo`
-- [ ] Email de notificação quando lojista troca template
+- [ ] Wizard de onboarding (`apps/web/app/(auth)/onboarding/etapas/dados-loja.tsx`) reescrito:
+  - Mostra **20 categorias** com busca textual + 4 mais comuns em destaque
+  - Cada categoria mostra exemplos ("você vende roupa? clica aqui")
+  - Tela de confirmação explica o que aquele template habilita ("você terá grade de SKU, estoque por variação...")
+  - Aviso explícito: "Esta escolha define como sua loja funciona. Você pode trocar mais tarde via suporte."
+- [ ] Em `apps/web/app/(dashboard)/configuracoes/`: tela "Tipo de loja" só **mostra** a categoria atual (read-only) com link "Pedir mudança via suporte" abrindo ticket
+- [ ] Form de produto base lendo `template.produto.camposExtras` e renderizando seções condicionais (sem ainda implementar variants/modifiers — fica para fases 3 e 4)
 
 ### Critérios de aceite
 
-- ✅ Lojista food vê sidebar idêntica à atual (nada ganhou ou perdeu)
-- ✅ Lojista fashion (manualmente trocado em DB) vê item "Estoque" na sidebar
-- ✅ Lojista services não vê "Entregadores"
-- ✅ Onboarding novo lojista escolhendo categoria "Vestuário" → wizard sugere template fashion
-- ✅ Troca de template propaga em <1s (sem precisar relogar)
+- ✅ Lojista food existente vê sidebar idêntica à atual (nada ganhou ou perdeu)
+- ✅ Lojista com categoria `vestuario-calcados` vê item "Estoque" na sidebar
+- ✅ Lojista com categoria `saloes-estetica` não vê "Entregadores"
+- ✅ Onboarding novo: escolher "Vestuário & Calçados" → tela de confirmação cita variações
+- ✅ Lojista não consegue trocar categoria pelo dashboard (botão não existe ou está desabilitado)
+- ✅ Busca no onboarding "hambúrguer" → primeiro resultado é "Alimentos & Bebidas"
 
 ### Riscos
 
 | Risco | Mitigação |
 |-------|-----------|
-| Lojista troca template e perde acesso a dado importante | Dados nunca são apagados — só ocultos. Modal explicita |
-| Bug de cache faz sidebar antiga aparecer | Cache busting via revalidatePath |
+| Bug de cache faz sidebar antiga aparecer | Cache busting via `revalidatePath` |
+| Onboarding com 20 itens fica overwhelming | UX com "4 mais comuns + busca + ver todas" mitigado já no design |
+| Lojista não acha categoria certa e escolhe Outros | Aceitável — admin reclassifica na Fase 6 |
 
 ---
 
@@ -204,23 +216,36 @@ Quebrar a entrega dos templates em **fases incrementais**, cada uma entregando v
 
 ---
 
-## FASE 6 — MIGRAÇÃO ASSISTIDA + TELEMETRIA
+## FASE 6 — PAINEL ADMIN "OUTROS" + TELEMETRIA
 
 ### Entregáveis
 
-- [ ] Tela de "Sugestão inteligente": sistema analisa produtos do lojista e sugere template ideal
-  - Lojista food com >5 produtos sem modificador → sugere `generic`
-  - Lojista generic com produtos similares cadastrados em massa → sugere `fashion`
-- [ ] Painel super-admin: distribuição de templates, taxa de adoção
-- [ ] Eventos de analytics: troca de template, criação de produto com variant, criação de modifier
-- [ ] Comunicação outbound aos lojistas existentes via email convidando a re-onboarding
-- [ ] Tutorial in-app para cada template novo
+- [ ] **Tela admin "Lojas em Outros"** (`apps/admin/app/lojas-outros/page.tsx`):
+  - Lista de lojas com `categoria.slug = 'outros'`
+  - Texto livre que o lojista escreveu no onboarding ("o que você vende?")
+  - Botão "Reclassificar" abre seletor das outras 19 categorias com motivo obrigatório
+  - Submit: `UPDATE stores SET categoria_id = ...` + INSERT em `store_categoria_changes`
+  - Email automático para o lojista informando da reclassificação
+- [ ] **Dashboard admin de adoção:**
+  - Distribuição de lojas por categoria (barras)
+  - Distribuição de lojas por template derivado (barras)
+  - % de lojas em "Outros" ao longo do tempo (linha)
+  - Alerta quando ≥3 lojas em Outros com texto similar nos últimos 30 dias
+- [ ] **Eventos de analytics** (Mixpanel/PostHog ou equivalente):
+  - `loja_categoria_escolhida` (slug, no onboarding)
+  - `loja_categoria_reclassificada` (slug_antigo, slug_novo, admin_id, motivo)
+  - `produto_criado_com_variant` (template, qtd_variants)
+  - `produto_criado_com_modifier` (template, qtd_modifiers, qtd_groups)
+- [ ] Tutorial in-app curto na primeira vez que o lojista entra em cada template
+- [ ] **Documentação de operação para suporte:** runbook "como reclassificar uma loja"
 
 ### Critérios de aceite
 
-- ✅ Pelo menos 70% dos lojistas com `template_codigo='food'` que **não** vendem comida foram alertados
-- ✅ Métrica de "template trocado nos últimos 30 dias" disponível no super-admin
-- ✅ Tutorial cobre os 3 templates principais (food, fashion, generic)
+- ✅ Painel admin lista corretamente todas as lojas em "Outros"
+- ✅ Reclassificação atualiza categoria + grava em `store_categoria_changes` + dispara email
+- ✅ Métricas de adoção por template estão visíveis e atualizadas em tempo real
+- ✅ Alerta de "Outros lotado" dispara quando 3+ lojas com texto similar
+- ✅ Runbook de suporte documentado para reclassificação manual
 
 ---
 
@@ -270,13 +295,21 @@ Antes de marcar uma fase como "concluída em produção":
 
 ---
 
+## QUESTÕES JÁ RESOLVIDAS
+
+1. **Como o template é determinado?** Derivado da `categoria_id` da loja via mapeamento em `packages/lib/templates/mapping.ts`. Não há coluna `template_codigo` no banco. ✅
+2. **Quantas categorias existem?** **20 categorias** exaustivas (ver `07-categorias-e-pisos.md`). ✅
+3. **Lojista pode trocar categoria sozinho?** Não. RLS bloqueia UPDATE. Apenas super-admin troca, com motivo registrado. ✅
+4. **Múltiplas lojas, múltiplos templates por mesmo tenant?** Sim, `categoria_id` é por loja, e plano Profissional+ permite múltiplas lojas. ✅
+5. **Como cobrir lojista multi-nicho?** Cria nova loja para cada nicho. ✅
+
 ## QUESTÕES EM ABERTO (a decidir antes da Fase 1)
 
 1. **Limite de variants no plano Básico:** mantém 50 totais ou cria slot separado de variants? **Sugestão:** mantém 50 totais (variants contam) — já é justo e simples.
 2. **Permitir variants opcionais em food?** Ex: pizza com tamanho M/G/Família. **Sugestão:** sim, mas só se lojista solicitar (Fase 5+).
-3. **Múltiplas lojas, múltiplos templates por mesmo tenant?** Lojista do plano Profissional tem 3 lojas — pode ter 1 food, 1 fashion. **Sugestão:** sim, `template_codigo` é por loja, não por tenant. ✅ já modelado assim.
-4. **Migrar lojistas existentes automaticamente?** **Sugestão:** não. Apenas notificar e oferecer (Fase 6). Quem está vendendo bem em food não precisa mexer.
-5. **Pharmacy é Fase 5 ou Fase 7?** Complexidade regulatória alta. **Sugestão:** Fase 5 entrega MVP funcional (ANVISA + receita); SNGPC e bloqueio de venda controlada vão para Fase 7.
+3. **Pharmacy é Fase 5 ou Fase 7?** Complexidade regulatória alta. **Sugestão:** Fase 5 entrega MVP funcional (ANVISA + receita); SNGPC e bloqueio de venda controlada vão para Fase 7.
+4. **Como tratar lojistas existentes sem `categoria_id`?** **Sugestão:** banner persistente no dashboard pedindo para completar onboarding; até lá, template `generic`.
+5. **Suporte recebe ticket de troca de categoria por self-service** ou só por contato direto? **Sugestão:** botão no app abre ticket pré-formatado, evita cobrar suporte humano para casos triviais.
 
 ---
 
@@ -301,12 +334,12 @@ Sem 8: ████████░░░░░░░░  Fase 6 + buffer
 
 | Fase | Rollback |
 |:-:|---|
-| 1 | Reverter migrations 014-018 em ordem inversa; sem dados perdidos |
-| 2 | `git revert` da PR; sidebar volta ao estado hardcoded |
+| 1 | Reverter migrations 014-018 em ordem inversa. **Atenção:** RLS de `stores_update_self` da migration 014 substitui a anterior — guardar versão original para reverter. |
+| 2 | `git revert` da PR; sidebar volta ao estado hardcoded; onboarding antigo de 8 categorias só volta se seed for re-rodado com versão antiga (não recomendado; `Outros` cobre o gap) |
 | 3 | Esconder seção de modifiers no form via flag; modifiers ficam no banco |
 | 4 | Idem fase 3; variants ficam no banco mas form/PDP volta ao simples |
-| 5 | Ocultar templates específicos do registry (`if codigo in ['pharmacy','services'] return null`) |
-| 6 | Apenas comunicação — sem código a reverter |
+| 5 | Ocultar templates específicos do registry (mapping retorna `generic` em vez do template removido) |
+| 6 | Apenas operacional — sem código a reverter |
 
 ---
 

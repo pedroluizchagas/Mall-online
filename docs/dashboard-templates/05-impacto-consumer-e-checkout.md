@@ -19,17 +19,16 @@ Garantir que o consumer app (Expo) e o pipeline de pagamento (Pagar.me) acomodem
 
 ---
 
-## NÚCLEO: STORE.TEMPLATE_CODIGO PROPAGADO PARA O CLIENT
+## NÚCLEO: STORE.CATEGORIA PROPAGADA PARA O CLIENT
 
-A resposta pública da API/Edge function que retorna a loja inclui o template, e o app mobile usa para escolher o layout do PDP:
+A resposta pública da API/Edge function que retorna a loja inclui a categoria, e o app mobile **deriva o template** a partir do slug da categoria:
 
 ```ts
 // resposta da edge function /stores/:slug
 {
   store: {
     id, nome, slug, logo, banner,
-    template_codigo: 'fashion',         // ← novo
-    categoria: { slug: 'vestuario' },
+    categoria: { slug: 'vestuario-calcados', nome: 'Vestuário & Calçados', icone: '👗' },
     horarios: {...},
     ...
   },
@@ -39,9 +38,9 @@ A resposta pública da API/Edge function que retorna a loja inclui o template, e
 
 ```ts
 // apps/mobile-consumer/src/screens/PdpScreen.tsx
-import { getTemplate } from '@mallevo/lib/templates';
+import { getTemplateByStore } from '@mallevo/lib/templates';
 
-const template = getTemplate(store.template_codigo);
+const template = getTemplateByStore(store);    // deriva via categoria.slug
 
 switch (template.consumer.layoutPdp) {
   case 'cardapio':     return <PdpCardapio product={product} />;
@@ -53,6 +52,7 @@ switch (template.consumer.layoutPdp) {
 ```
 
 > O consumer **só conhece 4 layouts**, não 6 templates. Múltiplos templates compartilham o mesmo layout (food/cafeterias usam `cardapio`; fashion/pet/generic-com-variação usam `variacao`).
+> **Importante:** o consumer **não conhece a constante `template_codigo`** vinda do servidor — ela é resolvida em código a partir do `categoria.slug`. Isso mantém a fonte da verdade única.
 
 ---
 
@@ -297,7 +297,24 @@ Hoje, cancelamento parcial não existe — é tudo ou nada. Com variants, surge 
 
 ---
 
-## BUSCA E LISTAGEM NO CONSUMER
+## NAVEGAÇÃO POR PISOS NO CONSUMER
+
+A home do consumer exibe os **9 pisos curatoriais** definidos em `packages/lib/pisos.ts` (ver `07-categorias-e-pisos.md`). Ao entrar num piso, o app filtra lojas pelas categorias agregadas:
+
+```ts
+// apps/mobile-consumer/src/screens/PisoScreen.tsx
+import { PISOS } from '@mallevo/lib/pisos';
+
+const piso = PISOS.find(p => p.slug === route.params.slug);
+// SELECT * FROM stores WHERE categoria.slug IN (piso.categoriasSlugs)
+```
+
+**Pontos importantes:**
+- Loja pode aparecer em **mais de um piso** (ex: clínica veterinária aparece em Saúde e Pet).
+- Marketing edita pisos livremente (arquivo TS, deploy) sem tocar lojistas.
+- Para **busca direta**, consumer pode pesquisar por categoria (ex: "Vestuário & Calçados") — busca textual cobre nome de loja + categoria + nome de produto + atributos de variant.
+
+## BUSCA E LISTAGEM DE PRODUTOS
 
 Listagens de produtos hoje exibem `products.foto_url` e `products.preco`. Após variants:
 
@@ -374,14 +391,18 @@ Nada estrutural muda no fluxo de entrega.
 ## CHECKLIST DE IMPACTO NO ADMIN (apps/admin)
 
 - Visualização de produto na admin lista deve mostrar quantidade de variants ("12 SKUs") e total de estoque agregado.
-- Filtro por template no painel de lojas: "Mostrar só lojas `fashion`".
-- Relatório de SKUs vendidos por período.
+- Filtro de **lojas por categoria** no painel admin (com agrupamento por template derivado).
+- **Tela "Lojas em Outros"** — lista lojas em `categoria='outros'`, com texto livre escrito pelo lojista, e botão "Reclassificar" que abre seletor das outras 19 categorias e exige motivo (preenche `store_categoria_changes`).
+- Relatório de SKUs vendidos por período, segmentado por categoria/template.
+- Distribuição de lojas por template (medir adoção dos nichos novos).
 
 ---
 
 ## RESUMO
 
 - **Consumer renderiza por layout, não por template** (4 layouts cobrem 6 templates).
+- **Template é derivado** da `store.categoria.slug` em código — payload da edge function não carrega `template_codigo`.
+- **Home do consumer navega por pisos curatoriais** (9 pisos) que agregam categorias livremente.
 - **Carrinho/order/payment** ganham `variant_id` (FK) e `modifiers` (JSONB snapshot).
 - **Split Pagar.me não muda** — opera no total agregado.
 - **Estoque ouve channel novo** para variant updates.

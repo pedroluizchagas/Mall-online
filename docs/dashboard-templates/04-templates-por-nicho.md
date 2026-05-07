@@ -11,11 +11,14 @@
 Especificar **cada um dos 6 templates** com nível de detalhe suficiente para implementação direta. Para cada template:
 
 - Objeto `DashboardTemplate` em TypeScript
+- Categorias-lojista que mapeiam para o template (slugs)
 - Wireframe textual do form de produto
 - Wireframe textual da sidebar
 - Copy oficial (label, placeholder, mensagens de erro)
 - Validações Zod específicas
 - Wizard de onboarding (perguntas extras)
+
+> **Importante:** o lojista não escolhe template — escolhe categoria, e o template vem derivado. A taxonomia oficial (20 categorias) está em `07-categorias-e-pisos.md`.
 
 ---
 
@@ -32,7 +35,7 @@ export const templateFood: DashboardTemplate = {
   nome: 'Praça de Alimentação',
   descricao: 'Restaurantes, lanchonetes, cafés, bares e outros estabelecimentos de comida e bebida.',
   icone: '🍽️',
-  categoriasGlobais: ['alimentos-e-bebidas'],
+  categoriasGlobais: ['alimentos-bebidas'],   // 1 categoria mapeia aqui
 
   modulos: {
     pedidos: true,
@@ -167,7 +170,7 @@ export const templateFashion: DashboardTemplate = {
   nome: 'Moda & Vestuário',
   descricao: 'Roupas, calçados, acessórios e lingerie. Suporta grade de tamanho × cor.',
   icone: '👗',
-  categoriasGlobais: ['vestuario'],
+  categoriasGlobais: ['vestuario-calcados', 'acessorios-joias'],   // 2 categorias mapeiam aqui
 
   modulos: {
     pedidos: true,
@@ -322,10 +325,10 @@ const fashionProdutoSchema = produtoBaseSchema.extend({
 // packages/lib/templates/pharmacy.ts
 export const templatePharmacy: DashboardTemplate = {
   codigo: 'pharmacy',
-  nome: 'Farmácia & Saúde',
-  descricao: 'Farmácias, drogarias, manipulação. Inclui controle de lote, validade e receita.',
+  nome: 'Farmácia & Medicamentos',
+  descricao: 'Farmácias, drogarias, manipulação, suplementos. Inclui controle de lote, validade e receita.',
   icone: '💊',
-  categoriasGlobais: ['saude-e-beleza'],
+  categoriasGlobais: ['farmacia-medicamentos'],   // 1 categoria mapeia aqui
 
   modulos: {
     pedidos: true,
@@ -414,7 +417,7 @@ export const templatePet: DashboardTemplate = {
   nome: 'Pet Shop',
   descricao: 'Pet shops com produtos por porte/peso e serviços de banho & tosa.',
   icone: '🐶',
-  categoriasGlobais: ['pets'],
+  categoriasGlobais: ['pet-shop'],   // 1 categoria mapeia aqui (Veterinária pura é services)
 
   modulos: {
     pedidos: true,
@@ -472,9 +475,15 @@ export const templatePet: DashboardTemplate = {
 export const templateServices: DashboardTemplate = {
   codigo: 'services',
   nome: 'Serviços',
-  descricao: 'Salões, estética, manicure, manutenção, aulas. Sem entrega, com agendamento.',
+  descricao: 'Salões, estética, saúde, veterinária, manutenção, aulas. Sem entrega, com agendamento.',
   icone: '✂️',
-  categoriasGlobais: ['servicos'],
+  categoriasGlobais: [
+    'saloes-estetica',
+    'saude-bem-estar',
+    'veterinaria',
+    'oficinas-manutencao',
+    'aulas-cursos',
+  ],   // 5 categorias mapeiam aqui
 
   modulos: {
     pedidos: true,                  // pedido de agendamento
@@ -550,10 +559,21 @@ export const templateServices: DashboardTemplate = {
 // packages/lib/templates/generic.ts
 export const templateGeneric: DashboardTemplate = {
   codigo: 'generic',
-  nome: 'Outros / Casa & Diversos',
-  descricao: 'Eletrônicos, casa, decoração, presentes — para nichos sem template específico.',
+  nome: 'Produtos Diversos',
+  descricao: 'Cobertura ampla para varejo de produtos físicos sem variação obrigatória.',
   icone: '📦',
-  categoriasGlobais: ['eletronicos', 'casa-e-decoracao', 'outros'],
+  categoriasGlobais: [
+    'beleza-cosmeticos',
+    'eletronicos-tecnologia',
+    'casa-decoracao',
+    'construcao-ferramentas',
+    'papelaria-livraria',
+    'brinquedos-presentes',
+    'floricultura-plantas',
+    'automotivo',
+    'mercado-conveniencia',
+    'outros',
+  ],   // 10 categorias mapeiam aqui
 
   modulos: {
     pedidos: true,
@@ -601,18 +621,36 @@ export const templateGeneric: DashboardTemplate = {
 
 ---
 
-## REGRAS DE COMPATIBILIDADE ENTRE TEMPLATES
+## MAPEAMENTO CANÔNICO CATEGORIA → TEMPLATE
 
-| Trocar de... | ...para | Comportamento |
-|--------------|---------|---------------|
-| `food` | `fashion` | Modificadores ficam ocultos mas preservados; lojista precisa criar variants para os produtos antigos manualmente |
-| `food` | `generic` | Modificadores ficam ocultos; produtos viram simples |
-| `fashion` | `generic` | Variants persistem; podem ser editados na seção opcional |
-| `generic` | `fashion` | Toggle de variação fica obrigatório; produtos sem variant continuam vendáveis |
-| qualquer | `services` | ⚠️ Aviso: estoque e entregadores serão desabilitados; produtos atuais ficam ocultos do consumer (mas não apagados) até virarem "serviço" |
-| `services` | qualquer | ⚠️ Aviso: agenda fica oculta; agendamentos pendentes são preservados como pedidos normais |
+A taxonomia oficial fica em `07-categorias-e-pisos.md`. Resumo do mapeamento (20 categorias → 6 templates):
 
-> **Implementação:** modal de troca lê esta tabela e mostra avisos relevantes. Sem auto-conversão — apenas oculta/exibe.
+| Template | Categorias-lojista (slug) |
+|----------|---------------------------|
+| `food` | alimentos-bebidas |
+| `fashion` | vestuario-calcados, acessorios-joias |
+| `pharmacy` | farmacia-medicamentos |
+| `pet` | pet-shop |
+| `services` | saloes-estetica, saude-bem-estar, veterinaria, oficinas-manutencao, aulas-cursos |
+| `generic` | beleza-cosmeticos, eletronicos-tecnologia, casa-decoracao, construcao-ferramentas, papelaria-livraria, brinquedos-presentes, floricultura-plantas, automotivo, mercado-conveniencia, outros |
+
+> **Sem troca em auto-serviço.** A categoria de uma loja é fixa; só super-admin pode alterá-la (via ticket de suporte, com motivo registrado em `store_categoria_changes`). Lojista que precisa de outro nicho **cria nova loja** (planos Profissional+ permitem múltiplas).
+
+### Quando admin troca categoria do lojista
+
+A operação é rara e **não tenta auto-converter dados**. O comportamento é:
+
+1. `categoria_id` muda → template derivado muda automaticamente.
+2. **Dados antigos preservados.** Modificadores ficam no banco mesmo se o novo template não usa.
+3. **UI oculta o que o novo template não suporta.** Nada é apagado.
+4. **Admin notifica o lojista** por email/telefone, com explicação do que muda.
+5. Histórico fica em `store_categoria_changes`.
+
+Esses cenários, em ordem de probabilidade prática:
+
+- Lojista cadastrou em **Outros** e admin reclassifica → 95% dos casos
+- Lojista pivotou o negócio (ex: de food para mercado) → 5% dos casos
+- Erro de cadastro → resolvido na primeira semana
 
 ---
 
