@@ -15,6 +15,7 @@ import { useCartStore } from '@/store/useCartStore'
 import { useOrderStore } from '@/store/useOrderStore'
 import { GerenciarEnderecos } from '@/components/GerenciarEnderecos'
 import { EditarPerfil } from '@/components/EditarPerfil'
+import { consumerDesign } from '@/lib/consumer-design'
 import {
   Edit3,
   MapPin,
@@ -77,7 +78,7 @@ export default function TelaPerfil() {
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: '#F4F0EB' }}
-      contentContainerStyle={{ paddingBottom: 100 }}
+      contentContainerStyle={{ paddingBottom: consumerDesign.spacing.tabBarHeight }}
       refreshControl={
         <RefreshControl
           refreshing={atualizando}

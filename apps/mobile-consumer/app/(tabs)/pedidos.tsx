@@ -11,6 +11,7 @@ import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { formatarReais } from '@mallora/lib'
 import { Skeleton } from '@/components/Skeleton'
+import { consumerDesign } from '@/lib/consumer-design'
 import {
   Clock,
   ChefHat,
@@ -379,7 +380,7 @@ export default function TelaPedidos() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
           paddingHorizontal: 20,
-          paddingBottom: 100,
+          paddingBottom: consumerDesign.spacing.tabBarHeight,
           paddingTop: 12,
         }}
         refreshControl={
