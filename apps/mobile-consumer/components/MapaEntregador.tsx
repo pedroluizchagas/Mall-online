@@ -1,4 +1,7 @@
 import MapView, { Marker } from 'react-native-maps'
+import { consumerDesign } from '@/lib/consumer-design'
+
+const { colors } = consumerDesign
 
 interface Props {
   localizacao: { latitude: number; longitude: number }
@@ -19,7 +22,7 @@ export function MapaEntregador({ localizacao, enderecoEntrega }: Props) {
       <Marker
         coordinate={localizacao}
         title="Entregador"
-        pinColor="#1A4D3A"
+        pinColor={colors.accent}
       />
       {enderecoEntrega?.latitude && enderecoEntrega?.longitude && (
         <Marker
@@ -28,7 +31,7 @@ export function MapaEntregador({ localizacao, enderecoEntrega }: Props) {
             longitude: enderecoEntrega.longitude,
           }}
           title="Destino"
-          pinColor="#F5A623"
+          pinColor={colors.ink}
         />
       )}
     </MapView>

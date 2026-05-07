@@ -1,47 +1,20 @@
 import { useEffect, useState } from 'react'
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Linking,
-  ActivityIndicator,
-} from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useOrderStore } from '@/store/useOrderStore'
 import { useLocalizacaoCourier } from '@/hooks/useLocalizacaoCourier'
 import { MapaEntregador } from '@/components/MapaEntregador'
+import { HeaderTela } from '@/components/HeaderTela'
+import { Card } from '@/components/ui/Card'
+import { Botao } from '@/components/ui/Botao'
+import { LoadingState } from '@/components/ui/LoadingState'
+import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 import { formatarReais } from '@mallora/lib'
+import { consumerDesign, softColor } from '@/lib/consumer-design'
+import { metaDoStatus, timelineDoStatus, ehAtivo } from '@/lib/status-pedido'
 
-const LABELS_STATUS: Record<string, string> = {
-  novo: 'Pedido recebido',
-  confirmado: 'Pedido confirmado',
-  em_preparo: 'Em preparo',
-  aguardando_entregador: 'Aguardando entregador',
-  saiu_para_entrega: 'Saiu para entrega',
-  entregue: 'Entregue',
-  cancelado: 'Cancelado',
-}
-
-const DESCRICAO_STATUS: Record<string, string> = {
-  novo: 'Aguardando confirmação do restaurante',
-  confirmado: 'O restaurante confirmou seu pedido',
-  em_preparo: 'Seu pedido está sendo preparado',
-  aguardando_entregador: 'Procurando um entregador disponível',
-  saiu_para_entrega: 'Seu pedido está a caminho',
-  entregue: 'Pedido entregue. Bom apetite!',
-  cancelado: 'Seu pedido foi cancelado',
-}
-
-const ORDEM_STATUS = [
-  'novo',
-  'confirmado',
-  'em_preparo',
-  'aguardando_entregador',
-  'saiu_para_entrega',
-  'entregue',
-]
+const { colors, radius } = consumerDesign
 
 export default function TelaAcompanhamento() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -57,7 +30,8 @@ export default function TelaAcompanhamento() {
     async function carregarPedido() {
       const { data } = await supabase
         .from('orders')
-        .select(`
+        .select(
+          `
           id, status, payment_status, forma_pagamento,
           subtotal, taxa_entrega, total, criado_em,
           endereco_entrega, observacoes, motivo_cancelamento,
@@ -67,7 +41,8 @@ export default function TelaAcompanhamento() {
             couriers (id, nome, telefone)
           ),
           stores (id, nome, telefone, slug)
-        `)
+        `
+        )
         .eq('id', id)
         .single()
 
@@ -84,7 +59,7 @@ export default function TelaAcompanhamento() {
     carregarPedido()
   }, [id])
 
-  // Realtime — atualizar status do pedido
+  // Realtime
   useEffect(() => {
     if (!id) return
 
@@ -123,227 +98,520 @@ export default function TelaAcompanhamento() {
 
   if (carregando) {
     return (
-      <View className="flex-1 bg-creme items-center justify-center">
-        <ActivityIndicator size="large" color="#1A4D3A" />
+      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <LoadingState modo="tela" mensagem="Carregando pedido..." />
       </View>
     )
   }
 
   const statusAtual = pedido?.status ?? 'novo'
-  const indiceAtual = ORDEM_STATUS.indexOf(statusAtual)
+  const meta = metaDoStatus(statusAtual)
+  const passos = timelineDoStatus(statusAtual)
   const courier = pedido?.delivery_assignments?.[0]?.couriers
   const enderecoEntrega = pedido?.endereco_entrega
   const exibirMapa =
     statusAtual === 'saiu_para_entrega' && localizacao && enderecoEntrega
+  const isCancelado = statusAtual === 'cancelado'
 
   return (
-    <View className="flex-1 bg-creme">
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: 'Acompanhar pedido',
-          headerTintColor: '#1A4D3A',
-          headerStyle: { backgroundColor: '#FFF8ED' },
-          headerShadowVisible: false,
-          presentation: 'card',
-        }}
-      />
+    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      <HeaderTela variante="voltar" titulo="Acompanhamento" />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        {/* Mapa com localização do entregador */}
+        {/* Mapa do entregador */}
         {exibirMapa && (
-          <MapaEntregador
-            localizacao={localizacao}
-            enderecoEntrega={enderecoEntrega}
-          />
-        )}
-
-        {/* Status atual em destaque */}
-        <View
-          className={`px-5 py-6 ${
-            statusAtual === 'cancelado' ? 'bg-red-50' : 'bg-white'
-          }`}
-        >
-          <Text
-            className={`text-xl font-bold mb-1 ${
-              statusAtual === 'cancelado'
-                ? 'text-red-600'
-                : 'text-verde-profundo'
-            }`}
-          >
-            {LABELS_STATUS[statusAtual]}
-          </Text>
-          <Text className="text-gray-500 text-sm">
-            {DESCRICAO_STATUS[statusAtual]}
-          </Text>
-
-          {statusAtual === 'cancelado' && pedido?.motivo_cancelamento && (
-            <Text className="text-xs text-red-400 mt-1">
-              Motivo: {pedido.motivo_cancelamento}
-            </Text>
-          )}
-
-          {/* Info do entregador quando saiu para entrega */}
-          {statusAtual === 'saiu_para_entrega' && courier && (
-            <View className="flex-row items-center gap-3 mt-4 p-3 bg-gray-50 rounded-xl">
-              <View className="w-10 h-10 rounded-full bg-verde-profundo/20 items-center justify-center flex-shrink-0">
-                <Text className="text-verde-profundo font-bold text-sm">
-                  {courier.nome?.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <View className="flex-1">
-                <Text className="text-sm font-semibold text-gray-800">
-                  {courier.nome}
-                </Text>
-                <Text className="text-xs text-gray-400">Entregador</Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* Timeline de status */}
-        {statusAtual !== 'cancelado' && (
-          <View className="bg-white mt-2 px-5 py-5">
-            <Text className="text-sm font-semibold text-gray-700 mb-4">
-              Acompanhamento
-            </Text>
-
-            {ORDEM_STATUS.filter((s) => s !== 'cancelado').map((status, i) => {
-              const concluido = i <= indiceAtual
-              const atual = i === indiceAtual
-              const ultimo = i === ORDEM_STATUS.length - 2
-
-              return (
-                <View key={status} className="flex-row gap-4">
-                  {/* Linha vertical + bolinha */}
-                  <View className="items-center" style={{ width: 20 }}>
-                    <View
-                      className={`w-4 h-4 rounded-full border-2 ${
-                        concluido
-                          ? 'bg-verde-profundo border-verde-profundo'
-                          : 'bg-white border-gray-200'
-                      } ${atual ? 'scale-125' : ''}`}
-                    />
-                    {!ultimo && (
-                      <View
-                        className={`w-0.5 flex-1 min-h-6 mt-1 ${
-                          concluido ? 'bg-verde-profundo' : 'bg-gray-200'
-                        }`}
-                      />
-                    )}
-                  </View>
-
-                  {/* Label */}
-                  <View className="flex-1 pb-5">
-                    <Text
-                      className={`text-sm ${
-                        concluido
-                          ? 'font-semibold text-gray-800'
-                          : 'text-gray-400'
-                      }`}
-                    >
-                      {LABELS_STATUS[status]}
-                    </Text>
-                    {atual && (
-                      <Text className="text-xs text-verde-medio mt-0.5">
-                        {DESCRICAO_STATUS[status]}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              )
-            })}
+          <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+            <Card preenchimento="sm" semBorda>
+              <MapaEntregador
+                localizacao={localizacao!}
+                enderecoEntrega={enderecoEntrega}
+              />
+            </Card>
           </View>
         )}
 
-        {/* Informações do pedido */}
-        <View className="bg-white mt-2 px-5 py-5">
-          <Text className="text-sm font-semibold text-gray-700 mb-3">
-            Itens do pedido
-          </Text>
-
-          {pedido?.order_items?.map((item: any) => (
+        {/* Card de status atual em destaque */}
+        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
+          <Card variante="escuro" raio="lg" preenchimento="lg">
             <View
-              key={item.id}
-              className="flex-row justify-between py-1.5"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}
             >
-              <Text className="text-sm text-gray-700">
-                {item.quantidade}x {item.nome}
-              </Text>
-              <Text className="text-sm text-gray-600">
-                {formatarReais(item.subtotal)}
-              </Text>
-            </View>
-          ))}
+              <View
+                style={{
+                  width: 56,
+                  height: 56,
+                  borderRadius: 28,
+                  backgroundColor: softColor(meta.cor),
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ConsumerIcon name={meta.icone} size={26} color={meta.cor} />
+              </View>
 
-          <View className="border-t border-gray-100 pt-3 mt-2 gap-1">
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-500">Subtotal</Text>
-              <Text className="text-sm text-gray-600">
-                {formatarReais(pedido?.subtotal ?? 0)}
-              </Text>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: '700',
+                    color: colors.inkSoft,
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {isCancelado ? 'Pedido cancelado' : 'Status atual'}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontWeight: '800',
+                    color: colors.white,
+                    marginTop: 4,
+                    letterSpacing: -0.3,
+                  }}
+                >
+                  {meta.rotuloLongo}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: colors.inkSoft,
+                    marginTop: 4,
+                    lineHeight: 20,
+                    fontWeight: '500',
+                  }}
+                >
+                  {meta.descricao}
+                </Text>
+              </View>
             </View>
-            {(pedido?.taxa_entrega ?? 0) > 0 && (
-              <View className="flex-row justify-between">
-                <Text className="text-sm text-gray-500">Taxa de entrega</Text>
-                <Text className="text-sm text-gray-600">
-                  {formatarReais(pedido.taxa_entrega)}
+
+            {isCancelado && pedido?.motivo_cancelamento && (
+              <View
+                style={{
+                  marginTop: 12,
+                  padding: 12,
+                  borderRadius: radius.md,
+                  backgroundColor: softColor(colors.danger),
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: colors.danger,
+                    fontWeight: '600',
+                  }}
+                >
+                  Motivo: {pedido.motivo_cancelamento}
                 </Text>
               </View>
             )}
-            <View className="flex-row justify-between mt-1">
-              <Text className="text-sm font-bold text-gray-800">Total</Text>
-              <Text className="text-sm font-bold text-verde-profundo">
-                {formatarReais(pedido?.total ?? 0)}
-              </Text>
-            </View>
+          </Card>
+        </View>
+
+        {/* Entregador */}
+        {statusAtual === 'saiu_para_entrega' && courier && (
+          <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+            <Card preenchimento="md">
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+              >
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: colors.accent,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 18,
+                      fontWeight: '800',
+                      color: colors.ink,
+                    }}
+                  >
+                    {courier.nome?.charAt(0).toUpperCase() ?? '?'}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '700',
+                      color: colors.inkSoft,
+                      letterSpacing: 1.2,
+                      textTransform: 'uppercase',
+                    }}
+                  >
+                    Entregador
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontWeight: '700',
+                      color: colors.ink,
+                      marginTop: 2,
+                    }}
+                  >
+                    {courier.nome}
+                  </Text>
+                </View>
+                {courier.telefone && (
+                  <BotaoIconeCircular
+                    icone="phone"
+                    aoTocar={() =>
+                      Linking.openURL(`tel:${courier.telefone}`)
+                    }
+                  />
+                )}
+              </View>
+            </Card>
           </View>
+        )}
+
+        {/* Timeline */}
+        {!isCancelado && (
+          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '700',
+                color: colors.inkMuted,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                marginBottom: 16,
+              }}
+            >
+              Acompanhamento
+            </Text>
+
+            {passos.map((passo, i) => (
+              <PassoTimeline
+                key={passo.meta.status}
+                passo={passo}
+                ultimo={i === passos.length - 1}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Itens */}
+        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: colors.inkMuted,
+              letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              marginBottom: 12,
+            }}
+          >
+            Itens do pedido
+          </Text>
+
+          <Card preenchimento="md">
+            {pedido?.order_items?.map((item: any, idx: number) => (
+              <View
+                key={item.id}
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  paddingVertical: 8,
+                  borderBottomWidth:
+                    idx < (pedido.order_items.length - 1) ? 1 : 0,
+                  borderBottomColor: colors.line,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: colors.ink,
+                    fontWeight: '500',
+                    flex: 1,
+                  }}
+                >
+                  {item.quantidade}× {item.nome}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: colors.inkMuted,
+                    fontWeight: '600',
+                  }}
+                >
+                  {formatarReais(item.subtotal)}
+                </Text>
+              </View>
+            ))}
+
+            <View
+              style={{
+                borderTopWidth: 1,
+                borderTopColor: colors.line,
+                marginTop: 8,
+                paddingTop: 12,
+                gap: 6,
+              }}
+            >
+              <LinhaResumo
+                rotulo="Subtotal"
+                valor={formatarReais(pedido?.subtotal ?? 0)}
+              />
+              {(pedido?.taxa_entrega ?? 0) > 0 && (
+                <LinhaResumo
+                  rotulo="Taxa de entrega"
+                  valor={formatarReais(pedido.taxa_entrega)}
+                />
+              )}
+              <LinhaResumo
+                rotulo="Total"
+                valor={formatarReais(pedido?.total ?? 0)}
+                destacado
+              />
+            </View>
+          </Card>
         </View>
 
         {/* Endereço de entrega */}
-        <View className="bg-white mt-2 px-5 py-5">
-          <Text className="text-sm font-semibold text-gray-700 mb-2">
+        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '700',
+              color: colors.inkMuted,
+              letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              marginBottom: 12,
+            }}
+          >
             Endereço de entrega
           </Text>
-          <Text className="text-sm text-gray-600">
-            {enderecoEntrega?.rua}, {enderecoEntrega?.numero}
-            {enderecoEntrega?.complemento
-              ? ` — ${enderecoEntrega.complemento}`
-              : ''}
-          </Text>
-          <Text className="text-sm text-gray-500 mt-0.5">
-            {enderecoEntrega?.bairro} — {enderecoEntrega?.cidade}
-          </Text>
+          <Card preenchimento="md">
+            <View
+              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
+            >
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: colors.accentSoft,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <ConsumerIcon name="pin" size={18} color={colors.accent} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: colors.ink,
+                  }}
+                >
+                  {enderecoEntrega?.rua}, {enderecoEntrega?.numero}
+                  {enderecoEntrega?.complemento
+                    ? ` — ${enderecoEntrega.complemento}`
+                    : ''}
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.inkMuted,
+                    marginTop: 2,
+                    fontWeight: '500',
+                  }}
+                >
+                  {enderecoEntrega?.bairro} — {enderecoEntrega?.cidade}
+                </Text>
+              </View>
+            </View>
+          </Card>
         </View>
 
-        {/* Contato com a loja */}
-        {pedido?.stores?.telefone &&
-          !['entregue', 'cancelado'].includes(statusAtual) && (
-            <TouchableOpacity
+        {/* Ações */}
+        <View
+          style={{
+            paddingHorizontal: 24,
+            paddingTop: 24,
+            gap: 12,
+          }}
+        >
+          {pedido?.stores?.telefone && ehAtivo(statusAtual) && (
+            <Botao
+              label={`Falar com ${pedido.stores.nome}`}
+              variante="secundario"
+              tamanho="md"
+              iconeEsquerda="comment"
               onPress={abrirWhatsApp}
-              className="mx-5 mt-4 border border-verde-medio py-3.5 rounded-2xl items-center"
-              activeOpacity={0.75}
-            >
-              <Text className="text-verde-medio text-sm font-semibold">
-                Falar com {pedido.stores.nome}
-              </Text>
-            </TouchableOpacity>
+            />
           )}
 
-        {/* Botão voltar para home após entrega */}
-        {statusAtual === 'entregue' && (
-          <TouchableOpacity
-            onPress={() => router.replace('/(tabs)')}
-            className="mx-5 mt-4 bg-verde-profundo py-4 rounded-2xl items-center"
-            activeOpacity={0.85}
-          >
-            <Text className="text-white font-semibold">Voltar ao início</Text>
-          </TouchableOpacity>
-        )}
+          {statusAtual === 'entregue' && (
+            <Botao
+              label="Voltar ao início"
+              variante="primario"
+              tamanho="lg"
+              onPress={() => router.replace('/(tabs)')}
+            />
+          )}
+        </View>
       </ScrollView>
     </View>
+  )
+}
+
+function PassoTimeline({
+  passo,
+  ultimo,
+}: {
+  passo: ReturnType<typeof timelineDoStatus>[number]
+  ultimo: boolean
+}) {
+  const { meta, estado } = passo
+
+  const corCirculo =
+    estado === 'concluido'
+      ? colors.accent
+      : estado === 'atual'
+      ? meta.cor
+      : colors.canvasAlt
+  const corIcone =
+    estado === 'concluido'
+      ? colors.ink
+      : estado === 'atual'
+      ? colors.white
+      : colors.inkSoft
+  const corLinha =
+    estado === 'concluido' ? colors.accent : colors.line
+  const corTitulo =
+    estado === 'pendente' ? colors.inkSoft : colors.ink
+  const pesoTitulo: '500' | '700' | '800' =
+    estado === 'atual' ? '800' : estado === 'concluido' ? '700' : '500'
+  const iconeMostrar: ConsumerIconName =
+    estado === 'concluido' ? 'check' : meta.icone
+
+  return (
+    <View style={{ flexDirection: 'row', gap: 14 }}>
+      <View style={{ alignItems: 'center', width: 32 }}>
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: corCirculo,
+            alignItems: 'center',
+            justifyContent: 'center',
+            transform: [{ scale: estado === 'atual' ? 1.05 : 1 }],
+          }}
+        >
+          <ConsumerIcon name={iconeMostrar} size={16} color={corIcone} strokeWidth={2.2} />
+        </View>
+        {!ultimo && (
+          <View
+            style={{
+              width: 2,
+              flex: 1,
+              minHeight: 24,
+              marginTop: 4,
+              backgroundColor: corLinha,
+            }}
+          />
+        )}
+      </View>
+
+      <View style={{ flex: 1, paddingBottom: ultimo ? 0 : 18 }}>
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: pesoTitulo,
+            color: corTitulo,
+          }}
+        >
+          {meta.rotuloLongo}
+        </Text>
+        {estado === 'atual' && (
+          <Text
+            style={{
+              fontSize: 12,
+              color: colors.inkMuted,
+              marginTop: 2,
+              fontWeight: '500',
+            }}
+          >
+            {meta.descricao}
+          </Text>
+        )}
+      </View>
+    </View>
+  )
+}
+
+function LinhaResumo({
+  rotulo,
+  valor,
+  destacado,
+}: {
+  rotulo: string
+  valor: string
+  destacado?: boolean
+}) {
+  return (
+    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+      <Text
+        style={{
+          fontSize: destacado ? 16 : 14,
+          fontWeight: destacado ? '800' : '500',
+          color: destacado ? colors.ink : colors.inkMuted,
+        }}
+      >
+        {rotulo}
+      </Text>
+      <Text
+        style={{
+          fontSize: destacado ? 16 : 14,
+          fontWeight: destacado ? '800' : '600',
+          color: colors.ink,
+        }}
+      >
+        {valor}
+      </Text>
+    </View>
+  )
+}
+
+function BotaoIconeCircular({
+  icone,
+  aoTocar,
+}: {
+  icone: ConsumerIconName
+  aoTocar: () => void
+}) {
+  return (
+    <TouchableOpacity
+      onPress={aoTocar}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.ink,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <ConsumerIcon name={icone} size={18} color={colors.accent} />
+    </TouchableOpacity>
   )
 }
