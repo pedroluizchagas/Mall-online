@@ -9,7 +9,8 @@
 //   store_id: uuid,
 //   itens: [{
 //     product_id, quantidade, observacoes?,
-//     modifiers?: [{ modifier_id }]   // só id; nome/preco vêm do banco
+//     modifiers?: [{ modifier_id }],   // só id; nome/preco vêm do banco
+//     variant_id?: uuid | null         // SKU selecionado (Fase 4b)
 //   }],
 //   endereco_entrega: jsonb,
 //   observacoes?: string,
@@ -112,6 +113,7 @@ Deno.serve(async (req) => {
     let subtotal = 0
     const itensProcessados: Array<{
       product_id: string
+      variant_id: string | null
       quantidade: number
       observacoes?: string
       preco: number          // preço unitário já com modifiers somados
@@ -129,6 +131,48 @@ Deno.serve(async (req) => {
 
       if (!produto || !produto.disponivel) {
         throw new Error(`Produto indisponível: ${item.product_id}`)
+      }
+
+      // Variant: substitui produto.preco e valida estoque/disponibilidade.
+      let precoBase = produto.preco
+      let variantId: string | null = null
+      if (typeof item.variant_id === 'string' && item.variant_id.length > 0) {
+        const { data: variantRow, error: vErr } = await supabase
+          .from('product_variants')
+          .select(
+            `
+            id, product_id, preco, preco_promocional,
+            stock_quantity, disponivel
+          `
+          )
+          .eq('id', item.variant_id)
+          .single()
+
+        if (vErr || !variantRow) {
+          throw new Error('Variação inválida')
+        }
+        const v = variantRow as {
+          id: string
+          product_id: string
+          preco: number
+          preco_promocional: number | null
+          stock_quantity: number | null
+          disponivel: boolean
+        }
+        if (v.product_id !== item.product_id) {
+          throw new Error('Variação inválida')
+        }
+        if (!v.disponivel) {
+          throw new Error('Variação indisponível')
+        }
+        if (
+          v.stock_quantity != null &&
+          v.stock_quantity < item.quantidade
+        ) {
+          throw new Error('Estoque insuficiente para a variação')
+        }
+        precoBase = v.preco_promocional ?? v.preco
+        variantId = v.id
       }
 
       const modifiersInput = Array.isArray(item.modifiers)
@@ -242,11 +286,12 @@ Deno.serve(async (req) => {
         }
       }
 
-      const precoUnit = produto.preco + precoExtraTotal
+      const precoUnit = precoBase + precoExtraTotal
       const itemSubtotal = precoUnit * item.quantidade
       subtotal += itemSubtotal
       itensProcessados.push({
         product_id: item.product_id,
+        variant_id: variantId,
         quantidade: item.quantidade,
         observacoes: item.observacoes,
         preco: precoUnit,
@@ -290,6 +335,7 @@ Deno.serve(async (req) => {
       itensProcessados.map((item) => ({
         order_id: order.id,
         product_id: item.product_id,
+        variant_id: item.variant_id,
         nome: item.nome,
         preco_unit: item.preco,
         quantidade: item.quantidade,

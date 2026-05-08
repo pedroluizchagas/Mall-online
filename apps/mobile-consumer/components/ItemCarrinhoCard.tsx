@@ -19,6 +19,7 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
     item.modifiers?.reduce((acc, m) => acc + m.preco_extra, 0) ?? 0
   const totalLinha = (item.preco + precoExtra) * item.quantidade
   const eUltimo = item.quantidade === 1
+  const rotuloVariant = item.variant?.rotulo ?? null
   const resumoModifiers =
     item.modifiers && item.modifiers.length > 0
       ? item.modifiers.map((m) => m.nome).join(', ')
@@ -43,6 +44,14 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
         >
           {item.nome}
         </Text>
+        {rotuloVariant && (
+          <Text
+            style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '600' }}
+            numberOfLines={1}
+          >
+            {rotuloVariant}
+          </Text>
+        )}
         {resumoModifiers && (
           <Text
             style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '500' }}

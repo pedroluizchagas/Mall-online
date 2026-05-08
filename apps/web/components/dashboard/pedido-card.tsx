@@ -26,6 +26,15 @@ const CORES_STATUS: Record<string, { bg: string; color: string }> = {
   cancelado: { bg: '#fee2e2', color: '#991b1b' },
 }
 
+function rotuloVariantDoItem(item: any): string | null {
+  const refs = item?.product_variants?.product_variant_options
+  if (!Array.isArray(refs) || refs.length === 0) return null
+  const valores = refs
+    .map((vo: any) => vo?.product_options?.valor)
+    .filter((v: unknown): v is string => typeof v === 'string' && v.length > 0)
+  return valores.length > 0 ? valores.join(' × ') : null
+}
+
 const PROXIMAS_ACOES: Record<string, { label: string; status: string }[]> = {
   novo: [
     { label: 'Confirmar pedido', status: 'confirmado' },
@@ -135,12 +144,18 @@ export function PedidoCard({
                   nome: string
                   preco_extra: number
                 }>
+                const rotuloVariant = rotuloVariantDoItem(item)
                 return (
                   <div key={item.id} className="flex justify-between text-sm gap-3">
                     <div className="min-w-0 flex-1">
                       <span className="text-ink">
                         {item.quantidade}x {item.nome}
                       </span>
+                      {rotuloVariant && (
+                        <div className="text-xs text-ink-2 font-medium mt-0.5">
+                          {rotuloVariant}
+                        </div>
+                      )}
                       {modifiers.length > 0 && (
                         <div className="text-xs text-ink-3 mt-0.5">
                           {modifiers.map((m) => m.nome).join(', ')}

@@ -40,13 +40,17 @@ function gerarLinhaId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-function hashModifiers(modifiers: ItemCarrinhoModifier[] | undefined): string {
-  if (!modifiers || modifiers.length === 0) return ''
-  return modifiers
-    .map((m) => m.modifier_id)
+function hashLinha(item: {
+  variant?: { variant_id: string }
+  modifiers?: ItemCarrinhoModifier[]
+}): string {
+  const v = item.variant?.variant_id ?? ''
+  const m = (item.modifiers ?? [])
+    .map((x) => x.modifier_id)
     .slice()
     .sort()
     .join(',')
+  return `${v}|${m}`
 }
 
 function precoExtraTotal(modifiers: ItemCarrinhoModifier[] | undefined): number {
@@ -73,11 +77,11 @@ export const useCartStore = create<CartState>((set, get) => ({
       return
     }
 
-    const hashNovo = hashModifiers(item.modifiers)
+    const hashNovo = hashLinha(item)
     const existente = itens.find(
       (i) =>
         i.product_id === item.product_id &&
-        hashModifiers(i.modifiers) === hashNovo
+        hashLinha(i) === hashNovo
     )
 
     if (existente) {

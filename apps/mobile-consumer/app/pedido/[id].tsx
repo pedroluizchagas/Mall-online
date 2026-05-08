@@ -35,7 +35,15 @@ export default function TelaAcompanhamento() {
           id, status, payment_status, forma_pagamento,
           subtotal, taxa_entrega, total, criado_em,
           endereco_entrega, observacoes, motivo_cancelamento,
-          order_items (id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers),
+          order_items (
+            id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,
+            variant_id,
+            product_variants (
+              product_variant_options (
+                product_options ( valor, product_option_groups ( nome ) )
+              )
+            )
+          ),
           delivery_assignments (
             id, status, courier_id,
             couriers (id, nome, telefone)
@@ -326,6 +334,18 @@ export default function TelaAcompanhamento() {
                 nome: string
                 preco_extra: number
               }>
+              const refsVariant =
+                item?.product_variants?.product_variant_options ?? []
+              const valoresVariant = (refsVariant as any[])
+                .map((vo: any) => vo?.product_options?.valor)
+                .filter(
+                  (v: unknown): v is string =>
+                    typeof v === 'string' && v.length > 0
+                )
+              const rotuloVariant =
+                valoresVariant.length > 0
+                  ? valoresVariant.join(' × ')
+                  : null
               return (
                 <View
                   key={item.id}
@@ -349,6 +369,18 @@ export default function TelaAcompanhamento() {
                     >
                       {item.quantidade}× {item.nome}
                     </Text>
+                    {rotuloVariant && (
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: colors.inkMuted,
+                          fontWeight: '600',
+                          marginTop: 2,
+                        }}
+                      >
+                        {rotuloVariant}
+                      </Text>
+                    )}
                     {modifiers.length > 0 && (
                       <Text
                         style={{

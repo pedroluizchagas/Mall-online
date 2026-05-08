@@ -40,18 +40,27 @@ export interface ItemCarrinhoModifier {
   preco_extra: number     // centavos
 }
 
+// Snapshot do variant (SKU) selecionado dentro de um item do carrinho.
+// rotulo é texto humano formado pelos valores selecionados (ex: "M × Verde").
+// Snapshot para sobreviver à edição/remoção do variant no catálogo.
+export interface ItemCarrinhoVariant {
+  variant_id: string
+  rotulo: string
+}
+
 // Item do carrinho (estado local — não vem do banco).
 // linha_id é gerado localmente ao adicionar; itens com mesmo product_id mas
-// modifiers diferentes coexistem como linhas separadas.
+// modifiers ou variant diferentes coexistem como linhas separadas.
 export interface ItemCarrinho {
   linha_id: string
   product_id: string
   nome: string
-  preco: number           // centavos, preço base do produto
+  preco: number           // centavos, preço base já resolvido (variant > produto)
   quantidade: number
   foto_url?: string
   observacoes?: string
   modifiers?: ItemCarrinhoModifier[]
+  variant?: ItemCarrinhoVariant
 }
 
 // Horários de funcionamento da loja
