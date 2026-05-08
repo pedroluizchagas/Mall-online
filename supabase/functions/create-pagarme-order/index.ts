@@ -7,7 +7,10 @@
 // Body:
 // {
 //   store_id: uuid,
-//   itens: [{ product_id, quantidade, observacoes? }],
+//   itens: [{
+//     product_id, quantidade, observacoes?,
+//     modifiers?: [{ modifier_id }]   // só id; nome/preco vêm do banco
+//   }],
 //   endereco_entrega: jsonb,
 //   observacoes?: string,
 //   payment_method: 'pix' | 'credit_card',
@@ -100,14 +103,21 @@ Deno.serve(async (req) => {
 
     if (!subscription) throw new Error('Loja temporariamente indisponível')
 
+    type ModifierSnapshot = {
+      modifier_id: string
+      nome: string
+      preco_extra: number
+    }
+
     let subtotal = 0
     const itensProcessados: Array<{
       product_id: string
       quantidade: number
       observacoes?: string
-      preco: number
+      preco: number          // preço unitário já com modifiers somados
       nome: string
       subtotal: number
+      modifiers: ModifierSnapshot[] | null
     }> = []
 
     for (const item of itens) {
@@ -121,15 +131,129 @@ Deno.serve(async (req) => {
         throw new Error(`Produto indisponível: ${item.product_id}`)
       }
 
-      const itemSubtotal = produto.preco * item.quantidade
+      const modifiersInput = Array.isArray(item.modifiers)
+        ? (item.modifiers as Array<{ modifier_id: string }>)
+        : []
+      const modifierIds = modifiersInput
+        .map((m) => m?.modifier_id)
+        .filter((id): id is string => typeof id === 'string' && id.length > 0)
+
+      let modifiersResolvidos: ModifierSnapshot[] = []
+      let precoExtraTotal = 0
+      const selecionadosPorGrupo = new Map<string, number>()
+
+      if (modifierIds.length > 0) {
+        const { data: modifierRows, error: mErr } = await supabase
+          .from('product_modifiers')
+          .select(`
+            id, nome, preco_extra, disponivel, group_id,
+            product_modifier_groups (
+              id, product_id, nome, min_select, max_select
+            )
+          `)
+          .in('id', modifierIds)
+
+        if (mErr) throw mErr
+
+        const rows = (modifierRows ?? []) as Array<{
+          id: string
+          nome: string
+          preco_extra: number
+          disponivel: boolean
+          group_id: string
+          product_modifier_groups: {
+            id: string
+            product_id: string
+            nome: string
+            min_select: number
+            max_select: number
+          } | null
+        }>
+
+        if (rows.length !== modifierIds.length) {
+          throw new Error('Modificador inválido')
+        }
+
+        const contagensMax = new Map<
+          string,
+          { count: number; max_select: number; nome: string }
+        >()
+        for (const row of rows) {
+          const grupo = row.product_modifier_groups
+          if (!grupo || grupo.product_id !== item.product_id) {
+            throw new Error('Modificador inválido')
+          }
+          if (!row.disponivel) {
+            throw new Error(`Modificador indisponível: ${row.nome}`)
+          }
+          const acc = contagensMax.get(grupo.id)
+          if (acc) {
+            acc.count += 1
+          } else {
+            contagensMax.set(grupo.id, {
+              count: 1,
+              max_select: grupo.max_select,
+              nome: grupo.nome,
+            })
+          }
+          selecionadosPorGrupo.set(
+            grupo.id,
+            (selecionadosPorGrupo.get(grupo.id) ?? 0) + 1
+          )
+        }
+        for (const g of contagensMax.values()) {
+          if (g.count > g.max_select) {
+            throw new Error(`Limite máximo excedido em "${g.nome}"`)
+          }
+        }
+
+        modifiersResolvidos = rows.map((r) => ({
+          modifier_id: r.id,
+          nome: r.nome,
+          preco_extra: r.preco_extra,
+        }))
+        precoExtraTotal = modifiersResolvidos.reduce(
+          (acc, m) => acc + m.preco_extra,
+          0
+        )
+      }
+
+      // min_select: carrega TODOS os grupos do produto para validar grupos
+      // obrigatórios mesmo quando o cliente não envia nada.
+      const { data: gruposDoProduto, error: gErr } = await supabase
+        .from('product_modifier_groups')
+        .select('id, nome, min_select')
+        .eq('product_id', item.product_id)
+
+      if (gErr) throw gErr
+
+      for (const g of (gruposDoProduto ?? []) as Array<{
+        id: string
+        nome: string
+        min_select: number
+      }>) {
+        if (g.min_select > 0) {
+          const count = selecionadosPorGrupo.get(g.id) ?? 0
+          if (count < g.min_select) {
+            throw new Error(
+              `Selecione pelo menos ${g.min_select} em "${g.nome}"`
+            )
+          }
+        }
+      }
+
+      const precoUnit = produto.preco + precoExtraTotal
+      const itemSubtotal = precoUnit * item.quantidade
       subtotal += itemSubtotal
       itensProcessados.push({
         product_id: item.product_id,
         quantidade: item.quantidade,
         observacoes: item.observacoes,
-        preco: produto.preco,
+        preco: precoUnit,
         nome: produto.nome,
         subtotal: itemSubtotal,
+        modifiers:
+          modifiersResolvidos.length > 0 ? modifiersResolvidos : null,
       })
     }
 
@@ -171,6 +295,7 @@ Deno.serve(async (req) => {
         quantidade: item.quantidade,
         subtotal: item.subtotal,
         observacoes: item.observacoes,
+        modifiers: item.modifiers,
       })),
     )
 

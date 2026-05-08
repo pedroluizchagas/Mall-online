@@ -23,7 +23,15 @@ interface Pedido {
   endereco_entrega: { rua?: string; numero?: string; bairro?: string; cidade?: string } | null
   observacoes: string | null
   consumers?: { id: string; nome: string; telefone: string } | null
-  order_items?: Array<{ id: string; nome: string; quantidade: number; preco_unit: number; subtotal: number }>
+  order_items?: Array<{
+    id: string
+    nome: string
+    quantidade: number
+    preco_unit: number
+    subtotal: number
+    observacoes?: string | null
+    modifiers?: Array<{ modifier_id: string; nome: string; preco_extra: number }> | null
+  }>
   delivery_assignments?: Array<{ couriers?: { nome: string; telefone: string } | null }>
 }
 
@@ -88,7 +96,7 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
                   subtotal, taxa_entrega, total, criado_em,
                   endereco_entrega, observacoes,
                   consumers (id, nome, telefone),
-                  order_items (id, nome, quantidade, preco_unit, subtotal, observacoes),
+                  order_items (id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers),
                   delivery_assignments (id, status, valor_entrega, couriers (id, nome, telefone, foto_url))
                 `)
                 .eq('id', payload.new.id)
@@ -409,11 +417,21 @@ function OrderDetail({ order }: { order: Pedido | null }) {
         </div>
         {items.length === 0 && <div className="text-xs text-ink-3">Sem itens.</div>}
         {items.map((it) => (
-          <div key={it.id} className="flex items-center gap-2.5 py-1.5">
+          <div key={it.id} className="flex items-start gap-2.5 py-1.5">
             <ProductThumb name={it.nome} size={32} />
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-medium truncate">{it.nome}</div>
               <div className="text-[11px] text-ink-3">{it.quantidade}x</div>
+              {it.modifiers && it.modifiers.length > 0 && (
+                <div className="text-[11px] text-ink-3 mt-0.5">
+                  {it.modifiers.map((m) => m.nome).join(', ')}
+                </div>
+              )}
+              {it.observacoes && (
+                <div className="text-[11px] text-ink-3 italic mt-0.5">
+                  &ldquo;{it.observacoes}&rdquo;
+                </div>
+              )}
             </div>
             <div className="text-[13px] font-medium">{money(Number(it.subtotal))}</div>
           </div>

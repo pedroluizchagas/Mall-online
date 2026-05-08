@@ -15,8 +15,14 @@ interface Props {
 
 export function ItemCarrinhoCard({ item, readonly = false }: Props) {
   const { aumentarQuantidade, diminuirQuantidade, removerItem } = useCartStore()
-  const totalLinha = item.preco * item.quantidade
+  const precoExtra =
+    item.modifiers?.reduce((acc, m) => acc + m.preco_extra, 0) ?? 0
+  const totalLinha = (item.preco + precoExtra) * item.quantidade
   const eUltimo = item.quantidade === 1
+  const resumoModifiers =
+    item.modifiers && item.modifiers.length > 0
+      ? item.modifiers.map((m) => m.nome).join(', ')
+      : null
 
   return (
     <View
@@ -37,6 +43,14 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
         >
           {item.nome}
         </Text>
+        {resumoModifiers && (
+          <Text
+            style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '500' }}
+            numberOfLines={2}
+          >
+            {resumoModifiers}
+          </Text>
+        )}
         {item.observacoes && (
           <Text
             style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '500' }}
@@ -78,8 +92,8 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
             }
             aoTocar={() =>
               eUltimo
-                ? removerItem(item.product_id)
-                : diminuirQuantidade(item.product_id)
+                ? removerItem(item.linha_id)
+                : diminuirQuantidade(item.linha_id)
             }
           />
           <Text
@@ -97,7 +111,7 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
             icone="plus"
             cor={colors.accent}
             fundo={colors.ink}
-            aoTocar={() => aumentarQuantidade(item.product_id)}
+            aoTocar={() => aumentarQuantidade(item.linha_id)}
           />
         </View>
       )}

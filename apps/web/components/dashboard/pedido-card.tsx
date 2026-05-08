@@ -129,17 +129,33 @@ export function PedidoCard({
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-2">Itens</p>
             <div className="space-y-1">
-              {pedido.order_items?.map((item: any) => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span className="text-ink">
-                    {item.quantidade}x {item.nome}
-                    {item.observacoes && (
-                      <span className="text-ink-3 ml-1">({item.observacoes})</span>
-                    )}
-                  </span>
-                  <span className="text-ink-2">{formatarReais(item.subtotal)}</span>
-                </div>
-              ))}
+              {pedido.order_items?.map((item: any) => {
+                const modifiers = (item.modifiers ?? []) as Array<{
+                  modifier_id: string
+                  nome: string
+                  preco_extra: number
+                }>
+                return (
+                  <div key={item.id} className="flex justify-between text-sm gap-3">
+                    <div className="min-w-0 flex-1">
+                      <span className="text-ink">
+                        {item.quantidade}x {item.nome}
+                      </span>
+                      {modifiers.length > 0 && (
+                        <div className="text-xs text-ink-3 mt-0.5">
+                          {modifiers.map((m) => m.nome).join(', ')}
+                        </div>
+                      )}
+                      {item.observacoes && (
+                        <div className="text-xs text-ink-3 italic mt-0.5">
+                          &ldquo;{item.observacoes}&rdquo;
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-ink-2 whitespace-nowrap">{formatarReais(item.subtotal)}</span>
+                  </div>
+                )
+              })}
             </div>
             <div className="pt-2 mt-2 space-y-0.5" style={{ borderTop: '1px solid var(--line)' }}>
               <div className="flex justify-between text-sm text-ink-3">
