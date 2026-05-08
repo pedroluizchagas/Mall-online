@@ -90,4 +90,20 @@ describe('registry de templates', () => {
     expect(TEMPLATES.services.modulos.entregadores).toBe(false)
     expect(TEMPLATES.services.modulos.agenda).toBe(true)
   })
+
+  it('apenas food permite modificadores no produto', () => {
+    expect(TEMPLATES.food.produto.permiteModificadores).toBe(true)
+    expect(TEMPLATES.fashion.produto.permiteModificadores).toBe(false)
+    expect(TEMPLATES.pharmacy.produto.permiteModificadores).toBe(false)
+    expect(TEMPLATES.pet.produto.permiteModificadores).toBe(false)
+    expect(TEMPLATES.services.produto.permiteModificadores).toBe(false)
+    expect(TEMPLATES.generic.produto.permiteModificadores).toBe(false)
+  })
+
+  it('food declara campos extras esperados (tempo_preparo_min, serve_pessoas, tags)', () => {
+    const codigos = TEMPLATES.food.produto.camposExtras.map((c) => c.codigo)
+    expect(codigos).toEqual(
+      expect.arrayContaining(['tempo_preparo_min', 'serve_pessoas', 'tags']),
+    )
+  })
 })
