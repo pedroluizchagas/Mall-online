@@ -20,6 +20,7 @@ interface Produto {
   track_stock: boolean
   stock_quantity?: number | null
   categories?: { nome: string; icone?: string | null } | null
+  product_modifier_groups?: Array<{ id: string }> | null
 }
 
 interface Props {
@@ -170,6 +171,7 @@ function ProductCard({ produto: p }: { produto: Produto }) {
   }
   const baixo = p.track_stock && (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) < 10
   const esgotado = p.track_stock && (p.stock_quantity ?? 0) === 0
+  const totalModificadores = p.product_modifier_groups?.length ?? 0
   return (
     <Link
       href={`/produtos/${p.id}`}
@@ -218,6 +220,16 @@ function ProductCard({ produto: p }: { produto: Produto }) {
             )}
           </div>
         </div>
+        {totalModificadores > 0 && (
+          <div className="mt-1.5">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+              style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
+            >
+              🍔 {totalModificadores} modificador{totalModificadores > 1 ? 'es' : ''}
+            </span>
+          </div>
+        )}
       </div>
     </Link>
   )
@@ -256,6 +268,14 @@ function ProductRow({ produto: p }: { produto: Produto }) {
         >
           {p.nome}
         </Link>
+        {(p.product_modifier_groups?.length ?? 0) > 0 && (
+          <span
+            className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium align-middle"
+            style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
+          >
+            🍔 {p.product_modifier_groups!.length} mod.
+          </span>
+        )}
         {p.descricao && (
           <div className="text-[11px] text-ink-3 truncate">{p.descricao}</div>
         )}

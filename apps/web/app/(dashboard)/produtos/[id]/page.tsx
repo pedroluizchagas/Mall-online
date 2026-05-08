@@ -1,6 +1,6 @@
 import { redirect, notFound } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { atualizarProduto } from '@/lib/actions/produtos'
+import { atualizarProduto, getModificadoresProduto } from '@/lib/actions/produtos'
 import { getCategorias } from '@/lib/actions/categorias'
 import { ProdutoForm } from '@/components/dashboard/produto-form'
 
@@ -24,7 +24,7 @@ export default async function PaginaEditarProduto({ params }: Props) {
     .select(`
       id, nome, descricao, preco, preco_promocional,
       foto_url, disponivel, track_stock, stock_quantity,
-      stock_minimo, category_id, ordem
+      stock_minimo, category_id, ordem, metadata
     `)
     .eq('id', params.id)
     .eq('tenant_id', tenant.id)
@@ -35,6 +35,7 @@ export default async function PaginaEditarProduto({ params }: Props) {
   if (!produto) notFound()
 
   const { categorias } = await getCategorias()
+  const { grupos } = await getModificadoresProduto(params.id)
 
   async function action(_estado: any, formData: FormData) {
     'use server'
@@ -56,7 +57,12 @@ export default async function PaginaEditarProduto({ params }: Props) {
         <h1 className="font-display text-[28px] leading-tight text-ink mt-2">Editar produto</h1>
       </div>
 
-      <ProdutoForm action={action} categorias={categorias} produto={produto} />
+      <ProdutoForm
+        action={action}
+        categorias={categorias}
+        produto={produto}
+        grupos={grupos as any}
+      />
     </div>
   )
 }
