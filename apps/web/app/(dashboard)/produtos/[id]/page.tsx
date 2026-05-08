@@ -1,6 +1,10 @@
 import { redirect, notFound } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { atualizarProduto, getModificadoresProduto } from '@/lib/actions/produtos'
+import {
+  atualizarProduto,
+  getModificadoresProduto,
+  getVariantsProduto,
+} from '@/lib/actions/produtos'
 import { getCategorias } from '@/lib/actions/categorias'
 import { ProdutoForm } from '@/components/dashboard/produto-form'
 
@@ -36,6 +40,7 @@ export default async function PaginaEditarProduto({ params }: Props) {
 
   const { categorias } = await getCategorias()
   const { grupos } = await getModificadoresProduto(params.id)
+  const { optionGroups, variants } = await getVariantsProduto(params.id)
 
   async function action(_estado: any, formData: FormData) {
     'use server'
@@ -62,6 +67,12 @@ export default async function PaginaEditarProduto({ params }: Props) {
         categorias={categorias}
         produto={produto}
         grupos={grupos as any}
+        optionGroups={optionGroups}
+        variants={variants.map((v) => ({
+          ...v,
+          sku: v.sku ?? '',
+          stock_minimo: v.stock_minimo ?? 0,
+        }))}
       />
     </div>
   )

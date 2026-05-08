@@ -41,6 +41,43 @@ const grupoModificadorSchema = z
 
 const gruposSchema = z.array(grupoModificadorSchema)
 
+const variantOptionSchema = z.object({
+  id: z.string().uuid().optional(),
+  valor: z.string().min(1).max(60),
+  hex_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional().nullable(),
+  ordem: z.number().int().min(0).default(0),
+})
+
+const optionGroupSchema = z.object({
+  id: z.string().uuid().optional(),
+  nome: z.string().min(1).max(60),
+  ordem: z.number().int().min(0).default(0),
+  options: z.array(variantOptionSchema).min(1, 'Cada atributo precisa de ao menos 1 valor'),
+})
+
+const variantOptionRefSchema = z.union([
+  z.string().uuid(),
+  z.object({ group_nome: z.string(), option_valor: z.string() }),
+])
+
+const variantSchema = z.object({
+  id: z.string().uuid().optional(),
+  optionRefs: z.array(variantOptionRefSchema).min(1),
+  sku: z.string().max(60).optional().nullable(),
+  preco: z.number().int().min(0),
+  preco_promocional: z.number().int().min(0).optional().nullable(),
+  stock_quantity: z.number().int().min(0).optional().nullable(),
+  stock_minimo: z.number().int().min(0).default(0),
+  foto_url: z.string().url().optional().nullable(),
+  disponivel: z.boolean().default(true),
+  ordem: z.number().int().min(0).default(0),
+})
+
+const variantsPayloadSchema = z.object({
+  optionGroups: z.array(optionGroupSchema),
+  variants: z.array(variantSchema),
+})
+
 const metadataSchema = z
   .object({
     tempo_preparo_min: z.number().int().min(1).max(180).optional(),
@@ -52,6 +89,9 @@ const metadataSchema = z
 
 export type GrupoModificadorInput = z.infer<typeof grupoModificadorSchema>
 export type MetadataProduto = z.infer<typeof metadataSchema>
+export type OptionGroupInput = z.infer<typeof optionGroupSchema>
+export type VariantInput = z.infer<typeof variantSchema>
+export type VariantsPayload = z.infer<typeof variantsPayloadSchema>
 
 function parseGruposPayload(raw: FormDataEntryValue | null): {
   grupos: GrupoModificadorInput[]
@@ -65,6 +105,21 @@ function parseGruposPayload(raw: FormDataEntryValue | null): {
     return { grupos: result.data }
   } catch {
     return { grupos: [], erro: 'Falha ao ler grupos de modificadores' }
+  }
+}
+
+function parseVariantsPayload(raw: FormDataEntryValue | null): {
+  payload: VariantsPayload | null
+  erro?: string
+} {
+  if (raw === null || raw === '') return { payload: null }
+  try {
+    const parsed = JSON.parse(String(raw))
+    const result = variantsPayloadSchema.safeParse(parsed)
+    if (!result.success) return { payload: null, erro: result.error.errors[0].message }
+    return { payload: result.data }
+  } catch {
+    return { payload: null, erro: 'Falha ao ler variações' }
   }
 }
 
@@ -202,6 +257,274 @@ async function sincronizarGrupos(
   return null
 }
 
+// Sincroniza variants do produto: option_groups, options, variants e
+// product_variant_options. Estratégia (sequencial, sem transação):
+//   1) Limpar product_variant_options dos variants existentes (libera o
+//      ON DELETE RESTRICT em options)
+//   2) DELETE variants que sumiram
+//   3) DELETE/UPDATE/INSERT option_groups
+//   4) DELETE/UPDATE/INSERT options dentro de cada group
+//   5) UPDATE/INSERT variants
+//   6) INSERT product_variant_options para cada variant (1 por option_id)
+// Mesma limitação do sincronizarGrupos: falha no meio deixa estado parcial.
+async function sincronizarVariants(
+  supabase: ReturnType<typeof createSupabaseServer>,
+  produto_id: string,
+  tenant_id: string,
+  payload: VariantsPayload,
+): Promise<string | null> {
+  const sb = supabase as any
+
+  const { data: gruposExistData, error: errSelG } = await sb
+    .from('product_option_groups')
+    .select('id, nome, ordem, product_options(id, valor, hex_color, ordem)')
+    .eq('product_id', produto_id)
+  if (errSelG) return errSelG.message
+
+  const { data: variantsExistData, error: errSelV } = await sb
+    .from('product_variants')
+    .select('id')
+    .eq('product_id', produto_id)
+  if (errSelV) return errSelV.message
+
+  const gruposExist = (gruposExistData ?? []) as Array<{
+    id: string
+    nome: string
+    ordem: number
+    product_options: Array<{ id: string; valor: string; hex_color: string | null; ordem: number }> | null
+  }>
+  const variantsExist = (variantsExistData ?? []) as Array<{ id: string }>
+  const idsVariantsExist = variantsExist.map((v) => v.id)
+
+  // 1) Limpa todos os product_variant_options dos variants atuais — destrava
+  //    o ON DELETE RESTRICT em options.
+  if (idsVariantsExist.length > 0) {
+    const { error: errCleanPVO } = await sb
+      .from('product_variant_options')
+      .delete()
+      .in('variant_id', idsVariantsExist)
+    if (errCleanPVO) return errCleanPVO.message
+  }
+
+  // 2) Deleta variants removidos.
+  const idsVariantsEnviados = new Set(
+    payload.variants.map((v) => v.id).filter(Boolean) as string[],
+  )
+  const variantsARemover = variantsExist.filter((v) => !idsVariantsEnviados.has(v.id))
+  if (variantsARemover.length > 0) {
+    const { error: errDelV } = await sb
+      .from('product_variants')
+      .delete()
+      .in(
+        'id',
+        variantsARemover.map((v) => v.id),
+      )
+    if (errDelV) return errDelV.message
+  }
+
+  // 3) Sincroniza option_groups.
+  const idsGruposEnviados = new Set(
+    payload.optionGroups.map((g) => g.id).filter(Boolean) as string[],
+  )
+  const gruposARemover = gruposExist.filter((g) => !idsGruposEnviados.has(g.id))
+  if (gruposARemover.length > 0) {
+    const { error: errDelG } = await sb
+      .from('product_option_groups')
+      .delete()
+      .in(
+        'id',
+        gruposARemover.map((g) => g.id),
+      )
+    if (errDelG) return errDelG.message
+  }
+
+  // Map nome → group_id (após sync de groups)
+  const groupIdPorNome = new Map<string, string>()
+
+  for (let idx = 0; idx < payload.optionGroups.length; idx++) {
+    const grupo = payload.optionGroups[idx]
+    const ordem = typeof grupo.ordem === 'number' ? grupo.ordem : idx
+
+    let groupId: string
+
+    if (grupo.id) {
+      const { error: errUpd } = await sb
+        .from('product_option_groups')
+        .update({ nome: grupo.nome, ordem })
+        .eq('id', grupo.id)
+      if (errUpd) return errUpd.message
+      groupId = grupo.id
+    } else {
+      const { data: insertData, error: errIns } = await sb
+        .from('product_option_groups')
+        .insert({ product_id: produto_id, tenant_id, nome: grupo.nome, ordem })
+        .select('id')
+        .single()
+      if (errIns || !insertData) return errIns?.message ?? 'Erro ao criar atributo'
+      groupId = (insertData as { id: string }).id
+    }
+
+    groupIdPorNome.set(grupo.nome, groupId)
+
+    // 4) Sincroniza options do group.
+    const optionsExistGroup = gruposExist.find((g) => g.id === groupId)?.product_options ?? []
+    const idsOptionsEnviadas = new Set(
+      grupo.options.map((o) => o.id).filter(Boolean) as string[],
+    )
+    const optionsARemover = optionsExistGroup
+      .filter((o) => !idsOptionsEnviadas.has(o.id))
+      .map((o) => o.id)
+    if (optionsARemover.length > 0) {
+      const { error: errDelO } = await sb
+        .from('product_options')
+        .delete()
+        .in('id', optionsARemover)
+      if (errDelO) return errDelO.message
+    }
+
+    for (let oIdx = 0; oIdx < grupo.options.length; oIdx++) {
+      const opt = grupo.options[oIdx]
+      const ordemOpt = typeof opt.ordem === 'number' ? opt.ordem : oIdx
+
+      if (opt.id) {
+        const { error: errUpdO } = await sb
+          .from('product_options')
+          .update({ valor: opt.valor, hex_color: opt.hex_color ?? null, ordem: ordemOpt })
+          .eq('id', opt.id)
+        if (errUpdO) return errUpdO.message
+      } else {
+        const { error: errInsO } = await sb.from('product_options').insert({
+          group_id: groupId,
+          valor: opt.valor,
+          hex_color: opt.hex_color ?? null,
+          ordem: ordemOpt,
+        })
+        if (errInsO) return errInsO.message
+      }
+    }
+  }
+
+  // 5) Reconstrói map (group_nome, valor) → option_id após sync de options.
+  const { data: optionsAtuais, error: errSelO } = await sb
+    .from('product_options')
+    .select('id, valor, group_id, product_option_groups!inner(nome, product_id)')
+    .eq('product_option_groups.product_id', produto_id)
+  if (errSelO) return errSelO.message
+
+  const optionIdPorGrupoValor = new Map<string, string>()
+  for (const o of (optionsAtuais ?? []) as any[]) {
+    const grupoNome = o.product_option_groups?.nome
+    if (!grupoNome) continue
+    optionIdPorGrupoValor.set(`${grupoNome}::${o.valor}`, o.id)
+  }
+
+  function resolveOptionId(
+    ref: string | { group_nome: string; option_valor: string },
+  ): string | null {
+    if (typeof ref === 'string') return ref
+    return optionIdPorGrupoValor.get(`${ref.group_nome}::${ref.option_valor}`) ?? null
+  }
+
+  // 6) Sincroniza variants (UPDATE ou INSERT) e seus variant_options.
+  for (let vIdx = 0; vIdx < payload.variants.length; vIdx++) {
+    const variant = payload.variants[vIdx]
+    const ordemVar = typeof variant.ordem === 'number' ? variant.ordem : vIdx
+
+    let variantId: string
+    const camposVariant = {
+      sku: variant.sku ?? null,
+      preco: variant.preco,
+      preco_promocional: variant.preco_promocional ?? null,
+      stock_quantity: variant.stock_quantity ?? null,
+      stock_minimo: variant.stock_minimo ?? 0,
+      foto_url: variant.foto_url ?? null,
+      disponivel: variant.disponivel,
+      ordem: ordemVar,
+    }
+
+    if (variant.id) {
+      const { error: errUpdV } = await sb
+        .from('product_variants')
+        .update(camposVariant)
+        .eq('id', variant.id)
+      if (errUpdV) return errUpdV.message
+      variantId = variant.id
+    } else {
+      const { data: insertData, error: errInsV } = await sb
+        .from('product_variants')
+        .insert({ product_id: produto_id, tenant_id, ...camposVariant })
+        .select('id')
+        .single()
+      if (errInsV || !insertData) return errInsV?.message ?? 'Erro ao criar variação'
+      variantId = (insertData as { id: string }).id
+    }
+
+    const optionIds = variant.optionRefs
+      .map((ref) => resolveOptionId(ref))
+      .filter((id): id is string => Boolean(id))
+
+    if (optionIds.length === 0) {
+      return 'Variação sem opções resolvidas — verifique os atributos'
+    }
+
+    const { error: errInsPVO } = await sb
+      .from('product_variant_options')
+      .insert(optionIds.map((option_id) => ({ variant_id: variantId, option_id })))
+    if (errInsPVO) return errInsPVO.message
+  }
+
+  return null
+}
+
+export async function getVariantsProduto(produto_id: string) {
+  const supabase = createSupabaseServer()
+  const sb = supabase as any
+
+  const { data: groups } = await sb
+    .from('product_option_groups')
+    .select('id, nome, ordem, product_options (id, valor, hex_color, ordem)')
+    .eq('product_id', produto_id)
+    .order('ordem', { ascending: true })
+
+  const { data: variants } = await sb
+    .from('product_variants')
+    .select(
+      'id, sku, preco, preco_promocional, stock_quantity, stock_minimo, foto_url, disponivel, ordem, product_variant_options (option_id)',
+    )
+    .eq('product_id', produto_id)
+    .order('ordem', { ascending: true })
+
+  return {
+    optionGroups: ((groups ?? []) as any[]).map((g) => ({
+      id: g.id as string,
+      nome: g.nome as string,
+      ordem: g.ordem as number,
+      options: ((g.product_options ?? []) as any[])
+        .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
+        .map((o) => ({
+          id: o.id as string,
+          valor: o.valor as string,
+          hex_color: (o.hex_color ?? null) as string | null,
+          ordem: o.ordem as number,
+        })),
+    })),
+    variants: ((variants ?? []) as any[]).map((v) => ({
+      id: v.id as string,
+      sku: (v.sku ?? null) as string | null,
+      preco: v.preco as number,
+      preco_promocional: (v.preco_promocional ?? null) as number | null,
+      stock_quantity: (v.stock_quantity ?? null) as number | null,
+      stock_minimo: (v.stock_minimo ?? 0) as number,
+      foto_url: (v.foto_url ?? null) as string | null,
+      disponivel: v.disponivel as boolean,
+      ordem: v.ordem as number,
+      optionRefs: ((v.product_variant_options ?? []) as any[]).map(
+        (vo) => vo.option_id as string,
+      ),
+    })),
+  }
+}
+
 export async function getProdutos(store_id: string) {
   const supabase = createSupabaseServer()
 
@@ -222,7 +545,8 @@ export async function getProdutos(store_id: string) {
       foto_url, disponivel, track_stock, stock_quantity,
       stock_minimo, ordem, criado_em,
       categories (id, nome, icone),
-      product_modifier_groups (id)
+      product_modifier_groups (id),
+      product_variants (id)
     `)
     .eq('store_id', store_id)
     .order('ordem', { ascending: true })
@@ -342,6 +666,11 @@ export async function criarProduto(store_id: string, formData: FormData) {
   const { grupos, erro: erroGrupos } = parseGruposPayload(formData.get('modifier_groups'))
   if (erroGrupos) return { erro: erroGrupos }
 
+  const { payload: variantsPayload, erro: erroVariants } = parseVariantsPayload(
+    formData.get('variants_payload'),
+  )
+  if (erroVariants) return { erro: erroVariants }
+
   let foto_url: string | null = null
   const foto = formData.get('foto') as File | null
 
@@ -362,10 +691,17 @@ export async function criarProduto(store_id: string, formData: FormData) {
     foto_url = urlPublica.publicUrl
   }
 
+  // Quando há variants, o estoque vai por SKU — força track_stock=false e
+  // limpa os campos de estoque do produto-pai.
+  const temVariants = Boolean(variantsPayload && variantsPayload.variants.length > 0)
+  const dadosFinal = temVariants
+    ? { ...dados.data, track_stock: false, stock_quantity: null, stock_minimo: 0 }
+    : dados.data
+
   const { data: produtoCriado, error } = await supabase
     .from('products')
     .insert({
-      ...dados.data,
+      ...dadosFinal,
       store_id,
       tenant_id: tenant.id,
       foto_url,
@@ -389,6 +725,16 @@ export async function criarProduto(store_id: string, formData: FormData) {
       grupos,
     )
     if (erroGruposSync) return { erro: erroGruposSync }
+  }
+
+  if (variantsPayload && produtoCriado) {
+    const erroVariantsSync = await sincronizarVariants(
+      supabase,
+      (produtoCriado as { id: string }).id,
+      tenant.id,
+      variantsPayload,
+    )
+    if (erroVariantsSync) return { erro: erroVariantsSync }
   }
 
   revalidatePath('/dashboard/produtos')
@@ -438,6 +784,11 @@ export async function atualizarProduto(
   const { grupos, erro: erroGrupos } = parseGruposPayload(formData.get('modifier_groups'))
   if (erroGrupos) return { erro: erroGrupos }
 
+  const { payload: variantsPayload, erro: erroVariants } = parseVariantsPayload(
+    formData.get('variants_payload'),
+  )
+  if (erroVariants) return { erro: erroVariants }
+
   let foto_url: string | undefined = undefined
   const foto = formData.get('foto') as File | null
 
@@ -457,10 +808,15 @@ export async function atualizarProduto(
     }
   }
 
+  const temVariants = Boolean(variantsPayload && variantsPayload.variants.length > 0)
+  const dadosFinal = temVariants
+    ? { ...dados.data, track_stock: false, stock_quantity: null, stock_minimo: 0 }
+    : dados.data
+
   const { error } = await supabase
     .from('products')
     .update({
-      ...dados.data,
+      ...dadosFinal,
       ...(foto_url ? { foto_url } : {}),
       metadata,
     })
@@ -471,6 +827,16 @@ export async function atualizarProduto(
 
   const erroGruposSync = await sincronizarGrupos(supabase, produto_id, tenant.id, grupos)
   if (erroGruposSync) return { erro: erroGruposSync }
+
+  if (variantsPayload) {
+    const erroVariantsSync = await sincronizarVariants(
+      supabase,
+      produto_id,
+      tenant.id,
+      variantsPayload,
+    )
+    if (erroVariantsSync) return { erro: erroVariantsSync }
+  }
 
   revalidatePath('/dashboard/produtos')
   return { sucesso: true }

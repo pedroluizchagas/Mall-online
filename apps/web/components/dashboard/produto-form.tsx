@@ -3,6 +3,12 @@
 import { useFormState, useFormStatus } from 'react-dom'
 import { useState, type KeyboardEvent } from 'react'
 import { useTemplateOrGeneric } from '@mallora/lib'
+import {
+  VariantsEditor,
+  payloadParaServer,
+  type OptionGroupEditavel,
+  type VariantEditavel,
+} from './produto-form-variants'
 
 interface Categoria {
   id: string
@@ -50,11 +56,17 @@ interface Produto {
   metadata?: MetadataEditavel | null
 }
 
+interface VariantInicial extends Omit<VariantEditavel, 'optionRefs'> {
+  optionRefs: string[]
+}
+
 interface Props {
   action: (estado: any, formData: FormData) => Promise<any>
   categorias: Categoria[]
   produto?: Produto
   grupos?: GrupoEditavel[]
+  optionGroups?: OptionGroupEditavel[]
+  variants?: VariantInicial[]
 }
 
 const inputClass =
@@ -89,11 +101,41 @@ function grupoVazio(ordem: number): GrupoEditavel {
   }
 }
 
-export function ProdutoForm({ action, categorias, produto, grupos: gruposIniciais }: Props) {
+export function ProdutoForm({
+  action,
+  categorias,
+  produto,
+  grupos: gruposIniciais,
+  optionGroups: optionGroupsIniciais,
+  variants: variantsIniciais,
+}: Props) {
   const [estado, dispatch] = useFormState(action, null)
   const template = useTemplateOrGeneric()
   const mostraModificadores = template.produto.permiteModificadores
   const ehFood = template.codigo === 'food'
+
+  const permiteVar = template.produto.permiteVariacoes
+  const tinhaVariantsAoCarregar =
+    Array.isArray(variantsIniciais) && variantsIniciais.length > 0
+
+  // Quando 'sempre', sempre ativo. Quando 'opcional', toggle controlado.
+  // Quando 'nunca', desativado.
+  const [variationsAtivas, setVariationsAtivas] = useState<boolean>(() => {
+    if (permiteVar === 'sempre') return true
+    if (permiteVar === 'nunca') return false
+    return tinhaVariantsAoCarregar
+  })
+
+  const [optionGroupsAtual, setOptionGroupsAtual] = useState<OptionGroupEditavel[]>(
+    () => optionGroupsIniciais ?? [],
+  )
+  const [variantsAtual, setVariantsAtual] = useState<VariantEditavel[]>([])
+  const [precoBaseStr, setPrecoBaseStr] = useState<string>(
+    produto?.preco ? (produto.preco / 100).toFixed(2) : '',
+  )
+
+  const temVariations =
+    permiteVar === 'sempre' || (permiteVar === 'opcional' && variationsAtivas)
 
   const metadataInicial = (produto?.metadata ?? {}) as MetadataEditavel
 
@@ -267,7 +309,8 @@ export function ProdutoForm({ action, categorias, produto, grupos: gruposIniciai
             type="number"
             step="0.01"
             min="0"
-            defaultValue={produto?.preco ? (produto.preco / 100).toFixed(2) : ''}
+            value={precoBaseStr}
+            onChange={(e) => setPrecoBaseStr(e.target.value)}
             required
             className={inputClass}
             style={{ borderColor: 'var(--line)' }}
@@ -340,9 +383,9 @@ export function ProdutoForm({ action, categorias, produto, grupos: gruposIniciai
         <input
           name="track_stock"
           type="hidden"
-          value={produto?.track_stock ? 'true' : 'false'}
+          value={!temVariations && produto?.track_stock ? 'true' : 'false'}
         />
-        {produto?.track_stock && (
+        {!temVariations && produto?.track_stock && (
           <div className="grid grid-cols-2 gap-4 mt-3">
             <div>
               <label className="block text-sm font-medium text-ink-2 mb-1">
@@ -369,6 +412,11 @@ export function ProdutoForm({ action, categorias, produto, grupos: gruposIniciai
               />
             </div>
           </div>
+        )}
+        {temVariations && (
+          <p className="text-xs text-ink-3 mt-1 italic">
+            Estoque controlado por SKU na seção Variações abaixo.
+          </p>
         )}
       </div>
 
@@ -662,8 +710,55 @@ export function ProdutoForm({ action, categorias, produto, grupos: gruposIniciai
         </div>
       )}
 
+      {permiteVar === 'opcional' && (
+        <div
+          className="rounded-xl p-4 flex items-center justify-between gap-3"
+          style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
+        >
+          <div>
+            <p className="text-sm font-semibold text-ink">Este produto tem variações?</p>
+            <p className="text-xs text-ink-3">
+              Ative se houver tamanhos, cores, sabores ou outros atributos com estoque próprio.
+            </p>
+          </div>
+          <input
+            type="checkbox"
+            checked={variationsAtivas}
+            onChange={(e) => setVariationsAtivas(e.target.checked)}
+            className="w-5 h-5"
+          />
+        </div>
+      )}
+
+      {temVariations && (
+        <VariantsEditor
+          optionGroupsIniciais={optionGroupsIniciais ?? []}
+          variantsIniciais={variantsIniciais ?? []}
+          precoBaseCentavos={
+            precoBaseStr ? Math.round(parseFloat(precoBaseStr) * 100) : 0
+          }
+          ativo={temVariations}
+          onChange={(g, v) => {
+            setOptionGroupsAtual(g)
+            setVariantsAtual(v)
+          }}
+        />
+      )}
+
       <input type="hidden" name="modifier_groups" value={gruposPayload} />
       <input type="hidden" name="metadata" value={metadataPayload} />
+      <input
+        type="hidden"
+        name="variants_payload"
+        value={
+          temVariations
+            ? payloadParaServer({
+                optionGroups: optionGroupsAtual,
+                variants: variantsAtual,
+              })
+            : ''
+        }
+      />
 
       <BotaoSubmit />
     </form>
