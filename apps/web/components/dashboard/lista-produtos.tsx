@@ -19,6 +19,7 @@ interface Produto {
   disponivel: boolean
   track_stock: boolean
   stock_quantity?: number | null
+  metadata?: Record<string, unknown> | null
   categories?: { nome: string; icone?: string | null } | null
   product_modifier_groups?: Array<{ id: string }> | null
   product_variants?: Array<{ id: string }> | null
@@ -174,6 +175,7 @@ function ProductCard({ produto: p }: { produto: Produto }) {
   const esgotado = p.track_stock && (p.stock_quantity ?? 0) === 0
   const totalModificadores = p.product_modifier_groups?.length ?? 0
   const totalSkus = p.product_variants?.length ?? 0
+  const exigeReceita = p.metadata?.exige_receita === true
   return (
     <Link
       href={`/produtos/${p.id}`}
@@ -222,7 +224,7 @@ function ProductCard({ produto: p }: { produto: Produto }) {
             )}
           </div>
         </div>
-        {(totalModificadores > 0 || totalSkus > 0) && (
+        {(totalModificadores > 0 || totalSkus > 0 || exigeReceita) && (
           <div className="mt-1.5 flex flex-wrap gap-1">
             {totalSkus > 0 && (
               <span
@@ -238,6 +240,14 @@ function ProductCard({ produto: p }: { produto: Produto }) {
                 style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
               >
                 🍔 {totalModificadores} modificador{totalModificadores > 1 ? 'es' : ''}
+              </span>
+            )}
+            {exigeReceita && (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+                style={{ background: '#f5dfa7', color: 'var(--warn)' }}
+              >
+                💊 Receita
               </span>
             )}
           </div>
@@ -294,6 +304,14 @@ function ProductRow({ produto: p }: { produto: Produto }) {
             style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
           >
             🍔 {p.product_modifier_groups!.length} mod.
+          </span>
+        )}
+        {p.metadata?.exige_receita === true && (
+          <span
+            className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium align-middle"
+            style={{ background: '#f5dfa7', color: 'var(--warn)' }}
+          >
+            💊 Receita
           </span>
         )}
         {p.descricao && (

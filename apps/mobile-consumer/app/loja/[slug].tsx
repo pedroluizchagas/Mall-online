@@ -29,6 +29,7 @@ interface Produto {
   foto_url: string | null
   disponivel: boolean
   category_id: string | null
+  metadata: Record<string, unknown> | null
 }
 
 interface SecaoCardapio {
@@ -78,7 +79,7 @@ export default function PaginaLoja() {
         .from('products')
         .select(`
           id, nome, descricao, preco, preco_promocional,
-          foto_url, disponivel, category_id,
+          foto_url, disponivel, category_id, metadata,
           categories (id, nome, ordem)
         `)
         .eq('store_id', lojaData.id)
@@ -100,7 +101,7 @@ export default function PaginaLoja() {
           if (!grupos[chave]) {
             grupos[chave] = { titulo, ordem, produtos: [] }
           }
-          grupos[chave].produtos.push(produto as Produto)
+          grupos[chave].produtos.push(produto as unknown as Produto)
         }
 
         const secoesOrdenadas = Object.values(grupos)

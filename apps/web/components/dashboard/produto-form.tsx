@@ -2,7 +2,7 @@
 
 import { useFormState, useFormStatus } from 'react-dom'
 import { useState, type KeyboardEvent } from 'react'
-import { useTemplateOrGeneric } from '@mallora/lib'
+import { useTemplateOrGeneric, type CampoExtraDef } from '@mallora/lib'
 import {
   VariantsEditor,
   payloadParaServer,
@@ -91,6 +91,173 @@ function BotaoSubmit() {
   )
 }
 
+function CampoExtra({
+  campo,
+  valor,
+  onChange,
+}: {
+  campo: CampoExtraDef
+  valor: unknown
+  onChange: (v: unknown) => void
+}) {
+  const labelEl = (
+    <label className="block text-sm font-medium text-ink-2 mb-1">
+      {campo.label}
+      {campo.obrigatorio && <span style={{ color: 'var(--err)' }}> *</span>}
+    </label>
+  )
+
+  if (campo.tipo === 'boolean') {
+    const checked = valor === true
+    return (
+      <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="w-4 h-4"
+        />
+        <span>{campo.label}</span>
+      </label>
+    )
+  }
+
+  if (campo.tipo === 'number') {
+    return (
+      <div>
+        {labelEl}
+        <input
+          type="number"
+          value={typeof valor === 'number' ? String(valor) : ''}
+          placeholder={campo.placeholder}
+          onChange={(e) => {
+            const v = e.target.value
+            onChange(v === '' ? undefined : parseInt(v, 10))
+          }}
+          className={inputClass}
+          style={{ borderColor: 'var(--line)' }}
+        />
+      </div>
+    )
+  }
+
+  if (campo.tipo === 'select') {
+    const options = campo.opcoes ?? []
+    return (
+      <div>
+        {labelEl}
+        <select
+          value={typeof valor === 'string' ? valor : ''}
+          onChange={(e) => onChange(e.target.value || undefined)}
+          className={inputClass}
+          style={{ borderColor: 'var(--line)' }}
+        >
+          <option value="">Selecione…</option>
+          {options.map((opt) => (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ))}
+        </select>
+      </div>
+    )
+  }
+
+  if (campo.tipo === 'multi-select') {
+    const options = campo.opcoes ?? []
+    const selecionados = Array.isArray(valor) ? (valor as string[]) : []
+    function alternar(opt: string) {
+      const set = new Set(selecionados)
+      if (set.has(opt)) set.delete(opt)
+      else set.add(opt)
+      onChange(Array.from(set))
+    }
+    return (
+      <div>
+        {labelEl}
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+          {options.map((opt) => (
+            <label
+              key={opt}
+              className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer rounded-lg px-2 py-1.5 border"
+              style={{ borderColor: 'var(--line)', background: 'var(--bg)' }}
+            >
+              <input
+                type="checkbox"
+                checked={selecionados.includes(opt)}
+                onChange={() => alternar(opt)}
+                className="w-4 h-4"
+              />
+              <span>{opt}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (campo.tipo === 'range') {
+    const tupla =
+      Array.isArray(valor) && valor.length === 2
+        ? (valor as [number | null, number | null])
+        : [null, null]
+    function setIdx(idx: 0 | 1, v: string) {
+      const novo: [number | null, number | null] = [tupla[0], tupla[1]]
+      novo[idx] = v === '' ? null : parseFloat(v)
+      // Se ambos virarem null, devolve undefined p/ não enviar a tupla.
+      if (novo[0] === null && novo[1] === null) {
+        onChange(undefined)
+      } else {
+        onChange([novo[0] ?? 0, novo[1] ?? 0])
+      }
+    }
+    return (
+      <div>
+        {labelEl}
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={0}
+            step="0.1"
+            value={tupla[0] ?? ''}
+            placeholder="mín"
+            onChange={(e) => setIdx(0, e.target.value)}
+            className={inputClass}
+            style={{ borderColor: 'var(--line)' }}
+          />
+          <span className="text-ink-3">—</span>
+          <input
+            type="number"
+            min={0}
+            step="0.1"
+            value={tupla[1] ?? ''}
+            placeholder="máx"
+            onChange={(e) => setIdx(1, e.target.value)}
+            className={inputClass}
+            style={{ borderColor: 'var(--line)' }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // text, url, e fallback (multi-tag/multi-staff caem como input simples)
+  const inputType = campo.tipo === 'url' ? 'url' : 'text'
+  return (
+    <div>
+      {labelEl}
+      <input
+        type={inputType}
+        value={typeof valor === 'string' ? valor : ''}
+        placeholder={campo.placeholder}
+        onChange={(e) => onChange(e.target.value || undefined)}
+        className={inputClass}
+        style={{ borderColor: 'var(--line)' }}
+      />
+    </div>
+  )
+}
+
 function grupoVazio(ordem: number): GrupoEditavel {
   return {
     nome: '',
@@ -113,6 +280,10 @@ export function ProdutoForm({
   const template = useTemplateOrGeneric()
   const mostraModificadores = template.produto.permiteModificadores
   const ehFood = template.codigo === 'food'
+  const camposExtrasGenericos = ehFood
+    ? []
+    : template.produto.camposExtras
+  const mostraSecaoExtras = camposExtrasGenericos.length > 0
 
   const permiteVar = template.produto.permiteVariacoes
   const tinhaVariantsAoCarregar =
@@ -154,6 +325,33 @@ export function ProdutoForm({
     Array.isArray(metadataInicial.tags) ? metadataInicial.tags : [],
   )
   const [novaTag, setNovaTag] = useState('')
+
+  // Estado dos campos extras genéricos (pet/pharmacy/generic).
+  // Inicializa a partir de produto.metadata pré-existente.
+  const [metadataExtras, setMetadataExtras] = useState<Record<string, unknown>>(() => {
+    if (!mostraSecaoExtras) return {}
+    const inicial: Record<string, unknown> = {}
+    for (const campo of camposExtrasGenericos) {
+      const v = (metadataInicial as Record<string, unknown>)[campo.codigo]
+      if (v !== undefined) inicial[campo.codigo] = v
+      else if (campo.tipo === 'boolean' && typeof campo.defaultValue === 'boolean') {
+        inicial[campo.codigo] = campo.defaultValue
+      }
+    }
+    return inicial
+  })
+
+  function atualizarCampoExtra(codigo: string, valor: unknown) {
+    setMetadataExtras((atual) => {
+      const novo = { ...atual }
+      if (valor === undefined || valor === '' || (Array.isArray(valor) && valor.length === 0)) {
+        delete novo[codigo]
+      } else {
+        novo[codigo] = valor
+      }
+      return novo
+    })
+  }
 
   function adicionarGrupo() {
     setGrupos((atual) => [...atual, grupoVazio(atual.length)])
@@ -265,7 +463,7 @@ export function ProdutoForm({
           serve_pessoas: servePessoas ? parseInt(servePessoas, 10) : undefined,
           tags,
         }
-      : {}),
+      : metadataExtras),
   })
 
   return (
@@ -525,6 +723,33 @@ export function ProdutoForm({
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+
+      {mostraSecaoExtras && (
+        <div
+          className="rounded-xl p-4 space-y-4"
+          style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
+        >
+          <div>
+            <p className="text-sm font-semibold text-ink">
+              Detalhes de {template.nome}
+            </p>
+            <p className="text-xs text-ink-3">
+              Campos específicos do nicho. Opcionais salvo indicação contrária.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {camposExtrasGenericos.map((campo) => (
+              <CampoExtra
+                key={campo.codigo}
+                campo={campo}
+                valor={metadataExtras[campo.codigo]}
+                onChange={(v) => atualizarCampoExtra(campo.codigo, v)}
+              />
+            ))}
           </div>
         </div>
       )}

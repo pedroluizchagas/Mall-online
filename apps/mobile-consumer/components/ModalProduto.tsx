@@ -39,6 +39,7 @@ interface Produto {
   preco: number
   preco_promocional: number | null
   foto_url: string | null
+  metadata?: Record<string, unknown> | null
 }
 
 interface Loja {
@@ -514,6 +515,40 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                   )}
                 </View>
               </View>
+
+              {produto.metadata?.exige_receita === true && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                    padding: 12,
+                    borderRadius: radius.md,
+                    backgroundColor: `rgba(242, 184, 75, 0.18)`,
+                    borderWidth: 1,
+                    borderColor: `rgba(242, 184, 75, 0.45)`,
+                  }}
+                >
+                  <ConsumerIcon
+                    name="info"
+                    size={18}
+                    color={colors.warning}
+                    strokeWidth={2.2}
+                  />
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 13,
+                      color: colors.ink,
+                      lineHeight: 18,
+                      fontWeight: '500',
+                    }}
+                  >
+                    <Text style={{ fontWeight: '800' }}>Exige receita médica.</Text>{' '}
+                    Anexe a receita ao finalizar o pedido.
+                  </Text>
+                </View>
+              )}
 
               {produto.descricao && (
                 <Text
