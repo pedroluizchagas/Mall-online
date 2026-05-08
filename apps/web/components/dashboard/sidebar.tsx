@@ -6,9 +6,11 @@ import {
   Home,
   ShoppingBag,
   Package,
+  Boxes,
   DollarSign,
   Store,
   Bike,
+  Calendar,
   BarChart3,
   Settings,
   Bell,
@@ -17,9 +19,11 @@ import {
   Search,
   LogOut,
   UserCircle,
+  Tag,
   type LucideIcon,
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
+import type { DashboardTemplate } from '@mallora/lib'
 
 interface NavItem {
   href: string
@@ -28,30 +32,63 @@ interface NavItem {
   badge?: number
 }
 
-const mainItems: NavItem[] = [
-  { href: '/', label: 'Início', icon: Home },
-  { href: '/pedidos', label: 'Pedidos', icon: ShoppingBag, badge: 2 },
-  { href: '/produtos', label: 'Produtos', icon: Package },
-  { href: '/financeiro', label: 'Financeiro', icon: DollarSign },
-  { href: '/minha-loja', label: 'Minha Loja', icon: Store },
-  { href: '/entregadores', label: 'Entregadores', icon: Bike },
-  { href: '/relatorios', label: 'Relatórios', icon: BarChart3 },
-]
+function buildMainItems(template: DashboardTemplate): NavItem[] {
+  const itens: NavItem[] = [{ href: '/', label: 'Início', icon: Home }]
+
+  if (template.modulos.pedidos) {
+    itens.push({ href: '/pedidos', label: 'Pedidos', icon: ShoppingBag, badge: 2 })
+  }
+
+  if (template.modulos.produtos) {
+    itens.push({
+      href: '/produtos',
+      label: template.produto.labels.produtoPlural,
+      icon: Package,
+    })
+  }
+
+  if (template.modulos.estoque) {
+    itens.push({ href: '/estoque', label: 'Estoque', icon: Boxes })
+  }
+
+  if (template.modulos.financeiro) {
+    itens.push({ href: '/financeiro', label: 'Financeiro', icon: DollarSign })
+  }
+
+  itens.push({ href: '/minha-loja', label: 'Minha Loja', icon: Store })
+
+  if (template.modulos.entregadores) {
+    itens.push({ href: '/entregadores', label: 'Entregadores', icon: Bike })
+  }
+
+  if (template.modulos.agenda) {
+    itens.push({ href: '/agenda', label: 'Agenda', icon: Calendar })
+  }
+
+  if (template.modulos.relatorios) {
+    itens.push({ href: '/relatorios', label: 'Relatórios', icon: BarChart3 })
+  }
+
+  return itens
+}
 
 const configItems: NavItem[] = [
   { href: '/mensagens', label: 'Mensagens', icon: Bell },
   { href: '/avaliacoes', label: 'Avaliações', icon: Star },
   { href: '/configuracoes/loja', label: 'Configurações', icon: Settings },
+  { href: '/configuracoes/tipo-de-loja', label: 'Tipo de loja', icon: Tag },
   { href: '/configuracoes/conta', label: 'Minha conta', icon: UserCircle },
   { href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
 ]
 
 interface Props {
   nomeLoja: string
+  template: DashboardTemplate
 }
 
-export function SidebarDashboard({ nomeLoja }: Props) {
+export function SidebarDashboard({ nomeLoja, template }: Props) {
   const pathname = usePathname()
+  const mainItems = buildMainItems(template)
 
   return (
     <aside

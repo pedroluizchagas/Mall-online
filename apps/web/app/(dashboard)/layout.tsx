@@ -1,13 +1,21 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import type { Database } from '@mallora/types'
+import { getTemplateByStore, TemplateProvider } from '@mallora/lib'
 import { BannerRecebimentosPendente } from '@/components/dashboard/banner-recebimentos-pendente'
 import { ToastBoasVindas } from '@/components/dashboard/toast-boas-vindas'
 import { SidebarDashboard } from '@/components/dashboard/sidebar'
 
 type Tenant = Database['public']['Tables']['tenants']['Row']
 type Subscription = Database['public']['Tables']['tenant_subscriptions']['Row']
-type Store = Database['public']['Tables']['stores']['Row']
+
+// Categoria embutida na loja para resolver o template do dashboard.
+// `categories.slug` foi adicionado na migration 014; o tipo gerado ainda
+// não reflete a coluna, então fazemos cast pontual no consumo.
+type StoreComCategoria = {
+  nome: string | null
+  categoria: { id: string; slug: string | null; nome: string; icone: string | null } | null
+}
 
 export default async function LayoutDashboard({
   children,
@@ -33,9 +41,11 @@ export default async function LayoutDashboard({
 
   const { data: loja } = (await supabase
     .from('stores')
-    .select('nome')
+    .select('nome, categoria:categories(id, slug, nome, icone)')
     .eq('tenant_id', tenant.id)
-    .single()) as { data: Pick<Store, 'nome'> | null }
+    .single()) as { data: StoreComCategoria | null }
+
+  const template = getTemplateByStore(loja ?? {})
 
   const { data: assinatura } = (await supabase
     .from('tenant_subscriptions')
@@ -46,11 +56,12 @@ export default async function LayoutDashboard({
   const assinaturaAtiva = assinatura && statusAtivos.includes(assinatura.billing_status)
 
   return (
+    <TemplateProvider value={template}>
     <div
       className="flex h-screen overflow-hidden"
       style={{ background: 'var(--sidebar)' }}
     >
-      <SidebarDashboard nomeLoja={loja?.nome ?? 'Minha loja'} />
+      <SidebarDashboard nomeLoja={loja?.nome ?? 'Minha loja'} template={template} />
 
       <div
         className="flex-1 flex flex-col min-w-0 overflow-hidden"
@@ -112,5 +123,6 @@ export default async function LayoutDashboard({
 
       <ToastBoasVindas />
     </div>
+    </TemplateProvider>
   )
 }
