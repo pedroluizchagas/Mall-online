@@ -22,6 +22,11 @@ interface Pedido {
   criado_em: string
   endereco_entrega: { rua?: string; numero?: string; bairro?: string; cidade?: string } | null
   observacoes: string | null
+  tipo?: 'entrega' | 'agendamento' | null
+  agendamento_inicio_at?: string | null
+  agendamento_fim_at?: string | null
+  staff_id?: string | null
+  service_staff?: { id: string; nome: string; cor: string | null } | null
   consumers?: { id: string; nome: string; telefone: string } | null
   order_items?: Array<{
     id: string
@@ -104,6 +109,8 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
                   id, status, payment_status, forma_pagamento,
                   subtotal, taxa_entrega, total, criado_em,
                   endereco_entrega, observacoes,
+                  tipo, agendamento_inicio_at, agendamento_fim_at, staff_id,
+                  service_staff:service_staff!staff_id (id, nome, cor),
                   consumers (id, nome, telefone),
                   order_items (
                     id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,
@@ -263,6 +270,20 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
   )
 }
 
+const DIAS_CURTOS_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+function formatarRangeAgendamento(inicioIso: string, fimIso: string | null): string {
+  const ini = new Date(inicioIso)
+  const dia = String(ini.getDate()).padStart(2, '0')
+  const mes = String(ini.getMonth() + 1).padStart(2, '0')
+  const sem = DIAS_CURTOS_PT[ini.getDay()]
+  const horaIni = `${String(ini.getHours()).padStart(2, '0')}:${String(ini.getMinutes()).padStart(2, '0')}`
+  if (!fimIso) return `${sem} ${dia}/${mes} às ${horaIni}`
+  const fim = new Date(fimIso)
+  const horaFim = `${String(fim.getHours()).padStart(2, '0')}:${String(fim.getMinutes()).padStart(2, '0')}`
+  const duracao = Math.max(0, Math.round((fim.getTime() - ini.getTime()) / 60000))
+  return `${sem} ${dia}/${mes} ${horaIni}—${horaFim} (${duracao}min)`
+}
+
 function OrderRow({ order, selected, onClick }: { order: Pedido; selected: boolean; onClick: () => void }) {
   const horario = new Date(order.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   const isPix = order.forma_pagamento === 'online_pix'
@@ -365,9 +386,18 @@ function OrderDetail({ order }: { order: Pedido | null }) {
               {order.consumers?.nome ?? 'Cliente'}
             </div>
             <div className="text-xs text-ink-2 mt-0.5">
-              {order.endereco_entrega?.rua ?? ''}
-              {order.endereco_entrega?.numero ? `, ${order.endereco_entrega.numero}` : ''}
-              {order.endereco_entrega?.bairro ? ` · ${order.endereco_entrega.bairro}` : ''}
+              {order.tipo === 'agendamento' ? (
+                <>
+                  📅 {formatarRangeAgendamento(order.agendamento_inicio_at!, order.agendamento_fim_at ?? null)}
+                  {order.service_staff?.nome ? ` · ${order.service_staff.nome}` : ''}
+                </>
+              ) : (
+                <>
+                  {order.endereco_entrega?.rua ?? ''}
+                  {order.endereco_entrega?.numero ? `, ${order.endereco_entrega.numero}` : ''}
+                  {order.endereco_entrega?.bairro ? ` · ${order.endereco_entrega.bairro}` : ''}
+                </>
+              )}
             </div>
           </div>
           <StatusPill status={order.status} />

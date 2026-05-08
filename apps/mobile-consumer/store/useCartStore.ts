@@ -34,6 +34,7 @@ interface CartState {
   totalItens: () => number
   subtotal: () => number
   total: () => number
+  temAgendamento: () => boolean
 }
 
 function gerarLinhaId(): string {
@@ -74,6 +75,22 @@ export const useCartStore = create<CartState>((set, get) => ({
 
     if (storeAtual && storeAtual !== store_id) {
       set({ pendingTrocaLoja: { item, store_id, store_nome, taxa } })
+      return
+    }
+
+    // Regra services (1 agendamento por carrinho): se o item novo é um
+    // agendamento, ou se o carrinho já contém um agendamento, qualquer
+    // adição reseta o carrinho. A UI deve pedir confirmação ANTES de
+    // chamar adicionarItem; aqui a substituição é direta.
+    const novoEhAgendamento = !!item.agendamento
+    const algumExistenteEhAgendamento = itens.some((i) => !!i.agendamento)
+    if (novoEhAgendamento || algumExistenteEhAgendamento) {
+      set({
+        itens: [{ ...item, linha_id: gerarLinhaId() }],
+        store_id,
+        store_nome,
+        store_taxa_entrega: taxa,
+      })
       return
     }
 
@@ -155,5 +172,12 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   subtotal: () => get().itens.reduce((acc, i) => acc + precoLinha(i), 0),
 
-  total: () => get().subtotal() + get().store_taxa_entrega,
+  // Em agendamento, não há taxa de entrega — total = subtotal.
+  total: () => {
+    const s = get()
+    if (s.itens.some((i) => !!i.agendamento)) return s.subtotal()
+    return s.subtotal() + s.store_taxa_entrega
+  },
+
+  temAgendamento: () => get().itens.some((i) => !!i.agendamento),
 }))

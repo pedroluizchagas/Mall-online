@@ -28,13 +28,17 @@ export default function TelaAcompanhamento() {
 
   useEffect(() => {
     async function carregarPedido() {
-      const { data } = await supabase
+      // Cast: novas colunas de agendamento ainda não estão nos types
+      // gerados do Supabase (migration 020).
+      const { data } = await (supabase as any)
         .from('orders')
         .select(
           `
           id, status, payment_status, forma_pagamento,
           subtotal, taxa_entrega, total, criado_em,
           endereco_entrega, observacoes, motivo_cancelamento,
+          tipo, agendamento_inicio_at, agendamento_fim_at, staff_id,
+          service_staff:service_staff!staff_id (id, nome, cor),
           order_items (
             id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,
             variant_id,
@@ -447,63 +451,117 @@ export default function TelaAcompanhamento() {
           </Card>
         </View>
 
-        {/* Endereço de entrega */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: '700',
-              color: colors.inkMuted,
-              letterSpacing: 0.5,
-              textTransform: 'uppercase',
-              marginBottom: 12,
-            }}
-          >
-            Endereço de entrega
-          </Text>
-          <Card preenchimento="md">
-            <View
-              style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
+        {/* Agendamento (services) */}
+        {pedido?.tipo === 'agendamento' && pedido?.agendamento_inicio_at && (
+          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '700',
+                color: colors.inkMuted,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                marginBottom: 12,
+              }}
             >
-              <View
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 20,
-                  backgroundColor: colors.accentSoft,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
+              Agendamento
+            </Text>
+            <Card preenchimento="md">
+              <Text
+                style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}
               >
-                <ConsumerIcon name="pin" size={18} color={colors.accent} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: '700',
-                    color: colors.ink,
-                  }}
-                >
-                  {enderecoEntrega?.rua}, {enderecoEntrega?.numero}
-                  {enderecoEntrega?.complemento
-                    ? ` — ${enderecoEntrega.complemento}`
-                    : ''}
-                </Text>
+                📅 {formatarAgendamentoBruto(
+                  pedido.agendamento_inicio_at,
+                  pedido.agendamento_fim_at,
+                )}
+              </Text>
+              {pedido?.service_staff?.nome && (
                 <Text
                   style={{
                     fontSize: 13,
                     color: colors.inkMuted,
-                    marginTop: 2,
+                    marginTop: 4,
                     fontWeight: '500',
                   }}
                 >
-                  {enderecoEntrega?.bairro} — {enderecoEntrega?.cidade}
+                  👤 {pedido.service_staff.nome}
                 </Text>
+              )}
+              {pedido?.stores?.nome && (
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: colors.inkMuted,
+                    marginTop: 6,
+                    fontWeight: '500',
+                  }}
+                >
+                  Local: {pedido.stores.nome}
+                </Text>
+              )}
+            </Card>
+          </View>
+        )}
+
+        {/* Endereço de entrega (apenas pedidos do tipo entrega) */}
+        {pedido?.tipo !== 'agendamento' && (
+          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '700',
+                color: colors.inkMuted,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                marginBottom: 12,
+              }}
+            >
+              Endereço de entrega
+            </Text>
+            <Card preenchimento="md">
+              <View
+                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
+              >
+                <View
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 20,
+                    backgroundColor: colors.accentSoft,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ConsumerIcon name="pin" size={18} color={colors.accent} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '700',
+                      color: colors.ink,
+                    }}
+                  >
+                    {enderecoEntrega?.rua}, {enderecoEntrega?.numero}
+                    {enderecoEntrega?.complemento
+                      ? ` — ${enderecoEntrega.complemento}`
+                      : ''}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 13,
+                      color: colors.inkMuted,
+                      marginTop: 2,
+                      fontWeight: '500',
+                    }}
+                  >
+                    {enderecoEntrega?.bairro} — {enderecoEntrega?.cidade}
+                  </Text>
+                </View>
               </View>
-            </View>
-          </Card>
-        </View>
+            </Card>
+          </View>
+        )}
 
         {/* Ações */}
         <View
@@ -654,6 +712,22 @@ function LinhaResumo({
       </Text>
     </View>
   )
+}
+
+const DIAS_CURTOS_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+function formatarAgendamentoBruto(
+  inicioIso: string,
+  fimIso: string | null,
+): string {
+  const ini = new Date(inicioIso)
+  const dia = String(ini.getDate()).padStart(2, '0')
+  const mes = String(ini.getMonth() + 1).padStart(2, '0')
+  const sem = DIAS_CURTOS_PT[ini.getDay()]
+  const horaIni = `${String(ini.getHours()).padStart(2, '0')}:${String(ini.getMinutes()).padStart(2, '0')}`
+  if (!fimIso) return `${sem} ${dia}/${mes} às ${horaIni}`
+  const fim = new Date(fimIso)
+  const horaFim = `${String(fim.getHours()).padStart(2, '0')}:${String(fim.getMinutes()).padStart(2, '0')}`
+  return `${sem} ${dia}/${mes} às ${horaIni} — ${horaFim}`
 }
 
 function BotaoIconeCircular({

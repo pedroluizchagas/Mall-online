@@ -12,13 +12,14 @@ import {
 } from 'react-native'
 import { useCartStore } from '@/store/useCartStore'
 import { supabase } from '@/lib/supabase'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais, getTemplateBySlug } from '@mallora/lib'
 import { Botao } from '@/components/ui/Botao'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
 import type {
+  ItemCarrinhoAgendamento,
   ItemCarrinhoModifier,
   ItemCarrinhoVariant,
 } from '@mallora/types'
@@ -47,6 +48,22 @@ interface Loja {
   nome: string
   slug: string
   taxa_entrega: number
+  // Slug global da categoria — usado para detectar template services e
+  // disparar o layout de PDP `agendamento`. Pode ser null em lojas
+  // legadas sem categoria.
+  categoria_slug?: string | null
+}
+
+interface SlotApi {
+  inicio_at: string
+  fim_at: string
+  staff_ids_livres: string[]
+}
+
+interface SlotsResponse {
+  duracao_min: number
+  staff: Array<{ id: string; nome: string; cor: string | null }>
+  slots: SlotApi[]
 }
 
 interface Props {
@@ -117,9 +134,29 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
 
   const adicionarItem = useCartStore((s) => s.adicionarItem)
   const storeAtual = useCartStore((s) => s.store_id)
+  const itensCarrinho = useCartStore((s) => s.itens)
+  const limparCarrinho = useCartStore((s) => s.limparCarrinho)
+
+  const ehAgendamento =
+    getTemplateBySlug(loja.categoria_slug ?? null).consumer.layoutPdp ===
+    'agendamento'
+
+  // Estado services
+  const [dataSelecionada, setDataSelecionada] = useState<string | null>(null)
+  const [slotSelecionado, setSlotSelecionado] = useState<SlotApi | null>(null)
+  const [staffSelecionado, setStaffSelecionado] = useState<string | null>(null) // null = qualquer
+  const [slotsResp, setSlotsResp] = useState<SlotsResponse | null>(null)
+  const [carregandoSlots, setCarregandoSlots] = useState(false)
+  const [erroSlots, setErroSlots] = useState<string | null>(null)
+  const [substituindoCarrinho, setSubstituindoCarrinho] = useState(false)
 
   useEffect(() => {
     let cancelado = false
+
+    if (ehAgendamento) {
+      setCarregandoGrupos(false)
+      return
+    }
 
     async function carregar() {
       // Cast: product_modifier_groups e product_modifiers ainda não estão nos
@@ -158,10 +195,15 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
     return () => {
       cancelado = true
     }
-  }, [produto.id])
+  }, [produto.id, ehAgendamento])
 
   useEffect(() => {
     let cancelado = false
+
+    if (ehAgendamento) {
+      setCarregandoVariants(false)
+      return
+    }
 
     async function carregarVariants() {
       // Cast: product_option_groups, product_options e product_variants ainda
@@ -209,7 +251,65 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
     return () => {
       cancelado = true
     }
-  }, [produto.id])
+  }, [produto.id, ehAgendamento])
+
+  // Slots do dia selecionado (services).
+  useEffect(() => {
+    if (!ehAgendamento || !dataSelecionada) return
+    let cancelado = false
+
+    async function buscarSlots(data: string) {
+      setCarregandoSlots(true)
+      setErroSlots(null)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) throw new Error('Sessão expirada')
+        // date_to = dia seguinte (intervalo [from, to))
+        const proxima = new Date(data + 'T00:00:00')
+        proxima.setDate(proxima.getDate() + 1)
+        const date_to = proxima.toISOString().slice(0, 10)
+        const r = await fetch(
+          `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/agenda-disponibilidade`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              store_id: loja.id,
+              product_id: produto.id,
+              date_from: data,
+              date_to,
+            }),
+          }
+        )
+        const json = await r.json()
+        if (!r.ok) throw new Error(json.error ?? 'Erro ao buscar horários')
+        if (cancelado) return
+        setSlotsResp(json as SlotsResponse)
+      } catch (e: any) {
+        if (cancelado) return
+        setErroSlots(e?.message ?? 'Erro ao buscar horários')
+        setSlotsResp(null)
+      } finally {
+        if (!cancelado) setCarregandoSlots(false)
+      }
+    }
+
+    buscarSlots(dataSelecionada)
+    // Limpa seleção de slot/staff quando troca o dia
+    setSlotSelecionado(null)
+    setStaffSelecionado(null)
+    return () => {
+      cancelado = true
+    }
+  }, [ehAgendamento, dataSelecionada, loja.id, produto.id])
+
+  // Quando troca de slot, reseta staff (pode não estar livre no novo slot).
+  useEffect(() => {
+    setStaffSelecionado(null)
+  }, [slotSelecionado?.inicio_at])
 
   // Variant ativo = único variant cujas options batem exatamente com a seleção.
   // Quando há groups mas a seleção está incompleta, retorna null.
@@ -271,7 +371,21 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
   )
   const totalItem = (precoBase + precoExtraTotal) * quantidade
 
+  const erroAgendamento = useMemo<string | null>(() => {
+    if (!ehAgendamento) return null
+    if (!dataSelecionada) return 'Escolha uma data'
+    if (!slotSelecionado) return 'Escolha um horário'
+    if (
+      staffSelecionado &&
+      !slotSelecionado.staff_ids_livres.includes(staffSelecionado)
+    ) {
+      return 'Profissional não disponível neste horário'
+    }
+    return null
+  }, [ehAgendamento, dataSelecionada, slotSelecionado, staffSelecionado])
+
   const erroValidacao = useMemo(() => {
+    if (ehAgendamento) return null
     if (temVariants) {
       if (!selecaoVariantCompleta) {
         return optionGroups.length === 2
@@ -297,6 +411,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
     }
     return null
   }, [
+    ehAgendamento,
     grupos,
     selecoes,
     temVariants,
@@ -304,6 +419,8 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
     variantAtivo,
     optionGroups,
   ])
+
+  const erroValidacaoAtual = ehAgendamento ? erroAgendamento : erroValidacao
 
   function alternarSelecao(grupo: GrupoRow, modifierId: string) {
     setSelecoes((prev) => {
@@ -327,15 +444,58 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
   }
 
   function handleAdicionar() {
-    if (erroValidacao) return
+    if (erroValidacaoAtual) return
     if (storeAtual && storeAtual !== loja.id) {
       setTrocandoLoja(true)
       return
+    }
+    // Services: regra de 1 item — pede confirmação se há outros itens.
+    if (ehAgendamento && itensCarrinho.length > 0) {
+      const mesmoProduto =
+        itensCarrinho.length === 1 &&
+        itensCarrinho[0].product_id === produto.id
+      if (!mesmoProduto) {
+        setSubstituindoCarrinho(true)
+        return
+      }
     }
     confirmarAdicao()
   }
 
   function confirmarAdicao() {
+    if (ehAgendamento) {
+      if (!slotSelecionado) return
+      // Substituição de carrinho (services 1-item) — limpa antes para que a
+      // store comece com store_id desta loja.
+      if (storeAtual && storeAtual !== loja.id) limparCarrinho()
+      const staffEscolhido = staffSelecionado
+        ? slotsResp?.staff.find((s) => s.id === staffSelecionado) ?? null
+        : null
+      const agendamento: ItemCarrinhoAgendamento = {
+        inicio_at: slotSelecionado.inicio_at,
+        fim_at: slotSelecionado.fim_at,
+        staff_id: staffEscolhido?.id ?? null,
+        staff_nome: staffEscolhido?.nome ?? 'Qualquer',
+      }
+      adicionarItem(
+        {
+          product_id: produto.id,
+          nome: produto.nome,
+          preco: precoBase,
+          quantidade: 1,
+          foto_url: fotoExibida ?? undefined,
+          agendamento,
+        },
+        loja.id,
+        loja.nome,
+        loja.taxa_entrega
+      )
+      setTrocandoLoja(false)
+      setSubstituindoCarrinho(false)
+      onFechar()
+      return
+    }
+
     let variant: ItemCarrinhoVariant | undefined
     if (variantAtivo) {
       const valoresSelecionados = optionGroups
@@ -579,86 +739,107 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                   </Text>
                 )}
 
-              {/* Grupos de variações (Fase 4b) */}
-              {!carregandoVariants &&
-                temVariants &&
-                optionGroups.map((grupo) => (
-                  <GrupoVariants
-                    key={grupo.id}
-                    grupo={grupo}
-                    selecionada={selecoesVariant[grupo.id] ?? null}
-                    optionAlcancavel={(optionId) =>
-                      optionAlcancavel(grupo.id, optionId)
-                    }
-                    aoSelecionar={(optionId) =>
-                      selecionarOption(grupo.id, optionId)
-                    }
-                  />
-                ))}
-
-              {/* Grupos de modificadores */}
-              {!carregandoGrupos &&
-                grupos.map((grupo) => (
-                  <GrupoModifiers
-                    key={grupo.id}
-                    grupo={grupo}
-                    selecionados={selecoes[grupo.id] ?? new Set<string>()}
-                    aoAlternar={(modifierId) =>
-                      alternarSelecao(grupo, modifierId)
-                    }
-                  />
-                ))}
-
-              {/* Observações */}
-              <View style={{ marginTop: 4 }}>
-                <Input
-                  rotulo="Observações (opcional)"
-                  valor={observacoes}
-                  aoMudar={setObservacoes}
-                  placeholder="Ex.: sem cebola, ponto da carne..."
-                  multilinha
-                  maxLength={140}
+              {ehAgendamento ? (
+                <SecaoAgendamento
+                  duracaoMin={
+                    typeof produto.metadata?.duracao_min === 'number'
+                      ? (produto.metadata.duracao_min as number)
+                      : null
+                  }
+                  dataSelecionada={dataSelecionada}
+                  aoSelecionarData={setDataSelecionada}
+                  slotsResp={slotsResp}
+                  carregando={carregandoSlots}
+                  erro={erroSlots}
+                  slotSelecionado={slotSelecionado}
+                  aoSelecionarSlot={setSlotSelecionado}
+                  staffSelecionado={staffSelecionado}
+                  aoSelecionarStaff={setStaffSelecionado}
                 />
-              </View>
+              ) : (
+                <>
+                  {/* Grupos de variações (Fase 4b) */}
+                  {!carregandoVariants &&
+                    temVariants &&
+                    optionGroups.map((grupo) => (
+                      <GrupoVariants
+                        key={grupo.id}
+                        grupo={grupo}
+                        selecionada={selecoesVariant[grupo.id] ?? null}
+                        optionAlcancavel={(optionId) =>
+                          optionAlcancavel(grupo.id, optionId)
+                        }
+                        aoSelecionar={(optionId) =>
+                          selecionarOption(grupo.id, optionId)
+                        }
+                      />
+                    ))}
 
-              {/* Quantidade + total */}
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginTop: 4,
-                }}
-              >
-                <Text
-                  style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}
-                >
-                  Quantidade
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-                  <BotaoQty
-                    icone="minus"
-                    desabilitado={quantidade === 1}
-                    aoTocar={() => setQuantidade((q) => Math.max(1, q - 1))}
-                  />
-                  <Text
+                  {/* Grupos de modificadores */}
+                  {!carregandoGrupos &&
+                    grupos.map((grupo) => (
+                      <GrupoModifiers
+                        key={grupo.id}
+                        grupo={grupo}
+                        selecionados={selecoes[grupo.id] ?? new Set<string>()}
+                        aoAlternar={(modifierId) =>
+                          alternarSelecao(grupo, modifierId)
+                        }
+                      />
+                    ))}
+
+                  {/* Observações */}
+                  <View style={{ marginTop: 4 }}>
+                    <Input
+                      rotulo="Observações (opcional)"
+                      valor={observacoes}
+                      aoMudar={setObservacoes}
+                      placeholder="Ex.: sem cebola, ponto da carne..."
+                      multilinha
+                      maxLength={140}
+                    />
+                  </View>
+
+                  {/* Quantidade + total */}
+                  <View
                     style={{
-                      fontSize: 18,
-                      fontWeight: '800',
-                      color: colors.ink,
-                      width: 28,
-                      textAlign: 'center',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginTop: 4,
                     }}
                   >
-                    {quantidade}
-                  </Text>
-                  <BotaoQty
-                    icone="plus"
-                    aoTocar={() => setQuantidade((q) => q + 1)}
-                    primario
-                  />
-                </View>
-              </View>
+                    <Text
+                      style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}
+                    >
+                      Quantidade
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                      <BotaoQty
+                        icone="minus"
+                        desabilitado={quantidade === 1}
+                        aoTocar={() => setQuantidade((q) => Math.max(1, q - 1))}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 18,
+                          fontWeight: '800',
+                          color: colors.ink,
+                          width: 28,
+                          textAlign: 'center',
+                        }}
+                      >
+                        {quantidade}
+                      </Text>
+                      <BotaoQty
+                        icone="plus"
+                        aoTocar={() => setQuantidade((q) => q + 1)}
+                        primario
+                      />
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
           </ScrollView>
 
@@ -672,7 +853,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
               borderTopColor: colors.line,
             }}
           >
-            {erroValidacao && (
+            {erroValidacaoAtual && (
               <Text
                 style={{
                   fontSize: 12,
@@ -682,25 +863,27 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                   textAlign: 'center',
                 }}
               >
-                {erroValidacao}
+                {erroValidacaoAtual}
               </Text>
             )}
             <Botao
               label={
-                temVariants && !selecaoVariantCompleta
-                  ? optionGroups.length > 1
-                    ? `Selecione ${optionGroups
-                        .map((g) => g.nome.toLowerCase())
-                        .join(' e ')}`
-                    : `Selecione ${optionGroups[0]?.nome.toLowerCase() ?? 'opção'}`
-                  : `Adicionar — ${formatarReais(totalItem)}`
+                ehAgendamento
+                  ? `Confirmar agendamento — ${formatarReais(precoBase)}`
+                  : temVariants && !selecaoVariantCompleta
+                    ? optionGroups.length > 1
+                      ? `Selecione ${optionGroups
+                          .map((g) => g.nome.toLowerCase())
+                          .join(' e ')}`
+                      : `Selecione ${optionGroups[0]?.nome.toLowerCase() ?? 'opção'}`
+                    : `Adicionar — ${formatarReais(totalItem)}`
               }
               onPress={handleAdicionar}
               variante="primario"
               tamanho="lg"
-              iconeDireita="bag"
+              iconeDireita={ehAgendamento ? 'check' : 'bag'}
               desabilitado={
-                !!erroValidacao || carregandoGrupos || carregandoVariants
+                !!erroValidacaoAtual || carregandoGrupos || carregandoVariants
               }
             />
           </View>
@@ -782,7 +965,355 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
           </View>
         </Modal>
       )}
+
+      {/* Diálogo de substituição de carrinho (services) */}
+      {substituindoCarrinho && (
+        <Modal visible transparent animationType="fade">
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: `rgba(17, 18, 22, 0.5)`,
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+            }}
+          >
+            <Card raio="lg" preenchimento="lg" semBorda estilo={{ width: '100%', maxWidth: 360 }}>
+              <View style={{ alignItems: 'flex-start', gap: 12 }}>
+                <View
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 22,
+                    backgroundColor: `rgba(242, 184, 75, 0.18)`,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <ConsumerIcon name="info" size={22} color={colors.warning} />
+                </View>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}>
+                  Substituir agendamento?
+                </Text>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: colors.inkMuted,
+                    lineHeight: 20,
+                    fontWeight: '500',
+                  }}
+                >
+                  Você só pode ter um agendamento no carrinho por vez. O item
+                  atual será removido.
+                </Text>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    gap: 8,
+                    marginTop: 8,
+                    alignSelf: 'stretch',
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Botao
+                      label="Cancelar"
+                      onPress={() => setSubstituindoCarrinho(false)}
+                      variante="ghost"
+                      tamanho="md"
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Botao
+                      label="Substituir"
+                      onPress={confirmarAdicao}
+                      variante="primario"
+                      tamanho="md"
+                    />
+                  </View>
+                </View>
+              </View>
+            </Card>
+          </View>
+        </Modal>
+      )}
     </Modal>
+  )
+}
+
+function SecaoAgendamento({
+  duracaoMin,
+  dataSelecionada,
+  aoSelecionarData,
+  slotsResp,
+  carregando,
+  erro,
+  slotSelecionado,
+  aoSelecionarSlot,
+  staffSelecionado,
+  aoSelecionarStaff,
+}: {
+  duracaoMin: number | null
+  dataSelecionada: string | null
+  aoSelecionarData: (data: string) => void
+  slotsResp: SlotsResponse | null
+  carregando: boolean
+  erro: string | null
+  slotSelecionado: SlotApi | null
+  aoSelecionarSlot: (s: SlotApi | null) => void
+  staffSelecionado: string | null
+  aoSelecionarStaff: (id: string | null) => void
+}) {
+  const dias = useMemo(() => {
+    const out: Array<{ ymd: string; rotuloDia: string; rotuloData: string }> = []
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+    const semanaCurta = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+    for (let i = 0; i < 14; i++) {
+      const d = new Date(hoje)
+      d.setDate(d.getDate() + i)
+      const ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const rotuloDia = i === 0 ? 'Hoje' : semanaCurta[d.getDay()]
+      const rotuloData = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+      out.push({ ymd, rotuloDia, rotuloData })
+    }
+    return out
+  }, [])
+
+  function formatarHora(iso: string) {
+    const d = new Date(iso)
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  }
+
+  const staffParaListar = slotSelecionado
+    ? (slotsResp?.staff ?? []).filter((s) =>
+        slotSelecionado.staff_ids_livres.includes(s.id),
+      )
+    : []
+
+  return (
+    <View style={{ gap: 16 }}>
+      {duracaoMin != null && (
+        <Text style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '600' }}>
+          Duração: {duracaoMin} min
+        </Text>
+      )}
+
+      {/* Calendário 14 dias */}
+      <View style={{ gap: 8 }}>
+        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
+          Escolha a data
+          <Text style={{ color: colors.danger }}> *</Text>
+        </Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={{ flexDirection: 'row', gap: 8, paddingRight: 4 }}>
+            {dias.map((d) => {
+              const ativo = dataSelecionada === d.ymd
+              return (
+                <TouchableOpacity
+                  key={d.ymd}
+                  onPress={() => aoSelecionarData(d.ymd)}
+                  activeOpacity={0.75}
+                  style={{
+                    paddingVertical: 10,
+                    paddingHorizontal: 14,
+                    borderRadius: radius.md,
+                    borderWidth: ativo ? 2 : 1,
+                    borderColor: ativo ? colors.ink : colors.line,
+                    backgroundColor: ativo ? colors.ink : colors.surface,
+                    alignItems: 'center',
+                    minWidth: 64,
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: '700',
+                      color: ativo ? colors.accent : colors.inkMuted,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0.6,
+                    }}
+                  >
+                    {d.rotuloDia}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '800',
+                      color: ativo ? colors.accent : colors.ink,
+                      marginTop: 2,
+                    }}
+                  >
+                    {d.rotuloData}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </ScrollView>
+      </View>
+
+      {/* Slots */}
+      {dataSelecionada && (
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
+            Horários disponíveis
+            <Text style={{ color: colors.danger }}> *</Text>
+          </Text>
+          {carregando && (
+            <Text style={{ fontSize: 12, color: colors.inkMuted }}>
+              Carregando horários...
+            </Text>
+          )}
+          {erro && (
+            <Text style={{ fontSize: 12, color: colors.danger, fontWeight: '600' }}>
+              {erro}
+            </Text>
+          )}
+          {!carregando && !erro && slotsResp && slotsResp.staff.length === 0 && (
+            <Text style={{ fontSize: 13, color: colors.inkMuted }}>
+              Esta loja não tem profissionais ativos. Tente mais tarde.
+            </Text>
+          )}
+          {!carregando && !erro && slotsResp && slotsResp.staff.length > 0 && slotsResp.slots.length === 0 && (
+            <Text style={{ fontSize: 13, color: colors.inkMuted }}>
+              Sem horários disponíveis nesta data. Tente outro dia.
+            </Text>
+          )}
+          {!carregando && slotsResp && slotsResp.slots.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {slotsResp.slots.map((s) => {
+                const ativo = slotSelecionado?.inicio_at === s.inicio_at
+                return (
+                  <TouchableOpacity
+                    key={s.inicio_at}
+                    onPress={() => aoSelecionarSlot(s)}
+                    activeOpacity={0.75}
+                    style={{
+                      paddingVertical: 8,
+                      paddingHorizontal: 14,
+                      borderRadius: 999,
+                      borderWidth: ativo ? 2 : 1,
+                      borderColor: ativo ? colors.ink : colors.line,
+                      backgroundColor: ativo ? colors.ink : colors.surface,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '700',
+                        color: ativo ? colors.accent : colors.ink,
+                      }}
+                    >
+                      {formatarHora(s.inicio_at)}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* Staff */}
+      {slotSelecionado && staffParaListar.length > 0 && (
+        <View style={{ gap: 8 }}>
+          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
+            Profissional
+          </Text>
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: colors.line,
+              borderRadius: radius.md,
+              overflow: 'hidden',
+            }}
+          >
+            <LinhaStaff
+              ativo={staffSelecionado === null}
+              nome="Qualquer disponível"
+              cor={null}
+              aoTocar={() => aoSelecionarStaff(null)}
+            />
+            {staffParaListar.map((s, idx) => (
+              <LinhaStaff
+                key={s.id}
+                ativo={staffSelecionado === s.id}
+                nome={s.nome}
+                cor={s.cor}
+                ultimo={idx === staffParaListar.length - 1}
+                aoTocar={() => aoSelecionarStaff(s.id)}
+              />
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
+  )
+}
+
+function LinhaStaff({
+  ativo,
+  nome,
+  cor,
+  ultimo,
+  aoTocar,
+}: {
+  ativo: boolean
+  nome: string
+  cor: string | null
+  ultimo?: boolean
+  aoTocar: () => void
+}) {
+  return (
+    <TouchableOpacity
+      onPress={aoTocar}
+      activeOpacity={0.7}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderBottomWidth: ultimo ? 0 : 1,
+        borderBottomColor: colors.line,
+      }}
+    >
+      <View
+        style={{
+          width: 20,
+          height: 20,
+          borderRadius: 10,
+          borderWidth: 2,
+          borderColor: ativo ? colors.ink : colors.line,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {ativo && (
+          <View
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 5,
+              backgroundColor: colors.ink,
+            }}
+          />
+        )}
+      </View>
+      {cor && (
+        <View
+          style={{
+            width: 12,
+            height: 12,
+            borderRadius: 6,
+            backgroundColor: cor,
+          }}
+        />
+      )}
+      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink, flex: 1 }}>
+        {nome}
+      </Text>
+    </TouchableOpacity>
   )
 }
 

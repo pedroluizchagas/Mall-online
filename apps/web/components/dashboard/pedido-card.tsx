@@ -35,6 +35,20 @@ function rotuloVariantDoItem(item: any): string | null {
   return valores.length > 0 ? valores.join(' × ') : null
 }
 
+const DIAS_CURTOS_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+function formatarRangeAgendamento(inicioIso: string, fimIso: string | null): string {
+  const ini = new Date(inicioIso)
+  const dia = String(ini.getDate()).padStart(2, '0')
+  const mes = String(ini.getMonth() + 1).padStart(2, '0')
+  const sem = DIAS_CURTOS_PT[ini.getDay()]
+  const horaIni = `${String(ini.getHours()).padStart(2, '0')}:${String(ini.getMinutes()).padStart(2, '0')}`
+  if (!fimIso) return `${sem} ${dia}/${mes} às ${horaIni}`
+  const fim = new Date(fimIso)
+  const horaFim = `${String(fim.getHours()).padStart(2, '0')}:${String(fim.getMinutes()).padStart(2, '0')}`
+  const duracao = Math.max(0, Math.round((fim.getTime() - ini.getTime()) / 60000))
+  return `${sem} ${dia}/${mes} às ${horaIni} — ${horaFim} (${duracao} min)`
+}
+
 const PROXIMAS_ACOES: Record<string, { label: string; status: string }[]> = {
   novo: [
     { label: 'Confirmar pedido', status: 'confirmado' },
@@ -135,6 +149,28 @@ export function PedidoCard({
             </p>
           )}
 
+          {pedido.tipo === 'agendamento' && (
+            <div
+              className="rounded-xl p-3"
+              style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-1">
+                📅 Agendamento
+              </p>
+              <p className="text-sm text-ink font-medium">
+                {formatarRangeAgendamento(
+                  pedido.agendamento_inicio_at,
+                  pedido.agendamento_fim_at,
+                )}
+              </p>
+              {pedido.service_staff?.nome && (
+                <p className="text-sm text-ink-2 mt-1">
+                  👤 Profissional: {pedido.service_staff.nome}
+                </p>
+              )}
+            </div>
+          )}
+
           <div>
             <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-2">Itens</p>
             <div className="space-y-1">
@@ -190,16 +226,18 @@ export function PedidoCard({
             </div>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-1">Entrega</p>
-            <p className="text-sm text-ink">
-              {pedido.endereco_entrega?.rua}, {pedido.endereco_entrega?.numero}
-              {pedido.endereco_entrega?.complemento && ` — ${pedido.endereco_entrega.complemento}`}
-            </p>
-            <p className="text-sm text-ink-3">
-              {pedido.endereco_entrega?.bairro} — {pedido.endereco_entrega?.cidade}
-            </p>
-          </div>
+          {pedido.tipo !== 'agendamento' && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-1">Entrega</p>
+              <p className="text-sm text-ink">
+                {pedido.endereco_entrega?.rua}, {pedido.endereco_entrega?.numero}
+                {pedido.endereco_entrega?.complemento && ` — ${pedido.endereco_entrega.complemento}`}
+              </p>
+              <p className="text-sm text-ink-3">
+                {pedido.endereco_entrega?.bairro} — {pedido.endereco_entrega?.cidade}
+              </p>
+            </div>
+          )}
 
           {pedido.observacoes && (
             <div>

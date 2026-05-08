@@ -10,9 +10,14 @@
 //   itens: [{
 //     product_id, quantidade, observacoes?,
 //     modifiers?: [{ modifier_id }],   // só id; nome/preco vêm do banco
-//     variant_id?: uuid | null         // SKU selecionado (Fase 4b)
+//     variant_id?: uuid | null,        // SKU selecionado (Fase 4b)
+//     agendamento?: {                  // Fase 5b2 — services
+//       inicio_at: ISO UTC,
+//       fim_at: ISO UTC,
+//       staff_id: uuid | null          // null = "qualquer profissional"
+//     } | null
 //   }],
-//   endereco_entrega: jsonb,
+//   endereco_entrega: jsonb | null,    // null em agendamento
 //   observacoes?: string,
 //   payment_method: 'pix' | 'credit_card',
 //   card_token?: string,        // obrigatório para credit_card
@@ -76,7 +81,7 @@ Deno.serve(async (req) => {
     const { data: store } = await supabase
       .from('stores')
       .select(`
-        id, tenant_id, taxa_entrega, ativo,
+        id, tenant_id, taxa_entrega, ativo, horarios,
         tenants ( pagarme_recipient_id, pagarme_onboarding_status )
       `)
       .eq('id', store_id)
@@ -110,6 +115,52 @@ Deno.serve(async (req) => {
       preco_extra: number
     }
 
+    type AgendamentoInput = {
+      inicio_at: string
+      fim_at: string
+      staff_id: string | null
+    }
+
+    type AgendamentoResolvido = {
+      inicio_at: string
+      fim_at: string
+      staff_id: string
+    }
+
+    // Detecta se algum item carrega agendamento. Se sim, exige que TODOS os
+    // itens tenham (na prática a regra de 1-item garante isso, mas o servidor
+    // valida defensivamente).
+    const ehAgendamento = (itens as Array<{ agendamento?: unknown }>).some(
+      (i) => !!i?.agendamento,
+    )
+    if (ehAgendamento) {
+      const todosTemAgendamento = (itens as Array<{ agendamento?: unknown }>)
+        .every((i) => !!i?.agendamento)
+      if (!todosTemAgendamento) {
+        throw new Error('Carrinho misto não suportado: agendamento não pode ser combinado com entrega')
+      }
+    }
+
+    // Helpers de agendamento (apenas executados se ehAgendamento)
+    type Horarios = Record<string, { abre: string; fecha: string } | null>
+    const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab']
+    const TZ_OFFSET_MIN = -180
+    function epochParaLocalParts(ms: number) {
+      const d = new Date(ms + TZ_OFFSET_MIN * 60_000)
+      return {
+        diaSemana: DIAS[d.getUTCDay()],
+        ymd: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`,
+        horaMin: d.getUTCHours() * 60 + d.getUTCMinutes(),
+      }
+    }
+    function hhmmParaMin(s: string): number {
+      const [h, m] = s.split(':').map((x) => parseInt(x, 10))
+      return h * 60 + m
+    }
+    function sobrepoeMs(aIni: number, aFim: number, bIni: number, bFim: number): boolean {
+      return aIni < bFim && aFim > bIni
+    }
+
     let subtotal = 0
     const itensProcessados: Array<{
       product_id: string
@@ -120,7 +171,78 @@ Deno.serve(async (req) => {
       nome: string
       subtotal: number
       modifiers: ModifierSnapshot[] | null
+      agendamento: AgendamentoResolvido | null
     }> = []
+
+    // Pré-carrega bloqueios e agendamentos existentes uma vez (não por item)
+    // para validar disponibilidade e atribuir staff "qualquer".
+    let bloqueiosLoja: Array<{ staff_id: string | null; inicio: number; fim: number }> = []
+    let agendamentosExistentes: Array<{ staff_id: string; inicio: number; fim: number }> = []
+    let staffAtivos: Array<{ id: string; nome: string }> = []
+
+    if (ehAgendamento) {
+      // Janela: do menor inicio_at ao maior fim_at dos itens
+      const inputs = (itens as Array<{ agendamento: AgendamentoInput }>).map((i) => ({
+        ini: new Date(i.agendamento.inicio_at).getTime(),
+        fim: new Date(i.agendamento.fim_at).getTime(),
+      }))
+      const minIni = Math.min(...inputs.map((x) => x.ini))
+      const maxFim = Math.max(...inputs.map((x) => x.fim))
+      const minIniIso = new Date(minIni).toISOString()
+      const maxFimIso = new Date(maxFim).toISOString()
+
+      const sb = supabase as unknown as { from: (t: string) => any }
+
+      const [staffRes, blocksRes, ordersRes] = await Promise.all([
+        sb
+          .from('service_staff')
+          .select('id, nome')
+          .eq('store_id', store.id)
+          .eq('ativo', true)
+          .order('ordem', { ascending: true }),
+        sb
+          .from('service_blocks')
+          .select('staff_id, inicio_at, fim_at')
+          .eq('store_id', store.id)
+          .lt('inicio_at', maxFimIso)
+          .gt('fim_at', minIniIso),
+        sb
+          .from('orders')
+          .select('staff_id, agendamento_inicio_at, agendamento_fim_at, status')
+          .eq('store_id', store.id)
+          .eq('tipo', 'agendamento')
+          .neq('status', 'cancelado')
+          .lt('agendamento_inicio_at', maxFimIso)
+          .gt('agendamento_fim_at', minIniIso),
+      ])
+
+      staffAtivos = (staffRes.data ?? []) as Array<{ id: string; nome: string }>
+      if (staffAtivos.length === 0) {
+        throw new Error('Loja sem profissionais ativos para agendamento')
+      }
+
+      bloqueiosLoja = ((blocksRes.data ?? []) as Array<{
+        staff_id: string | null
+        inicio_at: string
+        fim_at: string
+      }>).map((b) => ({
+        staff_id: b.staff_id,
+        inicio: new Date(b.inicio_at).getTime(),
+        fim: new Date(b.fim_at).getTime(),
+      }))
+
+      agendamentosExistentes = ((ordersRes.data ?? []) as Array<{
+        staff_id: string | null
+        agendamento_inicio_at: string
+        agendamento_fim_at: string
+      }>)
+        .filter((o) => typeof o.staff_id === 'string')
+        .map((o) => ({
+          staff_id: o.staff_id as string,
+          inicio: new Date(o.agendamento_inicio_at).getTime(),
+          fim: new Date(o.agendamento_fim_at).getTime(),
+        }))
+    }
 
     for (const item of itens) {
       const { data: produto } = await supabase
@@ -131,6 +253,110 @@ Deno.serve(async (req) => {
 
       if (!produto || !produto.disponivel) {
         throw new Error(`Produto indisponível: ${item.product_id}`)
+      }
+
+      // ── Caminho de agendamento (services) ────────────────────
+      if (ehAgendamento) {
+        const agendamentoInput = item.agendamento as AgendamentoInput | null
+        if (!agendamentoInput) {
+          throw new Error('Item sem dados de agendamento')
+        }
+        const inicioMs = new Date(agendamentoInput.inicio_at).getTime()
+        const fimMs = new Date(agendamentoInput.fim_at).getTime()
+        if (!Number.isFinite(inicioMs) || !Number.isFinite(fimMs) || fimMs <= inicioMs) {
+          throw new Error('Janela de agendamento inválida')
+        }
+        if (inicioMs < Date.now()) {
+          throw new Error('Não é possível agendar para o passado')
+        }
+
+        // Janela de funcionamento da loja no dia
+        const horarios = (store.horarios ?? null) as Horarios | null
+        const partesIni = epochParaLocalParts(inicioMs)
+        const partesFim = epochParaLocalParts(fimMs)
+        if (partesIni.ymd !== partesFim.ymd) {
+          throw new Error('Agendamento não pode atravessar dias')
+        }
+        const janela = horarios ? horarios[partesIni.diaSemana] : null
+        if (!janela) {
+          throw new Error('Loja fechada nesse dia')
+        }
+        const abreMin = hhmmParaMin(janela.abre)
+        const fechaMin = hhmmParaMin(janela.fecha)
+        if (partesIni.horaMin < abreMin) {
+          throw new Error('Horário antes da abertura da loja')
+        }
+        const fimMinDia =
+          partesFim.horaMin === 0 && partesIni.horaMin > 0
+            ? 24 * 60
+            : partesFim.horaMin
+        if (fimMinDia > fechaMin) {
+          throw new Error('Horário ultrapassa o fechamento da loja')
+        }
+
+        // Sem bloqueio sobreposto (loja inteira ou staff)
+        const staffIdInput = agendamentoInput.staff_id
+        let staffEscolhido: { id: string; nome: string } | null = null
+
+        function staffLivre(staffId: string): boolean {
+          // Bloqueio loja toda OU específico do staff
+          const blocked = bloqueiosLoja.some(
+            (b) =>
+              (b.staff_id === null || b.staff_id === staffId) &&
+              sobrepoeMs(inicioMs, fimMs, b.inicio, b.fim),
+          )
+          if (blocked) return false
+          // Agendamento existente do mesmo staff
+          const ocupado = agendamentosExistentes.some(
+            (a) =>
+              a.staff_id === staffId &&
+              sobrepoeMs(inicioMs, fimMs, a.inicio, a.fim),
+          )
+          return !ocupado
+        }
+
+        if (staffIdInput) {
+          const candidato = staffAtivos.find((s) => s.id === staffIdInput)
+          if (!candidato) throw new Error('Profissional inválido')
+          if (!staffLivre(candidato.id)) {
+            throw new Error('Horário não está mais disponível. Por favor, escolha outro.')
+          }
+          staffEscolhido = candidato
+        } else {
+          // "qualquer profissional disponível": pega o primeiro livre
+          staffEscolhido = staffAtivos.find((s) => staffLivre(s.id)) ?? null
+          if (!staffEscolhido) {
+            throw new Error('Horário não está mais disponível. Por favor, escolha outro.')
+          }
+        }
+
+        // Reserva localmente para evitar conflito com itens subsequentes do
+        // mesmo carrinho (não relevante hoje pois é 1 item, mas defensivo).
+        agendamentosExistentes.push({
+          staff_id: staffEscolhido.id,
+          inicio: inicioMs,
+          fim: fimMs,
+        })
+
+        const precoUnit = produto.preco
+        const itemSubtotal = precoUnit * (item.quantidade ?? 1)
+        subtotal += itemSubtotal
+        itensProcessados.push({
+          product_id: item.product_id,
+          variant_id: null,
+          quantidade: item.quantidade ?? 1,
+          observacoes: item.observacoes,
+          preco: precoUnit,
+          nome: produto.nome,
+          subtotal: itemSubtotal,
+          modifiers: null,
+          agendamento: {
+            inicio_at: agendamentoInput.inicio_at,
+            fim_at: agendamentoInput.fim_at,
+            staff_id: staffEscolhido.id,
+          },
+        })
+        continue
       }
 
       // Variant: substitui produto.preco e valida estoque/disponibilidade.
@@ -299,33 +525,58 @@ Deno.serve(async (req) => {
         subtotal: itemSubtotal,
         modifiers:
           modifiersResolvidos.length > 0 ? modifiersResolvidos : null,
+        agendamento: null,
       })
     }
 
-    const taxa_entrega = store.taxa_entrega
+    const taxa_entrega = ehAgendamento ? 0 : store.taxa_entrega
     const total = subtotal + taxa_entrega
     const platform_fee = PLATFORM_FEE_CENTAVOS
 
-    // Estágio 1: lojista recebe (subtotal - comissão); Mallora retém comissão +
-    // taxa de entrega em custódia até a alocação do entregador.
+    // Estágio 1 (entrega): lojista recebe (subtotal - comissão); Mallora retém
+    // comissão + taxa de entrega em custódia até a alocação do entregador.
+    // Em agendamento não há entrega: Mallora retém apenas a comissão fixa.
     const valorLojista = subtotal - platform_fee
+
+    const itemAgendado = itensProcessados.find((i) => i.agendamento)?.agendamento ?? null
+
+    const orderInsert: Record<string, unknown> = ehAgendamento
+      ? {
+          consumer_id: consumer.id,
+          store_id: store.id,
+          tenant_id: store.tenant_id,
+          status: 'novo',
+          payment_status: 'pendente',
+          forma_pagamento: `online_${payment_method}`,
+          subtotal,
+          taxa_entrega: 0,
+          total,
+          platform_fee_amount: platform_fee,
+          endereco_entrega: null,
+          observacoes,
+          tipo: 'agendamento',
+          agendamento_inicio_at: itemAgendado?.inicio_at,
+          agendamento_fim_at: itemAgendado?.fim_at,
+          staff_id: itemAgendado?.staff_id,
+        }
+      : {
+          consumer_id: consumer.id,
+          store_id: store.id,
+          tenant_id: store.tenant_id,
+          status: 'novo',
+          payment_status: 'pendente',
+          forma_pagamento: `online_${payment_method}`,
+          subtotal,
+          taxa_entrega,
+          total,
+          platform_fee_amount: platform_fee,
+          endereco_entrega,
+          observacoes,
+        }
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert({
-        consumer_id: consumer.id,
-        store_id: store.id,
-        tenant_id: store.tenant_id,
-        status: 'novo',
-        payment_status: 'pendente',
-        forma_pagamento: `online_${payment_method}`,
-        subtotal,
-        taxa_entrega,
-        total,
-        platform_fee_amount: platform_fee,
-        endereco_entrega,
-        observacoes,
-      })
+      .insert(orderInsert)
       .select('id')
       .single()
 
@@ -350,20 +601,35 @@ Deno.serve(async (req) => {
       throw new Error('PAGARME_PLATFORM_RECIPIENT_ID não configurado')
     }
 
-    const splitRules = [
-      {
-        recipient_id: platformRecipientId,
-        amount: platform_fee + taxa_entrega,
-        type: 'flat',
-        options: { charge_processing_fee: false, liable: false },
-      },
-      {
-        recipient_id: tenant.pagarme_recipient_id,
-        amount: valorLojista,
-        type: 'flat',
-        options: { charge_processing_fee: true, liable: true },
-      },
-    ]
+    const splitRules = ehAgendamento
+      ? [
+          {
+            recipient_id: platformRecipientId,
+            amount: platform_fee,
+            type: 'flat',
+            options: { charge_processing_fee: false, liable: false },
+          },
+          {
+            recipient_id: tenant.pagarme_recipient_id,
+            amount: valorLojista,
+            type: 'flat',
+            options: { charge_processing_fee: true, liable: true },
+          },
+        ]
+      : [
+          {
+            recipient_id: platformRecipientId,
+            amount: platform_fee + taxa_entrega,
+            type: 'flat',
+            options: { charge_processing_fee: false, liable: false },
+          },
+          {
+            recipient_id: tenant.pagarme_recipient_id,
+            amount: valorLojista,
+            type: 'flat',
+            options: { charge_processing_fee: true, liable: true },
+          },
+        ]
 
     const pagarmeItems = itensProcessados.map((item) => ({
       amount: item.preco,
