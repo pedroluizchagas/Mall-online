@@ -20,6 +20,7 @@ import {
   LogOut,
   UserCircle,
   Tag,
+  Users,
   type LucideIcon,
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
@@ -72,14 +73,25 @@ function buildMainItems(template: DashboardTemplate): NavItem[] {
   return itens
 }
 
-const configItems: NavItem[] = [
-  { href: '/mensagens', label: 'Mensagens', icon: Bell },
-  { href: '/avaliacoes', label: 'Avaliações', icon: Star },
-  { href: '/configuracoes/loja', label: 'Configurações', icon: Settings },
-  { href: '/configuracoes/tipo-de-loja', label: 'Tipo de loja', icon: Tag },
-  { href: '/configuracoes/conta', label: 'Minha conta', icon: UserCircle },
-  { href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
-]
+function buildConfigItems(template: DashboardTemplate): NavItem[] {
+  const itens: NavItem[] = [
+    { href: '/mensagens', label: 'Mensagens', icon: Bell },
+    { href: '/avaliacoes', label: 'Avaliações', icon: Star },
+    { href: '/configuracoes/loja', label: 'Configurações', icon: Settings },
+    { href: '/configuracoes/tipo-de-loja', label: 'Tipo de loja', icon: Tag },
+  ]
+
+  if (template.modulos.agenda) {
+    itens.push({ href: '/configuracoes/staff', label: 'Profissionais', icon: Users })
+  }
+
+  itens.push(
+    { href: '/configuracoes/conta', label: 'Minha conta', icon: UserCircle },
+    { href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
+  )
+
+  return itens
+}
 
 interface Props {
   nomeLoja: string
@@ -89,6 +101,7 @@ interface Props {
 export function SidebarDashboard({ nomeLoja, template }: Props) {
   const pathname = usePathname()
   const mainItems = buildMainItems(template)
+  const configItems = buildConfigItems(template)
 
   return (
     <aside

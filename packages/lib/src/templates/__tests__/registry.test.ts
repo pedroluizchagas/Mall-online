@@ -141,4 +141,24 @@ describe('registry de templates', () => {
       ]),
     )
   })
+
+  it('services declara campos extras esperados', () => {
+    const codigos = TEMPLATES.services.produto.camposExtras.map((c) => c.codigo)
+    expect(codigos).toEqual(
+      expect.arrayContaining([
+        'duracao_min',
+        'profissionais_ids',
+        'local_atendimento',
+        'requer_pre_pagamento',
+      ]),
+    )
+  })
+
+  it('services marca duracao_min como obrigatório', () => {
+    const duracao = TEMPLATES.services.produto.camposExtras.find(
+      (c) => c.codigo === 'duracao_min',
+    )
+    expect(duracao).toBeDefined()
+    expect(duracao?.obrigatorio).toBe(true)
+  })
 })

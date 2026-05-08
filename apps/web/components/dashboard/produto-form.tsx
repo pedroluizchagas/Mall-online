@@ -128,6 +128,8 @@ function CampoExtra({
         {labelEl}
         <input
           type="number"
+          required={campo.obrigatorio}
+          min={campo.obrigatorio ? 1 : undefined}
           value={typeof valor === 'number' ? String(valor) : ''}
           placeholder={campo.placeholder}
           onChange={(e) => {
@@ -147,6 +149,7 @@ function CampoExtra({
       <div>
         {labelEl}
         <select
+          required={campo.obrigatorio}
           value={typeof valor === 'string' ? valor : ''}
           onChange={(e) => onChange(e.target.value || undefined)}
           className={inputClass}
@@ -248,6 +251,7 @@ function CampoExtra({
       {labelEl}
       <input
         type={inputType}
+        required={campo.obrigatorio}
         value={typeof valor === 'string' ? valor : ''}
         placeholder={campo.placeholder}
         onChange={(e) => onChange(e.target.value || undefined)}
@@ -276,14 +280,32 @@ export function ProdutoForm({
   optionGroups: optionGroupsIniciais,
   variants: variantsIniciais,
 }: Props) {
-  const [estado, dispatch] = useFormState(action, null)
   const template = useTemplateOrGeneric()
-  const mostraModificadores = template.produto.permiteModificadores
+  const ehServices = template.codigo === 'services'
   const ehFood = template.codigo === 'food'
+  const mostraModificadores = template.produto.permiteModificadores
   const camposExtrasGenericos = ehFood
     ? []
     : template.produto.camposExtras
   const mostraSecaoExtras = camposExtrasGenericos.length > 0
+
+  // Wraps the server action so we can fail fast on the client when a services
+  // store ships a service without `duracao_min` (template flag 'obrigatorio').
+  const actionValidada = async (estado: any, formData: FormData) => {
+    if (ehServices) {
+      const raw = formData.get('metadata')
+      try {
+        const md = raw ? JSON.parse(String(raw)) : {}
+        if (typeof md.duracao_min !== 'number' || md.duracao_min <= 0) {
+          return { erro: 'Duração do serviço é obrigatória para lojas de serviços.' }
+        }
+      } catch {
+        return { erro: 'Falha ao validar campos do serviço' }
+      }
+    }
+    return action(estado, formData)
+  }
+  const [estado, dispatch] = useFormState(actionValidada, null)
 
   const permiteVar = template.produto.permiteVariacoes
   const tinhaVariantsAoCarregar =
