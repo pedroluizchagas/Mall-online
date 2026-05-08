@@ -31,14 +31,27 @@ export interface Endereco {
   longitude?: number
 }
 
-// Item do carrinho (estado local — não vem do banco)
+// Snapshot de um modificador selecionado dentro de um item do carrinho.
+// Mantém nome e preco_extra para sobreviver à edição/remoção do modifier
+// no catálogo do lojista.
+export interface ItemCarrinhoModifier {
+  modifier_id: string
+  nome: string
+  preco_extra: number     // centavos
+}
+
+// Item do carrinho (estado local — não vem do banco).
+// linha_id é gerado localmente ao adicionar; itens com mesmo product_id mas
+// modifiers diferentes coexistem como linhas separadas.
 export interface ItemCarrinho {
+  linha_id: string
   product_id: string
   nome: string
-  preco: number           // em centavos
+  preco: number           // centavos, preço base do produto
   quantidade: number
   foto_url?: string
   observacoes?: string
+  modifiers?: ItemCarrinhoModifier[]
 }
 
 // Horários de funcionamento da loja

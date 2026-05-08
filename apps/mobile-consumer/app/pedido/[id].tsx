@@ -35,7 +35,7 @@ export default function TelaAcompanhamento() {
           id, status, payment_status, forma_pagamento,
           subtotal, taxa_entrega, total, criado_em,
           endereco_entrega, observacoes, motivo_cancelamento,
-          order_items (id, nome, quantidade, preco_unit, subtotal),
+          order_items (id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers),
           delivery_assignments (
             id, status, courier_id,
             couriers (id, nome, telefone)
@@ -320,39 +320,72 @@ export default function TelaAcompanhamento() {
           </Text>
 
           <Card preenchimento="md">
-            {pedido?.order_items?.map((item: any, idx: number) => (
-              <View
-                key={item.id}
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  paddingVertical: 8,
-                  borderBottomWidth:
-                    idx < (pedido.order_items.length - 1) ? 1 : 0,
-                  borderBottomColor: colors.line,
-                }}
-              >
-                <Text
+            {pedido?.order_items?.map((item: any, idx: number) => {
+              const modifiers = (item.modifiers ?? []) as Array<{
+                modifier_id: string
+                nome: string
+                preco_extra: number
+              }>
+              return (
+                <View
+                  key={item.id}
                   style={{
-                    fontSize: 14,
-                    color: colors.ink,
-                    fontWeight: '500',
-                    flex: 1,
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    paddingVertical: 8,
+                    gap: 12,
+                    borderBottomWidth:
+                      idx < (pedido.order_items.length - 1) ? 1 : 0,
+                    borderBottomColor: colors.line,
                   }}
                 >
-                  {item.quantidade}× {item.nome}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: colors.inkMuted,
-                    fontWeight: '600',
-                  }}
-                >
-                  {formatarReais(item.subtotal)}
-                </Text>
-              </View>
-            ))}
+                  <View style={{ flex: 1 }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        color: colors.ink,
+                        fontWeight: '500',
+                      }}
+                    >
+                      {item.quantidade}× {item.nome}
+                    </Text>
+                    {modifiers.length > 0 && (
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: colors.inkMuted,
+                          fontWeight: '500',
+                          marginTop: 2,
+                        }}
+                      >
+                        {modifiers.map((m) => m.nome).join(', ')}
+                      </Text>
+                    )}
+                    {item.observacoes && (
+                      <Text
+                        style={{
+                          fontSize: 12,
+                          color: colors.inkMuted,
+                          fontStyle: 'italic',
+                          marginTop: 2,
+                        }}
+                      >
+                        &ldquo;{item.observacoes}&rdquo;
+                      </Text>
+                    )}
+                  </View>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: colors.inkMuted,
+                      fontWeight: '600',
+                    }}
+                  >
+                    {formatarReais(item.subtotal)}
+                  </Text>
+                </View>
+              )
+            })}
 
             <View
               style={{

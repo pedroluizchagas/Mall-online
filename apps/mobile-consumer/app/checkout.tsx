@@ -160,6 +160,10 @@ export default function TelaCheckout() {
         preco: i.preco,
         quantidade: i.quantidade,
         observacoes: i.observacoes,
+        modifiers:
+          i.modifiers && i.modifiers.length > 0
+            ? i.modifiers.map((m) => ({ modifier_id: m.modifier_id }))
+            : [],
       })),
       endereco_entrega: enderecoSelecionado,
       observacoes: observacoes.trim() || undefined,
@@ -255,15 +259,28 @@ export default function TelaCheckout() {
 
     if (pedidoError) throw new Error(pedidoError.message)
 
-    const orderItems = itens.map((i) => ({
-      order_id: pedido.id,
-      product_id: i.product_id,
-      nome: i.nome,
-      preco_unit: i.preco,
-      quantidade: i.quantidade,
-      subtotal: i.preco * i.quantidade,
-      observacoes: i.observacoes ?? null,
-    }))
+    const orderItems = itens.map((i) => {
+      const precoExtra =
+        i.modifiers?.reduce((acc, m) => acc + m.preco_extra, 0) ?? 0
+      const precoUnit = i.preco + precoExtra
+      return {
+        order_id: pedido.id,
+        product_id: i.product_id,
+        nome: i.nome,
+        preco_unit: precoUnit,
+        quantidade: i.quantidade,
+        subtotal: precoUnit * i.quantidade,
+        observacoes: i.observacoes ?? null,
+        modifiers:
+          i.modifiers && i.modifiers.length > 0
+            ? i.modifiers.map((m) => ({
+                modifier_id: m.modifier_id,
+                nome: m.nome,
+                preco_extra: m.preco_extra,
+              }))
+            : null,
+      }
+    })
 
     await supabase.from('order_items').insert(orderItems)
 
@@ -368,7 +385,7 @@ export default function TelaCheckout() {
           </Text>
           <Card preenchimento="sm" sombra="soft">
             {itens.map((item) => (
-              <ItemCarrinhoCard key={item.product_id} item={item} />
+              <ItemCarrinhoCard key={item.linha_id} item={item} />
             ))}
           </Card>
         </View>
