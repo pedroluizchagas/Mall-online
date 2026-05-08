@@ -115,4 +115,30 @@ describe('registry de templates', () => {
       expect.arrayContaining(['tempo_preparo_min', 'serve_pessoas', 'tags']),
     )
   })
+
+  it('pet declara campos extras esperados', () => {
+    const codigos = TEMPLATES.pet.produto.camposExtras.map((c) => c.codigo)
+    expect(codigos).toEqual(
+      expect.arrayContaining(['especie', 'faixa_peso_kg', 'tipo_oferta']),
+    )
+  })
+
+  it('generic declara campos extras esperados', () => {
+    const codigos = TEMPLATES.generic.produto.camposExtras.map((c) => c.codigo)
+    expect(codigos).toEqual(
+      expect.arrayContaining(['garantia_meses', 'marca', 'modelo', 'peso_g', 'dimensoes_cm']),
+    )
+  })
+
+  it('pharmacy declara campos extras esperados', () => {
+    const codigos = TEMPLATES.pharmacy.produto.camposExtras.map((c) => c.codigo)
+    expect(codigos).toEqual(
+      expect.arrayContaining([
+        'registro_anvisa',
+        'principio_ativo',
+        'categoria_regulatoria',
+        'exige_receita',
+      ]),
+    )
+  })
 })
