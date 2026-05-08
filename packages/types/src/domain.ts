@@ -48,6 +48,17 @@ export interface ItemCarrinhoVariant {
   rotulo: string
 }
 
+// Snapshot do agendamento associado ao item do carrinho (template services).
+// inicio_at/fim_at em ISO UTC, derivados do slot retornado por
+// `agenda-disponibilidade`. staff_id null = "qualquer profissional disponível";
+// nesse caso staff_nome carrega a string "Qualquer".
+export interface ItemCarrinhoAgendamento {
+  inicio_at: string
+  fim_at: string
+  staff_id: string | null
+  staff_nome: string | null
+}
+
 // Item do carrinho (estado local — não vem do banco).
 // linha_id é gerado localmente ao adicionar; itens com mesmo product_id mas
 // modifiers ou variant diferentes coexistem como linhas separadas.
@@ -61,6 +72,9 @@ export interface ItemCarrinho {
   observacoes?: string
   modifiers?: ItemCarrinhoModifier[]
   variant?: ItemCarrinhoVariant
+  // Presente apenas para itens de loja services. Quando definido, o item
+  // representa um agendamento (1 por carrinho — ver useCartStore).
+  agendamento?: ItemCarrinhoAgendamento
 }
 
 // Horários de funcionamento da loja

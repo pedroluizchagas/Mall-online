@@ -62,7 +62,8 @@ export default function PaginaLoja() {
           taxa_entrega, tempo_entrega, telefone,
           aceita_dinheiro, aceita_pix,
           aceita_cartao_maquininha, aceita_cartao_online,
-          horarios, tenant_id
+          horarios, tenant_id,
+          categoria:categories(slug)
         `)
         .eq('slug', slug)
         .eq('ativo', true)
@@ -73,7 +74,9 @@ export default function PaginaLoja() {
         return
       }
 
-      setLoja(lojaData)
+      const categoria_slug =
+        (lojaData as any).categoria?.slug ?? null
+      setLoja({ ...lojaData, categoria_slug })
 
       const { data: produtos } = await supabase
         .from('products')

@@ -8,7 +8,7 @@ import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
 import { formatarReais } from '@mallora/lib'
-import { ItemCarrinhoCard } from '@/components/ItemCarrinhoCard'
+import { ItemCarrinhoCard, formatarAgendamento } from '@/components/ItemCarrinhoCard'
 import { SeletorEndereco } from '@/components/SeletorEndereco'
 import { SeletorPagamento } from '@/components/SeletorPagamento'
 import { SeletorParcelas } from '@/components/SeletorParcelas'
@@ -44,6 +44,9 @@ export default function TelaCheckout() {
     total,
     limparCarrinho,
   } = useCartStore()
+
+  const ehAgendamento = itens.some((i) => !!i.agendamento)
+  const itemAgendamento = itens.find((i) => !!i.agendamento)
 
   const { consumer } = useAuthStore()
   const { setPedidoAtivo } = useOrderStore()
@@ -103,7 +106,12 @@ export default function TelaCheckout() {
 
   function validar(): string | null {
     if (itens.length === 0) return 'Carrinho vazio.'
-    if (!enderecoSelecionado) return 'Selecione um endereço de entrega.'
+    if (!ehAgendamento && !enderecoSelecionado) {
+      return 'Selecione um endereço de entrega.'
+    }
+    if (ehAgendamento && formaPagamento !== 'online_cartao' && formaPagamento !== 'online_pix') {
+      return 'Agendamentos só aceitam pagamento online (cartão ou Pix).'
+    }
     if (!formaPagamento) return 'Selecione uma forma de pagamento.'
     if (formaPagamento === 'online_cartao' && !dadosCartao) {
       return 'Preencha os dados do cartão.'
@@ -165,8 +173,15 @@ export default function TelaCheckout() {
             ? i.modifiers.map((m) => ({ modifier_id: m.modifier_id }))
             : [],
         variant_id: i.variant?.variant_id ?? null,
+        agendamento: i.agendamento
+          ? {
+              inicio_at: i.agendamento.inicio_at,
+              fim_at: i.agendamento.fim_at,
+              staff_id: i.agendamento.staff_id,
+            }
+          : null,
       })),
-      endereco_entrega: enderecoSelecionado,
+      endereco_entrega: ehAgendamento ? null : enderecoSelecionado,
       observacoes: observacoes.trim() || undefined,
     }
   }
@@ -226,6 +241,9 @@ export default function TelaCheckout() {
   }
 
   async function fluxoPagamentoOffline() {
+    if (ehAgendamento) {
+      throw new Error('Agendamentos só aceitam pagamento online.')
+    }
     const session = await obterSessaoOuFalhar()
 
     const { data: consumer_data } = await supabase
@@ -324,6 +342,9 @@ export default function TelaCheckout() {
   }
 
   const labelBotao = (() => {
+    if (ehAgendamento) {
+      return `Confirmar agendamento — ${formatarReais(total())}`
+    }
     if (formaPagamento === 'online_cartao') {
       return `Pagar ${formatarReais(total())} em ${installments}×`
     }
@@ -392,11 +413,60 @@ export default function TelaCheckout() {
           </Card>
         </View>
 
-        <SeletorEndereco
-          enderecos={consumer?.enderecos ?? []}
-          selecionado={enderecoSelecionado}
-          onSelecionar={setEnderecoSelecionado}
-        />
+        {ehAgendamento && itemAgendamento?.agendamento && (
+          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '700',
+                color: colors.inkMuted,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                marginBottom: 12,
+              }}
+            >
+              Quando
+            </Text>
+            <Card preenchimento="md" sombra="soft">
+              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
+                📅 {formatarAgendamento(itemAgendamento.agendamento)}
+              </Text>
+            </Card>
+          </View>
+        )}
+
+        {ehAgendamento && (
+          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
+            <Text
+              style={{
+                fontSize: 12,
+                fontWeight: '700',
+                color: colors.inkMuted,
+                letterSpacing: 0.5,
+                textTransform: 'uppercase',
+                marginBottom: 12,
+              }}
+            >
+              Local
+            </Text>
+            <Card preenchimento="md" sombra="soft">
+              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}>
+                {store_nome}
+              </Text>
+              <Text style={{ fontSize: 12, color: colors.inkMuted, marginTop: 4 }}>
+                Atendimento no estabelecimento.
+              </Text>
+            </Card>
+          </View>
+        )}
+
+        {!ehAgendamento && (
+          <SeletorEndereco
+            enderecos={consumer?.enderecos ?? []}
+            selecionado={enderecoSelecionado}
+            onSelecionar={setEnderecoSelecionado}
+          />
+        )}
 
         {loja && (
           <SeletorPagamento
@@ -460,15 +530,17 @@ export default function TelaCheckout() {
                 rotulo={`Subtotal (${qtdTotal} ${qtdTotal === 1 ? 'item' : 'itens'})`}
                 valor={formatarReais(subtotal())}
               />
-              <LinhaResumo
-                rotulo="Taxa de entrega"
-                valor={
-                  store_taxa_entrega === 0
-                    ? 'Grátis'
-                    : formatarReais(store_taxa_entrega)
-                }
-                valorAccent={store_taxa_entrega === 0}
-              />
+              {!ehAgendamento && (
+                <LinhaResumo
+                  rotulo="Taxa de entrega"
+                  valor={
+                    store_taxa_entrega === 0
+                      ? 'Grátis'
+                      : formatarReais(store_taxa_entrega)
+                  }
+                  valorAccent={store_taxa_entrega === 0}
+                />
+              )}
               <View
                 style={{
                   height: 1,

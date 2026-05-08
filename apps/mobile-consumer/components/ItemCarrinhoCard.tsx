@@ -1,9 +1,22 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { useCartStore } from '@/store/useCartStore'
 import { formatarReais } from '@mallora/lib'
-import type { ItemCarrinho } from '@mallora/types'
+import type { ItemCarrinho, ItemCarrinhoAgendamento } from '@mallora/types'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
+
+const DIAS_CURTOS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+
+export function formatarAgendamento(a: ItemCarrinhoAgendamento): string {
+  const d = new Date(a.inicio_at)
+  const diaSemana = DIAS_CURTOS[d.getDay()]
+  const dia = String(d.getDate()).padStart(2, '0')
+  const mes = String(d.getMonth() + 1).padStart(2, '0')
+  const hora = String(d.getHours()).padStart(2, '0')
+  const min = String(d.getMinutes()).padStart(2, '0')
+  const staff = a.staff_nome ?? 'Qualquer'
+  return `${diaSemana} ${dia}/${mes} às ${hora}:${min} com ${staff}`
+}
 
 const { colors } = consumerDesign
 
@@ -24,6 +37,9 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
     item.modifiers && item.modifiers.length > 0
       ? item.modifiers.map((m) => m.nome).join(', ')
       : null
+  const resumoAgendamento = item.agendamento
+    ? formatarAgendamento(item.agendamento)
+    : null
 
   return (
     <View
@@ -44,6 +60,14 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
         >
           {item.nome}
         </Text>
+        {resumoAgendamento && (
+          <Text
+            style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '600' }}
+            numberOfLines={2}
+          >
+            📅 {resumoAgendamento}
+          </Text>
+        )}
         {rotuloVariant && (
           <Text
             style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '600' }}
@@ -81,16 +105,25 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
       </View>
 
       {readonly ? (
-        <Text
-          style={{
-            fontSize: 14,
-            fontWeight: '800',
-            color: colors.inkMuted,
-            paddingHorizontal: 8,
-          }}
-        >
-          ×{item.quantidade}
-        </Text>
+        item.agendamento ? null : (
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: '800',
+              color: colors.inkMuted,
+              paddingHorizontal: 8,
+            }}
+          >
+            ×{item.quantidade}
+          </Text>
+        )
+      ) : item.agendamento ? (
+        <BotaoQty
+          icone="close"
+          cor={colors.danger}
+          fundo={softColor(colors.danger)}
+          aoTocar={() => removerItem(item.linha_id)}
+        />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <BotaoQty

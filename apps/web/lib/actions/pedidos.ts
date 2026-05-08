@@ -155,6 +155,8 @@ export async function getPedidos(filtros?: {
       id, status, payment_status, forma_pagamento,
       subtotal, taxa_entrega, total, criado_em,
       endereco_entrega, observacoes,
+      tipo, agendamento_inicio_at, agendamento_fim_at, staff_id,
+      service_staff:service_staff!staff_id (id, nome, cor),
       consumers (id, nome, telefone),
       order_items (
         id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,
@@ -200,6 +202,8 @@ export async function getPedidoPorId(pedido_id: string) {
       subtotal, taxa_entrega, total, criado_em,
       endereco_entrega, observacoes,
       cancelado_em, motivo_cancelamento,
+      tipo, agendamento_inicio_at, agendamento_fim_at, staff_id,
+      service_staff:service_staff!staff_id (id, nome, cor),
       consumers (id, nome, telefone),
       order_items (
         id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,
