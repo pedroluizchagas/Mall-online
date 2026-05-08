@@ -18,7 +18,10 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
-import type { ItemCarrinhoModifier } from '@mallora/types'
+import type {
+  ItemCarrinhoModifier,
+  ItemCarrinhoVariant,
+} from '@mallora/types'
 
 /**
  * Bottom-sheet de detalhe do produto + adicionar ao carrinho.
@@ -68,6 +71,31 @@ interface GrupoRow {
   product_modifiers: ModifierRow[]
 }
 
+interface OptionRow {
+  id: string
+  valor: string
+  hex_color: string | null
+  ordem: number
+}
+
+interface OptionGroupRow {
+  id: string
+  nome: string
+  ordem: number
+  product_options: OptionRow[]
+}
+
+interface VariantRow {
+  id: string
+  sku: string | null
+  preco: number
+  preco_promocional: number | null
+  foto_url: string | null
+  stock_quantity: number | null
+  disponivel: boolean
+  product_variant_options: { option_id: string }[]
+}
+
 export function ModalProduto({ produto, loja, onFechar }: Props) {
   const [quantidade, setQuantidade] = useState(1)
   const [observacoes, setObservacoes] = useState('')
@@ -77,11 +105,17 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
   // grupo_id → conjunto de modifier_ids selecionados
   const [selecoes, setSelecoes] = useState<Record<string, Set<string>>>({})
 
+  // Variants (Fase 4b)
+  const [optionGroups, setOptionGroups] = useState<OptionGroupRow[]>([])
+  const [variants, setVariants] = useState<VariantRow[]>([])
+  const [carregandoVariants, setCarregandoVariants] = useState(true)
+  // group_id → option_id selecionada (sempre single-select)
+  const [selecoesVariant, setSelecoesVariant] = useState<
+    Record<string, string>
+  >({})
+
   const adicionarItem = useCartStore((s) => s.adicionarItem)
   const storeAtual = useCartStore((s) => s.store_id)
-
-  const precoBase = produto.preco_promocional ?? produto.preco
-  const temPromo = !!produto.preco_promocional
 
   useEffect(() => {
     let cancelado = false
@@ -125,6 +159,93 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
     }
   }, [produto.id])
 
+  useEffect(() => {
+    let cancelado = false
+
+    async function carregarVariants() {
+      // Cast: product_option_groups, product_options e product_variants ainda
+      // não estão nos types gerados do Supabase (migrations 015/017).
+      const [gruposRes, variantsRes] = await Promise.all([
+        (supabase as any)
+          .from('product_option_groups')
+          .select(
+            `
+            id, nome, ordem,
+            product_options (id, valor, hex_color, ordem)
+          `
+          )
+          .eq('product_id', produto.id)
+          .order('ordem'),
+        (supabase as any)
+          .from('product_variants')
+          .select(
+            `
+            id, sku, preco, preco_promocional, foto_url,
+            stock_quantity, disponivel,
+            product_variant_options (option_id)
+          `
+          )
+          .eq('product_id', produto.id)
+          .eq('disponivel', true),
+      ])
+
+      if (cancelado) return
+
+      const gruposBruto = (gruposRes.data ?? []) as OptionGroupRow[]
+      const gruposOrd: OptionGroupRow[] = gruposBruto.map((g) => ({
+        ...g,
+        product_options: [...(g.product_options ?? [])].sort(
+          (a, b) => a.ordem - b.ordem
+        ),
+      }))
+
+      setOptionGroups(gruposOrd)
+      setVariants((variantsRes.data ?? []) as VariantRow[])
+      setCarregandoVariants(false)
+    }
+
+    carregarVariants()
+    return () => {
+      cancelado = true
+    }
+  }, [produto.id])
+
+  // Variant ativo = único variant cujas options batem exatamente com a seleção.
+  // Quando há groups mas a seleção está incompleta, retorna null.
+  const variantAtivo = useMemo<VariantRow | null>(() => {
+    if (variants.length === 0 || optionGroups.length === 0) return null
+    if (Object.keys(selecoesVariant).length < optionGroups.length) return null
+
+    const optionsSelecionadas = new Set(Object.values(selecoesVariant))
+    return (
+      variants.find((v) => {
+        const optsVariant = (v.product_variant_options ?? []).map(
+          (o) => o.option_id
+        )
+        if (optsVariant.length !== optionsSelecionadas.size) return false
+        return optsVariant.every((id) => optionsSelecionadas.has(id))
+      }) ?? null
+    )
+  }, [variants, optionGroups, selecoesVariant])
+
+  // Preço base efetivo: variant > produto.
+  const precoBase = variantAtivo
+    ? variantAtivo.preco_promocional ?? variantAtivo.preco
+    : produto.preco_promocional ?? produto.preco
+  const precoOriginal = variantAtivo ? variantAtivo.preco : produto.preco
+  const temPromo = variantAtivo
+    ? variantAtivo.preco_promocional != null &&
+      variantAtivo.preco_promocional < variantAtivo.preco
+    : !!produto.preco_promocional
+
+  const fotoExibida =
+    variantAtivo?.foto_url ?? produto.foto_url ?? null
+
+  const temVariants = variants.length > 0 && optionGroups.length > 0
+  const selecaoVariantCompleta =
+    !temVariants ||
+    Object.keys(selecoesVariant).length === optionGroups.length
+
   const modifiersSelecionados = useMemo<ItemCarrinhoModifier[]>(() => {
     const out: ItemCarrinhoModifier[] = []
     for (const grupo of grupos) {
@@ -150,6 +271,18 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
   const totalItem = (precoBase + precoExtraTotal) * quantidade
 
   const erroValidacao = useMemo(() => {
+    if (temVariants) {
+      if (!selecaoVariantCompleta) {
+        return optionGroups.length === 2
+          ? `Selecione ${optionGroups[0].nome.toLowerCase()} e ${optionGroups[1].nome.toLowerCase()}`
+          : `Selecione ${optionGroups
+              .map((g) => g.nome.toLowerCase())
+              .join(', ')}`
+      }
+      if (!variantAtivo) {
+        return 'Esta combinação não está disponível'
+      }
+    }
     for (const grupo of grupos) {
       const count = selecoes[grupo.id]?.size ?? 0
       if (grupo.min_select > 0 && count < grupo.min_select) {
@@ -162,7 +295,14 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
       }
     }
     return null
-  }, [grupos, selecoes])
+  }, [
+    grupos,
+    selecoes,
+    temVariants,
+    selecaoVariantCompleta,
+    variantAtivo,
+    optionGroups,
+  ])
 
   function alternarSelecao(grupo: GrupoRow, modifierId: string) {
     setSelecoes((prev) => {
@@ -195,16 +335,31 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
   }
 
   function confirmarAdicao() {
+    let variant: ItemCarrinhoVariant | undefined
+    if (variantAtivo) {
+      const valoresSelecionados = optionGroups
+        .map((g) => {
+          const optionId = selecoesVariant[g.id]
+          return g.product_options.find((o) => o.id === optionId)?.valor
+        })
+        .filter((v): v is string => !!v)
+      variant = {
+        variant_id: variantAtivo.id,
+        rotulo: valoresSelecionados.join(' × '),
+      }
+    }
+
     adicionarItem(
       {
         product_id: produto.id,
         nome: produto.nome,
         preco: precoBase,
         quantidade,
-        foto_url: produto.foto_url ?? undefined,
+        foto_url: fotoExibida ?? undefined,
         observacoes: observacoes.trim() || undefined,
         modifiers:
           modifiersSelecionados.length > 0 ? modifiersSelecionados : undefined,
+        variant,
       },
       loja.id,
       loja.nome,
@@ -212,6 +367,31 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
     )
     setTrocandoLoja(false)
     onFechar()
+  }
+
+  // Para cada option, descobre se existe ao menos um variant disponível que
+  // respeite a seleção atual nos OUTROS groups (e que inclua esta option no
+  // próprio group). Uma option não-alcançável fica riscada.
+  function optionAlcancavel(grupoId: string, optionId: string): boolean {
+    return variants.some((v) => {
+      const opts = (v.product_variant_options ?? []).map((o) => o.option_id)
+      if (!opts.includes(optionId)) return false
+      for (const [gId, oId] of Object.entries(selecoesVariant)) {
+        if (gId === grupoId) continue
+        if (!opts.includes(oId)) return false
+      }
+      return true
+    })
+  }
+
+  function selecionarOption(grupoId: string, optionId: string) {
+    setSelecoesVariant((prev) => {
+      if (prev[grupoId] === optionId) {
+        const { [grupoId]: _omit, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [grupoId]: optionId }
+    })
   }
 
   return (
@@ -274,9 +454,9 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
 
           <ScrollView bounces={false} keyboardShouldPersistTaps="handled">
             {/* Foto */}
-            {produto.foto_url ? (
+            {fotoExibida ? (
               <Image
-                source={{ uri: produto.foto_url }}
+                source={{ uri: fotoExibida }}
                 style={{ width: '100%', height: 240, backgroundColor: colors.canvasAlt }}
                 resizeMode="cover"
               />
@@ -329,7 +509,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                         textDecorationLine: 'line-through',
                       }}
                     >
-                      {formatarReais(produto.preco)}
+                      {formatarReais(precoOriginal)}
                     </Text>
                   )}
                 </View>
@@ -347,6 +527,39 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                   {produto.descricao}
                 </Text>
               )}
+
+              {/* Aviso de estoque baixo do variant ativo */}
+              {variantAtivo &&
+                variantAtivo.stock_quantity != null &&
+                variantAtivo.stock_quantity > 0 &&
+                variantAtivo.stock_quantity < 10 && (
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: colors.warning,
+                      fontWeight: '700',
+                    }}
+                  >
+                    Apenas {variantAtivo.stock_quantity} em estoque
+                  </Text>
+                )}
+
+              {/* Grupos de variações (Fase 4b) */}
+              {!carregandoVariants &&
+                temVariants &&
+                optionGroups.map((grupo) => (
+                  <GrupoVariants
+                    key={grupo.id}
+                    grupo={grupo}
+                    selecionada={selecoesVariant[grupo.id] ?? null}
+                    optionAlcancavel={(optionId) =>
+                      optionAlcancavel(grupo.id, optionId)
+                    }
+                    aoSelecionar={(optionId) =>
+                      selecionarOption(grupo.id, optionId)
+                    }
+                  />
+                ))}
 
               {/* Grupos de modificadores */}
               {!carregandoGrupos &&
@@ -438,12 +651,22 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
               </Text>
             )}
             <Botao
-              label={`Adicionar — ${formatarReais(totalItem)}`}
+              label={
+                temVariants && !selecaoVariantCompleta
+                  ? optionGroups.length > 1
+                    ? `Selecione ${optionGroups
+                        .map((g) => g.nome.toLowerCase())
+                        .join(' e ')}`
+                    : `Selecione ${optionGroups[0]?.nome.toLowerCase() ?? 'opção'}`
+                  : `Adicionar — ${formatarReais(totalItem)}`
+              }
               onPress={handleAdicionar}
               variante="primario"
               tamanho="lg"
               iconeDireita="bag"
-              desabilitado={!!erroValidacao || carregandoGrupos}
+              desabilitado={
+                !!erroValidacao || carregandoGrupos || carregandoVariants
+              }
             />
           </View>
         </KeyboardAvoidingView>
@@ -525,6 +748,134 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
         </Modal>
       )}
     </Modal>
+  )
+}
+
+function GrupoVariants({
+  grupo,
+  selecionada,
+  optionAlcancavel,
+  aoSelecionar,
+}: {
+  grupo: OptionGroupRow
+  selecionada: string | null
+  optionAlcancavel: (optionId: string) => boolean
+  aoSelecionar: (optionId: string) => void
+}) {
+  const ehCor = grupo.nome.toLowerCase() === 'cor'
+  return (
+    <View style={{ gap: 8 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'baseline',
+          justifyContent: 'space-between',
+          gap: 8,
+        }}
+      >
+        <Text
+          style={{ fontSize: 14, fontWeight: '700', color: colors.ink, flex: 1 }}
+        >
+          {grupo.nome}
+          <Text style={{ color: colors.danger }}> *</Text>
+        </Text>
+        {selecionada && (
+          <Text
+            style={{
+              fontSize: 12,
+              fontWeight: '600',
+              color: colors.inkMuted,
+            }}
+          >
+            {grupo.product_options.find((o) => o.id === selecionada)?.valor}
+          </Text>
+        )}
+      </View>
+
+      <View
+        style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
+      >
+        {grupo.product_options.map((opcao) => (
+          <ChipOption
+            key={opcao.id}
+            opcao={opcao}
+            ehCor={ehCor}
+            selecionada={selecionada === opcao.id}
+            alcancavel={optionAlcancavel(opcao.id)}
+            aoTocar={() => aoSelecionar(opcao.id)}
+          />
+        ))}
+      </View>
+    </View>
+  )
+}
+
+function ChipOption({
+  opcao,
+  ehCor,
+  selecionada,
+  alcancavel,
+  aoTocar,
+}: {
+  opcao: OptionRow
+  ehCor: boolean
+  selecionada: boolean
+  alcancavel: boolean
+  aoTocar: () => void
+}) {
+  const desabilitado = !alcancavel && !selecionada
+  const corBorda = selecionada
+    ? colors.ink
+    : desabilitado
+      ? colors.line
+      : colors.line
+  const corFundo = selecionada ? colors.ink : colors.surface
+  const corTexto = selecionada
+    ? colors.accent
+    : desabilitado
+      ? colors.inkSoft
+      : colors.ink
+  return (
+    <TouchableOpacity
+      onPress={aoTocar}
+      disabled={desabilitado}
+      activeOpacity={0.75}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 999,
+        borderWidth: selecionada ? 2 : 1,
+        borderColor: corBorda,
+        backgroundColor: corFundo,
+        opacity: desabilitado ? consumerDesign.opacity.disabled : 1,
+      }}
+    >
+      {ehCor && opcao.hex_color && (
+        <View
+          style={{
+            width: 16,
+            height: 16,
+            borderRadius: 4,
+            backgroundColor: opcao.hex_color,
+            borderWidth: 1,
+            borderColor: 'rgba(0,0,0,0.12)',
+          }}
+        />
+      )}
+      <Text
+        style={{
+          fontSize: 13,
+          fontWeight: '700',
+          color: corTexto,
+          textDecorationLine: desabilitado ? 'line-through' : 'none',
+        }}
+      >
+        {opcao.valor}
+      </Text>
+    </TouchableOpacity>
   )
 }
 

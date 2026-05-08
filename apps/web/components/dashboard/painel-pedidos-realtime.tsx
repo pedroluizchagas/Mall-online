@@ -31,6 +31,15 @@ interface Pedido {
     subtotal: number
     observacoes?: string | null
     modifiers?: Array<{ modifier_id: string; nome: string; preco_extra: number }> | null
+    variant_id?: string | null
+    product_variants?: {
+      product_variant_options?: Array<{
+        product_options?: {
+          valor: string | null
+          product_option_groups?: { nome: string | null } | null
+        } | null
+      }> | null
+    } | null
   }>
   delivery_assignments?: Array<{ couriers?: { nome: string; telefone: string } | null }>
 }
@@ -96,7 +105,15 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
                   subtotal, taxa_entrega, total, criado_em,
                   endereco_entrega, observacoes,
                   consumers (id, nome, telefone),
-                  order_items (id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers),
+                  order_items (
+                    id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,
+                    variant_id,
+                    product_variants (
+                      product_variant_options (
+                        product_options ( valor, product_option_groups ( nome ) )
+                      )
+                    )
+                  ),
                   delivery_assignments (id, status, valor_entrega, couriers (id, nome, telefone, foto_url))
                 `)
                 .eq('id', payload.new.id)
@@ -416,26 +433,39 @@ function OrderDetail({ order }: { order: Pedido | null }) {
           Itens ({items.length})
         </div>
         {items.length === 0 && <div className="text-xs text-ink-3">Sem itens.</div>}
-        {items.map((it) => (
-          <div key={it.id} className="flex items-start gap-2.5 py-1.5">
-            <ProductThumb name={it.nome} size={32} />
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-medium truncate">{it.nome}</div>
-              <div className="text-[11px] text-ink-3">{it.quantidade}x</div>
-              {it.modifiers && it.modifiers.length > 0 && (
-                <div className="text-[11px] text-ink-3 mt-0.5">
-                  {it.modifiers.map((m) => m.nome).join(', ')}
-                </div>
-              )}
-              {it.observacoes && (
-                <div className="text-[11px] text-ink-3 italic mt-0.5">
-                  &ldquo;{it.observacoes}&rdquo;
-                </div>
-              )}
+        {items.map((it) => {
+          const refs = it.product_variants?.product_variant_options ?? []
+          const valoresVariant = refs
+            .map((vo) => vo?.product_options?.valor)
+            .filter((v): v is string => typeof v === 'string' && v.length > 0)
+          const rotuloVariant =
+            valoresVariant.length > 0 ? valoresVariant.join(' × ') : null
+          return (
+            <div key={it.id} className="flex items-start gap-2.5 py-1.5">
+              <ProductThumb name={it.nome} size={32} />
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-medium truncate">{it.nome}</div>
+                <div className="text-[11px] text-ink-3">{it.quantidade}x</div>
+                {rotuloVariant && (
+                  <div className="text-[11px] text-ink-2 font-medium mt-0.5">
+                    {rotuloVariant}
+                  </div>
+                )}
+                {it.modifiers && it.modifiers.length > 0 && (
+                  <div className="text-[11px] text-ink-3 mt-0.5">
+                    {it.modifiers.map((m) => m.nome).join(', ')}
+                  </div>
+                )}
+                {it.observacoes && (
+                  <div className="text-[11px] text-ink-3 italic mt-0.5">
+                    &ldquo;{it.observacoes}&rdquo;
+                  </div>
+                )}
+              </div>
+              <div className="text-[13px] font-medium">{money(Number(it.subtotal))}</div>
             </div>
-            <div className="text-[13px] font-medium">{money(Number(it.subtotal))}</div>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Total */}

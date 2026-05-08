@@ -164,6 +164,7 @@ export default function TelaCheckout() {
           i.modifiers && i.modifiers.length > 0
             ? i.modifiers.map((m) => ({ modifier_id: m.modifier_id }))
             : [],
+        variant_id: i.variant?.variant_id ?? null,
       })),
       endereco_entrega: enderecoSelecionado,
       observacoes: observacoes.trim() || undefined,
@@ -266,6 +267,7 @@ export default function TelaCheckout() {
       return {
         order_id: pedido.id,
         product_id: i.product_id,
+        variant_id: i.variant?.variant_id ?? null,
         nome: i.nome,
         preco_unit: precoUnit,
         quantidade: i.quantidade,

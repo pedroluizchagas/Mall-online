@@ -157,7 +157,13 @@ export async function getPedidos(filtros?: {
       endereco_entrega, observacoes,
       consumers (id, nome, telefone),
       order_items (
-        id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers
+        id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,
+        variant_id,
+        product_variants (
+          product_variant_options (
+            product_options ( valor, product_option_groups ( nome ) )
+          )
+        )
       ),
       delivery_assignments (
         id, status, valor_entrega,
@@ -196,7 +202,13 @@ export async function getPedidoPorId(pedido_id: string) {
       cancelado_em, motivo_cancelamento,
       consumers (id, nome, telefone),
       order_items (
-        id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers
+        id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,
+        variant_id,
+        product_variants (
+          product_variant_options (
+            product_options ( valor, product_option_groups ( nome ) )
+          )
+        )
       ),
       delivery_assignments (
         id, status, valor_entrega,
