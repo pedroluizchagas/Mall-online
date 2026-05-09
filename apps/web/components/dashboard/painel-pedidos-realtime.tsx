@@ -177,19 +177,14 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
 
   return (
     <div className="slide-up">
-      {/* Header */}
+      {/* Toolbar (busca + filtros) */}
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-        <div>
-          <h1 className="font-display m-0" style={{ fontSize: 32, letterSpacing: '-0.02em' }}>
-            Pedidos
-          </h1>
-          <div className="text-ink-3 text-[13px] mt-0.5 flex items-center gap-1.5">
-            <span
-              className="pulse-dot inline-block rounded-full"
-              style={{ background: 'var(--brick)', width: 6, height: 6 }}
-            />
-            {novosCount} novo{novosCount === 1 ? '' : 's'} aguardando confirmação
-          </div>
+        <div className="text-ink-3 text-[13px] flex items-center gap-1.5">
+          <span
+            className="pulse-dot inline-block rounded-full"
+            style={{ background: 'var(--brick)', width: 6, height: 6 }}
+          />
+          {novosCount} novo{novosCount === 1 ? '' : 's'} aguardando confirmação
         </div>
         <div className="flex gap-2">
           <SearchInput value={search} onChange={setSearch} />
