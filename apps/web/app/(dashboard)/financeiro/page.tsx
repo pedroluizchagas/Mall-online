@@ -13,6 +13,7 @@ import { ListaRepasses } from '@/components/dashboard/lista-repasses'
 import { CardAntecipacao } from '@/components/dashboard/card-antecipacao'
 import { CardSaldoPagarme } from '@/components/dashboard/card-saldo-pagarme'
 import { TopProdutos } from '@/components/dashboard/top-produtos'
+import { PageHeader } from '@/components/dashboard/page-header'
 import { Card } from '@/components/ui/card'
 
 export default async function PaginaFinanceiro() {
@@ -36,19 +37,17 @@ export default async function PaginaFinanceiro() {
 
   return (
     <div className="p-9 space-y-6 slide-up">
-      <div className="flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-[32px] m-0 leading-tight">Financeiro</h1>
-          <div className="text-ink-3 text-[13px] mt-0.5">
-            Conta conectada · Pagar.me ativa
-          </div>
-        </div>
-        <button
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors"
-        >
-          <Download className="w-3.5 h-3.5" /> Extrato
-        </button>
-      </div>
+      <PageHeader
+        titulo="Financeiro"
+        subtitulo="KPIs, repasses e extrato da sua conta de recebimentos."
+        acoes={
+          <button
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" /> Extrato
+          </button>
+        }
+      />
 
       <KpisFinanceiros kpisHoje={kpisHoje} kpisMes={kpisMes} />
 

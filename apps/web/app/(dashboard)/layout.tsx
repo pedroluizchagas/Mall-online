@@ -56,6 +56,12 @@ export default async function LayoutDashboard({
 
   const template = getTemplateByStore(loja ?? {})
 
+  const { count: pedidosNovosCount } = await supabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('tenant_id', tenant.id)
+    .eq('status', 'novo')
+
   const { data: assinatura } = (await supabase
     .from('tenant_subscriptions')
     .select('billing_status')
@@ -70,7 +76,12 @@ export default async function LayoutDashboard({
       className="flex h-screen overflow-hidden"
       style={{ background: 'var(--sidebar)' }}
     >
-      <SidebarDashboard nomeLoja={loja?.nome ?? 'Minha loja'} template={template} />
+      <SidebarDashboard
+        nomeLoja={loja?.nome ?? 'Minha loja'}
+        template={template}
+        pedidosNovosInicial={pedidosNovosCount ?? 0}
+        tenantId={tenant.id}
+      />
 
       <div
         className="flex-1 flex flex-col min-w-0 overflow-hidden"

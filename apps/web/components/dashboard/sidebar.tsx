@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
 import type { DashboardTemplate } from '@mallora/lib'
+import { useRealtimeCount } from './hooks/use-realtime-count'
 
 type GrupoLabel = 'OPERAR' | 'ANALISAR' | 'MINHA LOJA' | 'CONTA'
 type SubItem = { href: string; label: string }
@@ -42,11 +43,17 @@ const COR_REPOUSO = 'var(--sidebar-ink-2)'
 const COR_HOVER = 'var(--sidebar-ink)'
 const BG_HOVER = 'var(--sidebar-2)'
 
-function buildGrupos(template: DashboardTemplate): Grupo[] {
+function buildGrupos(template: DashboardTemplate, pedidosNovosCount: number): Grupo[] {
   const operar: ItemMenu[] = [{ id: 'inicio', href: '/', label: 'Início', icon: Home }]
 
   if (template.modulos.pedidos) {
-    operar.push({ id: 'pedidos', href: '/pedidos', label: 'Pedidos', icon: ShoppingBag, badge: 2 })
+    operar.push({
+      id: 'pedidos',
+      href: '/pedidos',
+      label: 'Pedidos',
+      icon: ShoppingBag,
+      badge: pedidosNovosCount,
+    })
   }
 
   if (template.modulos.produtos) {
@@ -126,11 +133,18 @@ function hoverHandlers(travado: boolean, corRepouso = COR_REPOUSO) {
 interface Props {
   nomeLoja: string
   template: DashboardTemplate
+  pedidosNovosInicial: number
+  tenantId: string
 }
 
-export function SidebarDashboard({ nomeLoja, template }: Props) {
+export function SidebarDashboard({ nomeLoja, template, pedidosNovosInicial, tenantId }: Props) {
   const pathname = usePathname()
-  const grupos = buildGrupos(template)
+  const pedidosNovosCount = useRealtimeCount({
+    table: 'orders',
+    filtroEq: { tenant_id: tenantId, status: 'novo' },
+    inicial: pedidosNovosInicial,
+  })
+  const grupos = buildGrupos(template, pedidosNovosCount)
   const versao = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev'
 
   return (
