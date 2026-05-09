@@ -87,3 +87,21 @@ export interface HorariosFuncionamento {
   sab?: { abre: string; fecha: string } | null
   dom?: { abre: string; fecha: string } | null
 }
+
+// Vitrine — template visual da loja (preset de layout/tipografia)
+export type TemplateVitrine = 'market' | 'boutique' | 'artesanal' | 'neon'
+
+// Vitrine — paleta de cores aplicada sobre o template
+export type PaletaVitrine =
+  | 'midnight'
+  | 'ocean'
+  | 'berry'
+  | 'ember'
+  | 'slate'
+  | 'matcha'
+
+// Vitrine — tema persistido em stores.theme (jsonb)
+export interface StoreTheme {
+  template: TemplateVitrine
+  paleta: PaletaVitrine | null
+}
