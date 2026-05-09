@@ -6,6 +6,7 @@ import { BannerRecebimentosPendente } from '@/components/dashboard/banner-recebi
 import { ToastBoasVindas } from '@/components/dashboard/toast-boas-vindas'
 import { SidebarDashboard } from '@/components/dashboard/sidebar'
 import { TutorialGate } from '@/components/dashboard/tutorial-gate'
+import { Toaster } from '@/components/ui/toast'
 
 type Tenant = Database['public']['Tables']['tenants']['Row']
 type Subscription = Database['public']['Tables']['tenant_subscriptions']['Row']
@@ -131,6 +132,7 @@ export default async function LayoutDashboard({
 
       <ToastBoasVindas />
       <TutorialGate tutorialVisto={tenant.tutorial_template_visto ?? false} />
+      <Toaster />
     </div>
     </TemplateProvider>
   )
