@@ -2,11 +2,11 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useId, useState, type MouseEvent } from 'react'
 import {
   Home,
   ShoppingBag,
   Package,
-  Boxes,
   DollarSign,
   Store,
   Bike,
@@ -16,81 +16,111 @@ import {
   Bell,
   Star,
   HelpCircle,
-  Search,
   LogOut,
   UserCircle,
   Tag,
   Users,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
 import type { DashboardTemplate } from '@mallora/lib'
 
-interface NavItem {
-  href: string
+type GrupoLabel = 'OPERAR' | 'ANALISAR' | 'MINHA LOJA' | 'CONTA'
+type SubItem = { href: string; label: string }
+type ItemMenu = {
+  id: string
   label: string
   icon: LucideIcon
+  href?: string
   badge?: number
+  subitems?: SubItem[]
 }
+type Grupo = { label: GrupoLabel; itens: ItemMenu[] }
 
-function buildMainItems(template: DashboardTemplate): NavItem[] {
-  const itens: NavItem[] = [{ href: '/', label: 'Início', icon: Home }]
+const COR_REPOUSO = 'var(--sidebar-ink-2)'
+const COR_HOVER = 'var(--sidebar-ink)'
+const BG_HOVER = 'var(--sidebar-2)'
+
+function buildGrupos(template: DashboardTemplate): Grupo[] {
+  const operar: ItemMenu[] = [{ id: 'inicio', href: '/', label: 'Início', icon: Home }]
 
   if (template.modulos.pedidos) {
-    itens.push({ href: '/pedidos', label: 'Pedidos', icon: ShoppingBag, badge: 2 })
+    operar.push({ id: 'pedidos', href: '/pedidos', label: 'Pedidos', icon: ShoppingBag, badge: 2 })
   }
 
   if (template.modulos.produtos) {
-    itens.push({
-      href: '/produtos',
-      label: template.produto.labels.produtoPlural,
-      icon: Package,
+    const subitems: SubItem[] = [
+      { href: '/produtos', label: template.produto.labels.produtoPlural },
+      { href: '/categorias', label: 'Categorias' },
+    ]
+    if (template.modulos.estoque) subitems.push({ href: '/estoque', label: 'Estoque' })
+    operar.push({ id: 'catalogo', label: 'Catálogo', icon: Package, subitems })
+  }
+
+  if (template.modulos.entregadores) {
+    operar.push({ id: 'entregadores', href: '/entregadores', label: 'Entregadores', icon: Bike })
+  }
+  if (template.modulos.agenda) {
+    operar.push({ id: 'agenda', href: '/agenda', label: 'Agenda', icon: Calendar })
+  }
+  operar.push(
+    { id: 'mensagens', href: '/mensagens', label: 'Mensagens', icon: Bell },
+    { id: 'avaliacoes', href: '/avaliacoes', label: 'Avaliações', icon: Star },
+  )
+
+  const analisar: ItemMenu[] = []
+  if (template.modulos.financeiro) {
+    analisar.push({ id: 'financeiro', href: '/financeiro', label: 'Financeiro', icon: DollarSign })
+  }
+  if (template.modulos.relatorios) {
+    analisar.push({ id: 'relatorios', href: '/relatorios', label: 'Relatórios', icon: BarChart3 })
+  }
+
+  const minhaLoja: ItemMenu[] = [
+    { id: 'vitrine', href: '/minha-loja', label: 'Vitrine', icon: Store },
+    { id: 'configuracoes', href: '/configuracoes', label: 'Configurações', icon: Settings },
+    { id: 'tipo-de-loja', href: '/configuracoes/tipo-de-loja', label: 'Tipo de loja', icon: Tag },
+  ]
+  if (template.modulos.agenda) {
+    minhaLoja.push({
+      id: 'staff',
+      href: '/configuracoes/staff',
+      label: 'Profissionais',
+      icon: Users,
     })
   }
 
-  if (template.modulos.estoque) {
-    itens.push({ href: '/estoque', label: 'Estoque', icon: Boxes })
-  }
-
-  if (template.modulos.financeiro) {
-    itens.push({ href: '/financeiro', label: 'Financeiro', icon: DollarSign })
-  }
-
-  itens.push({ href: '/minha-loja', label: 'Minha Loja', icon: Store })
-
-  if (template.modulos.entregadores) {
-    itens.push({ href: '/entregadores', label: 'Entregadores', icon: Bike })
-  }
-
-  if (template.modulos.agenda) {
-    itens.push({ href: '/agenda', label: 'Agenda', icon: Calendar })
-  }
-
-  if (template.modulos.relatorios) {
-    itens.push({ href: '/relatorios', label: 'Relatórios', icon: BarChart3 })
-  }
-
-  return itens
-}
-
-function buildConfigItems(template: DashboardTemplate): NavItem[] {
-  const itens: NavItem[] = [
-    { href: '/mensagens', label: 'Mensagens', icon: Bell },
-    { href: '/avaliacoes', label: 'Avaliações', icon: Star },
-    { href: '/configuracoes/loja', label: 'Configurações', icon: Settings },
-    { href: '/configuracoes/tipo-de-loja', label: 'Tipo de loja', icon: Tag },
+  const conta: ItemMenu[] = [
+    { id: 'minha-conta', href: '/configuracoes/conta', label: 'Minha conta', icon: UserCircle },
+    { id: 'ajuda', href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
   ]
 
-  if (template.modulos.agenda) {
-    itens.push({ href: '/configuracoes/staff', label: 'Profissionais', icon: Users })
+  return [
+    { label: 'OPERAR', itens: operar },
+    { label: 'ANALISAR', itens: analisar },
+    { label: 'MINHA LOJA', itens: minhaLoja },
+    { label: 'CONTA', itens: conta },
+  ]
+}
+
+function rotaAtiva(pathname: string, href: string) {
+  return pathname === href || (href !== '/' && pathname.startsWith(href + '/'))
+}
+
+function hoverHandlers(travado: boolean, corRepouso = COR_REPOUSO) {
+  return {
+    onMouseEnter: (e: MouseEvent<HTMLElement>) => {
+      if (travado) return
+      e.currentTarget.style.background = BG_HOVER
+      e.currentTarget.style.color = COR_HOVER
+    },
+    onMouseLeave: (e: MouseEvent<HTMLElement>) => {
+      if (travado) return
+      e.currentTarget.style.background = 'transparent'
+      e.currentTarget.style.color = corRepouso
+    },
   }
-
-  itens.push(
-    { href: '/configuracoes/conta', label: 'Minha conta', icon: UserCircle },
-    { href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
-  )
-
-  return itens
 }
 
 interface Props {
@@ -100,8 +130,8 @@ interface Props {
 
 export function SidebarDashboard({ nomeLoja, template }: Props) {
   const pathname = usePathname()
-  const mainItems = buildMainItems(template)
-  const configItems = buildConfigItems(template)
+  const grupos = buildGrupos(template)
+  const versao = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev'
 
   return (
     <aside
@@ -114,7 +144,6 @@ export function SidebarDashboard({ nomeLoja, template }: Props) {
         padding: '20px 14px',
       }}
     >
-      {/* Brand */}
       <div className="flex items-center gap-2.5 px-2 pb-[18px] pt-1">
         <div
           className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center font-extrabold text-base tracking-tight"
@@ -130,141 +159,91 @@ export function SidebarDashboard({ nomeLoja, template }: Props) {
         </div>
       </div>
 
-      {/* Search */}
-      <div
-        className="flex items-center gap-2 mb-5 rounded-[10px]"
-        style={{
-          padding: '8px 12px',
-          background: 'var(--sidebar-2)',
-          border: '1px solid var(--sidebar-line)',
-        }}
+      <nav
+        aria-label="Navegação principal"
+        className="flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto pr-1 -mr-1"
       >
-        <Search className="w-3.5 h-3.5" style={{ color: 'var(--sidebar-ink-3)' }} />
-        <input
-          placeholder="Buscar..."
-          className="bg-transparent outline-none border-none flex-1 text-[12px]"
-          style={{ color: 'var(--sidebar-ink)' }}
-        />
+        {grupos.map((grupo) => (
+          <GrupoSidebar key={grupo.label} grupo={grupo} pathname={pathname} />
+        ))}
+      </nav>
+
+      <div
+        className="pt-3 mt-3 px-2 flex items-center justify-between gap-2"
+        style={{ borderTop: '1px solid var(--sidebar-line)' }}
+      >
         <span
-          className="font-mono text-[9px] px-1.5 py-0.5 rounded"
-          style={{ color: 'var(--sidebar-ink-3)', background: 'rgba(255,255,255,0.05)' }}
-        >
-          ⌘K
-        </span>
-      </div>
-
-      <SectionLabel>Menu principal</SectionLabel>
-      <nav className="flex flex-col gap-0.5">
-        {mainItems.map((item) => (
-          <NavLink key={item.href} item={item} pathname={pathname} />
-        ))}
-      </nav>
-
-      <div className="pt-[22px]">
-        <SectionLabel>Configurações</SectionLabel>
-      </div>
-      <nav className="flex flex-col gap-0.5">
-        {configItems.map((item) => (
-          <NavLink key={item.href} item={item} pathname={pathname} />
-        ))}
-      </nav>
-
-      {/* Próximo evento */}
-      <div
-        className="mt-auto rounded-[14px]"
-        style={{
-          padding: 14,
-          background: 'var(--sidebar-2)',
-          border: '1px solid var(--sidebar-line)',
-        }}
-      >
-        <div
-          className="text-[9px] uppercase font-semibold mb-1.5"
-          style={{ color: 'var(--sidebar-ink-3)', letterSpacing: '0.14em' }}
-        >
-          Próximo evento
-        </div>
-        <div className="text-[13px] font-bold tracking-tight">Feira Central</div>
-        <div className="font-mono text-[10px] mt-0.5" style={{ color: 'var(--sidebar-ink-2)' }}>
-          20 abr · 17h—20h
-        </div>
-        <div className="flex gap-1 mt-2.5">
-          <Chip variant="muted">Lojistas</Chip>
-          <Chip variant="brick">Reunião</Chip>
-        </div>
-      </div>
-
-      <form action={logout} className="pt-3">
-        <button
-          type="submit"
-          className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[12.5px] font-medium w-full transition-all"
+          className="text-[10px] truncate"
           style={{ color: 'var(--sidebar-ink-3)' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = 'var(--sidebar-ink)'
-            e.currentTarget.style.background = 'var(--sidebar-2)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = 'var(--sidebar-ink-3)'
-            e.currentTarget.style.background = 'transparent'
-          }}
+          title={nomeLoja}
         >
-          <LogOut className="w-4 h-4" />
-          Sair da conta
-        </button>
-      </form>
-
-      <div className="text-[10px] mt-1 px-2" style={{ color: 'var(--sidebar-ink-3)' }}>
-        {nomeLoja}
+          {nomeLoja}
+        </span>
+        <span className="text-[10px] font-mono" style={{ color: 'var(--sidebar-ink-3)' }}>
+          v{versao}
+        </span>
       </div>
     </aside>
   )
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+function GrupoSidebar({ grupo, pathname }: { grupo: Grupo; pathname: string }) {
+  const headingId = useId()
+  if (grupo.itens.length === 0) return null
+
   return (
-    <div
-      className="text-[10px] uppercase font-semibold px-2 pb-2"
-      style={{ color: 'var(--sidebar-ink-3)', letterSpacing: '0.14em' }}
-    >
-      {children}
-    </div>
+    <section aria-labelledby={headingId} className="flex flex-col">
+      <div
+        id={headingId}
+        className="text-[10px] uppercase font-semibold px-2 pb-2"
+        style={{ color: 'var(--sidebar-ink-3)', letterSpacing: '0.14em' }}
+      >
+        {grupo.label}
+      </div>
+      <ul className="flex flex-col gap-0.5 list-none p-0 m-0">
+        {grupo.itens.map((item) => (
+          <li key={item.id} className="list-none">
+            {item.subitems ? (
+              <NavExpansivel item={item} pathname={pathname} />
+            ) : (
+              <NavLink item={item} pathname={pathname} />
+            )}
+          </li>
+        ))}
+        {grupo.label === 'CONTA' && (
+          <li className="list-none">
+            <BotaoSair />
+          </li>
+        )}
+      </ul>
+    </section>
   )
 }
 
-function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
-  const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
+function NavLink({ item, pathname }: { item: ItemMenu; pathname: string }) {
+  const ativo = item.href ? rotaAtiva(pathname, item.href) : false
   const Icon = item.icon
 
   return (
     <Link
-      href={item.href}
+      href={item.href ?? '#'}
+      aria-current={ativo ? 'page' : undefined}
       className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] transition-all"
       style={{
-        background: active ? 'var(--brick)' : 'transparent',
-        color: active ? 'var(--brick-ink)' : 'var(--sidebar-ink-2)',
-        fontWeight: active ? 700 : 500,
+        background: ativo ? 'var(--brick)' : 'transparent',
+        color: ativo ? 'var(--brick-ink)' : COR_REPOUSO,
+        fontWeight: ativo ? 700 : 500,
       }}
-      onMouseEnter={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = 'var(--sidebar-2)'
-          e.currentTarget.style.color = 'var(--sidebar-ink)'
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!active) {
-          e.currentTarget.style.background = 'transparent'
-          e.currentTarget.style.color = 'var(--sidebar-ink-2)'
-        }
-      }}
+      {...hoverHandlers(ativo)}
     >
       <Icon className="w-4 h-4" strokeWidth={1.75} />
       <span className="flex-1">{item.label}</span>
-      {item.badge && (
+      {typeof item.badge === 'number' && item.badge > 0 && (
         <span
           className="px-1.5 py-px rounded-full text-[10px] font-bold"
           style={{
-            background: active ? 'var(--ink)' : 'var(--brick)',
-            color: active ? 'var(--brick)' : 'var(--brick-ink)',
+            background: ativo ? 'var(--ink)' : 'var(--brick)',
+            color: ativo ? 'var(--brick)' : 'var(--brick-ink)',
           }}
         >
           {item.badge}
@@ -274,17 +253,99 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   )
 }
 
-function Chip({ children, variant }: { children: React.ReactNode; variant: 'muted' | 'brick' }) {
-  const styles =
-    variant === 'brick'
-      ? { background: 'var(--brick)', color: 'var(--brick-ink)' }
-      : { background: 'rgba(255,255,255,0.08)', color: 'var(--sidebar-ink)' }
+function NavExpansivel({ item, pathname }: { item: ItemMenu; pathname: string }) {
+  const subitems = item.subitems ?? []
+  const algumSubAtivo = subitems.some((s) => rotaAtiva(pathname, s.href))
+  const storageKey = `sidebar:group:${item.id}`
+  const [aberto, setAberto] = useState<boolean>(algumSubAtivo)
+
+  useEffect(() => {
+    try {
+      const salvo = window.localStorage.getItem(storageKey)
+      if (salvo === '1' || salvo === '0') setAberto(salvo === '1' || algumSubAtivo)
+      else setAberto(algumSubAtivo)
+    } catch {
+      setAberto(algumSubAtivo)
+    }
+  }, [storageKey, algumSubAtivo])
+
+  function alternar() {
+    setAberto((prev) => {
+      const proximo = !prev
+      try {
+        window.localStorage.setItem(storageKey, proximo ? '1' : '0')
+      } catch {}
+      return proximo
+    })
+  }
+
+  const Icon = item.icon
+  const corBotao = algumSubAtivo ? COR_HOVER : COR_REPOUSO
+  const painelId = `${item.id}-painel`
+
   return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-semibold"
-      style={styles}
-    >
-      {children}
-    </span>
+    <div>
+      <button
+        type="button"
+        onClick={alternar}
+        aria-expanded={aberto}
+        aria-controls={painelId}
+        className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] transition-all w-full"
+        style={{
+          background: 'transparent',
+          color: corBotao,
+          fontWeight: algumSubAtivo ? 700 : 500,
+        }}
+        {...hoverHandlers(false, corBotao)}
+      >
+        <Icon className="w-4 h-4" strokeWidth={1.75} />
+        <span className="flex-1 text-left">{item.label}</span>
+        <ChevronDown
+          className="w-3.5 h-3.5 transition-transform"
+          style={{ transform: aberto ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+          strokeWidth={2}
+        />
+      </button>
+      {aberto && (
+        <ul id={painelId} className="flex flex-col gap-0.5 mt-0.5 ml-7 list-none p-0">
+          {subitems.map((sub) => {
+            const subAtivo = rotaAtiva(pathname, sub.href)
+            return (
+              <li key={sub.href} className="list-none">
+                <Link
+                  href={sub.href}
+                  aria-current={subAtivo ? 'page' : undefined}
+                  className="flex items-center px-3 py-1.5 rounded-[8px] text-[12.5px] transition-all"
+                  style={{
+                    color: subAtivo ? 'var(--brick)' : COR_REPOUSO,
+                    fontWeight: subAtivo ? 700 : 500,
+                    background: 'transparent',
+                  }}
+                  {...hoverHandlers(subAtivo)}
+                >
+                  {sub.label}
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function BotaoSair() {
+  return (
+    <form action={logout}>
+      <button
+        type="submit"
+        className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium w-full transition-all"
+        style={{ color: 'var(--sidebar-ink-3)', background: 'transparent' }}
+        {...hoverHandlers(false, 'var(--sidebar-ink-3)')}
+      >
+        <LogOut className="w-4 h-4" strokeWidth={1.75} />
+        Sair da conta
+      </button>
+    </form>
   )
 }
