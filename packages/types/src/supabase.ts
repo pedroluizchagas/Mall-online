@@ -1,3 +1,5 @@
+import type { StoreTheme } from './domain'
+
 export type Json =
   | string
   | number
@@ -891,7 +893,7 @@ export type Database = {
           telefone: string | null
           tempo_entrega: number | null
           tenant_id: string
-          theme: Json | null
+          theme: StoreTheme | null
           usa_entregadores_proprios: boolean
         }
         Insert: {
@@ -918,7 +920,7 @@ export type Database = {
           telefone?: string | null
           tempo_entrega?: number | null
           tenant_id: string
-          theme?: Json | null
+          theme?: StoreTheme | null
           usa_entregadores_proprios?: boolean
         }
         Update: {
@@ -945,7 +947,7 @@ export type Database = {
           telefone?: string | null
           tempo_entrega?: number | null
           tenant_id?: string
-          theme?: Json | null
+          theme?: StoreTheme | null
           usa_entregadores_proprios?: boolean
         }
         Relationships: [

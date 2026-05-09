@@ -92,7 +92,7 @@ function buildGrupos(template: DashboardTemplate): Grupo[] {
   }
 
   const conta: ItemMenu[] = [
-    { id: 'minha-conta', href: '/configuracoes/conta', label: 'Minha conta', icon: UserCircle },
+    { id: 'minha-conta', href: '/minha-conta', label: 'Minha conta', icon: UserCircle },
     { id: 'ajuda', href: '/ajuda', label: 'Central de ajuda', icon: HelpCircle },
   ]
 
