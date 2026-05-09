@@ -13,6 +13,8 @@ import {
   LogOut,
   Bell,
   Search,
+  Inbox,
+  PieChart,
 } from 'lucide-react'
 
 const mainLinks = [
@@ -20,6 +22,11 @@ const mainLinks = [
   { href: '/admin/lojistas', label: 'Lojistas', icon: Store },
   { href: '/admin/entregadores', label: 'Entregadores', icon: Bike },
   { href: '/admin/planos', label: 'Planos', icon: CreditCard },
+]
+
+const templatesLinks = [
+  { href: '/admin/lojas-outros', label: 'Lojas em Outros', icon: Inbox },
+  { href: '/admin/adocao-templates', label: 'Adoção de Templates', icon: PieChart },
 ]
 
 const financeLinks = [
@@ -126,6 +133,7 @@ export function SidebarNav({
       {/* Navigation */}
       <nav className="flex-1 px-3 overflow-y-auto space-y-5">
         <NavSection title="Menu Principal" links={mainLinks} />
+        <NavSection title="Templates" links={templatesLinks} />
         <NavSection title="Financeiro" links={financeLinks} />
         <NavSection title="Configurações" links={configLinks} />
       </nav>

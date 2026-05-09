@@ -161,4 +161,16 @@ describe('registry de templates', () => {
     expect(duracao).toBeDefined()
     expect(duracao?.obrigatorio).toBe(true)
   })
+
+  // Fase 6 — o tutorial in-app usa nome/descricao/icone para os slides de
+  // boas-vindas. Garantia de que todos os templates continuam tendo esses
+  // campos preenchidos (regressão protege a UI do tutorial).
+  it('todos os templates expõem nome, descricao e icone para uso no tutorial', () => {
+    for (const codigo of CODIGOS_ESPERADOS) {
+      const t = TEMPLATES[codigo]
+      expect(t.nome.trim()).not.toBe('')
+      expect(t.descricao.trim()).not.toBe('')
+      expect(t.icone.trim()).not.toBe('')
+    }
+  })
 })
