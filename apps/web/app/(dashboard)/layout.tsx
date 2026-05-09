@@ -5,6 +5,7 @@ import { getTemplateByStore, TemplateProvider } from '@mallora/lib'
 import { BannerRecebimentosPendente } from '@/components/dashboard/banner-recebimentos-pendente'
 import { ToastBoasVindas } from '@/components/dashboard/toast-boas-vindas'
 import { SidebarDashboard } from '@/components/dashboard/sidebar'
+import { TutorialGate } from '@/components/dashboard/tutorial-gate'
 
 type Tenant = Database['public']['Tables']['tenants']['Row']
 type Subscription = Database['public']['Tables']['tenant_subscriptions']['Row']
@@ -31,8 +32,15 @@ export default async function LayoutDashboard({
 
   const { data: tenants, error: tenantError } = (await supabase
     .from('tenants')
-    .select('id, pagarme_onboarding_status')
-    .limit(1)) as { data: Pick<Tenant, 'id' | 'pagarme_onboarding_status'>[] | null; error: any }
+    .select('id, pagarme_onboarding_status, tutorial_template_visto')
+    .limit(1)) as {
+    data:
+      | (Pick<Tenant, 'id' | 'pagarme_onboarding_status'> & {
+          tutorial_template_visto: boolean | null
+        })[]
+      | null
+    error: any
+  }
 
   const tenant = tenants?.[0]
 
@@ -122,6 +130,7 @@ export default async function LayoutDashboard({
       </div>
 
       <ToastBoasVindas />
+      <TutorialGate tutorialVisto={tenant.tutorial_template_visto ?? false} />
     </div>
     </TemplateProvider>
   )
