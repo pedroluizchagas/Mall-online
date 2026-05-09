@@ -1,5 +1,80 @@
-import { redirect } from 'next/navigation'
+import { getDadosLoja } from '@/lib/actions/lojas'
+import { getDadosConta } from '@/lib/actions/auth'
+import { PageHeader } from '@/components/dashboard/page-header'
+import { Abas } from '@/components/dashboard/abas'
+import { AbaIdentificacao } from '@/components/dashboard/configuracoes/aba-identificacao'
+import { AbaLocalizacao } from '@/components/dashboard/configuracoes/aba-localizacao'
+import { AbaHorarios } from '@/components/dashboard/configuracoes/aba-horarios'
+import { AbaEntrega } from '@/components/dashboard/configuracoes/aba-entrega'
+import { AbaPagamentos } from '@/components/dashboard/configuracoes/aba-pagamentos'
+import { AbaRecebimentos } from '@/components/dashboard/configuracoes/aba-recebimentos'
+import { AbaNotificacoes } from '@/components/dashboard/configuracoes/aba-notificacoes'
 
-export default function PaginaConfiguracoes() {
-  redirect('/configuracoes/loja')
+export default async function PaginaConfiguracoes() {
+  const [dadosLoja, dadosConta] = await Promise.all([
+    getDadosLoja(),
+    getDadosConta(),
+  ])
+
+  if (!dadosLoja?.loja) {
+    return (
+      <div className="p-9">
+        <p className="text-ink-3">Loja não encontrada.</p>
+      </div>
+    )
+  }
+
+  const { loja, tenant } = dadosLoja
+
+  return (
+    <div className="p-9 max-w-3xl">
+      <PageHeader
+        titulo="Configurações da loja"
+        subtitulo="Como sua loja opera: identificação, horários, entrega e pagamentos."
+      />
+      <Abas
+        searchParam="aba"
+        defaultId="identificacao"
+        defs={[
+          {
+            id: 'identificacao',
+            label: 'Identificação',
+            render: () => (
+              <AbaIdentificacao loja={loja} emailComercial={dadosConta.email} />
+            ),
+          },
+          {
+            id: 'localizacao',
+            label: 'Localização',
+            render: () => <AbaLocalizacao loja={loja} />,
+          },
+          {
+            id: 'horarios',
+            label: 'Horários',
+            render: () => <AbaHorarios horarios={loja.horarios} />,
+          },
+          {
+            id: 'entrega',
+            label: 'Entrega',
+            render: () => <AbaEntrega loja={loja} />,
+          },
+          {
+            id: 'pagamentos',
+            label: 'Pagamentos',
+            render: () => <AbaPagamentos loja={loja} />,
+          },
+          {
+            id: 'recebimentos',
+            label: 'Recebimentos',
+            render: () => <AbaRecebimentos tenant={tenant} />,
+          },
+          {
+            id: 'notificacoes',
+            label: 'Notificações',
+            render: () => <AbaNotificacoes />,
+          },
+        ]}
+      />
+    </div>
+  )
 }
