@@ -77,6 +77,24 @@ export interface ItemCarrinho {
   agendamento?: ItemCarrinhoAgendamento
 }
 
+// Vitrine — template visual da loja (preset de layout/tipografia)
+export type TemplateVitrine = 'market' | 'boutique' | 'artesanal' | 'neon'
+
+// Vitrine — paleta de cores aplicada sobre o template
+export type PaletaVitrine =
+  | 'midnight'
+  | 'ocean'
+  | 'berry'
+  | 'ember'
+  | 'slate'
+  | 'matcha'
+
+// Vitrine — tema persistido em stores.theme (jsonb)
+export interface StoreTheme {
+  template: TemplateVitrine
+  paleta: PaletaVitrine | null
+}
+
 // Horários de funcionamento da loja
 export interface HorariosFuncionamento {
   seg?: { abre: string; fecha: string } | null

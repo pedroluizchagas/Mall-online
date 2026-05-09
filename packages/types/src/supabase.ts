@@ -1,3 +1,5 @@
+import type { StoreTheme } from './domain'
+
 export type Json =
   | string
   | number
@@ -7,85 +9,246 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.4"
-  }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
-      categories: {
+      plans: {
         Row: {
-          ativa: boolean
-          atualizado_em: string
-          criado_em: string
-          descricao: string | null
-          icone: string | null
           id: string
           nome: string
-          ordem: number
-          store_id: string | null
-          tenant_id: string | null
+          descricao: string | null
+          preco_mensal: number
+          max_lojas: number
+          max_produtos: number
+          max_entregadores: number
+          tem_estoque: boolean
+          tem_relatorios: boolean
+          tem_antecipacao: boolean
+          ativo: boolean
+          stripe_product_id: string | null
+          stripe_price_id: string | null
+          criado_em: string
+          atualizado_em: string
         }
         Insert: {
-          ativa?: boolean
-          atualizado_em?: string
-          criado_em?: string
-          descricao?: string | null
-          icone?: string | null
           id?: string
           nome: string
-          ordem?: number
-          store_id?: string | null
-          tenant_id?: string | null
+          descricao?: string | null
+          preco_mensal: number
+          max_lojas?: number
+          max_produtos?: number
+          max_entregadores?: number
+          tem_estoque?: boolean
+          tem_relatorios?: boolean
+          tem_antecipacao?: boolean
+          ativo?: boolean
+          stripe_product_id?: string | null
+          stripe_price_id?: string | null
+          criado_em?: string
+          atualizado_em?: string
         }
         Update: {
-          ativa?: boolean
-          atualizado_em?: string
-          criado_em?: string
-          descricao?: string | null
-          icone?: string | null
           id?: string
           nome?: string
-          ordem?: number
-          store_id?: string | null
-          tenant_id?: string | null
+          descricao?: string | null
+          preco_mensal?: number
+          max_lojas?: number
+          max_produtos?: number
+          max_entregadores?: number
+          tem_estoque?: boolean
+          tem_relatorios?: boolean
+          tem_antecipacao?: boolean
+          ativo?: boolean
+          stripe_product_id?: string | null
+          stripe_price_id?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: []
+      }
+      tenants: {
+        Row: {
+          id: string
+          user_id: string
+          nome_responsavel: string
+          cpf_cnpj: string | null
+          telefone: string | null
+          email: string
+          slug: string | null
+          stripe_customer_id: string | null
+          stripe_account_id: string | null
+          stripe_onboarding_ok: boolean
+          ativo: boolean
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          nome_responsavel: string
+          cpf_cnpj?: string | null
+          telefone?: string | null
+          email: string
+          slug?: string | null
+          stripe_customer_id?: string | null
+          stripe_account_id?: string | null
+          stripe_onboarding_ok?: boolean
+          ativo?: boolean
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          nome_responsavel?: string
+          cpf_cnpj?: string | null
+          telefone?: string | null
+          email?: string
+          slug?: string | null
+          stripe_customer_id?: string | null
+          stripe_account_id?: string | null
+          stripe_onboarding_ok?: boolean
+          ativo?: boolean
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: []
+      }
+      tenant_subscriptions: {
+        Row: {
+          id: string
+          tenant_id: string
+          plan_id: string
+          billing_status: Database["public"]["Enums"]["billing_status"]
+          stripe_subscription_id: string | null
+          stripe_price_id: string | null
+          trial_termina_em: string | null
+          periodo_inicio: string | null
+          periodo_fim: string | null
+          cancelado_em: string | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          plan_id: string
+          billing_status?: Database["public"]["Enums"]["billing_status"]
+          stripe_subscription_id?: string | null
+          stripe_price_id?: string | null
+          trial_termina_em?: string | null
+          periodo_inicio?: string | null
+          periodo_fim?: string | null
+          cancelado_em?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          plan_id?: string
+          billing_status?: Database["public"]["Enums"]["billing_status"]
+          stripe_subscription_id?: string | null
+          stripe_price_id?: string | null
+          trial_termina_em?: string | null
+          periodo_inicio?: string | null
+          periodo_fim?: string | null
+          cancelado_em?: string | null
+          criado_em?: string
+          atualizado_em?: string
         }
         Relationships: [
           {
-            foreignKeyName: "categories_store_id_fkey"
-            columns: ["store_id"]
+            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "stores"
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "categories_tenant_id_fkey"
+            foreignKeyName: "tenant_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stores: {
+        Row: {
+          id: string
+          tenant_id: string
+          nome: string
+          descricao: string | null
+          slug: string | null
+          logo_url: string | null
+          banner_url: string | null
+          telefone: string | null
+          endereco: Json | null
+          horarios: Json | null
+          taxa_entrega: number
+          tempo_entrega: number | null
+          raio_entrega_km: number | null
+          aceita_dinheiro: boolean
+          aceita_pix: boolean
+          aceita_cartao_maquininha: boolean
+          aceita_cartao_online: boolean
+          usa_entregadores_proprios: boolean
+          ativo: boolean
+          theme: StoreTheme | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          tenant_id: string
+          nome: string
+          descricao?: string | null
+          slug?: string | null
+          logo_url?: string | null
+          banner_url?: string | null
+          telefone?: string | null
+          endereco?: Json | null
+          horarios?: Json | null
+          taxa_entrega?: number
+          tempo_entrega?: number | null
+          raio_entrega_km?: number | null
+          aceita_dinheiro?: boolean
+          aceita_pix?: boolean
+          aceita_cartao_maquininha?: boolean
+          aceita_cartao_online?: boolean
+          usa_entregadores_proprios?: boolean
+          ativo?: boolean
+          theme?: StoreTheme | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          tenant_id?: string
+          nome?: string
+          descricao?: string | null
+          slug?: string | null
+          logo_url?: string | null
+          banner_url?: string | null
+          telefone?: string | null
+          endereco?: Json | null
+          horarios?: Json | null
+          taxa_entrega?: number
+          tempo_entrega?: number | null
+          raio_entrega_km?: number | null
+          aceita_dinheiro?: boolean
+          aceita_pix?: boolean
+          aceita_cartao_maquininha?: boolean
+          aceita_cartao_online?: boolean
+          usa_entregadores_proprios?: boolean
+          ativo?: boolean
+          theme?: StoreTheme | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -93,156 +256,238 @@ export type Database = {
           },
         ]
       }
-      consumers: {
+      categories: {
         Row: {
-          atualizado_em: string
+          id: string
+          tenant_id: string | null
+          store_id: string | null
+          nome: string
+          descricao: string | null
+          icone: string | null
+          ordem: number
+          ativa: boolean
           criado_em: string
-          enderecos: Json | null
-          foto_url: string | null
-          id: string
-          nome: string
-          telefone: string | null
-          user_id: string
-        }
-        Insert: {
-          atualizado_em?: string
-          criado_em?: string
-          enderecos?: Json | null
-          foto_url?: string | null
-          id?: string
-          nome: string
-          telefone?: string | null
-          user_id: string
-        }
-        Update: {
-          atualizado_em?: string
-          criado_em?: string
-          enderecos?: Json | null
-          foto_url?: string | null
-          id?: string
-          nome?: string
-          telefone?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      courier_locations: {
-        Row: {
-          assignment_id: string | null
           atualizado_em: string
-          courier_id: string
-          id: string
-          latitude: number
-          longitude: number
-          precisao_m: number | null
         }
         Insert: {
-          assignment_id?: string | null
-          atualizado_em?: string
-          courier_id: string
           id?: string
-          latitude: number
-          longitude: number
-          precisao_m?: number | null
+          tenant_id?: string | null
+          store_id?: string | null
+          nome: string
+          descricao?: string | null
+          icone?: string | null
+          ordem?: number
+          ativa?: boolean
+          criado_em?: string
+          atualizado_em?: string
         }
         Update: {
-          assignment_id?: string | null
-          atualizado_em?: string
-          courier_id?: string
           id?: string
-          latitude?: number
-          longitude?: number
-          precisao_m?: number | null
+          tenant_id?: string | null
+          store_id?: string | null
+          nome?: string
+          descricao?: string | null
+          icone?: string | null
+          ordem?: number
+          ativa?: boolean
+          criado_em?: string
+          atualizado_em?: string
         }
         Relationships: [
           {
-            foreignKeyName: "courier_locations_assignment_id_fkey"
-            columns: ["assignment_id"]
+            foreignKeyName: "categories_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "delivery_assignments"
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "courier_locations_courier_id_fkey"
-            columns: ["courier_id"]
-            isOneToOne: true
-            referencedRelation: "couriers"
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
       }
-      couriers: {
+      products: {
         Row: {
-          aprovado_em: string | null
-          aprovado_por: string | null
-          atualizado_em: string
-          cnh_foto_url: string | null
-          cnh_numero: string | null
-          cpf: string | null
-          criado_em: string
-          foto_url: string | null
           id: string
+          store_id: string
+          tenant_id: string
+          category_id: string | null
           nome: string
-          online: boolean
-          pagarme_onboarding_status: string
-          pagarme_recipient_id: string | null
-          status: Database["public"]["Enums"]["courier_status"]
-          stripe_account_id: string | null
-          stripe_onboarding_ok: boolean
-          telefone: string | null
-          tenant_id: string | null
-          tipo: Database["public"]["Enums"]["courier_type"]
-          user_id: string
-          veiculo_placa: string | null
-          veiculo_tipo: string | null
+          descricao: string | null
+          preco: number
+          preco_promocional: number | null
+          foto_url: string | null
+          disponivel: boolean
+          track_stock: boolean
+          stock_quantity: number | null
+          stock_minimo: number | null
+          ordem: number
+          criado_em: string
+          atualizado_em: string
         }
         Insert: {
-          aprovado_em?: string | null
-          aprovado_por?: string | null
-          atualizado_em?: string
-          cnh_foto_url?: string | null
-          cnh_numero?: string | null
-          cpf?: string | null
-          criado_em?: string
-          foto_url?: string | null
           id?: string
+          store_id: string
+          tenant_id: string
+          category_id?: string | null
           nome: string
-          online?: boolean
-          pagarme_onboarding_status?: string
-          pagarme_recipient_id?: string | null
-          status?: Database["public"]["Enums"]["courier_status"]
-          stripe_account_id?: string | null
-          stripe_onboarding_ok?: boolean
-          telefone?: string | null
-          tenant_id?: string | null
-          tipo?: Database["public"]["Enums"]["courier_type"]
-          user_id: string
-          veiculo_placa?: string | null
-          veiculo_tipo?: string | null
+          descricao?: string | null
+          preco: number
+          preco_promocional?: number | null
+          foto_url?: string | null
+          disponivel?: boolean
+          track_stock?: boolean
+          stock_quantity?: number | null
+          stock_minimo?: number | null
+          ordem?: number
+          criado_em?: string
+          atualizado_em?: string
         }
         Update: {
-          aprovado_em?: string | null
-          aprovado_por?: string | null
-          atualizado_em?: string
-          cnh_foto_url?: string | null
-          cnh_numero?: string | null
-          cpf?: string | null
-          criado_em?: string
-          foto_url?: string | null
           id?: string
+          store_id?: string
+          tenant_id?: string
+          category_id?: string | null
           nome?: string
-          online?: boolean
-          pagarme_onboarding_status?: string
-          pagarme_recipient_id?: string | null
-          status?: Database["public"]["Enums"]["courier_status"]
-          stripe_account_id?: string | null
-          stripe_onboarding_ok?: boolean
+          descricao?: string | null
+          preco?: number
+          preco_promocional?: number | null
+          foto_url?: string | null
+          disponivel?: boolean
+          track_stock?: boolean
+          stock_quantity?: number | null
+          stock_minimo?: number | null
+          ordem?: number
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      consumers: {
+        Row: {
+          id: string
+          user_id: string
+          nome: string
+          telefone: string | null
+          foto_url: string | null
+          enderecos: Json
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          nome: string
           telefone?: string | null
+          foto_url?: string | null
+          enderecos?: Json
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          nome?: string
+          telefone?: string | null
+          foto_url?: string | null
+          enderecos?: Json
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: []
+      }
+      couriers: {
+        Row: {
+          id: string
+          user_id: string
+          tenant_id: string | null
+          tipo: Database["public"]["Enums"]["courier_type"]
+          nome: string
+          cpf: string | null
+          telefone: string | null
+          foto_url: string | null
+          cnh_numero: string | null
+          cnh_foto_url: string | null
+          veiculo_tipo: string | null
+          veiculo_placa: string | null
+          status: Database["public"]["Enums"]["courier_status"]
+          online: boolean
+          stripe_account_id: string | null
+          stripe_onboarding_ok: boolean
+          aprovado_em: string | null
+          aprovado_por: string | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
           tenant_id?: string | null
           tipo?: Database["public"]["Enums"]["courier_type"]
-          user_id?: string
-          veiculo_placa?: string | null
+          nome: string
+          cpf?: string | null
+          telefone?: string | null
+          foto_url?: string | null
+          cnh_numero?: string | null
+          cnh_foto_url?: string | null
           veiculo_tipo?: string | null
+          veiculo_placa?: string | null
+          status?: Database["public"]["Enums"]["courier_status"]
+          online?: boolean
+          stripe_account_id?: string | null
+          stripe_onboarding_ok?: boolean
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          tenant_id?: string | null
+          tipo?: Database["public"]["Enums"]["courier_type"]
+          nome?: string
+          cpf?: string | null
+          telefone?: string | null
+          foto_url?: string | null
+          cnh_numero?: string | null
+          cnh_foto_url?: string | null
+          veiculo_tipo?: string | null
+          veiculo_placa?: string | null
+          status?: Database["public"]["Enums"]["courier_status"]
+          online?: boolean
+          stripe_account_id?: string | null
+          stripe_onboarding_ok?: boolean
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          criado_em?: string
+          atualizado_em?: string
         }
         Relationships: [
           {
@@ -254,214 +499,69 @@ export type Database = {
           },
         ]
       }
-      delivery_assignments: {
-        Row: {
-          aceito_em: string | null
-          atualizado_em: string
-          cancelado_em: string | null
-          codigo_confirmacao: string | null
-          coletado_em: string | null
-          comprovante_url: string | null
-          courier_id: string
-          criado_em: string
-          entregue_em: string | null
-          id: string
-          order_id: string
-          pagarme_transfer_id: string | null
-          status: Database["public"]["Enums"]["delivery_status"]
-          tenant_id: string
-          valor_entrega: number
-        }
-        Insert: {
-          aceito_em?: string | null
-          atualizado_em?: string
-          cancelado_em?: string | null
-          codigo_confirmacao?: string | null
-          coletado_em?: string | null
-          comprovante_url?: string | null
-          courier_id: string
-          criado_em?: string
-          entregue_em?: string | null
-          id?: string
-          order_id: string
-          pagarme_transfer_id?: string | null
-          status?: Database["public"]["Enums"]["delivery_status"]
-          tenant_id: string
-          valor_entrega?: number
-        }
-        Update: {
-          aceito_em?: string | null
-          atualizado_em?: string
-          cancelado_em?: string | null
-          codigo_confirmacao?: string | null
-          coletado_em?: string | null
-          comprovante_url?: string | null
-          courier_id?: string
-          criado_em?: string
-          entregue_em?: string | null
-          id?: string
-          order_id?: string
-          pagarme_transfer_id?: string | null
-          status?: Database["public"]["Enums"]["delivery_status"]
-          tenant_id?: string
-          valor_entrega?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "delivery_assignments_courier_id_fkey"
-            columns: ["courier_id"]
-            isOneToOne: false
-            referencedRelation: "couriers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "delivery_assignments_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: true
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "delivery_assignments_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      order_items: {
-        Row: {
-          criado_em: string
-          id: string
-          nome: string
-          observacoes: string | null
-          order_id: string
-          preco_unit: number
-          product_id: string | null
-          quantidade: number
-          subtotal: number
-        }
-        Insert: {
-          criado_em?: string
-          id?: string
-          nome: string
-          observacoes?: string | null
-          order_id: string
-          preco_unit: number
-          product_id?: string | null
-          quantidade?: number
-          subtotal: number
-        }
-        Update: {
-          criado_em?: string
-          id?: string
-          nome?: string
-          observacoes?: string | null
-          order_id?: string
-          preco_unit?: number
-          product_id?: string | null
-          quantidade?: number
-          subtotal?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "order_items_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       orders: {
         Row: {
-          atualizado_em: string
-          cancelado_em: string | null
-          consumer_id: string
-          criado_em: string
-          endereco_entrega: Json
-          forma_pagamento: string
           id: string
-          motivo_cancelamento: string | null
-          observacoes: string | null
-          pagarme_charge_id: string | null
-          pagarme_order_id: string | null
-          pagarme_qr_code: string | null
-          pagarme_qr_code_expires_at: string | null
-          pagarme_qr_code_url: string | null
-          payment_status: string
-          platform_fee_amount: number
-          status: Database["public"]["Enums"]["order_status"]
+          consumer_id: string
           store_id: string
-          stripe_payment_intent_id: string | null
+          tenant_id: string
+          status: Database["public"]["Enums"]["order_status"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          forma_pagamento: string
           subtotal: number
           taxa_entrega: number
-          tenant_id: string
           total: number
+          platform_fee_amount: number | null
           troco_para: number | null
-          valor_estornado: number
+          endereco_entrega: Json
+          observacoes: string | null
+          stripe_payment_intent_id: string | null
+          cancelado_em: string | null
+          motivo_cancelamento: string | null
+          criado_em: string
+          atualizado_em: string
         }
         Insert: {
-          atualizado_em?: string
-          cancelado_em?: string | null
-          consumer_id: string
-          criado_em?: string
-          endereco_entrega: Json
-          forma_pagamento: string
           id?: string
-          motivo_cancelamento?: string | null
-          observacoes?: string | null
-          pagarme_charge_id?: string | null
-          pagarme_order_id?: string | null
-          pagarme_qr_code?: string | null
-          pagarme_qr_code_expires_at?: string | null
-          pagarme_qr_code_url?: string | null
-          payment_status?: string
-          platform_fee_amount?: number
-          status?: Database["public"]["Enums"]["order_status"]
+          consumer_id: string
           store_id: string
-          stripe_payment_intent_id?: string | null
+          tenant_id: string
+          status?: Database["public"]["Enums"]["order_status"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          forma_pagamento: string
           subtotal: number
           taxa_entrega?: number
-          tenant_id: string
           total: number
+          platform_fee_amount?: number | null
           troco_para?: number | null
-          valor_estornado?: number
+          endereco_entrega: Json
+          observacoes?: string | null
+          stripe_payment_intent_id?: string | null
+          cancelado_em?: string | null
+          motivo_cancelamento?: string | null
+          criado_em?: string
+          atualizado_em?: string
         }
         Update: {
-          atualizado_em?: string
-          cancelado_em?: string | null
-          consumer_id?: string
-          criado_em?: string
-          endereco_entrega?: Json
-          forma_pagamento?: string
           id?: string
-          motivo_cancelamento?: string | null
-          observacoes?: string | null
-          pagarme_charge_id?: string | null
-          pagarme_order_id?: string | null
-          pagarme_qr_code?: string | null
-          pagarme_qr_code_expires_at?: string | null
-          pagarme_qr_code_url?: string | null
-          payment_status?: string
-          platform_fee_amount?: number
-          status?: Database["public"]["Enums"]["order_status"]
+          consumer_id?: string
           store_id?: string
-          stripe_payment_intent_id?: string | null
+          tenant_id?: string
+          status?: Database["public"]["Enums"]["order_status"]
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          forma_pagamento?: string
           subtotal?: number
           taxa_entrega?: number
-          tenant_id?: string
           total?: number
+          platform_fee_amount?: number | null
           troco_para?: number | null
-          valor_estornado?: number
+          endereco_entrega?: Json
+          observacoes?: string | null
+          stripe_payment_intent_id?: string | null
+          cancelado_em?: string | null
+          motivo_cancelamento?: string | null
+          criado_em?: string
+          atualizado_em?: string
         }
         Relationships: [
           {
@@ -487,56 +587,123 @@ export type Database = {
           },
         ]
       }
-      payout_advance_requests: {
+      order_items: {
         Row: {
-          criado_em: string
           id: string
-          pagarme_anticipation_id: string | null
-          payout_id: string | null
-          processado_em: string | null
-          solicitado_em: string
-          status: string
-          taxa_total: number
-          tenant_id: string
-          total_pedidos: number
-          valor_estimado: number
+          order_id: string
+          product_id: string | null
+          nome: string
+          preco_unit: number
+          quantidade: number
+          subtotal: number
+          observacoes: string | null
+          criado_em: string
         }
         Insert: {
-          criado_em?: string
           id?: string
-          pagarme_anticipation_id?: string | null
-          payout_id?: string | null
-          processado_em?: string | null
-          solicitado_em?: string
-          status?: string
-          taxa_total: number
-          tenant_id: string
-          total_pedidos: number
-          valor_estimado: number
+          order_id: string
+          product_id?: string | null
+          nome: string
+          preco_unit: number
+          quantidade?: number
+          subtotal: number
+          observacoes?: string | null
+          criado_em?: string
         }
         Update: {
-          criado_em?: string
           id?: string
-          pagarme_anticipation_id?: string | null
-          payout_id?: string | null
-          processado_em?: string | null
-          solicitado_em?: string
-          status?: string
-          taxa_total?: number
-          tenant_id?: string
-          total_pedidos?: number
-          valor_estimado?: number
+          order_id?: string
+          product_id?: string | null
+          nome?: string
+          preco_unit?: number
+          quantidade?: number
+          subtotal?: number
+          observacoes?: string | null
+          criado_em?: string
         }
         Relationships: [
           {
-            foreignKeyName: "payout_advance_requests_payout_id_fkey"
-            columns: ["payout_id"]
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
             isOneToOne: false
-            referencedRelation: "payouts"
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "payout_advance_requests_tenant_id_fkey"
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delivery_assignments: {
+        Row: {
+          id: string
+          order_id: string
+          courier_id: string
+          tenant_id: string
+          status: Database["public"]["Enums"]["delivery_status"]
+          valor_entrega: number
+          aceito_em: string | null
+          coletado_em: string | null
+          entregue_em: string | null
+          cancelado_em: string | null
+          comprovante_url: string | null
+          codigo_confirmacao: string | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          courier_id: string
+          tenant_id: string
+          status?: Database["public"]["Enums"]["delivery_status"]
+          valor_entrega?: number
+          aceito_em?: string | null
+          coletado_em?: string | null
+          entregue_em?: string | null
+          cancelado_em?: string | null
+          comprovante_url?: string | null
+          codigo_confirmacao?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          courier_id?: string
+          tenant_id?: string
+          status?: Database["public"]["Enums"]["delivery_status"]
+          valor_entrega?: number
+          aceito_em?: string | null
+          coletado_em?: string | null
+          entregue_em?: string | null
+          cancelado_em?: string | null
+          comprovante_url?: string | null
+          codigo_confirmacao?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_assignments_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_assignments_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "couriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_assignments_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -544,78 +711,110 @@ export type Database = {
           },
         ]
       }
-      payouts: {
+      courier_locations: {
         Row: {
-          antecipado: boolean
-          atualizado_em: string
-          courier_id: string | null
-          criado_em: string
-          data_prevista: string
-          data_referencia: string
-          erro_mensagem: string | null
           id: string
-          pagarme_anticipation_id: string | null
-          pagarme_transfer_id: string | null
-          processado_em: string | null
-          status: Database["public"]["Enums"]["payout_status"]
-          stripe_transfer_id: string | null
-          taxa_antecipacao: number
-          tenant_id: string | null
-          tipo: string
-          total_pedidos: number
-          valor_bruto: number
-          valor_liquido: number
+          courier_id: string
+          assignment_id: string | null
+          latitude: number
+          longitude: number
+          precisao_m: number | null
+          atualizado_em: string
         }
         Insert: {
-          antecipado?: boolean
-          atualizado_em?: string
-          courier_id?: string | null
-          criado_em?: string
-          data_prevista: string
-          data_referencia: string
-          erro_mensagem?: string | null
           id?: string
-          pagarme_anticipation_id?: string | null
-          pagarme_transfer_id?: string | null
-          processado_em?: string | null
-          status?: Database["public"]["Enums"]["payout_status"]
-          stripe_transfer_id?: string | null
-          taxa_antecipacao?: number
-          tenant_id?: string | null
-          tipo: string
-          total_pedidos?: number
-          valor_bruto: number
-          valor_liquido: number
+          courier_id: string
+          assignment_id?: string | null
+          latitude: number
+          longitude: number
+          precisao_m?: number | null
+          atualizado_em?: string
         }
         Update: {
-          antecipado?: boolean
-          atualizado_em?: string
-          courier_id?: string | null
-          criado_em?: string
-          data_prevista?: string
-          data_referencia?: string
-          erro_mensagem?: string | null
           id?: string
-          pagarme_anticipation_id?: string | null
-          pagarme_transfer_id?: string | null
-          processado_em?: string | null
-          status?: Database["public"]["Enums"]["payout_status"]
-          stripe_transfer_id?: string | null
-          taxa_antecipacao?: number
-          tenant_id?: string | null
-          tipo?: string
-          total_pedidos?: number
-          valor_bruto?: number
-          valor_liquido?: number
+          courier_id?: string
+          assignment_id?: string | null
+          latitude?: number
+          longitude?: number
+          precisao_m?: number | null
+          atualizado_em?: string
         }
         Relationships: [
           {
-            foreignKeyName: "payouts_courier_id_fkey"
+            foreignKeyName: "courier_locations_courier_id_fkey"
             columns: ["courier_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "couriers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "courier_locations_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payouts: {
+        Row: {
+          id: string
+          tipo: string
+          tenant_id: string | null
+          courier_id: string | null
+          valor_bruto: number
+          taxa_antecipacao: number
+          valor_liquido: number
+          total_pedidos: number
+          status: Database["public"]["Enums"]["payout_status"]
+          antecipado: boolean
+          data_referencia: string
+          data_prevista: string
+          stripe_transfer_id: string | null
+          erro_mensagem: string | null
+          processado_em: string | null
+          criado_em: string
+          atualizado_em: string
+        }
+        Insert: {
+          id?: string
+          tipo: string
+          tenant_id?: string | null
+          courier_id?: string | null
+          valor_bruto: number
+          taxa_antecipacao?: number
+          valor_liquido: number
+          total_pedidos?: number
+          status?: Database["public"]["Enums"]["payout_status"]
+          antecipado?: boolean
+          data_referencia: string
+          data_prevista: string
+          stripe_transfer_id?: string | null
+          erro_mensagem?: string | null
+          processado_em?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Update: {
+          id?: string
+          tipo?: string
+          tenant_id?: string | null
+          courier_id?: string | null
+          valor_bruto?: number
+          taxa_antecipacao?: number
+          valor_liquido?: number
+          total_pedidos?: number
+          status?: Database["public"]["Enums"]["payout_status"]
+          antecipado?: boolean
+          data_referencia?: string
+          data_prevista?: string
+          stripe_transfer_id?: string | null
+          erro_mensagem?: string | null
+          processado_em?: string | null
+          criado_em?: string
+          atualizado_em?: string
+        }
+        Relationships: [
           {
             foreignKeyName: "payouts_tenant_id_fkey"
             columns: ["tenant_id"]
@@ -623,178 +822,8 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      plans: {
-        Row: {
-          ativo: boolean
-          atualizado_em: string
-          criado_em: string
-          descricao: string | null
-          id: string
-          max_entregadores: number
-          max_lojas: number
-          max_produtos: number
-          nome: string
-          preco_mensal: number
-          stripe_price_id: string | null
-          stripe_product_id: string | null
-          tem_antecipacao: boolean
-          tem_estoque: boolean
-          tem_relatorios: boolean
-        }
-        Insert: {
-          ativo?: boolean
-          atualizado_em?: string
-          criado_em?: string
-          descricao?: string | null
-          id?: string
-          max_entregadores?: number
-          max_lojas?: number
-          max_produtos?: number
-          nome: string
-          preco_mensal: number
-          stripe_price_id?: string | null
-          stripe_product_id?: string | null
-          tem_antecipacao?: boolean
-          tem_estoque?: boolean
-          tem_relatorios?: boolean
-        }
-        Update: {
-          ativo?: boolean
-          atualizado_em?: string
-          criado_em?: string
-          descricao?: string | null
-          id?: string
-          max_entregadores?: number
-          max_lojas?: number
-          max_produtos?: number
-          nome?: string
-          preco_mensal?: number
-          stripe_price_id?: string | null
-          stripe_product_id?: string | null
-          tem_antecipacao?: boolean
-          tem_estoque?: boolean
-          tem_relatorios?: boolean
-        }
-        Relationships: []
-      }
-      products: {
-        Row: {
-          atualizado_em: string
-          category_id: string | null
-          criado_em: string
-          descricao: string | null
-          disponivel: boolean
-          foto_url: string | null
-          id: string
-          nome: string
-          ordem: number
-          preco: number
-          preco_promocional: number | null
-          stock_minimo: number | null
-          stock_quantity: number | null
-          store_id: string
-          tenant_id: string
-          track_stock: boolean
-        }
-        Insert: {
-          atualizado_em?: string
-          category_id?: string | null
-          criado_em?: string
-          descricao?: string | null
-          disponivel?: boolean
-          foto_url?: string | null
-          id?: string
-          nome: string
-          ordem?: number
-          preco: number
-          preco_promocional?: number | null
-          stock_minimo?: number | null
-          stock_quantity?: number | null
-          store_id: string
-          tenant_id: string
-          track_stock?: boolean
-        }
-        Update: {
-          atualizado_em?: string
-          category_id?: string | null
-          criado_em?: string
-          descricao?: string | null
-          disponivel?: boolean
-          foto_url?: string | null
-          id?: string
-          nome?: string
-          ordem?: number
-          preco?: number
-          preco_promocional?: number | null
-          stock_minimo?: number | null
-          stock_quantity?: number | null
-          store_id?: string
-          tenant_id?: string
-          track_stock?: boolean
-        }
-        Relationships: [
           {
-            foreignKeyName: "products_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "products_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      push_tokens: {
-        Row: {
-          app: string
-          ativo: boolean
-          atualizado_em: string
-          courier_id: string | null
-          criado_em: string
-          id: string
-          plataforma: string
-          token: string
-          user_id: string | null
-        }
-        Insert: {
-          app: string
-          ativo?: boolean
-          atualizado_em?: string
-          courier_id?: string | null
-          criado_em?: string
-          id?: string
-          plataforma: string
-          token: string
-          user_id?: string | null
-        }
-        Update: {
-          app?: string
-          ativo?: boolean
-          atualizado_em?: string
-          courier_id?: string | null
-          criado_em?: string
-          id?: string
-          plataforma?: string
-          token?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "push_tokens_courier_id_fkey"
+            foreignKeyName: "payouts_courier_id_fkey"
             columns: ["courier_id"]
             isOneToOne: false
             referencedRelation: "couriers"
@@ -802,54 +831,101 @@ export type Database = {
           },
         ]
       }
-      stock_movements: {
+      payout_advance_requests: {
         Row: {
-          criado_em: string
-          criado_por: string | null
           id: string
-          motivo: string | null
-          order_id: string | null
-          product_id: string
-          quantidade: number
-          quantidade_anterior: number
-          quantidade_posterior: number
           tenant_id: string
-          tipo: Database["public"]["Enums"]["stock_movement_type"]
+          payout_id: string | null
+          total_pedidos: number
+          taxa_total: number
+          valor_estimado: number
+          status: string
+          solicitado_em: string
+          processado_em: string | null
+          criado_em: string
         }
         Insert: {
-          criado_em?: string
-          criado_por?: string | null
           id?: string
-          motivo?: string | null
-          order_id?: string | null
-          product_id: string
-          quantidade: number
-          quantidade_anterior: number
-          quantidade_posterior: number
           tenant_id: string
-          tipo: Database["public"]["Enums"]["stock_movement_type"]
+          payout_id?: string | null
+          total_pedidos: number
+          taxa_total: number
+          valor_estimado: number
+          status?: string
+          solicitado_em?: string
+          processado_em?: string | null
+          criado_em?: string
         }
         Update: {
-          criado_em?: string
-          criado_por?: string | null
           id?: string
-          motivo?: string | null
-          order_id?: string | null
-          product_id?: string
-          quantidade?: number
-          quantidade_anterior?: number
-          quantidade_posterior?: number
           tenant_id?: string
-          tipo?: Database["public"]["Enums"]["stock_movement_type"]
+          payout_id?: string | null
+          total_pedidos?: number
+          taxa_total?: number
+          valor_estimado?: number
+          status?: string
+          solicitado_em?: string
+          processado_em?: string | null
+          criado_em?: string
         }
         Relationships: [
           {
-            foreignKeyName: "stock_movements_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: "payout_advance_requests_tenant_id_fkey"
+            columns: ["tenant_id"]
             isOneToOne: false
-            referencedRelation: "orders"
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "payout_advance_requests_payout_id_fkey"
+            columns: ["payout_id"]
+            isOneToOne: false
+            referencedRelation: "payouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          id: string
+          product_id: string
+          tenant_id: string
+          order_id: string | null
+          tipo: Database["public"]["Enums"]["stock_movement_type"]
+          quantidade: number
+          quantidade_anterior: number
+          quantidade_posterior: number
+          motivo: string | null
+          criado_por: string | null
+          criado_em: string
+        }
+        Insert: {
+          id?: string
+          product_id: string
+          tenant_id: string
+          order_id?: string | null
+          tipo: Database["public"]["Enums"]["stock_movement_type"]
+          quantidade: number
+          quantidade_anterior: number
+          quantidade_posterior: number
+          motivo?: string | null
+          criado_por?: string | null
+          criado_em?: string
+        }
+        Update: {
+          id?: string
+          product_id?: string
+          tenant_id?: string
+          order_id?: string | null
+          tipo?: Database["public"]["Enums"]["stock_movement_type"]
+          quantidade?: number
+          quantidade_anterior?: number
+          quantidade_posterior?: number
+          motivo?: string | null
+          criado_por?: string | null
+          criado_em?: string
+        }
+        Relationships: [
           {
             foreignKeyName: "stock_movements_product_id_fkey"
             columns: ["product_id"]
@@ -864,308 +940,67 @@ export type Database = {
             referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "stock_movements_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
         ]
       }
-      stores: {
+      push_tokens: {
         Row: {
-          aceita_cartao_maquininha: boolean
-          aceita_cartao_online: boolean
-          aceita_dinheiro: boolean
-          aceita_pix: boolean
-          ativo: boolean
-          atualizado_em: string
-          banner_url: string | null
-          categoria_id: string | null
-          cf_dns_record_id: string | null
-          criado_em: string
-          descricao: string | null
-          domain: string | null
-          endereco: Json | null
-          horarios: Json | null
           id: string
-          logo_url: string | null
-          nome: string
-          raio_entrega_km: number | null
-          slug: string | null
-          taxa_entrega: number
-          telefone: string | null
-          tempo_entrega: number | null
-          tenant_id: string
-          theme: Json | null
-          usa_entregadores_proprios: boolean
+          user_id: string | null
+          courier_id: string | null
+          token: string
+          plataforma: string
+          app: string
+          ativo: boolean
+          criado_em: string
+          atualizado_em: string
         }
         Insert: {
-          aceita_cartao_maquininha?: boolean
-          aceita_cartao_online?: boolean
-          aceita_dinheiro?: boolean
-          aceita_pix?: boolean
-          ativo?: boolean
-          atualizado_em?: string
-          banner_url?: string | null
-          categoria_id?: string | null
-          cf_dns_record_id?: string | null
-          criado_em?: string
-          descricao?: string | null
-          domain?: string | null
-          endereco?: Json | null
-          horarios?: Json | null
           id?: string
-          logo_url?: string | null
-          nome: string
-          raio_entrega_km?: number | null
-          slug?: string | null
-          taxa_entrega?: number
-          telefone?: string | null
-          tempo_entrega?: number | null
-          tenant_id: string
-          theme?: Json | null
-          usa_entregadores_proprios?: boolean
+          user_id?: string | null
+          courier_id?: string | null
+          token: string
+          plataforma: string
+          app: string
+          ativo?: boolean
+          criado_em?: string
+          atualizado_em?: string
         }
         Update: {
-          aceita_cartao_maquininha?: boolean
-          aceita_cartao_online?: boolean
-          aceita_dinheiro?: boolean
-          aceita_pix?: boolean
-          ativo?: boolean
-          atualizado_em?: string
-          banner_url?: string | null
-          categoria_id?: string | null
-          cf_dns_record_id?: string | null
-          criado_em?: string
-          descricao?: string | null
-          domain?: string | null
-          endereco?: Json | null
-          horarios?: Json | null
           id?: string
-          logo_url?: string | null
-          nome?: string
-          raio_entrega_km?: number | null
-          slug?: string | null
-          taxa_entrega?: number
-          telefone?: string | null
-          tempo_entrega?: number | null
-          tenant_id?: string
-          theme?: Json | null
-          usa_entregadores_proprios?: boolean
+          user_id?: string | null
+          courier_id?: string | null
+          token?: string
+          plataforma?: string
+          app?: string
+          ativo?: boolean
+          criado_em?: string
+          atualizado_em?: string
         }
         Relationships: [
           {
-            foreignKeyName: "stores_categoria_id_fkey"
-            columns: ["categoria_id"]
+            foreignKeyName: "push_tokens_courier_id_fkey"
+            columns: ["courier_id"]
             isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stores_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
+            referencedRelation: "couriers"
             referencedColumns: ["id"]
           },
         ]
-      }
-      tenant_subscriptions: {
-        Row: {
-          atualizado_em: string
-          billing_status: string
-          cancelado_em: string | null
-          criado_em: string
-          id: string
-          periodo_fim: string | null
-          periodo_inicio: string | null
-          plan_id: string
-          stripe_price_id: string | null
-          stripe_subscription_id: string | null
-          tenant_id: string
-          trial_termina_em: string | null
-        }
-        Insert: {
-          atualizado_em?: string
-          billing_status?: string
-          cancelado_em?: string | null
-          criado_em?: string
-          id?: string
-          periodo_fim?: string | null
-          periodo_inicio?: string | null
-          plan_id: string
-          stripe_price_id?: string | null
-          stripe_subscription_id?: string | null
-          tenant_id: string
-          trial_termina_em?: string | null
-        }
-        Update: {
-          atualizado_em?: string
-          billing_status?: string
-          cancelado_em?: string | null
-          criado_em?: string
-          id?: string
-          periodo_fim?: string | null
-          periodo_inicio?: string | null
-          plan_id?: string
-          stripe_price_id?: string | null
-          stripe_subscription_id?: string | null
-          tenant_id?: string
-          trial_termina_em?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "tenant_subscriptions_plan_id_fkey"
-            columns: ["plan_id"]
-            isOneToOne: false
-            referencedRelation: "plans"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      tenants: {
-        Row: {
-          ativo: boolean
-          atualizado_em: string
-          cpf_cnpj: string | null
-          criado_em: string
-          email: string
-          id: string
-          nome_responsavel: string
-          pagarme_kyc_link: string | null
-          pagarme_onboarding_status: string
-          pagarme_recipient_id: string | null
-          slug: string | null
-          stripe_account_id: string | null
-          stripe_customer_id: string | null
-          stripe_onboarding_ok: boolean
-          telefone: string | null
-          user_id: string
-        }
-        Insert: {
-          ativo?: boolean
-          atualizado_em?: string
-          cpf_cnpj?: string | null
-          criado_em?: string
-          email: string
-          id?: string
-          nome_responsavel: string
-          pagarme_kyc_link?: string | null
-          pagarme_onboarding_status?: string
-          pagarme_recipient_id?: string | null
-          slug?: string | null
-          stripe_account_id?: string | null
-          stripe_customer_id?: string | null
-          stripe_onboarding_ok?: boolean
-          telefone?: string | null
-          user_id: string
-        }
-        Update: {
-          ativo?: boolean
-          atualizado_em?: string
-          cpf_cnpj?: string | null
-          criado_em?: string
-          email?: string
-          id?: string
-          nome_responsavel?: string
-          pagarme_kyc_link?: string | null
-          pagarme_onboarding_status?: string
-          pagarme_recipient_id?: string | null
-          slug?: string | null
-          stripe_account_id?: string | null
-          stripe_customer_id?: string | null
-          stripe_onboarding_ok?: boolean
-          telefone?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
-      webhook_events_log: {
-        Row: {
-          error_message: string | null
-          event_id: string
-          event_type: string
-          id: string
-          payload: Json
-          processado_em: string | null
-          recebido_em: string
-          source: string
-          status: string
-        }
-        Insert: {
-          error_message?: string | null
-          event_id: string
-          event_type: string
-          id?: string
-          payload: Json
-          processado_em?: string | null
-          recebido_em?: string
-          source: string
-          status?: string
-        }
-        Update: {
-          error_message?: string | null
-          event_id?: string
-          event_type?: string
-          id?: string
-          payload?: Json
-          processado_em?: string | null
-          recebido_em?: string
-          source?: string
-          status?: string
-        }
-        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      consumer_has_order_with_tenant: {
-        Args: { p_consumer_id: string }
-        Returns: boolean
-      }
-      consumer_tracking_courier: {
-        Args: { p_courier_id: string }
-        Returns: boolean
-      }
-      courier_assigned_to_order: {
-        Args: { p_order_id: string }
-        Returns: boolean
-      }
-      courier_has_active_delivery: {
-        Args: { p_courier_id: string; p_statuses: string[] }
-        Returns: boolean
-      }
-      get_user_id_by_email: { Args: { p_email: string }; Returns: string }
-      is_admin: { Args: never; Returns: boolean }
-      my_consumer_id: { Args: never; Returns: string }
-      my_courier_id: { Args: never; Returns: string }
-      my_tenant_id: { Args: never; Returns: string }
-      order_belongs_to_consumer: {
-        Args: { p_order_id: string }
-        Returns: boolean
-      }
-      order_belongs_to_tenant: {
-        Args: { p_order_id: string }
-        Returns: boolean
-      }
-      tenant_tracking_courier: {
-        Args: { p_courier_id: string }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
-      courier_status: "pendente" | "aprovado" | "reprovado" | "suspenso"
-      courier_type: "proprio" | "autonomo"
-      delivery_status:
-        | "pendente"
-        | "aceita"
-        | "coletada"
-        | "entregue"
-        | "cancelada"
       order_status:
         | "novo"
         | "confirmado"
@@ -1174,7 +1009,12 @@ export type Database = {
         | "saiu_para_entrega"
         | "entregue"
         | "cancelado"
+      payment_status: "pendente" | "pago" | "estornado" | "em_disputa"
+      delivery_status: "pendente" | "aceita" | "coletada" | "entregue" | "cancelada"
       payout_status: "agendado" | "processando" | "concluido" | "falhou"
+      billing_status: "trial" | "ativa" | "em_atraso" | "cancelada" | "suspensa"
+      courier_status: "pendente" | "aprovado" | "reprovado" | "suspenso"
+      courier_type: "proprio" | "autonomo"
       stock_movement_type:
         | "entrada"
         | "saida_pedido"
@@ -1187,33 +1027,28 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+// Helper types for convenience
+type PublicSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  PublicTableNameOrOptions extends
+    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
+        PublicSchema["Views"])
+    ? (PublicSchema["Tables"] &
+        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1221,24 +1056,20 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -1246,24 +1077,20 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  PublicTableNameOrOptions extends
+    | keyof PublicSchema["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
+    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -1271,70 +1098,14 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  PublicEnumNameOrOptions extends
+    | keyof PublicSchema["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
+    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
     : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
-  public: {
-    Enums: {
-      courier_status: ["pendente", "aprovado", "reprovado", "suspenso"],
-      courier_type: ["proprio", "autonomo"],
-      delivery_status: [
-        "pendente",
-        "aceita",
-        "coletada",
-        "entregue",
-        "cancelada",
-      ],
-      order_status: [
-        "novo",
-        "confirmado",
-        "em_preparo",
-        "aguardando_entregador",
-        "saiu_para_entrega",
-        "entregue",
-        "cancelado",
-      ],
-      payout_status: ["agendado", "processando", "concluido", "falhou"],
-      stock_movement_type: [
-        "entrada",
-        "saida_pedido",
-        "ajuste_positivo",
-        "ajuste_negativo",
-      ],
-    },
-  },
-} as const
