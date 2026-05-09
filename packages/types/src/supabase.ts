@@ -128,6 +128,57 @@ export type Database = {
         }
         Relationships: []
       }
+      courier_invites: {
+        Row: {
+          criada_em: string
+          email: string | null
+          expira_em: string
+          nome: string
+          telefone: string
+          tenant_id: string
+          token: string
+          usado_em: string | null
+          usado_por_courier_id: string | null
+        }
+        Insert: {
+          criada_em?: string
+          email?: string | null
+          expira_em?: string
+          nome: string
+          telefone: string
+          tenant_id: string
+          token?: string
+          usado_em?: string | null
+          usado_por_courier_id?: string | null
+        }
+        Update: {
+          criada_em?: string
+          email?: string | null
+          expira_em?: string
+          nome?: string
+          telefone?: string
+          tenant_id?: string
+          token?: string
+          usado_em?: string | null
+          usado_por_courier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_invites_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courier_invites_usado_por_courier_id_fkey"
+            columns: ["usado_por_courier_id"]
+            isOneToOne: false
+            referencedRelation: "couriers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courier_locations: {
         Row: {
           assignment_id: string | null
@@ -328,6 +379,105 @@ export type Database = {
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_threads: {
+        Row: {
+          arquivada: boolean
+          consumer_id: string | null
+          criada_em: string
+          id: string
+          nao_lidas_consumer: number
+          nao_lidas_lojista: number
+          order_id: string | null
+          origem: string
+          tenant_id: string
+          ultima_em: string
+        }
+        Insert: {
+          arquivada?: boolean
+          consumer_id?: string | null
+          criada_em?: string
+          id?: string
+          nao_lidas_consumer?: number
+          nao_lidas_lojista?: number
+          order_id?: string | null
+          origem: string
+          tenant_id: string
+          ultima_em?: string
+        }
+        Update: {
+          arquivada?: boolean
+          consumer_id?: string | null
+          criada_em?: string
+          id?: string
+          nao_lidas_consumer?: number
+          nao_lidas_lojista?: number
+          order_id?: string | null
+          origem?: string
+          tenant_id?: string
+          ultima_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_threads_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "consumers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_threads_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          autor_id: string | null
+          autor_tipo: string
+          corpo: string
+          criada_em: string
+          id: string
+          metadados: Json | null
+          thread_id: string
+        }
+        Insert: {
+          autor_id?: string | null
+          autor_tipo: string
+          corpo: string
+          criada_em?: string
+          id?: string
+          metadados?: Json | null
+          thread_id: string
+        }
+        Update: {
+          autor_id?: string | null
+          autor_tipo?: string
+          corpo?: string
+          criada_em?: string
+          id?: string
+          metadados?: Json | null
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "message_threads"
             referencedColumns: ["id"]
           },
         ]
@@ -868,6 +1018,73 @@ export type Database = {
           },
         ]
       }
+      store_reviews: {
+        Row: {
+          comentario: string | null
+          consumer_id: string
+          criada_em: string
+          estrelas_entrega: number | null
+          estrelas_loja: number | null
+          id: string
+          motivo_sinalizacao: string | null
+          order_id: string
+          respondida_em: string | null
+          resposta_lojista: string | null
+          sinalizada: boolean
+          tenant_id: string
+        }
+        Insert: {
+          comentario?: string | null
+          consumer_id: string
+          criada_em?: string
+          estrelas_entrega?: number | null
+          estrelas_loja?: number | null
+          id?: string
+          motivo_sinalizacao?: string | null
+          order_id: string
+          respondida_em?: string | null
+          resposta_lojista?: string | null
+          sinalizada?: boolean
+          tenant_id: string
+        }
+        Update: {
+          comentario?: string | null
+          consumer_id?: string
+          criada_em?: string
+          estrelas_entrega?: number | null
+          estrelas_loja?: number | null
+          id?: string
+          motivo_sinalizacao?: string | null
+          order_id?: string
+          respondida_em?: string | null
+          resposta_lojista?: string | null
+          sinalizada?: boolean
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_reviews_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "consumers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_reviews_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           aceita_cartao_maquininha: boolean
@@ -960,6 +1177,50 @@ export type Database = {
           },
           {
             foreignKeyName: "stores_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assunto: string
+          atualizada_em: string
+          autor_id: string
+          criada_em: string
+          id: string
+          mensagem: string
+          prioridade: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          assunto: string
+          atualizada_em?: string
+          autor_id: string
+          criada_em?: string
+          id?: string
+          mensagem: string
+          prioridade?: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          assunto?: string
+          atualizada_em?: string
+          autor_id?: string
+          criada_em?: string
+          id?: string
+          mensagem?: string
+          prioridade?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"

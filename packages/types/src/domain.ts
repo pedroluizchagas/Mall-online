@@ -105,3 +105,15 @@ export interface StoreTheme {
   template: TemplateVitrine
   paleta: PaletaVitrine | null
 }
+
+// Mensagens
+export type MessageThreadOrigem = 'cliente' | 'plataforma' | 'broadcast'
+export type MessageAutorTipo = 'lojista' | 'consumer' | 'sistema'
+
+// Suporte
+export type SupportTicketPrioridade = 'baixa' | 'normal' | 'alta' | 'critica'
+export type SupportTicketStatus =
+  | 'aberto'
+  | 'em_andamento'
+  | 'resolvido'
+  | 'fechado'
