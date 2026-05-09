@@ -868,6 +868,73 @@ export type Database = {
           },
         ]
       }
+      store_reviews: {
+        Row: {
+          comentario: string | null
+          consumer_id: string
+          criada_em: string
+          estrelas_entrega: number | null
+          estrelas_loja: number
+          id: string
+          motivo_sinalizacao: string | null
+          order_id: string
+          respondida_em: string | null
+          resposta_lojista: string | null
+          sinalizada: boolean
+          tenant_id: string
+        }
+        Insert: {
+          comentario?: string | null
+          consumer_id: string
+          criada_em?: string
+          estrelas_entrega?: number | null
+          estrelas_loja: number
+          id?: string
+          motivo_sinalizacao?: string | null
+          order_id: string
+          respondida_em?: string | null
+          resposta_lojista?: string | null
+          sinalizada?: boolean
+          tenant_id: string
+        }
+        Update: {
+          comentario?: string | null
+          consumer_id?: string
+          criada_em?: string
+          estrelas_entrega?: number | null
+          estrelas_loja?: number
+          id?: string
+          motivo_sinalizacao?: string | null
+          order_id?: string
+          respondida_em?: string | null
+          resposta_lojista?: string | null
+          sinalizada?: boolean
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_reviews_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "consumers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: true
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_reviews_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           aceita_cartao_maquininha: boolean
