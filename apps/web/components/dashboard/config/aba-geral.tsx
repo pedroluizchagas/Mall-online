@@ -1,8 +1,7 @@
 'use client'
 
 import { useFormState, useFormStatus } from 'react-dom'
-import { useState } from 'react'
-import { atualizarDadosGerais, atualizarImagensLoja } from '@/lib/actions/lojas'
+import { atualizarDadosGerais } from '@/lib/actions/lojas'
 
 function BotaoSalvar({ label = 'Salvar' }: { label?: string }) {
   const { pending } = useFormStatus()
@@ -23,18 +22,6 @@ const inputClass =
 
 export function AbaGeral({ loja }: { loja: any }) {
   const [estadoGeral, dispatchGeral] = useFormState(atualizarDadosGerais, null)
-  const [estadoImagens, dispatchImagens] = useFormState(atualizarImagensLoja, null)
-  const [previewLogo, setPreviewLogo] = useState<string | null>(null)
-  const [previewBanner, setPreviewBanner] = useState<string | null>(null)
-  const [ativo, setAtivo] = useState<boolean>(loja.ativo ?? true)
-
-  function handleImagemChange(
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: (url: string) => void
-  ) {
-    const file = e.target.files?.[0]
-    if (file) setter(URL.createObjectURL(file))
-  }
 
   function sanitizarSlug(valor: string) {
     return valor
@@ -48,85 +35,15 @@ export function AbaGeral({ loja }: { loja: any }) {
 
   return (
     <div className="space-y-8">
-      {/* Imagens */}
       <div
         className="rounded-xl p-5"
         style={{ border: '1px solid var(--line)', background: 'var(--bg)' }}
       >
-        <h2 className="font-semibold text-ink mb-4">Imagens da loja</h2>
-
-        <form action={dispatchImagens} className="space-y-4">
-          {estadoImagens?.erro && (
-            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
-              {estadoImagens.erro}
-            </p>
-          )}
-          {estadoImagens?.sucesso && (
-            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#e6f7e3', color: 'var(--ok)' }}>
-              Imagens atualizadas com sucesso.
-            </p>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-ink-2 mb-2">Logo da loja</label>
-            <div className="flex items-center gap-4">
-              <div
-                className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0"
-                style={{ background: 'var(--bg-2)' }}
-              >
-                {(previewLogo || loja.logo_url) ? (
-                  <img src={previewLogo || loja.logo_url} alt="Logo" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-ink-3 text-2xl">?</div>
-                )}
-              </div>
-              <div>
-                <input
-                  name="logo"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => handleImagemChange(e, setPreviewLogo)}
-                  className="text-sm text-ink-3 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:cursor-pointer"
-                />
-                <p className="text-xs text-ink-3 mt-1">Recomendado: 400×400px. JPEG ou PNG.</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-ink-2 mb-2">Banner da loja</label>
-            <div className="space-y-2">
-              <div
-                className="w-full h-28 rounded-xl overflow-hidden"
-                style={{ background: 'var(--bg-2)' }}
-              >
-                {(previewBanner || loja.banner_url) ? (
-                  <img src={previewBanner || loja.banner_url} alt="Banner" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-ink-3 text-sm">Sem banner</div>
-                )}
-              </div>
-              <input
-                name="banner"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => handleImagemChange(e, setPreviewBanner)}
-                className="text-sm text-ink-3 file:mr-3 file:py-1.5 file:px-3 file:rounded-full file:border-0 file:text-xs file:font-semibold file:cursor-pointer"
-              />
-              <p className="text-xs text-ink-3">Recomendado: 1200×400px. JPEG ou PNG.</p>
-            </div>
-          </div>
-
-          <BotaoSalvar label="Salvar imagens" />
-        </form>
-      </div>
-
-      {/* Dados gerais */}
-      <div
-        className="rounded-xl p-5"
-        style={{ border: '1px solid var(--line)', background: 'var(--bg)' }}
-      >
-        <h2 className="font-semibold text-ink mb-4">Dados da loja</h2>
+        <h2 className="font-semibold text-ink mb-1">Dados da loja</h2>
+        <p className="text-xs text-ink-3 mb-4">
+          Identidade visual (logo, banner, descrição) e status agora são
+          gerenciados em <strong>Minha Loja</strong>.
+        </p>
 
         <form action={dispatchGeral} className="space-y-4">
           {estadoGeral?.erro && (
@@ -147,17 +64,6 @@ export function AbaGeral({ loja }: { loja: any }) {
               defaultValue={loja.nome}
               required
               className={inputClass}
-              style={{ borderColor: 'var(--line)' }}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-ink-2 mb-1">Descrição</label>
-            <textarea
-              name="descricao"
-              defaultValue={loja.descricao ?? ''}
-              rows={3}
-              className={`${inputClass} resize-none`}
               style={{ borderColor: 'var(--line)' }}
             />
           </div>
@@ -197,34 +103,6 @@ export function AbaGeral({ loja }: { loja: any }) {
               URL pública da sua loja. Só letras minúsculas, números e hífens.
               {loja.slug && ' Alterar invalida links compartilhados.'}
             </p>
-          </div>
-
-          {/* Status da loja */}
-          <div>
-            <label className="block text-sm font-medium text-ink-2 mb-2">Status da loja</label>
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={ativo}
-                onClick={() => setAtivo((v) => !v)}
-                className="relative w-11 h-6 rounded-full transition-colors flex-shrink-0"
-                style={{ background: ativo ? 'var(--brick)' : 'var(--bg-3)' }}
-              >
-                <span
-                  className="absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"
-                  style={{ transform: ativo ? 'translateX(22px)' : 'translateX(2px)' }}
-                />
-              </button>
-              <span className="text-sm text-ink">
-                {ativo ? (
-                  <span>Loja <strong>ativa</strong> — clientes podem fazer pedidos</span>
-                ) : (
-                  <span>Loja <strong>inativa</strong> — pedidos pausados</span>
-                )}
-              </span>
-            </div>
-            <input type="hidden" name="ativo" value={String(ativo)} />
           </div>
 
           <BotaoSalvar />

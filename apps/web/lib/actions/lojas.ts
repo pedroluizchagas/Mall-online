@@ -7,7 +7,6 @@ import type { HorariosFuncionamento } from '@mallora/types'
 
 const schemaDadosGerais = z.object({
   nome: z.string().min(2, 'Nome obrigatório'),
-  descricao: z.string().optional(),
   telefone: z.string().min(10, 'Telefone inválido').optional(),
   slug: z
     .string()
@@ -15,7 +14,6 @@ const schemaDadosGerais = z.object({
     .max(60, 'Slug muito longo')
     .regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens')
     .optional(),
-  ativo: z.boolean(),
 })
 
 const schemaEntrega = z.object({
@@ -75,10 +73,8 @@ export async function atualizarDadosGerais(
 
   const dados = schemaDadosGerais.safeParse({
     nome: formData.get('nome'),
-    descricao: formData.get('descricao') || undefined,
     telefone: formData.get('telefone') || undefined,
     slug: slugRaw ? String(slugRaw).toLowerCase().trim() : undefined,
-    ativo: formData.get('ativo') === 'true',
   })
 
   if (!dados.success) return { erro: dados.error.errors[0].message }
@@ -176,7 +172,10 @@ export async function atualizarMetodosPagamento(
   return { sucesso: true }
 }
 
-// Atualizar imagens da loja (logo e banner)
+/**
+ * @deprecated Use publicarVitrine() em loja-vitrine.ts. Esta action grava
+ * em product-images; a vitrine usa o bucket store-assets.
+ */
 export async function atualizarImagensLoja(
   _prevState: unknown,
   formData: FormData

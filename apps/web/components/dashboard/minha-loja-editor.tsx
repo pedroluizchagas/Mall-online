@@ -1,12 +1,18 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Check, Lock, Upload, Zap, ImagePlus } from 'lucide-react'
+import type { PaletaVitrine, StoreTheme, TemplateVitrine } from '@mallora/types'
+import { publicarVitrine } from '@/lib/actions/loja-vitrine'
+import { showToast } from '@/components/ui/toast'
+import { PageHeader } from '@/components/dashboard/page-header'
+import { StoreStatusToggle } from '@/components/dashboard/store-status-toggle'
+import { LinkPublicoBotao } from '@/components/dashboard/link-publico-botao'
 
 // ─── Templates ───────────────────────────────────────────────────────────────
 
 type Tema = {
-  id: string
+  id: TemplateVitrine
   nome: string
   acento: string
   acentoDk: string
@@ -77,7 +83,7 @@ const TEMPLATES: Tema[] = [
 // ─── Paletas ─────────────────────────────────────────────────────────────────
 
 type Paleta = {
-  id: string
+  id: PaletaVitrine
   nome: string
   cor1: string
   cor2: string
@@ -157,6 +163,22 @@ export interface LojaEditorInicial {
   descricao: string | null
   logo_url: string | null
   banner_url: string | null
+  theme: StoreTheme | null
+  ativo: boolean
+  slug: string | null
+}
+
+const TAMANHO_MAX_BYTES = 5 * 1024 * 1024
+const MIME_PERMITIDOS = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
+
+function validarUpload(arquivo: File, rotulo: string): string | null {
+  if (arquivo.size > TAMANHO_MAX_BYTES) {
+    return `${rotulo} excede o tamanho máximo de 5MB`
+  }
+  if (!MIME_PERMITIDOS.includes(arquivo.type)) {
+    return `${rotulo} deve ser PNG, JPEG, WebP ou SVG`
+  }
+  return null
 }
 
 export interface ProdutoEditorInicial {
@@ -176,18 +198,32 @@ type TabPreview = 'home' | 'produto' | 'carrinho'
 // ─── Editor principal ─────────────────────────────────────────────────────────
 
 export function MinhaLojaEditor({ loja, produtos }: Props) {
-  const [templateId, setTemplateId] = useState('market')
-  const [paletaId, setPaletaId] = useState<string | null>(null)
+  const [templateId, setTemplateId] = useState<TemplateVitrine>(
+    (loja.theme?.template as TemplateVitrine | undefined) ?? 'market'
+  )
+  const [paletaId, setPaletaId] = useState<PaletaVitrine | null>(loja.theme?.paleta ?? null)
   const [nome, setNome] = useState(loja.nome)
   const [tagline, setTagline] = useState(loja.descricao ?? '')
   const [logoUrl, setLogoUrl] = useState<string | null>(loja.logo_url)
   const [bannerUrl, setBannerUrl] = useState<string | null>(loja.banner_url)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [bannerFile, setBannerFile] = useState<File | null>(null)
   const [activeTab, setActiveTab] = useState<TabPreview>('home')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   const logoInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
+  const logoPreviewRef = useRef<string | null>(null)
+  const bannerPreviewRef = useRef<string | null>(null)
+
+  // Cleanup das URLs criadas com URL.createObjectURL ao desmontar
+  useEffect(() => {
+    return () => {
+      if (logoPreviewRef.current) URL.revokeObjectURL(logoPreviewRef.current)
+      if (bannerPreviewRef.current) URL.revokeObjectURL(bannerPreviewRef.current)
+    }
+  }, [])
 
   const template = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0]
   const paleta = paletaId ? PALETAS.find((p) => p.id === paletaId) : null
@@ -202,25 +238,61 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    const erro = validarUpload(file, 'Logo')
+    if (erro) {
+      showToast({ tipo: 'erro', titulo: 'Logo inválido', descricao: erro })
+      e.target.value = ''
+      return
+    }
+    if (logoPreviewRef.current) URL.revokeObjectURL(logoPreviewRef.current)
     const url = URL.createObjectURL(file)
+    logoPreviewRef.current = url
+    setLogoFile(file)
     setLogoUrl(url)
   }
 
   function handleBannerChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    const erro = validarUpload(file, 'Banner')
+    if (erro) {
+      showToast({ tipo: 'erro', titulo: 'Banner inválido', descricao: erro })
+      e.target.value = ''
+      return
+    }
+    if (bannerPreviewRef.current) URL.revokeObjectURL(bannerPreviewRef.current)
     const url = URL.createObjectURL(file)
+    bannerPreviewRef.current = url
+    setBannerFile(file)
     setBannerUrl(url)
   }
 
   async function handlePublicar() {
     setSaving(true)
-    localStorage.setItem(
-      'mallevo-loja-config',
-      JSON.stringify({ templateId, paletaId, nome, tagline })
-    )
-    await new Promise((r) => setTimeout(r, 800))
+
+    const formData = new FormData()
+    formData.set('template', templateId)
+    formData.set('paleta', paletaId ?? '')
+    formData.set('nome', nome)
+    formData.set('tagline', tagline)
+    if (logoFile) formData.set('logo', logoFile)
+    if (bannerFile) formData.set('banner', bannerFile)
+
+    const resultado = await publicarVitrine(formData)
     setSaving(false)
+
+    if ('erro' in resultado) {
+      showToast({
+        tipo: 'erro',
+        titulo: 'Não foi possível publicar',
+        descricao: resultado.erro,
+      })
+      return
+    }
+
+    setLogoFile(null)
+    setBannerFile(null)
+    showToast({ tipo: 'sucesso', titulo: 'Vitrine publicada' })
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
   }
@@ -230,27 +302,33 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
       {/* ── Painel esquerdo (editor) ──────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-w-0">
         <div className="p-9 max-w-[720px]">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-4 mb-9">
-            <div>
-              <h1 className="font-display text-[28px] m-0 leading-tight">Minha Loja</h1>
-              <p className="text-[14px] text-ink-3 mt-1">
-                Personalize a experiência visual dos seus clientes no app.
-              </p>
-            </div>
-            <button
-              onClick={handlePublicar}
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold hover:opacity-90 transition-opacity flex-shrink-0 disabled:opacity-60"
-              style={{
-                background: saved ? 'var(--ok)' : 'var(--brick)',
-                color: saved ? '#fff' : 'var(--brick-ink)',
-              }}
-            >
-              <Zap className="w-3.5 h-3.5" />
-              {saving ? 'Publicando…' : saved ? 'Publicado!' : 'Publicar alterações'}
-            </button>
-          </div>
+          <PageHeader
+            titulo="Minha Loja"
+            subtitulo="Personalize a vitrine que seus clientes verão."
+            badgeCabecalho={
+              loja.ativo
+                ? { texto: 'Loja aberta', cor: 'ok' }
+                : { texto: 'Loja pausada', cor: 'warn' }
+            }
+            acoes={
+              <>
+                <StoreStatusToggle inicialAtivo={loja.ativo} />
+                <LinkPublicoBotao slug={loja.slug} />
+                <button
+                  onClick={handlePublicar}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-60"
+                  style={{
+                    background: saved ? 'var(--ok)' : 'var(--brick)',
+                    color: saved ? '#fff' : 'var(--brick-ink)',
+                  }}
+                >
+                  <Zap className="w-3 h-3" />
+                  {saving ? 'Publicando…' : saved ? 'Publicado!' : 'Publicar alterações'}
+                </button>
+              </>
+            }
+          />
 
           {/* ── TEMPLATE ─────────────────────────────────────── */}
           <Secao titulo="TEMPLATE">
