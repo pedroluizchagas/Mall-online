@@ -128,6 +128,57 @@ export type Database = {
         }
         Relationships: []
       }
+      courier_invites: {
+        Row: {
+          criada_em: string
+          email: string | null
+          expira_em: string
+          nome: string
+          telefone: string
+          tenant_id: string
+          token: string
+          usado_em: string | null
+          usado_por_courier_id: string | null
+        }
+        Insert: {
+          criada_em?: string
+          email?: string | null
+          expira_em?: string
+          nome: string
+          telefone: string
+          tenant_id: string
+          token?: string
+          usado_em?: string | null
+          usado_por_courier_id?: string | null
+        }
+        Update: {
+          criada_em?: string
+          email?: string | null
+          expira_em?: string
+          nome?: string
+          telefone?: string
+          tenant_id?: string
+          token?: string
+          usado_em?: string | null
+          usado_por_courier_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courier_invites_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "courier_invites_usado_por_courier_id_fkey"
+            columns: ["usado_por_courier_id"]
+            isOneToOne: false
+            referencedRelation: "couriers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courier_locations: {
         Row: {
           assignment_id: string | null
