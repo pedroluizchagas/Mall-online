@@ -7,6 +7,7 @@ import { marcarThreadLida } from '../actions'
 import { MensagemBubble, type MensagemItem } from '../_components/mensagem-bubble'
 import { AcaoArquivarButton } from '../_components/acao-arquivar-button'
 import { RealtimeThread } from '../_components/realtime-thread'
+import { Composer } from '../_components/composer'
 
 interface LinhaThread {
   id: string
@@ -95,12 +96,18 @@ export default async function PaginaThread({ params }: { params: { threadId: str
         </div>
       )}
 
-      <div
-        className="mt-6 p-4 rounded-2xl text-center"
-        style={{ background: 'rgba(91,138,199,0.08)', border: '1px dashed rgba(91,138,199,0.30)' }}
-      >
-        <p className="text-sm text-ink-2 font-medium">Em breve: responder direto daqui (PR 2.4b).</p>
-      </div>
+      {thread.arquivada ? (
+        <div
+          className="mt-6 p-4 rounded-2xl text-center"
+          style={{ background: 'rgba(91,138,199,0.08)', border: '1px dashed rgba(91,138,199,0.30)' }}
+        >
+          <p className="text-sm text-ink-2 font-medium">
+            Conversa arquivada. Desarquive para responder.
+          </p>
+        </div>
+      ) : (
+        <Composer threadId={thread.id} />
+      )}
 
       <RealtimeThread threadId={thread.id} />
     </div>
