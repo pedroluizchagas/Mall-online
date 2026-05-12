@@ -26,21 +26,23 @@ export function StoreStatusToggle({ inicialAtivo }: Props) {
     setAtivo(novoAtivo)
     setPendente(null)
 
-    startTransition(async () => {
-      const r = await alternarStatusLoja(novoAtivo)
-      if ('erro' in r) {
-        setAtivo(anterior)
+    startTransition(() => {
+      void (async () => {
+        const r = await alternarStatusLoja(novoAtivo)
+        if ('erro' in r) {
+          setAtivo(anterior)
+          showToast({
+            tipo: 'erro',
+            titulo: 'Não foi possível alterar o status',
+            descricao: r.erro,
+          })
+          return
+        }
         showToast({
-          tipo: 'erro',
-          titulo: 'Não foi possível alterar o status',
-          descricao: r.erro,
+          tipo: 'sucesso',
+          titulo: novoAtivo ? 'Loja reaberta' : 'Loja pausada',
         })
-        return
-      }
-      showToast({
-        tipo: 'sucesso',
-        titulo: novoAtivo ? 'Loja reaberta' : 'Loja pausada',
-      })
+      })()
     })
   }
 

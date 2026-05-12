@@ -14,15 +14,17 @@ export function ResponderForm({ reviewId }: { reviewId: string }) {
       showToast({ tipo: 'erro', titulo: 'Resposta muito curta' })
       return
     }
-    startTransition(async () => {
-      const r = await responderAvaliacao({ reviewId, resposta: texto })
-      if ('erro' in r) {
-        showToast({ tipo: 'erro', titulo: 'Não foi possível responder', descricao: r.erro })
-        return
-      }
-      showToast({ tipo: 'sucesso', titulo: 'Resposta enviada' })
-      setTexto('')
-      setAberto(false)
+    startTransition(() => {
+      void (async () => {
+        const r = await responderAvaliacao({ reviewId, resposta: texto })
+        if ('erro' in r) {
+          showToast({ tipo: 'erro', titulo: 'Não foi possível responder', descricao: r.erro })
+          return
+        }
+        showToast({ tipo: 'sucesso', titulo: 'Resposta enviada' })
+        setTexto('')
+        setAberto(false)
+      })()
     })
   }
 

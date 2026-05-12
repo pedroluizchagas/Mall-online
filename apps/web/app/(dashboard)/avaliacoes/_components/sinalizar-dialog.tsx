@@ -18,23 +18,27 @@ export function SinalizarDialog({ reviewId, sinalizada }: { reviewId: string; si
       showToast({ tipo: 'erro', titulo: 'Descreva o motivo (mín. 3 caracteres)' })
       return
     }
-    startTransition(async () => {
-      const r = await sinalizarAvaliacao({ reviewId, motivo })
-      if ('erro' in r) {
-        showToast({ tipo: 'erro', titulo: 'Não foi possível sinalizar', descricao: r.erro })
-        return
-      }
-      showToast({ tipo: 'sucesso', titulo: 'Avaliação sinalizada' })
-      setMotivo('')
-      setAberto(false)
+    startTransition(() => {
+      void (async () => {
+        const r = await sinalizarAvaliacao({ reviewId, motivo })
+        if ('erro' in r) {
+          showToast({ tipo: 'erro', titulo: 'Não foi possível sinalizar', descricao: r.erro })
+          return
+        }
+        showToast({ tipo: 'sucesso', titulo: 'Avaliação sinalizada' })
+        setMotivo('')
+        setAberto(false)
+      })()
     })
   }
 
   function remover() {
-    startTransition(async () => {
-      const r = await removerSinalizacao(reviewId)
-      if ('erro' in r) showToast({ tipo: 'erro', titulo: 'Não foi possível remover', descricao: r.erro })
-      else showToast({ tipo: 'sucesso', titulo: 'Sinalização removida' })
+    startTransition(() => {
+      void (async () => {
+        const r = await removerSinalizacao(reviewId)
+        if ('erro' in r) showToast({ tipo: 'erro', titulo: 'Não foi possível remover', descricao: r.erro })
+        else showToast({ tipo: 'sucesso', titulo: 'Sinalização removida' })
+      })()
     })
   }
 
