@@ -17,6 +17,10 @@ export type CourierStatus = 'pendente' | 'aprovado' | 'reprovado' | 'suspenso'
 
 export type PayoutStatus = 'agendado' | 'processando' | 'concluido' | 'falhou'
 
+export type MessageThreadOrigem = 'cliente' | 'plataforma' | 'broadcast'
+
+export type MessageAutorTipo = 'lojista' | 'consumer' | 'sistema'
+
 // Endereço (usado em consumers.enderecos e orders.endereco_entrega)
 export interface Endereco {
   apelido?: string        // ex: 'Casa', 'Trabalho'

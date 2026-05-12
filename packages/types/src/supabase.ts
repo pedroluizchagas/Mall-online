@@ -383,6 +383,105 @@ export type Database = {
           },
         ]
       }
+      message_threads: {
+        Row: {
+          arquivada: boolean
+          consumer_id: string | null
+          criada_em: string
+          id: string
+          nao_lidas_consumer: number
+          nao_lidas_lojista: number
+          order_id: string | null
+          origem: string
+          tenant_id: string
+          ultima_em: string
+        }
+        Insert: {
+          arquivada?: boolean
+          consumer_id?: string | null
+          criada_em?: string
+          id?: string
+          nao_lidas_consumer?: number
+          nao_lidas_lojista?: number
+          order_id?: string | null
+          origem: string
+          tenant_id: string
+          ultima_em?: string
+        }
+        Update: {
+          arquivada?: boolean
+          consumer_id?: string | null
+          criada_em?: string
+          id?: string
+          nao_lidas_consumer?: number
+          nao_lidas_lojista?: number
+          order_id?: string | null
+          origem?: string
+          tenant_id?: string
+          ultima_em?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_threads_consumer_id_fkey"
+            columns: ["consumer_id"]
+            isOneToOne: false
+            referencedRelation: "consumers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_threads_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_threads_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          autor_id: string | null
+          autor_tipo: string
+          corpo: string
+          criada_em: string
+          id: string
+          metadados: Json | null
+          thread_id: string
+        }
+        Insert: {
+          autor_id?: string | null
+          autor_tipo: string
+          corpo: string
+          criada_em?: string
+          id?: string
+          metadados?: Json | null
+          thread_id: string
+        }
+        Update: {
+          autor_id?: string | null
+          autor_tipo?: string
+          corpo?: string
+          criada_em?: string
+          id?: string
+          metadados?: Json | null
+          thread_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "message_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           criado_em: string
