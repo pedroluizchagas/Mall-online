@@ -8,6 +8,7 @@ import { Filtros, type FiltroMensagens } from './_components/filtros'
 import { ThreadCard, type ThreadItem } from './_components/thread-card'
 import { Paginacao } from './_components/paginacao'
 import { RealtimeListaThreads } from './_components/realtime-lista-threads'
+import { BroadcastDialog } from './_components/broadcast-dialog'
 
 const PAGE_SIZE = 20
 
@@ -115,6 +116,7 @@ export default async function PaginaMensagens({ searchParams }: { searchParams: 
       <PageHeader
         titulo="Mensagens"
         subtitulo="Converse com seus clientes sem sair do dashboard."
+        acoes={<BroadcastDialog />}
       />
 
       <MetricasHeader
