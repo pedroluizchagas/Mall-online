@@ -1085,6 +1085,50 @@ export type Database = {
           },
         ]
       }
+      support_tickets: {
+        Row: {
+          assunto: string
+          atualizada_em: string
+          autor_id: string
+          criada_em: string
+          id: string
+          mensagem: string
+          prioridade: string
+          status: string
+          tenant_id: string
+        }
+        Insert: {
+          assunto: string
+          atualizada_em?: string
+          autor_id: string
+          criada_em?: string
+          id?: string
+          mensagem: string
+          prioridade?: string
+          status?: string
+          tenant_id: string
+        }
+        Update: {
+          assunto?: string
+          atualizada_em?: string
+          autor_id?: string
+          criada_em?: string
+          id?: string
+          mensagem?: string
+          prioridade?: string
+          status?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           aceita_cartao_maquininha: boolean
