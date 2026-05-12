@@ -169,10 +169,12 @@ export function AgendaSemanal({
 
   function aoExcluirBloqueio(id: string, motivo: string | null) {
     if (!confirm(`Excluir bloqueio${motivo ? ` "${motivo}"` : ''}?`)) return
-    startTransition(async () => {
-      const r = await excluirBloqueio(id)
-      if (r.erro) alert(r.erro)
-      else router.refresh()
+    startTransition(() => {
+      void (async () => {
+        const r = await excluirBloqueio(id)
+        if (r.erro) alert(r.erro)
+        else router.refresh()
+      })()
     })
   }
 
