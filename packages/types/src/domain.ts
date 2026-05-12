@@ -21,6 +21,10 @@ export type MessageThreadOrigem = 'cliente' | 'plataforma' | 'broadcast'
 
 export type MessageAutorTipo = 'lojista' | 'consumer' | 'sistema'
 
+export type SupportTicketPrioridade = 'baixa' | 'normal' | 'alta' | 'critica'
+
+export type SupportTicketStatus = 'aberto' | 'em_andamento' | 'resolvido' | 'fechado'
+
 // Endereço (usado em consumers.enderecos e orders.endereco_entrega)
 export interface Endereco {
   apelido?: string        // ex: 'Casa', 'Trabalho'
