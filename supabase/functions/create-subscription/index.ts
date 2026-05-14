@@ -21,12 +21,12 @@ Deno.serve(async (req) => {
     // Buscar tenant e assinatura
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('stripe_customer_id, stripe_onboarding_ok')
+      .select('stripe_customer_id, pagarme_onboarding_status')
       .eq('id', tenant_id)
       .single()
 
-    if (!tenant || !tenant.stripe_onboarding_ok) {
-      throw new Error('Tenant sem KYC concluído')
+    if (!tenant || tenant.pagarme_onboarding_status !== 'active') {
+      throw new Error('Onboarding Pagar.me incompleto — finalize o KYC antes de assinar')
     }
 
     const { data: sub } = await supabase

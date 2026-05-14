@@ -25,7 +25,7 @@ const FUNCTION_URL = 'http://localhost:54321/functions/v1/create-subscription'
 
 function createMockSupabaseChain(overrides: Record<string, unknown> = {}) {
   const defaults: Record<string, unknown> = {
-    tenantData: { stripe_customer_id: 'cus_test_123', stripe_onboarding_ok: true },
+    tenantData: { stripe_customer_id: 'cus_test_123', pagarme_onboarding_status: 'active' },
     subData: {
       stripe_price_id: 'price_test_abc',
       stripe_subscription_id: null,
@@ -109,12 +109,12 @@ function createHandler(deps: {
 
       const { data: tenant } = await supabase
         .from('tenants')
-        .select('stripe_customer_id, stripe_onboarding_ok')
+        .select('stripe_customer_id, pagarme_onboarding_status')
         .eq('id', tenant_id)
         .single()
 
-      if (!tenant || !tenant.stripe_onboarding_ok) {
-        throw new Error('Tenant sem KYC concluído')
+      if (!tenant || tenant.pagarme_onboarding_status !== 'active') {
+        throw new Error('Onboarding Pagar.me incompleto — finalize o KYC antes de assinar')
       }
 
       const { data: sub } = await supabase
@@ -217,20 +217,33 @@ describe('create-subscription Edge Function', () => {
       const res = await handler(buildRequest({ tenant_id: 'invalid' }))
       assertEquals(res.status, 500)
       const json = await res.json()
-      assertStringIncludes(json.error, 'Tenant sem KYC concluído')
+      assertStringIncludes(json.error, 'Onboarding Pagar.me incompleto')
     })
 
-    it('retorna 500 quando KYC não concluído', async () => {
+    it('retorna 500 quando onboarding Pagar.me está em registration', async () => {
       const handler = createHandler({
         stripe: createMockStripe(),
         supabaseClient: createMockSupabaseChain({
-          tenantData: { stripe_customer_id: 'cus_test', stripe_onboarding_ok: false },
+          tenantData: { stripe_customer_id: 'cus_test', pagarme_onboarding_status: 'registration' },
         }),
       })
       const res = await handler(buildRequest({ tenant_id: 'tenant-001' }))
       assertEquals(res.status, 500)
       const json = await res.json()
-      assertStringIncludes(json.error, 'KYC')
+      assertStringIncludes(json.error, 'Onboarding Pagar.me incompleto')
+    })
+
+    it('retorna 500 quando onboarding Pagar.me está em affiliation (não-active)', async () => {
+      const handler = createHandler({
+        stripe: createMockStripe(),
+        supabaseClient: createMockSupabaseChain({
+          tenantData: { stripe_customer_id: 'cus_test', pagarme_onboarding_status: 'affiliation' },
+        }),
+      })
+      const res = await handler(buildRequest({ tenant_id: 'tenant-001' }))
+      assertEquals(res.status, 500)
+      const json = await res.json()
+      assertStringIncludes(json.error, 'finalize o KYC')
     })
 
     it('retorna 500 quando stripe_price_id não encontrado', async () => {
