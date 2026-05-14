@@ -77,7 +77,7 @@ mergeadas. 4 e 5 dependem de 3.
 |---|---|---|---|
 | 1.1 | Auditar resíduos Stripe Connect (inclui artefatos mobile abaixo) | Nulo | ✅ Concluída — relatório validado |
 | 1.2a | Refator do gate `stripe_onboarding_ok` → `pagarme_onboarding_status` em `create-subscription` | Baixo | ✅ PR #55 mergeado (commit `e172f80`) |
-| 1.2b | Migration 007 + cleanup completo (web + mobile + docs + tipos) | Médio | ☐ Pronto para emitir |
+| 1.2b | Migration 007 + cleanup completo (web + mobile + docs + tipos) | Médio | ✅ PR #56 mergeado (commit `5eed1e6`) — aplicar migration em staging antes de prod |
 
 **Achado crítico do 1.1:** `supabase/functions/create-subscription/index.ts:24,28` usa `stripe_onboarding_ok` (coluna Connect) como gate da assinatura Stripe Billing. Dropar a coluna sem refatorar quebra a função em produção. Solução: migrar gate para `pagarme_onboarding_status = 'active'` antes da migration 007.
 
@@ -265,3 +265,4 @@ Ver versionamento deste documento no histórico do PR.
 | 2026-05-14 | Análise 0.4 concluída — 10 branches elegíveis para deleção; sandbox bloqueia `push --delete` (HTTP 403) e GitHub MCP não expõe `delete_branch`; deleção pendente para execução local pelo owner |
 | 2026-05-14 | Auditoria 1.1 concluída — 6 colunas, 3 índices, 1 página, 9 ref de tipos, 1 dead value em UI; achado crítico: `create-subscription` usa `stripe_onboarding_ok` como gate. Fase 1.2 dividida em 1.2a (refator do gate) + 1.2b (migration + cleanup) |
 | 2026-05-14 | PR #55 (1.2a) mergeado — gate migrado para `pagarme_onboarding_status = 'active'`; testes ampliados para cobrir `registration` e `affiliation`. Liberado o caminho para 1.2b |
+| 2026-05-14 | PR #56 (1.2b) mergeado — migration 007 dropou 6 colunas + 3 índices; deletados retry page, lib/stripe.ts, plugin RN; cleanup em 4 docs. Fase 1 completa. **Pendente:** aplicar migration em staging antes do deploy de produção |
