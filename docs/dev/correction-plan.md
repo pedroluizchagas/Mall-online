@@ -266,3 +266,4 @@ Ver versionamento deste documento no histórico do PR.
 | 2026-05-14 | Auditoria 1.1 concluída — 6 colunas, 3 índices, 1 página, 9 ref de tipos, 1 dead value em UI; achado crítico: `create-subscription` usa `stripe_onboarding_ok` como gate. Fase 1.2 dividida em 1.2a (refator do gate) + 1.2b (migration + cleanup) |
 | 2026-05-14 | PR #55 (1.2a) mergeado — gate migrado para `pagarme_onboarding_status = 'active'`; testes ampliados para cobrir `registration` e `affiliation`. Liberado o caminho para 1.2b |
 | 2026-05-14 | PR #56 (1.2b) mergeado — migration 007 dropou 6 colunas + 3 índices; deletados retry page, lib/stripe.ts, plugin RN; cleanup em 4 docs. Fase 1 completa. **Pendente:** aplicar migration em staging antes do deploy de produção |
+| 2026-05-14 | Migration 007 aplicada no banco remoto (`supabase db push`) — sem erros. Smoke test pendente |
