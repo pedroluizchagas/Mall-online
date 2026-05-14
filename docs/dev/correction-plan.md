@@ -68,7 +68,7 @@ mergeadas. 4 e 5 dependem de 3.
 |---|---|---|---|
 | 0.1 | Trocar default branch para `main` | Baixo | ☐ Pendente (manual no GitHub) |
 | 0.2 | Atualizar `.env.example` com Pagar.me | Nulo | ✅ PR #53 mergeado (commit `4d467a4`) |
-| 0.3 | Remover `Mallevo Lojista _standalone_(1).html` | Baixo | ☐ |
+| 0.3 | Remover `Mallevo Lojista _standalone_(1).html` | Baixo | ✅ PR #54 mergeado (commit `dd37fc8`) |
 | 0.4 | Podar branches mergeadas (ahead=0 e >7d) | Médio | ☐ |
 
 ## FASE 1 — Encerrar débito Stripe Connect
@@ -244,3 +244,4 @@ Ver versionamento deste documento no histórico do PR.
 | 2026-05-14 | Análise inicial concluída; plano aprovado pelo product owner |
 | 2026-05-14 | PR #53 (0.2) mergeado — `.env.example` reagrupado em 5 seções, 17 variáveis (incluindo `EXPO_PUBLIC_STRIPE` com nota DEPRECATED) |
 | 2026-05-14 | Débito mobile Stripe registrado em Fase 1 após review do PR #53 |
+| 2026-05-14 | PR #54 (0.3) mergeado — HTML standalone removido da raiz (182 linhas / ~1,5 MB) |
