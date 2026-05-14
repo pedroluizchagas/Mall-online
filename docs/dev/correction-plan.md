@@ -69,7 +69,7 @@ mergeadas. 4 e 5 dependem de 3.
 | 0.1 | Trocar default branch para `main` | Baixo | ✅ Concluído manualmente em 2026-05-14 |
 | 0.2 | Atualizar `.env.example` com Pagar.me | Nulo | ✅ PR #53 mergeado (commit `4d467a4`) |
 | 0.3 | Remover `Mallevo Lojista _standalone_(1).html` | Baixo | ✅ PR #54 mergeado (commit `dd37fc8`) |
-| 0.4 | Podar branches mergeadas (ahead=0 e >7d) | Médio | ☐ |
+| 0.4 | Podar branches mergeadas (ahead=0 e >7d) | Médio | 🟡 Análise feita (10 branches identificadas); deleção pendente — sandbox bloqueia `push --delete`, executar localmente |
 
 ## FASE 1 — Encerrar débito Stripe Connect
 
@@ -246,3 +246,4 @@ Ver versionamento deste documento no histórico do PR.
 | 2026-05-14 | Débito mobile Stripe registrado em Fase 1 após review do PR #53 |
 | 2026-05-14 | PR #54 (0.3) mergeado — HTML standalone removido da raiz (182 linhas / ~1,5 MB) |
 | 2026-05-14 | Default branch trocada para `main` no GitHub (item 0.1) — antiga `claude/marketplace-app-proposal-vZJZp` agora deletável pelo Prompt 0.4 |
+| 2026-05-14 | Análise 0.4 concluída — 10 branches elegíveis para deleção; sandbox bloqueia `push --delete` (HTTP 403) e GitHub MCP não expõe `delete_branch`; deleção pendente para execução local pelo owner |
