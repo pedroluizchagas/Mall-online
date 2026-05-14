@@ -453,6 +453,12 @@ EXPO_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJxxx
 EXPO_PUBLIC_PAGARME_APPID=appid_test_xxx
 EXPO_PUBLIC_APP_URL=http://localhost:3000
+# Project ID do Expo (push tokens via expo-notifications; encontrado em expo.dev > projeto > ID)
+EXPO_PUBLIC_PROJECT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# DEPRECATED: resíduo da fase pré-Pagar.me. Apps mobile ainda referenciam
+# (lib/stripe.ts, package.json plugin). Será removido junto com a migration
+# 007 / cleanup Stripe Connect (Fase 1).
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 ```
 
 -----
