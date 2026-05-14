@@ -249,7 +249,6 @@ Cada app mobile tem seu próprio `eas.json`. Estrutura de builds:
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://staging.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx_staging",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_xxx",
         "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br"
       }
     },
@@ -259,7 +258,6 @@ Cada app mobile tem seu próprio `eas.json`. Estrutura de builds:
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://staging.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx_staging",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_xxx",
         "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br"
       }
     },
@@ -268,7 +266,6 @@ Cada app mobile tem seu próprio `eas.json`. Estrutura de builds:
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://producao.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx_prod",
-        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_live_xxx",
         "EXPO_PUBLIC_APP_URL": "https://mallora.com.br"
       }
     }

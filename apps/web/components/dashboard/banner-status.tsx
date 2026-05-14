@@ -7,7 +7,7 @@ import { AlertTriangle, AlertCircle, Info, X } from 'lucide-react'
 type BannerSeveridade = 'info' | 'aviso' | 'erro'
 
 export type BannerStatusItemId =
-  | 'stripe_pendente' | 'assinatura_atraso' | 'manutencao'
+  | 'assinatura_atraso' | 'manutencao'
   | 'avaliacao_baixa' | 'estoque_critico' | 'loja_pausada'
 
 export interface BannerStatusItem {
