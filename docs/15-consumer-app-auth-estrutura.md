@@ -1058,7 +1058,6 @@ Supabase Dashboard
 - [ ] URL de callback do Magic Link adicionada no Supabase Dashboard
 - [ ] `react-native-webview` instalado e listado nos plugins do app.json
 - [ ] `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` no `.env.local`
-- [ ] `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` no `.env.local`
 - [ ] Permissão de localização adicionada no `app.json` (usada em telas futuras)
 - [ ] `lucide-react-native` instalado para ícones da tab bar
 - [ ] Consumer criado no banco ao primeiro login (trigger ou lógica no `onAuthStateChange`)

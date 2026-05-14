@@ -40,13 +40,6 @@
           "locationAlwaysAndWhenInUsePermission": "Usamos sua localização para mostrar lojas próximas."
         }
       ],
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.com.mallora.consumer",
-          "enableGooglePay": true
-        }
-      ],
       "expo-video"
     ],
     "scheme": "mallora-consumer",

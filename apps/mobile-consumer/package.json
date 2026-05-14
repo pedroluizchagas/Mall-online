@@ -16,7 +16,6 @@
     "@mallora/lib": "workspace:*",
     "@mallora/types": "workspace:*",
     "@react-native-async-storage/async-storage": "~2.2.0",
-    "@stripe/stripe-react-native": "0.50.3",
     "@supabase/supabase-js": "^2.43.0",
     "expo": "~54.0.0",
     "expo-blur": "~15.0.8",
