@@ -240,8 +240,6 @@ export type Database = {
           pagarme_onboarding_status: string
           pagarme_recipient_id: string | null
           status: Database["public"]["Enums"]["courier_status"]
-          stripe_account_id: string | null
-          stripe_onboarding_ok: boolean
           telefone: string | null
           tenant_id: string | null
           tipo: Database["public"]["Enums"]["courier_type"]
@@ -264,8 +262,6 @@ export type Database = {
           pagarme_onboarding_status?: string
           pagarme_recipient_id?: string | null
           status?: Database["public"]["Enums"]["courier_status"]
-          stripe_account_id?: string | null
-          stripe_onboarding_ok?: boolean
           telefone?: string | null
           tenant_id?: string | null
           tipo?: Database["public"]["Enums"]["courier_type"]
@@ -288,8 +284,6 @@ export type Database = {
           pagarme_onboarding_status?: string
           pagarme_recipient_id?: string | null
           status?: Database["public"]["Enums"]["courier_status"]
-          stripe_account_id?: string | null
-          stripe_onboarding_ok?: boolean
           telefone?: string | null
           tenant_id?: string | null
           tipo?: Database["public"]["Enums"]["courier_type"]
@@ -553,7 +547,6 @@ export type Database = {
           platform_fee_amount: number
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
-          stripe_payment_intent_id: string | null
           subtotal: number
           taxa_entrega: number
           tenant_id: string
@@ -580,7 +573,6 @@ export type Database = {
           platform_fee_amount?: number
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
-          stripe_payment_intent_id?: string | null
           subtotal: number
           taxa_entrega?: number
           tenant_id: string
@@ -607,7 +599,6 @@ export type Database = {
           platform_fee_amount?: number
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
-          stripe_payment_intent_id?: string | null
           subtotal?: number
           taxa_entrega?: number
           tenant_id?: string
@@ -710,7 +701,6 @@ export type Database = {
           pagarme_transfer_id: string | null
           processado_em: string | null
           status: Database["public"]["Enums"]["payout_status"]
-          stripe_transfer_id: string | null
           taxa_antecipacao: number
           tenant_id: string | null
           tipo: string
@@ -731,7 +721,6 @@ export type Database = {
           pagarme_transfer_id?: string | null
           processado_em?: string | null
           status?: Database["public"]["Enums"]["payout_status"]
-          stripe_transfer_id?: string | null
           taxa_antecipacao?: number
           tenant_id?: string | null
           tipo: string
@@ -752,7 +741,6 @@ export type Database = {
           pagarme_transfer_id?: string | null
           processado_em?: string | null
           status?: Database["public"]["Enums"]["payout_status"]
-          stripe_transfer_id?: string | null
           taxa_antecipacao?: number
           tenant_id?: string | null
           tipo?: string
@@ -1301,9 +1289,7 @@ export type Database = {
           pagarme_onboarding_status: string
           pagarme_recipient_id: string | null
           slug: string | null
-          stripe_account_id: string | null
           stripe_customer_id: string | null
-          stripe_onboarding_ok: boolean
           telefone: string | null
           user_id: string
         }
@@ -1319,9 +1305,7 @@ export type Database = {
           pagarme_onboarding_status?: string
           pagarme_recipient_id?: string | null
           slug?: string | null
-          stripe_account_id?: string | null
           stripe_customer_id?: string | null
-          stripe_onboarding_ok?: boolean
           telefone?: string | null
           user_id: string
         }
@@ -1337,9 +1321,7 @@ export type Database = {
           pagarme_onboarding_status?: string
           pagarme_recipient_id?: string | null
           slug?: string | null
-          stripe_account_id?: string | null
           stripe_customer_id?: string | null
-          stripe_onboarding_ok?: boolean
           telefone?: string | null
           user_id?: string
         }

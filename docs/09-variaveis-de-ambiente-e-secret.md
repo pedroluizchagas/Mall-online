@@ -73,10 +73,6 @@ recebe apenas `card_token` + `installments`, nunca número/CVV/data crus.
 Em desenvolvimento, usar chaves `pk_test_` e `sk_test_`. O
 `STRIPE_WEBHOOK_SECRET` local é gerado pelo Stripe CLI com `stripe listen`.
 
-A `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` foi **descontinuada** — os apps mobile
-não usam Stripe em nenhum fluxo (pagamentos passam pelo Pagar.me via Edge
-Function).
-
 ### Aplicação
 
 |Variável             |Onde usar                                 |Valor                                                      |
