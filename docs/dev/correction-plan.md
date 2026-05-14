@@ -67,7 +67,7 @@ mergeadas. 4 e 5 dependem de 3.
 | ID | Item | Risco | Status |
 |---|---|---|---|
 | 0.1 | Trocar default branch para `main` | Baixo | ☐ Pendente (manual no GitHub) |
-| 0.2 | Atualizar `.env.example` com Pagar.me | Nulo | ☐ |
+| 0.2 | Atualizar `.env.example` com Pagar.me | Nulo | ✅ PR #53 mergeado (commit `4d467a4`) |
 | 0.3 | Remover `Mallevo Lojista _standalone_(1).html` | Baixo | ☐ |
 | 0.4 | Podar branches mergeadas (ahead=0 e >7d) | Médio | ☐ |
 
@@ -75,8 +75,18 @@ mergeadas. 4 e 5 dependem de 3.
 
 | ID | Item | Risco | Status |
 |---|---|---|---|
-| 1.1 | Auditar resíduos Stripe Connect | Nulo | ☐ |
-| 1.2 | Migration 007 + deletar páginas/refs | Médio | ☐ |
+| 1.1 | Auditar resíduos Stripe Connect (inclui artefatos mobile abaixo) | Nulo | ☐ |
+| 1.2 | Migration 007 + deletar páginas/refs (web + mobile) | Médio | ☐ |
+
+**Débito mobile descoberto durante review do PR #53** (deve ser coberto pelo Prompt 1.1):
+
+- `apps/mobile-consumer/lib/stripe.ts` — usa `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` (resíduo da fase pré-Pagar.me; pedidos hoje vão via Edge Function)
+- `apps/mobile-consumer/package.json` — dependência `@stripe/stripe-react-native@0.50.3`
+- `apps/mobile-consumer/app.json` — plugin `"@stripe/stripe-react-native"`
+- `turbo.json` — `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` em `globalEnv`
+- `docs/15-consumer-app-auth-estrutura.md:1061` e `docs/27-deploy-e-infraestrutura.md:252,262,271` — checklists com a variável
+
+Quando a Fase 1.2 remover esses artefatos, também remover a linha DEPRECATED do `.env.example` e `docs/09`.
 
 ## FASE 2 — Limpeza dos PRs abertos
 
@@ -232,3 +242,5 @@ Ver versionamento deste documento no histórico do PR.
 | Data | Evento |
 |---|---|
 | 2026-05-14 | Análise inicial concluída; plano aprovado pelo product owner |
+| 2026-05-14 | PR #53 (0.2) mergeado — `.env.example` reagrupado em 5 seções, 17 variáveis (incluindo `EXPO_PUBLIC_STRIPE` com nota DEPRECATED) |
+| 2026-05-14 | Débito mobile Stripe registrado em Fase 1 após review do PR #53 |
