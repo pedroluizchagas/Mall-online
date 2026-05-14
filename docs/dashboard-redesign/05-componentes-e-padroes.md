@@ -187,11 +187,11 @@ Características:
 
 ## 5.9 Banner de Status Global
 
-Estender o `BannerStripePendente`:
+Componente unificado de banners de status:
 
 ```tsx
 type BannerStatus = {
-  id: 'stripe_pendente'|'assinatura_atraso'|'manutencao'|'avaliacao_baixa'|'estoque_critico'
+  id: 'assinatura_atraso'|'manutencao'|'avaliacao_baixa'|'estoque_critico'
   severidade: 'info'|'aviso'|'erro'
   titulo: string
   descricao?: string

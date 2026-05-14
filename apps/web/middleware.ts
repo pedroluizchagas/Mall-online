@@ -44,12 +44,6 @@ export async function middleware(request: NextRequest) {
   // Remover a restrição de rota pública para garantir que o token seja sempre renovado
   // pelo middleware conforme as melhores práticas do @supabase/ssr.
   // Apenas ignoramos rotas de webhook ou api se necessário (já ignorado pelo matcher).
-  
-  // Stripe onboarding flow: skip auth check entirely — this route is prefetched by
-  // SetupWizard and running getUser() here would race with the dashboard layout's own call.
-  if (pathname.startsWith('/onboarding/stripe')) {
-    return NextResponse.next({ request })
-  }
 
   let response = NextResponse.next({ request })
 
