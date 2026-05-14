@@ -430,29 +430,35 @@ Nunca colocar valores reais aqui.
 
 ```bash
 # Supabase
-NEXT_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-aqui
-SUPABASE_SERVICE_ROLE_KEY=sua-service-role-key-aqui
-SUPABASE_PROJECT_ID=seu-project-id-aqui
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx
+SUPABASE_SERVICE_ROLE_KEY=eyJxxx
+SUPABASE_PROJECT_ID=xxxxxxxxxxxx
 
-# Pagar.me (pagamentos de pedidos)
-PAGARME_API_KEY=ak_test_sua_chave_aqui
-PAGARME_WEBHOOK_SECRET=whsec_sua_chave_aqui
-PAGARME_PLATFORM_RECIPIENT_ID=rp_test_recipient_mallora
+# Pagar.me (pedidos)
+PAGARME_API_KEY=ak_test_xxx
+PAGARME_WEBHOOK_SECRET=whsec_xxx
+PAGARME_PLATFORM_RECIPIENT_ID=rp_test_xxx
 
-# Stripe Billing (assinatura mensal)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_sua_chave_aqui
-STRIPE_SECRET_KEY=sk_test_sua_chave_aqui
-STRIPE_WEBHOOK_SECRET=whsec_sua_chave_aqui
+# Stripe Billing (assinatura do lojista — NÃO é Stripe Connect)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+STRIPE_SECRET_KEY=sk_test_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
 
-# Expo (mobile)
-EXPO_PUBLIC_SUPABASE_URL=https://seu-projeto.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=sua-anon-key-aqui
-EXPO_PUBLIC_PAGARME_APPID=seu-app-id-publico-aqui
-
-# Aplicacao
+# Apps
 APP_URL=http://localhost:3000
+
+# Expo
+EXPO_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJxxx
+EXPO_PUBLIC_PAGARME_APPID=appid_test_xxx
 EXPO_PUBLIC_APP_URL=http://localhost:3000
+# Project ID do Expo (push tokens via expo-notifications; encontrado em expo.dev > projeto > ID)
+EXPO_PUBLIC_PROJECT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+# DEPRECATED: resíduo da fase pré-Pagar.me. Apps mobile ainda referenciam
+# (lib/stripe.ts, package.json plugin). Será removido junto com a migration
+# 007 / cleanup Stripe Connect (Fase 1).
+EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 ```
 
 -----
