@@ -75,18 +75,34 @@ mergeadas. 4 e 5 dependem de 3.
 
 | ID | Item | Risco | Status |
 |---|---|---|---|
-| 1.1 | Auditar resíduos Stripe Connect (inclui artefatos mobile abaixo) | Nulo | ☐ |
-| 1.2 | Migration 007 + deletar páginas/refs (web + mobile) | Médio | ☐ |
+| 1.1 | Auditar resíduos Stripe Connect (inclui artefatos mobile abaixo) | Nulo | ✅ Concluída — relatório validado |
+| 1.2a | Refator do gate `stripe_onboarding_ok` → `pagarme_onboarding_status` em `create-subscription` | Baixo | ☐ |
+| 1.2b | Migration 007 + cleanup completo (web + mobile + docs + tipos) | Médio | ☐ Bloqueada por 1.2a |
 
-**Débito mobile descoberto durante review do PR #53** (deve ser coberto pelo Prompt 1.1):
+**Achado crítico do 1.1:** `supabase/functions/create-subscription/index.ts:24,28` usa `stripe_onboarding_ok` (coluna Connect) como gate da assinatura Stripe Billing. Dropar a coluna sem refatorar quebra a função em produção. Solução: migrar gate para `pagarme_onboarding_status = 'active'` antes da migration 007.
 
-- `apps/mobile-consumer/lib/stripe.ts` — usa `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` (resíduo da fase pré-Pagar.me; pedidos hoje vão via Edge Function)
-- `apps/mobile-consumer/package.json` — dependência `@stripe/stripe-react-native@0.50.3`
-- `apps/mobile-consumer/app.json` — plugin `"@stripe/stripe-react-native"`
-- `turbo.json` — `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` em `globalEnv`
-- `docs/15-consumer-app-auth-estrutura.md:1061` e `docs/27-deploy-e-infraestrutura.md:252,262,271` — checklists com a variável
+**Inventário completo do cleanup (1.2b):**
 
-Quando a Fase 1.2 remover esses artefatos, também remover a linha DEPRECATED do `.env.example` e `docs/09`.
+Colunas a dropar (6) + índices (3):
+- `tenants.stripe_account_id`, `tenants.stripe_onboarding_ok` (+ índice)
+- `orders.stripe_payment_intent_id` (+ índice)
+- `couriers.stripe_account_id`, `couriers.stripe_onboarding_ok` (+ índice `idx_couriers_stripe`)
+- `payouts.stripe_transfer_id`
+
+Arquivos a deletar:
+- `apps/web/app/(auth)/onboarding/stripe/retry/page.tsx` (+ diretórios pai vazios)
+- `apps/mobile-consumer/lib/stripe.ts`
+
+Refatorar:
+- `packages/types/src/supabase.ts` — remover entradas Row/Insert/Update para as 6 colunas
+- `apps/web/components/dashboard/banner-status.tsx:10` — remover `'stripe_pendente'` do union
+- `apps/mobile-consumer/package.json` — remover dependência `@stripe/stripe-react-native`
+- `apps/mobile-consumer/app.json` — remover plugin `"@stripe/stripe-react-native"`
+- `apps/mobile-consumer/app/_layout.tsx` (se houver) — remover `StripeProvider`
+- `turbo.json:25` — remover `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` do `globalEnv`
+- `.env.example` e `docs/09-variaveis-de-ambiente-e-secret.md` — remover linha DEPRECATED de `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `docs/15-consumer-app-auth-estrutura.md:1061` — remover checklist da variável
+- `docs/27-deploy-e-infraestrutura.md:252,262,271` — remover variável dos 3 environments
 
 ## FASE 2 — Limpeza dos PRs abertos
 
@@ -247,3 +263,4 @@ Ver versionamento deste documento no histórico do PR.
 | 2026-05-14 | PR #54 (0.3) mergeado — HTML standalone removido da raiz (182 linhas / ~1,5 MB) |
 | 2026-05-14 | Default branch trocada para `main` no GitHub (item 0.1) — antiga `claude/marketplace-app-proposal-vZJZp` agora deletável pelo Prompt 0.4 |
 | 2026-05-14 | Análise 0.4 concluída — 10 branches elegíveis para deleção; sandbox bloqueia `push --delete` (HTTP 403) e GitHub MCP não expõe `delete_branch`; deleção pendente para execução local pelo owner |
+| 2026-05-14 | Auditoria 1.1 concluída — 6 colunas, 3 índices, 1 página, 9 ref de tipos, 1 dead value em UI; achado crítico: `create-subscription` usa `stripe_onboarding_ok` como gate. Fase 1.2 dividida em 1.2a (refator do gate) + 1.2b (migration + cleanup) |
