@@ -108,8 +108,8 @@ Refatorar:
 
 | ID | Item | Risco | Status |
 |---|---|---|---|
-| 2.1 | Triagem PR #1 (docs blueprint/escalabilidade) | Nulo | ☐ |
-| 2.1 | Triagem PR #44 (foundation Fase 2 — provável duplicata) | Nulo | ☐ |
+| 2.1 | Triagem PR #1 (docs blueprint/escalabilidade) | Nulo | ✅ Fechado sem merge — diff inflado (115 commits atrás); valor já no `correction-plan.md` |
+| 2.1 | Triagem PR #44 (foundation Fase 2) | Nulo | ✅ Fechado sem merge — 5 tabelas já em main via migrations `pr_2_*`; conflito de timestamp |
 
 ## FASE 3 — Performance crítica
 
@@ -134,6 +134,14 @@ Refatorar:
 | ID | Item | Risco | Status |
 |---|---|---|---|
 | 5.1 | Checklist deploy consolidado em `docs/dev/deploy-checklist.md` | Nulo | ☐ |
+
+## FASE 6 — Blueprint v2 (pós-deploy)
+
+| ID | Item | Risco | Status |
+|---|---|---|---|
+| 6.1 | Escrever blueprint atualizado da plataforma (arquitetura Pagar.me + Stripe Billing, dashboard pós Fases 1/2, templates por nicho) | Nulo | ☐ Fora do caminho crítico — só após Fase 5 e estabilização em produção |
+
+Motivo: o blueprint do PR #1 fechado era da era Stripe Connect. Documentar um sistema que ainda muda (Fases 3/4) gera doc que envelhece rápido. Blueprint só vale escrito sobre estado estável de produção.
 
 ---
 
@@ -267,3 +275,4 @@ Ver versionamento deste documento no histórico do PR.
 | 2026-05-14 | PR #55 (1.2a) mergeado — gate migrado para `pagarme_onboarding_status = 'active'`; testes ampliados para cobrir `registration` e `affiliation`. Liberado o caminho para 1.2b |
 | 2026-05-14 | PR #56 (1.2b) mergeado — migration 007 dropou 6 colunas + 3 índices; deletados retry page, lib/stripe.ts, plugin RN; cleanup em 4 docs. Fase 1 completa. **Pendente:** aplicar migration em staging antes do deploy de produção |
 | 2026-05-14 | Migration 007 aplicada no banco remoto (`supabase db push`) — sem erros. Smoke test pendente |
+| 2026-05-14 | Fase 2 concluída — PR #44 e PR #1 fechados sem merge (comentários explicativos publicados). Blueprint v2 registrado como Fase 6 (pós-deploy). Branches `claude/dashboard-phase-2-foundation-zr5do` e `claude/scalability-analysis-vjf6K` liberadas para poda |
