@@ -12,7 +12,9 @@ Ref: `apps/mobile-consumer/app/loja/[slug].tsx` (480 LOC).
 
 `app/page.tsx` (Server Component): via `getStore(slug)` →
 `public_catalog_stores` + `public_catalog_products` por `store_id` agrupados
-por categoria, ordenados por `ordem`.
+por categoria. O agrupamento usa `public_catalog_categories` (nome/ordem
+reais): seções ordenadas por `categories.ordem`, produtos por
+`products.ordem`; sem categoria → seção "Outros" por último.
 Componentes: `StoreHeader`, `ProductCard` (← `ProdutoCard.tsx`), `MenuSection`,
 `cart/CartFab`, `ui/{Skeleton,Badge}`.
 Adicionar: `<title>`/OG por loja (SEO), `robots`/`sitemap` por tenant.
