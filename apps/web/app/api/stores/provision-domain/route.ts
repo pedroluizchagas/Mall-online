@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase/server'
-import { provisionTenantDomain } from '@/lib/dns/tenant-dns'
+import { provisionTenantDomain } from '@mallevo/lib'
 
 export async function POST(req: NextRequest) {
   try {
