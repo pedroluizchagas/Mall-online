@@ -1,48 +1,155 @@
-import { getStore, getStoreSlug } from '@/lib/tenant'
+import type { Metadata } from 'next'
+
+import { getStore, getStoreSlug, type Store } from '@/lib/tenant'
+import { createSupabaseServer } from '@/lib/supabase/server'
+import { StoreHeader } from '@/components/StoreHeader'
+import { MenuSection } from '@/components/MenuSection'
+import { CartFab } from '@/components/cart/CartFab'
+import type { ProductCardModel } from '@/components/ProductCard'
 
 /**
- * Page mínima do Stage 2: imprime o slug resolvido pelo middleware
- * (header `x-store-slug`, roteamento host-based — D1) e dados básicos da
- * loja vindos da view pública `public_catalog_stores`.
+ * Catálogo da loja (Stage 3a). Server Component, host-based (D1):
+ * slug ← middleware (`x-store-slug`) → `getStore()` (view pública
+ * `public_catalog_stores`, Stage 2). Produtos ← `public_catalog_products`
+ * por `store_id`, agrupados por categoria, ordenados por `ordem`.
  *
- * Slug ausente (apex/www) ou loja inexistente/inativa → `getStore()`
- * dispara `notFound()` → app/not-found.tsx ("loja não encontrada").
- * Telas reais de catálogo/checkout: Stage 3 (fora de escopo aqui).
+ * Funciona ANÔNIMO (D2): só lê views `public_catalog_*`, NUNCA as tabelas
+ * base `stores`/`products`. Slug ausente / loja inexistente ou inativa →
+ * `getStore()` dispara `notFound()` (regressão do Stage 2 preservada).
+ *
+ * Substitui a page placeholder do Stage 2.
  */
 export const dynamic = 'force-dynamic'
 
+type CatalogProduct = {
+  id: string
+  store_id: string
+  category_id: string | null
+  nome: string
+  descricao: string | null
+  preco: number
+  preco_promocional: number | null
+  foto_url: string | null
+  ordem: number | null
+}
+
+type Secao = {
+  /** Chave estável (category_id ou sentinela) — usada como React key. */
+  chave: string
+  titulo: string
+  produtos: ProductCardModel[]
+}
+
+/**
+ * Agrupa por `category_id` preservando a ordem de `products.ordem`
+ * (única `ordem` exposta pela view pública — `public_catalog_products`
+ * NÃO traz nome/ordem de categoria; não existe `public_catalog_categories`).
+ * Seções ordenadas pelo menor `ordem` dos seus produtos. Título genérico
+ * "Cardápio" / "Cardápio (N)" — ver decisão PENDENTE no RESUMO.
+ */
+function agruparPorCategoria(produtos: CatalogProduct[]): Secao[] {
+  const grupos = new Map<
+    string,
+    { chave: string; minOrdem: number; produtos: ProductCardModel[] }
+  >()
+
+  produtos.forEach((p, i) => {
+    const chave = p.category_id ?? '__sem_categoria__'
+    const ordem = p.ordem ?? i
+    let g = grupos.get(chave)
+    if (!g) {
+      g = { chave, minOrdem: ordem, produtos: [] }
+      grupos.set(chave, g)
+    }
+    g.minOrdem = Math.min(g.minOrdem, ordem)
+    g.produtos.push({
+      id: p.id,
+      nome: p.nome,
+      descricao: p.descricao,
+      preco: p.preco,
+      preco_promocional: p.preco_promocional,
+      foto_url: p.foto_url,
+    })
+  })
+
+  const ordenados = [...grupos.values()].sort((a, b) => a.minOrdem - b.minOrdem)
+
+  return ordenados.map((g, idx) => ({
+    chave: g.chave,
+    titulo: ordenados.length === 1 ? 'Cardápio' : `Cardápio ${idx + 1}`,
+    produtos: g.produtos,
+  }))
+}
+
+async function carregarProdutos(storeId: string): Promise<CatalogProduct[]> {
+  const supabase = createSupabaseServer()
+  const { data, error } = await supabase
+    .from('public_catalog_products')
+    .select(
+      'id, store_id, category_id, nome, descricao, preco, preco_promocional, foto_url, ordem'
+    )
+    .eq('store_id', storeId)
+    .order('ordem', { ascending: true, nullsFirst: false })
+
+  if (error || !data) return []
+  return data as CatalogProduct[]
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const slug = getStoreSlug()
+  if (!slug) return { title: 'Mallevo' }
+
+  let store: Store
+  try {
+    store = await getStore(slug)
+  } catch {
+    // getStore() dispara notFound() para slug inválido — metadata genérica.
+    return { title: 'Mallevo' }
+  }
+
+  const title = store.nome
+  const description = store.descricao ?? `Peça online em ${store.nome} · Mallevo`
+  const ogImage = store.banner_url ?? store.logo_url ?? undefined
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: 'website',
+      ...(ogImage ? { images: [{ url: ogImage }] } : {}),
+    },
+    twitter: {
+      card: ogImage ? 'summary_large_image' : 'summary',
+      title,
+      description,
+    },
+  }
+}
+
 export default async function HomePage() {
   const slug = getStoreSlug()
+  // Slug ausente/inexistente/inativo → notFound() (Stage 2, via getStore).
   const store = await getStore(slug)
+  const produtos = await carregarProdutos(store.id)
+  const secoes = agruparPorCategoria(produtos)
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-8">
-      <div className="max-w-md rounded-lg bg-surface px-8 py-10 text-center shadow-soft">
-        <p className="text-xs font-bold uppercase tracking-widest text-ink-soft">
-          Mallevo Storefront · Stage 2
+    <main className="min-h-screen bg-canvas pb-24">
+      <StoreHeader store={store} />
+
+      {secoes.length > 0 ? (
+        secoes.map((s) => (
+          <MenuSection key={s.chave} titulo={s.titulo} produtos={s.produtos} />
+        ))
+      ) : (
+        <p className="px-6 py-12 text-center text-sm font-medium text-ink-muted">
+          Esta loja ainda não tem produtos disponíveis.
         </p>
-        <h1 className="mt-3 text-2xl font-bold text-ink">{store.nome}</h1>
-        {store.descricao ? (
-          <p className="mt-2 text-sm text-ink-muted">{store.descricao}</p>
-        ) : null}
-        <dl className="mt-6 space-y-1 text-left text-sm text-ink-muted">
-          <div className="flex justify-between gap-4">
-            <dt className="font-semibold text-ink">slug resolvido</dt>
-            <dd className="font-mono">{slug}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="font-semibold text-ink">store id</dt>
-            <dd className="font-mono">{store.id}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="font-semibold text-ink">tempo de entrega</dt>
-            <dd>{store.tempo_entrega ?? '—'}</dd>
-          </div>
-        </dl>
-        <p className="mt-6 text-xs text-ink-soft">
-          Catálogo e checkout chegam no Stage 3.
-        </p>
-      </div>
+      )}
+
+      <CartFab />
     </main>
   )
 }
