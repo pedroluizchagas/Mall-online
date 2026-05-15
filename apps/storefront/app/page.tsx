@@ -11,10 +11,11 @@ import type { ProductCardModel } from '@/components/ProductCard'
  * Catálogo da loja (Stage 3a). Server Component, host-based (D1):
  * slug ← middleware (`x-store-slug`) → `getStore()` (view pública
  * `public_catalog_stores`, Stage 2). Produtos ← `public_catalog_products`
- * por `store_id`, agrupados por categoria, ordenados por `ordem`.
+ * por `store_id`, agrupados por categoria; nome/ordem das seções ←
+ * `public_catalog_categories` por `store_id`.
  *
  * Funciona ANÔNIMO (D2): só lê views `public_catalog_*`, NUNCA as tabelas
- * base `stores`/`products`. Slug ausente / loja inexistente ou inativa →
+ * base `stores`/`products`/`categories`. Slug ausente / loja inexistente ou inativa →
  * `getStore()` dispara `notFound()` (regressão do Stage 2 preservada).
  *
  * Substitui a page placeholder do Stage 2.
@@ -33,6 +34,13 @@ type CatalogProduct = {
   ordem: number | null
 }
 
+type CatalogCategory = {
+  id: string
+  store_id: string
+  nome: string
+  ordem: number | null
+}
+
 type Secao = {
   /** Chave estável (category_id ou sentinela) — usada como React key. */
   chave: string
@@ -40,28 +48,38 @@ type Secao = {
   produtos: ProductCardModel[]
 }
 
+/** Sentinela para produtos sem categoria / categoria inativa (← mobile 'sem-categoria'). */
+const SEM_CATEGORIA = '__sem_categoria__'
+
 /**
- * Agrupa por `category_id` preservando a ordem de `products.ordem`
- * (única `ordem` exposta pela view pública — `public_catalog_products`
- * NÃO traz nome/ordem de categoria; não existe `public_catalog_categories`).
- * Seções ordenadas pelo menor `ordem` dos seus produtos. Título genérico
- * "Cardápio" / "Cardápio (N)" — ver decisão PENDENTE no RESUMO.
+ * Agrupa por `category_id` usando nome/ordem reais de
+ * `public_catalog_categories` (espelha apps/mobile-consumer/app/loja/[slug].tsx
+ * ~85-112). Seções ordenadas por `categories.ordem`; dentro da seção,
+ * produtos por `products.ordem` (ordem da query preservada). Produtos com
+ * `category_id` null ou sem categoria correspondente → seção "Outros" por
+ * último (ordem sentinela 999, como o mobile).
  */
-function agruparPorCategoria(produtos: CatalogProduct[]): Secao[] {
+function agruparPorCategoria(
+  produtos: CatalogProduct[],
+  categorias: CatalogCategory[]
+): Secao[] {
+  const catPorId = new Map(categorias.map((c) => [c.id, c]))
+
   const grupos = new Map<
     string,
-    { chave: string; minOrdem: number; produtos: ProductCardModel[] }
+    { chave: string; titulo: string; ordem: number; produtos: ProductCardModel[] }
   >()
 
-  produtos.forEach((p, i) => {
-    const chave = p.category_id ?? '__sem_categoria__'
-    const ordem = p.ordem ?? i
+  produtos.forEach((p) => {
+    const cat = p.category_id ? catPorId.get(p.category_id) : undefined
+    const chave = cat ? cat.id : SEM_CATEGORIA
+    const titulo = cat ? cat.nome : 'Outros'
+    const ordem = cat ? cat.ordem ?? 999 : 999
     let g = grupos.get(chave)
     if (!g) {
-      g = { chave, minOrdem: ordem, produtos: [] }
+      g = { chave, titulo, ordem, produtos: [] }
       grupos.set(chave, g)
     }
-    g.minOrdem = Math.min(g.minOrdem, ordem)
     g.produtos.push({
       id: p.id,
       nome: p.nome,
@@ -72,13 +90,9 @@ function agruparPorCategoria(produtos: CatalogProduct[]): Secao[] {
     })
   })
 
-  const ordenados = [...grupos.values()].sort((a, b) => a.minOrdem - b.minOrdem)
-
-  return ordenados.map((g, idx) => ({
-    chave: g.chave,
-    titulo: ordenados.length === 1 ? 'Cardápio' : `Cardápio ${idx + 1}`,
-    produtos: g.produtos,
-  }))
+  return [...grupos.values()]
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((g) => ({ chave: g.chave, titulo: g.titulo, produtos: g.produtos }))
 }
 
 async function carregarProdutos(storeId: string): Promise<CatalogProduct[]> {
@@ -93,6 +107,18 @@ async function carregarProdutos(storeId: string): Promise<CatalogProduct[]> {
 
   if (error || !data) return []
   return data as CatalogProduct[]
+}
+
+async function carregarCategorias(storeId: string): Promise<CatalogCategory[]> {
+  const supabase = createSupabaseServer()
+  const { data, error } = await supabase
+    .from('public_catalog_categories')
+    .select('id, store_id, nome, ordem')
+    .eq('store_id', storeId)
+    .order('ordem', { ascending: true, nullsFirst: false })
+
+  if (error || !data) return []
+  return data as CatalogCategory[]
 }
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -132,8 +158,11 @@ export default async function HomePage() {
   const slug = getStoreSlug()
   // Slug ausente/inexistente/inativo → notFound() (Stage 2, via getStore).
   const store = await getStore(slug)
-  const produtos = await carregarProdutos(store.id)
-  const secoes = agruparPorCategoria(produtos)
+  const [produtos, categorias] = await Promise.all([
+    carregarProdutos(store.id),
+    carregarCategorias(store.id),
+  ])
+  const secoes = agruparPorCategoria(produtos, categorias)
 
   return (
     <main className="min-h-screen bg-canvas pb-24">

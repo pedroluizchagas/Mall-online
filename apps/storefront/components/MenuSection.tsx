@@ -4,11 +4,10 @@ import { ProductCard, type ProductCardModel } from '@/components/ProductCard'
  * MenuSection — uma seção do cardápio (← bloco "Cardápio" de
  * apps/mobile-consumer/app/loja/[slug].tsx). Título + lista de ProductCards.
  *
- * NOTA (Stage 0 / D2): a view pública `public_catalog_products` expõe
- * `category_id` mas NÃO o nome da categoria — não existe
- * `public_catalog_categories`. Por isso o título da seção é fornecido pelo
- * caller a partir do que é seguro/derivável (ver page.tsx + RESUMO:
- * decisão PENDENTE sobre rótulo de categoria).
+ * NOTA (Stage 3a / D2): o título da seção é o `nome` real da categoria,
+ * vindo da view pública `public_catalog_categories` (ou "Outros" para o
+ * grupo sem categoria). O caller (page.tsx) agrupa/ordena por
+ * `categories.ordem` e passa o título pronto.
  *
  * Spec: docs/storefront/05-stage-3-storefront.md §3a (MenuSection).
  */
