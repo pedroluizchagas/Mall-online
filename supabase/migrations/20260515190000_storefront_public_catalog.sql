@@ -37,9 +37,18 @@
 -- consulta (anon). Como anon NÃO tem policy nas tabelas base, a
 -- leitura só funciona porque concedemos GRANT SELECT na view e a
 -- view define exatamente quais colunas/linhas são expostas.
--- Colunas sensíveis (tenant_id, preco_promocional p/ margem interna,
--- metadata, sku, stock_*, cf_dns_record_id, domain, endereco,
--- raio_entrega_km, timestamps internos) ficam de fora.
+--
+-- Colunas EXCLUÍDAS (internas/sensíveis, nunca expostas a anon):
+--   tenant_id, endereco, raio_entrega_km, cf_dns_record_id, domain,
+--   sku, stock_quantity, stock_minimo, timestamps internos.
+--
+-- Colunas INCLUÍDAS por serem voltadas ao consumidor (já exibidas
+-- hoje no apps/mobile-consumer — necessárias para paridade):
+--   preco_promocional → preço de venda promocional exibido na loja
+--     (NÃO é custo/margem; não há campo de custo nessas tabelas).
+--   products.metadata → campos de template exibidos ao consumidor
+--     (ex.: tempo_preparo_min, serve_pessoas, exige_receita,
+--     duracao_min). Ver migration_019 e templates/<codigo>.ts.
 
 -- ── public_catalog_stores — só lojas ativas ──────────────────
 CREATE OR REPLACE VIEW public_catalog_stores
