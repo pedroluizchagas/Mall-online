@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { Zap } from 'lucide-react'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { solicitarAntecipacao } from '@/lib/actions/financeiro'
 
 interface Elegibilidade {

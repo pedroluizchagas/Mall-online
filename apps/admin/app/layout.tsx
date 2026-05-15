@@ -17,7 +17,7 @@ const jetbrains = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Mallora Admin',
+  title: 'Mallevo Admin',
   description: 'Painel de administração da plataforma',
 }
 

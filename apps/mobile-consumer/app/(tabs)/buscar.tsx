@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/Input'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { consumerDesign } from '@/lib/consumer-design'
 
 const { colors, radius, spacing, shadow } = consumerDesign

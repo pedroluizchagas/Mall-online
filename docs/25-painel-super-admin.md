@@ -392,7 +392,7 @@ export async function criarPlano(formData: FormData) {
   const stripeProduct = await stripe.products.create({
     name: dados.data.nome,
     description: dados.data.descricao,
-    metadata: { plataforma: 'mallora' },
+    metadata: { plataforma: 'mallevo' },
   })
 
   // Criar Price recorrente no Stripe
@@ -489,7 +489,7 @@ export async function getConciliacaoFinanceira(mes: string) {
 
 ```typescript
 import { getMetricasGlobais } from '@/lib/actions/admin'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 export default async function PaginaAdminVisaoGeral() {
   const metricas = await getMetricasGlobais()
@@ -1058,7 +1058,7 @@ export function TabelaEntregadores({
 
 ```typescript
 import { getConciliacaoFinanceira } from '@/lib/actions/admin'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 export default async function PaginaFinanceiroAdmin({
   searchParams,
@@ -1164,7 +1164,7 @@ export default async function PaginaFinanceiroAdmin({
 ```typescript
 import { getPlanos } from '@/lib/actions/admin'
 import { FormularioPlano } from '@/components/admin/formulario-plano'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 export default async function PaginaPlanos() {
   const planos = await getPlanos()

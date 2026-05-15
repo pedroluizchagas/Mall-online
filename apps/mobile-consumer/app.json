@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.mallora.consumer",
+      "bundleIdentifier": "com.mallevo.consumer",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usamos sua localização para mostrar lojas próximas."
       }
@@ -23,7 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#111216"
       },
-      "package": "com.mallora.consumer",
+      "package": "com.mallevo.consumer",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -42,7 +42,7 @@
       ],
       "expo-video"
     ],
-    "scheme": "mallora-consumer",
+    "scheme": "mallevo-consumer",
     "extra": {
       "router": {},
       "eas": {

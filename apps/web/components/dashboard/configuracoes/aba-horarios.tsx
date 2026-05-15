@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { atualizarHorarios } from '@/lib/actions/lojas'
-import type { HorariosFuncionamento } from '@mallora/types'
+import type { HorariosFuncionamento } from '@mallevo/types'
 
 const DIAS = [
   { id: 'seg', label: 'Segunda-feira' },

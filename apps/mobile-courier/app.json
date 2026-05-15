@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Mallora Entregador",
-    "slug": "mallora-courier",
+    "name": "Mallevo Entregador",
+    "slug": "mallevo-courier",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +13,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.mallora.courier",
+      "bundleIdentifier": "com.mallevo.courier",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usamos sua localização para coordenar as entregas.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Usamos sua localização em segundo plano durante entregas ativas.",
@@ -28,7 +28,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1A4D3A"
       },
-      "package": "com.mallora.courier",
+      "package": "com.mallevo.courier",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -47,13 +47,13 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "A Mallora usa sua localização durante entregas ativas para mostrar sua posição ao consumidor.",
+          "locationAlwaysAndWhenInUsePermission": "A Mallevo usa sua localização durante entregas ativas para mostrar sua posição ao consumidor.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
       ]
     ],
-    "scheme": "mallora-courier",
+    "scheme": "mallevo-courier",
     "extra": {
       "router": {},
       "eas": {

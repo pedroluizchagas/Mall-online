@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useTemplate } from '@mallora/lib'
-import type { TemplateCodigo } from '@mallora/lib'
+import { useTemplate } from '@mallevo/lib'
+import type { TemplateCodigo } from '@mallevo/lib'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { marcarTutorialVisto } from '@/lib/actions/tutorial'
 

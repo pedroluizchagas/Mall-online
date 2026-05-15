@@ -5,7 +5,7 @@ import {
   CATEGORIA_SLUG_TO_TEMPLATE,
   TEMPLATES,
   type TemplateCodigo,
-} from '@mallora/lib'
+} from '@mallevo/lib'
 
 export const dynamic = 'force-dynamic'
 

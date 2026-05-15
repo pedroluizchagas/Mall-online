@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { ItemCarrinho, ItemCarrinhoModifier } from '@mallora/types'
+import type { ItemCarrinho, ItemCarrinhoModifier } from '@mallevo/types'
 
 interface PendingTrocaLoja {
   item: ItemEntrada

@@ -412,8 +412,8 @@ Deno.serve(async (req) => {
 ## FUNCTION 3 — create-pagarme-order
 
 Chamada pelo app do consumidor ao iniciar o checkout. Cria a Order no Pagar.me
-com split entre Mallora e lojista (estágio 1). A taxa de entrega fica
-temporariamente no recipient da Mallora até a alocação do entregador.
+com split entre Mallevo e lojista (estágio 1). A taxa de entrega fica
+temporariamente no recipient da Mallevo até a alocação do entregador.
 
 **Compliance PCI:** o app **nunca** envia número de cartão, CVV ou data de
 validade para esta Edge Function. Em pagamento com cartão o app gera um
@@ -540,7 +540,7 @@ Deno.serve(async (req) => {
     const total = subtotal + taxa_entrega
     const platform_fee = 100 // R$1,00
 
-    // Valor do lojista: subtotal - comissão (taxa entrega vai para a Mallora no estágio 1)
+    // Valor do lojista: subtotal - comissão (taxa entrega vai para a Mallevo no estágio 1)
     const valorLojista = subtotal - platform_fee
 
     const { data: order, error: orderError } = await supabase
@@ -629,9 +629,9 @@ Deno.serve(async (req) => {
           card_token: card_token,
           installments: installmentsRequested,
           // 'customer' = juros Pagar.me cobrados do consumidor
-          // 'merchant' = juros absorvidos pela Mallora (não usado no MVP)
+          // 'merchant' = juros absorvidos pela Mallevo (não usado no MVP)
           installment_type: 'customer',
-          statement_descriptor: 'Mallora',
+          statement_descriptor: 'Mallevo',
         },
         amount: total,
         split: splitRules,
@@ -695,7 +695,7 @@ Deno.serve(async (req) => {
 ## FUNCTION 4 — transfer-to-courier
 
 Chamada quando um entregador autônomo é alocado (estágio 2). Executa o Transfer
-Pagar.me da conta Mallora para o recipient do entregador, no valor da taxa de
+Pagar.me da conta Mallevo para o recipient do entregador, no valor da taxa de
 entrega.
 
 ```typescript

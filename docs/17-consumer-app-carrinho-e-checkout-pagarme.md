@@ -46,7 +46,7 @@ app/checkout.tsx (modal)
     → coleta dados do cartão no app (formulário com validação Luhn)
     → app tokeniza o cartão chamando diretamente a API pública
        POST https://api.pagar.me/core/v5/tokens?appId=$EXPO_PUBLIC_PAGARME_APPID
-       (compliance PCI: número/CVV nunca trafegam pela Mallora)
+       (compliance PCI: número/CVV nunca trafegam pela Mallevo)
     → seleciona parcelamento (1x sem juros até 12x — juros Pagar.me cobrados
        do consumidor)
     → chama Edge Function create-pagarme-order com payment_method='credit_card',
@@ -82,13 +82,13 @@ import { supabase } from '@/lib/supabase'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { ItemCarrinhoCard } from '@/components/ItemCarrinhoCard'
 import { SeletorEndereco } from '@/components/SeletorEndereco'
 import { SeletorPagamento } from '@/components/SeletorPagamento'
 import { SeletorParcelas } from '@/components/SeletorParcelas'
 import { FormularioCartao } from '@/components/FormularioCartao'
-import type { Endereco } from '@mallora/types'
+import type { Endereco } from '@mallevo/types'
 
 type FormaPagamento =
   | 'online_cartao'
@@ -518,8 +518,8 @@ export default function TelaCheckout() {
 ```typescript
 import { View, Text, TouchableOpacity } from 'react-native'
 import { useCartStore } from '@/store/useCartStore'
-import { formatarReais } from '@mallora/lib'
-import type { ItemCarrinho } from '@mallora/types'
+import { formatarReais } from '@mallevo/lib'
+import type { ItemCarrinho } from '@mallevo/types'
 
 export function ItemCarrinhoCard({ item }: { item: ItemCarrinho }) {
   const { aumentarQuantidade, diminuirQuantidade, removerItem } = useCartStore()
@@ -597,7 +597,7 @@ import {
 } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
-import type { Endereco } from '@mallora/types'
+import type { Endereco } from '@mallevo/types'
 
 interface Props {
   enderecos: Endereco[]
@@ -1035,7 +1035,7 @@ export function SeletorPagamento({ loja, selecionado, onSelecionar }: Props) {
 Coleta dados do cartão na UI do app e chama **diretamente** a API pública de
 tokens da Pagar.me usando o `appId` público
 (`EXPO_PUBLIC_PAGARME_APPID` — ver doc 09). Apenas o `card_token` resultante
-sai do app; nada de número/CVV/data de validade transita pela Mallora.
+sai do app; nada de número/CVV/data de validade transita pela Mallevo.
 
 A `EXPO_PUBLIC_PAGARME_APPID` é uma chave **pública** específica para a rota
 `/tokens` — ela só serve para tokenizar e não dá acesso a nenhum dado de
@@ -1192,7 +1192,7 @@ consumidor — `installment_type: 'customer'` na payload da Edge Function).
 ```typescript
 // components/SeletorParcelas.tsx
 import { View, Text, TouchableOpacity } from 'react-native'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   total: number       // total do pedido em centavos

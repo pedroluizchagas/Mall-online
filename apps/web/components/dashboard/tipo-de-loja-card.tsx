@@ -1,7 +1,7 @@
 'use client'
 
 import { Check, Mail } from 'lucide-react'
-import type { DashboardTemplate } from '@mallora/lib'
+import type { DashboardTemplate } from '@mallevo/lib'
 
 // TODO(suporte): trocar por canal oficial quando o e-mail/help-desk estiver definido.
 const SUPORTE_EMAIL = 'support@mallevo.com.br'

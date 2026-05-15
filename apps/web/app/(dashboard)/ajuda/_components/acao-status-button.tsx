@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react'
 import { CheckCircle2, RotateCcw } from 'lucide-react'
-import type { SupportTicketStatus } from '@mallora/types'
+import type { SupportTicketStatus } from '@mallevo/types'
 import { marcarResolvido, reabrirTicket } from '../actions'
 import { showToast } from '@/components/ui/toast'
 

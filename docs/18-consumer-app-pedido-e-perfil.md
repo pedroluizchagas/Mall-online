@@ -35,7 +35,7 @@ import { useLocalSearchParams, router, Stack } from 'expo-router'
 import MapView, { Marker, Polyline } from 'react-native-maps'
 import { supabase } from '@/lib/supabase'
 import { useOrderStore } from '@/store/useOrderStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 const LABELS_STATUS: Record<string, string> = {
   novo: 'Pedido recebido',
@@ -452,7 +452,7 @@ import {
 } from 'react-native'
 import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { Skeleton } from '@/components/Skeleton'
 
 const LABELS_STATUS: Record<string, string> = {
@@ -1004,7 +1004,7 @@ import {
   Alert,
 } from 'react-native'
 import { supabase } from '@/lib/supabase'
-import type { Endereco } from '@mallora/types'
+import type { Endereco } from '@mallevo/types'
 
 interface Props {
   enderecos: Endereco[]

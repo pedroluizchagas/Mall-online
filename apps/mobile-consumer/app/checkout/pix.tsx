@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { router, Stack, useLocalSearchParams } from 'expo-router'
 import { supabase } from '@/lib/supabase'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { HeaderTela } from '@/components/HeaderTela'
 import { Botao } from '@/components/ui/Botao'
 import { Card } from '@/components/ui/Card'

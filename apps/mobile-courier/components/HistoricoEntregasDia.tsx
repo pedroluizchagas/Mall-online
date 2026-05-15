@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { CourierIcon } from '@/components/CourierIcon'
 import { courierDesign } from '@/lib/courier-design'
 

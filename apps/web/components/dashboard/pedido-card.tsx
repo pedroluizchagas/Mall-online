@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { atualizarStatusPedido } from '@/lib/actions/pedidos'
 import { ModalAtribuirEntregador } from './modal-atribuir-entregador'
 import Link from 'next/link'

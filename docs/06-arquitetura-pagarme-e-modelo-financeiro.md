@@ -13,16 +13,16 @@ de pedidos. O Pagar.me opera nativamente no ecossistema brasileiro: aceita Pix,
 cartão de crédito/débito e boleto, e oferece split de pagamentos em múltiplos
 recebedores via API com liquidação compatível com o Banco Central. Os recebedores
 podem usar contas bancárias brasileiras ou chave Pix sem a exigência de criar
-uma conta autônoma no gateway — o cadastro é feito pela API da Mallora.
+uma conta autônoma no gateway — o cadastro é feito pela API da Mallevo.
 
 O Stripe permanece exclusivamente como ferramenta de Stripe Billing para a
 cobrança da assinatura mensal dos lojistas. Nada relacionado a pagamento de
 pedidos passa mais pelo Stripe.
 
-A Mallora continua sendo o Merchant of Record das transações. O consumidor paga
-para a Mallora, o split é configurado na criação da Order no Pagar.me, e o
+A Mallevo continua sendo o Merchant of Record das transações. O consumidor paga
+para a Mallevo, o split é configurado na criação da Order no Pagar.me, e o
 gateway é responsável pela liquidação direta para cada recebedor — lojista,
-entregador e Mallora — sem que a Mallora precise armazenar dados bancários.
+entregador e Mallevo — sem que a Mallevo precise armazenar dados bancários.
 
 Por que Pagar.me e não Stripe Connect:
 
@@ -37,7 +37,7 @@ Por que Pagar.me e não Stripe Connect:
 
 ## ATORES E SUAS CONTAS NO PAGAR.ME
 
-### Conta principal (merchant da Mallora)
+### Conta principal (merchant da Mallevo)
 
 Conta Pagar.me da plataforma. Recebe a credencial de API. Todas as Orders são
 criadas sob essa conta. As taxas fixas de gateway são pagas pela conta principal.
@@ -64,22 +64,22 @@ Cada Order do Pagar.me carrega um array `split_rules` definindo como o valor
 da transação é distribuído entre recebedores. Em cada pedido entregue há três
 recebedores envolvidos:
 
-1. **Mallora (plataforma)** — comissão por pedido (R$1,00, ou outro valor
-   configurado por plano). O `recipient_id` da Mallora é o recebedor padrão
+1. **Mallevo (plataforma)** — comissão por pedido (R$1,00, ou outro valor
+   configurado por plano). O `recipient_id` da Mallevo é o recebedor padrão
    da conta principal.
 1. **Lojista** — valor do produto menos a comissão da plataforma.
 1. **Entregador autônomo** — taxa de entrega definida pela loja.
 
 A taxa percentual do Pagar.me (MDR) é rateada entre os recebedores via
 `charge_processing_fee = true`. As taxas fixas de gateway ficam sob a conta
-principal da Mallora.
+principal da Mallevo.
 
 ```json
 {
   "amount": 6000,
   "split_rules": [
     {
-      "recipient_id": "rp_mallora_xxx",
+      "recipient_id": "rp_mallevo_xxx",
       "amount": 100,
       "type": "flat",
       "options": { "charge_processing_fee": false, "liable": false }
@@ -104,9 +104,9 @@ Notas:
 
 - `liable: true` no lojista significa que o lojista responde solidariamente
   por chargebacks proporcionais à sua participação no split.
-- A Mallora carrega `liable: false` na sua comissão — chargebacks não consomem
+- A Mallevo carrega `liable: false` na sua comissão — chargebacks não consomem
   a comissão fixa.
-- O entregador também opera como `liable: false` no MVP — a Mallora absorve
+- O entregador também opera como `liable: false` no MVP — a Mallevo absorve
   o risco da taxa de entrega em caso de chargeback.
 
 -----
@@ -130,9 +130,9 @@ Edge Function cria Order no Pagar.me:
     customer: { ... },
     payments: [{ payment_method: 'pix' | 'credit_card' }],
     split_rules: [
-      { recipient_id: rp_mallora,    amount: 100, ... },
+      { recipient_id: rp_mallevo,    amount: 100, ... },
       { recipient_id: rp_lojista,    amount: 4900, ... },
-      { recipient_id: rp_mallora,    amount: 1000, ... }
+      { recipient_id: rp_mallevo,    amount: 1000, ... }
     ],
     metadata: {
       order_id: 'uuid-do-pedido',
@@ -142,8 +142,8 @@ Edge Function cria Order no Pagar.me:
   }
 
   → Note: a parcela de R$10 (taxa de entrega) fica temporariamente no
-    recipient da Mallora. Estagio 1 do modelo de dois estagios — o
-    entregador sera alocado apos a confirmacao do lojista e a Mallora
+    recipient da Mallevo. Estagio 1 do modelo de dois estagios — o
+    entregador sera alocado apos a confirmacao do lojista e a Mallevo
     repassara a taxa de entrega via Transfer (estagio 2).
 ```
 
@@ -207,8 +207,8 @@ captura (geralmente 5 dias).
 
 **Estratégia B — Transferência direta após captura.** Para Pix (capturado
 instantaneamente) e para cartão capturado no checkout, a taxa de entrega
-permanece inicialmente no recebedor da Mallora. Após a alocação do entregador,
-a Edge Function executa um `POST /core/v5/transfers` saindo da Mallora para
+permanece inicialmente no recebedor da Mallevo. Após a alocação do entregador,
+a Edge Function executa um `POST /core/v5/transfers` saindo da Mallevo para
 o recipient do entregador, no valor da taxa de entrega.
 
 O MVP adota **Estratégia B** por simplicidade — uniforme entre Pix e cartão e
@@ -225,7 +225,7 @@ Entregador marca entrega como concluida no app
 ```
 
 O pedido fica elegível para o ciclo de liquidação do Pagar.me. Diferente do
-modelo Stripe Connect, **não há cron de repasses operado pela Mallora** — o
+modelo Stripe Connect, **não há cron de repasses operado pela Mallevo** — o
 Pagar.me faz a liquidação automaticamente conforme o calendário do método
 de pagamento e o plano de antecipação configurado por recebedor.
 
@@ -251,7 +251,7 @@ Boleto:
   → Liquidacao em ate 2 dias uteis apos compensacao.
 ```
 
-Para o MVP, a Mallora configura no painel admin:
+Para o MVP, a Mallevo configura no painel admin:
 
 - Lojistas com `tem_antecipacao = false` (plano básico): liquidação padrão
   D+29+2 (cartão) / D+0 (Pix).
@@ -275,7 +275,7 @@ Para o MVP, a Mallora configura no painel admin:
 |Boleto              |R$3,49 fixo          |—        |R$3,49         |
 
 A taxa percentual (MDR) é rateada entre recebedores via `charge_processing_fee`.
-A taxa fixa de gateway, quando existe, fica na conta principal da Mallora.
+A taxa fixa de gateway, quando existe, fica na conta principal da Mallevo.
 
 ### Exemplo com cartão de crédito à vista
 
@@ -287,7 +287,7 @@ Consumidor paga:               R$60,00
 Pagar.me debita MDR:           ~R$2,28 (rateado entre recebedores que
                                 pagam taxa)
 
-Mallora (recipient principal): R$1,00 (split flat — comissao por pedido,
+Mallevo (recipient principal): R$1,00 (split flat — comissao por pedido,
                                 charge_processing_fee = false)
 Lojista (recipient):           ~R$48,11  (R$49,00 - taxa proporcional)
 Entregador (alocado depois):   ~R$9,61  (R$10,00 - taxa proporcional,
@@ -296,7 +296,7 @@ Entregador (alocado depois):   ~R$9,61  (R$10,00 - taxa proporcional,
 Liquidacao automatica do Pagar.me:
   Lojista:     D+29+2 (ou D+15 com antecipacao automatica)
   Entregador:  D+1 (configuracao padrao do recipient)
-  Mallora:     liquidacao default da conta principal
+  Mallevo:     liquidacao default da conta principal
 ```
 
 ### Exemplo com Pix
@@ -306,7 +306,7 @@ Consumidor paga:               R$60,00 (Pix)
 
 Pagar.me debita MDR ~0,99%:    ~R$0,59
 
-Mallora:                       R$1,00
+Mallevo:                       R$1,00
 Lojista:                       ~R$48,52
 Entregador:                    ~R$9,89
 
@@ -325,7 +325,7 @@ Lojistas em planos com `tem_antecipacao = true` podem:
   recebíveis ainda não liquidados.
 
 A taxa de antecipação varia conforme volume e contrato (referência inicial:
-1,25% ao mês, sujeita a renegociação por volume). A Mallora repassa a taxa
+1,25% ao mês, sujeita a renegociação por volume). A Mallevo repassa a taxa
 integralmente ao lojista — não há margem adicional cobrada pela plataforma
 sobre a antecipação no MVP.
 
@@ -363,7 +363,7 @@ entre Stripe e Pagar.me — cada gateway tem sua função:
 ```
 Product (plano)
   → criado uma vez por plano da plataforma
-  → ex: "Plano Profissional — Mallora"
+  → ex: "Plano Profissional — Mallevo"
   → sincronizado com a tabela plans via stripe_product_id
 
 Price (preço recorrente)
@@ -490,7 +490,7 @@ Consumidor solicita cancelamento
        (cancela a charge — equivalente a refund total)
        orders.payment_status = 'estornado'
   → Pagar.me reverte saldos a creditar de todos os recebedores
-    (Mallora, lojista; entregador se a transferencia ja ocorreu, exige
+    (Mallevo, lojista; entregador se a transferencia ja ocorreu, exige
     estorno explicito do transfer ou debito do saldo do entregador).
   → Nenhum repasse adicional acontece.
 ```
@@ -503,7 +503,7 @@ Se Pix ja liquidou para o lojista mas o pedido foi cancelado:
     com 'amount' especifico.
   → Pagar.me debita o valor do saldo do recebedor; se saldo insuficiente,
     saldo fica negativo ate proxima liquidacao.
-  → Mallora absorve o custo se nao for possivel debitar do lojista
+  → Mallevo absorve o custo se nao for possivel debitar do lojista
     e registra ocorrencia em payouts com status 'estornado'.
 ```
 
@@ -514,7 +514,7 @@ Cartao em disputa:
   → Webhook charge.chargeback.created
   → Pagar.me debita os recebedores 'liable: true' proporcionalmente
   → Lojista e debitado do valor do produto + taxa proporcional
-  → Mallora recebe alerta no painel admin para responder a disputa
+  → Mallevo recebe alerta no painel admin para responder a disputa
     (envio de comprovantes via API ou painel Pagar.me)
 
 Pix devolvido (MED — Mecanismo Especial de Devolucao):
@@ -582,7 +582,7 @@ PAGARME_API_KEY=ak_test_xxx          # ou ak_live_xxx em producao
 # Chave de assinatura HMAC dos webhooks
 PAGARME_WEBHOOK_SECRET=whsec_xxx
 
-# recipient_id da conta Mallora (recebedor padrao da plataforma)
+# recipient_id da conta Mallevo (recebedor padrao da plataforma)
 PAGARME_PLATFORM_RECIPIENT_ID=rp_xxx
 
 # Em desenvolvimento, usar credenciais sandbox
@@ -598,7 +598,7 @@ Detalhes em `09 — Variáveis de Ambiente & Secrets`.
 ## CHECKLIST PRE-PRODUCAO PAGAR.ME
 
 - [ ] Conta Pagar.me empresarial aprovada
-- [ ] recipient_id da Mallora criado e validado como recebedor padrão
+- [ ] recipient_id da Mallevo criado e validado como recebedor padrão
 - [ ] Webhook endpoint registrado apontando para a Edge Function `pagarme-webhook`
 - [ ] Eventos selecionados: `order.paid`, `order.payment_failed`,
       `charge.paid`, `charge.refunded`, `charge.chargeback.created`,

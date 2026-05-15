@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Check, Lock, Upload, Zap, ImagePlus } from 'lucide-react'
-import type { PaletaVitrine, StoreTheme, TemplateVitrine } from '@mallora/types'
+import type { PaletaVitrine, StoreTheme, TemplateVitrine } from '@mallevo/types'
 import { publicarVitrine } from '@/lib/actions/loja-vitrine'
 import { showToast } from '@/components/ui/toast'
 import { PageHeader } from '@/components/dashboard/page-header'

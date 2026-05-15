@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { User, Megaphone, Bot, Archive } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import type { MessageThreadOrigem } from '@mallora/types'
+import type { MessageThreadOrigem } from '@mallevo/types'
 
 export interface ThreadItem {
   id: string

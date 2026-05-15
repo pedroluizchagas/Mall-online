@@ -10,7 +10,7 @@
 | Stroke uniforme | parcial (lucide varia entre 1.5 e 2) | ✅ stroke fixo configurável (default 1.9) |
 | Bundle | ~todo o pacote (tree-shaking incompleto no RN) | ✅ só os ícones que usamos |
 | Personalização | difícil sobrescrever um ícone | ✅ um `case` no switch |
-| Familiaridade visual | "estilo lucide" — comum, genérico | "estilo Mallora" — proprietário |
+| Familiaridade visual | "estilo lucide" — comum, genérico | "estilo Mallevo" — proprietário |
 
 A trade-off: precisamos manter o arquivo. Compensa porque o conjunto é pequeno (~45 ícones) e estável.
 

@@ -402,11 +402,11 @@ Logs Vercel:
 
 -------------------------------------------
 Copied 50 logs from Vercel Dashboard
-- Project: mall-online-web (prj_qGxbAjUSThGHlkzKvpOVjHCpl9Ip)
+- Project: mallevo-web (prj_qGxbAjUSThGHlkzKvpOVjHCpl9Ip)
 - Team: pedros-projects-c80a408f (team_7nErCkZTqKtKXtdvHwoYAdLg)
 - Search query: (no search query applied)
 - Search timestamps: 2026-05-03T20:39:00.000Z to 2026-05-03T21:09:00.000Z
-- Dashboard URL: https://vercel.com/pedros-projects-c80a408f/mall-online-web/logs
+- Dashboard URL: https://vercel.com/pedros-projects-c80a408f/mallevo-web/logs
 - Format: JSONL
 - Documentation: https://vercel.com/docs/logs/runtime
 -------------------------------------------

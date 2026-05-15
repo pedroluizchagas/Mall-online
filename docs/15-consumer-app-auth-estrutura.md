@@ -26,8 +26,8 @@ do app com a barra de navegação inferior.
 ```json
 {
   "expo": {
-    "name": "Mallora",
-    "slug": "mallora-consumer",
+    "name": "Mallevo",
+    "slug": "mallevo-consumer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -39,7 +39,7 @@ do app com a barra de navegação inferior.
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.mallora.consumer",
+      "bundleIdentifier": "com.mallevo.consumer",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usamos sua localização para mostrar lojas próximas."
       }
@@ -49,7 +49,7 @@ do app com a barra de navegação inferior.
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1A4D3A"
       },
-      "package": "com.mallora.consumer",
+      "package": "com.mallevo.consumer",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
@@ -66,7 +66,7 @@ do app com a barra de navegação inferior.
       ],
       "react-native-webview"
     ],
-    "scheme": "mallora-consumer"
+    "scheme": "mallevo-consumer"
   }
 }
 ```
@@ -120,7 +120,7 @@ O Expo não tem cookies — a sessão é persistida via AsyncStorage.
 ```typescript
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@mallora/types'
+import type { Database } from '@mallevo/types'
 
 export const supabase = createClient<Database>(
   process.env.EXPO_PUBLIC_SUPABASE_URL!,
@@ -541,7 +541,7 @@ export default function TelaEntrar() {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
       options: {
-        emailRedirectTo: 'mallora-consumer://auth/callback',
+        emailRedirectTo: 'mallevo-consumer://auth/callback',
         data: { role: 'consumer' },
       },
     })
@@ -676,7 +676,7 @@ export default function TelaVerificar() {
     setReenviando(true)
     await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: 'mallora-consumer://auth/callback' },
+      options: { emailRedirectTo: 'mallevo-consumer://auth/callback' },
     })
     setReenviando(false)
     setSegundos(60)
@@ -702,7 +702,7 @@ export default function TelaVerificar() {
       <View className="bg-white rounded-2xl p-5 mb-6">
         <Text className="text-sm text-gray-600 leading-6">
           1. Abra o email no seu celular{'\n'}
-          2. Toque no botão "Entrar na Mallora"{'\n'}
+          2. Toque no botão "Entrar na Mallevo"{'\n'}
           3. Você será redirecionado automaticamente
         </Text>
       </View>
@@ -781,7 +781,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
 ```typescript
 import { create } from 'zustand'
-import type { ItemCarrinho } from '@mallora/types'
+import type { ItemCarrinho } from '@mallevo/types'
 
 interface CartState {
   itens: ItemCarrinho[]
@@ -1030,12 +1030,12 @@ export function Skeleton({ largura = '100%', altura = 16, arredondado = false }:
 
 ## DEEP LINK — CALLBACK DO MAGIC LINK
 
-O Supabase envia o Magic Link com o scheme `mallora-consumer://`.
+O Supabase envia o Magic Link com o scheme `mallevo-consumer://`.
 O Expo Router captura este link e processa a sessão automaticamente
 se o scheme estiver configurado corretamente no `app.json`.
 
 Para testar em desenvolvimento com Expo Go, usar o scheme
-`exp+mallora-consumer://` e configurar a URL de redirecionamento
+`exp+mallevo-consumer://` e configurar a URL de redirecionamento
 no Supabase Dashboard:
 
 ```
@@ -1043,8 +1043,8 @@ Supabase Dashboard
   → Authentication
   → URL Configuration
   → Redirect URLs
-  → Adicionar: mallora-consumer://auth/callback
-  → Adicionar (dev): exp+mallora-consumer://auth/callback
+  → Adicionar: mallevo-consumer://auth/callback
+  → Adicionar (dev): exp+mallevo-consumer://auth/callback
 ```
 
 -----
@@ -1054,7 +1054,7 @@ Supabase Dashboard
 - [ ] `@react-native-async-storage/async-storage` instalado para persistência da sessão
 - [ ] `react-native-reanimated` e `react-native-gesture-handler` configurados no babel
 - [ ] NativeWind configurado com o preset no `tailwind.config.js`
-- [ ] Scheme `mallora-consumer` registrado no `app.json`
+- [ ] Scheme `mallevo-consumer` registrado no `app.json`
 - [ ] URL de callback do Magic Link adicionada no Supabase Dashboard
 - [ ] `react-native-webview` instalado e listado nos plugins do app.json
 - [ ] `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY` no `.env.local`

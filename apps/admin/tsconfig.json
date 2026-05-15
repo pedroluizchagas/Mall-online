@@ -17,8 +17,8 @@
     "noEmit": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@mallora/types": ["../../packages/types/index.ts"],
-      "@mallora/lib": ["../../packages/lib/index.ts"],
+      "@mallevo/types": ["../../packages/types/index.ts"],
+      "@mallevo/lib": ["../../packages/lib/index.ts"],
       "@/*": ["./*"]
     }
   },

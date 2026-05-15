@@ -9,7 +9,7 @@ import {
   getPisosByCategoria,
   getTemplateBySlug,
   type DashboardTemplate,
-} from '@mallora/lib'
+} from '@mallevo/lib'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { logout } from '@/lib/actions/auth'
 import { schemaDadosLoja, schemaDadosResponsavel } from '@/lib/validations/onboarding'

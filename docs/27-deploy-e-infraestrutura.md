@@ -23,7 +23,7 @@ Todo o ambiente de desenvolvimento pode rodar localmente sem custo.
 |--------|----------|----------------|-------|------------------|
 |Local   |qualquer  |`supabase start`|pk_test|localhost:3000    |
 |Staging |`develop` |Projeto staging |pk_test|preview.vercel.app|
-|Produção|`main`    |Projeto pro     |pk_live|mallora.com.br    |
+|Produção|`main`    |Projeto pro     |pk_live|mallevo.com.br    |
 
 -----
 
@@ -72,12 +72,12 @@ Supabase Dashboard
    Edge Functions → Manage secrets
    STRIPE_SECRET_KEY=sk_live_xxx
    STRIPE_WEBHOOK_SECRET=whsec_xxx
-   APP_URL=https://mallora.com.br
+   APP_URL=https://mallevo.com.br
    WEBHOOK_SECRET=uuid_aleatorio_gerado
 
 6. Vincular domínio customizado (opcional)
    Project Settings → Custom domains
-   → Adicionar: api.mallora.com.br
+   → Adicionar: api.mallevo.com.br
 ```
 
 ### Deploy das Edge Functions
@@ -144,7 +144,7 @@ cd apps/web
 vercel link
 
 # Selecionar projeto existente ou criar novo
-# → Criar novo: mallora-web
+# → Criar novo: mallevo-web
 ```
 
 ### Configurar variáveis de ambiente no Vercel
@@ -173,11 +173,11 @@ vercel env add APP_URL preview
 
 ```
 Vercel Dashboard
-  → Projeto mallora-web
+  → Projeto mallevo-web
   → Settings
   → Domains
   → Add domain
-  → mallora.com.br
+  → mallevo.com.br
   → Copiar os registros DNS fornecidos pelo Vercel
 ```
 
@@ -249,7 +249,7 @@ Cada app mobile tem seu próprio `eas.json`. Estrutura de builds:
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://staging.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx_staging",
-        "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br"
+        "EXPO_PUBLIC_APP_URL": "https://staging.mallevo.com.br"
       }
     },
     "preview": {
@@ -258,7 +258,7 @@ Cada app mobile tem seu próprio `eas.json`. Estrutura de builds:
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://staging.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx_staging",
-        "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br"
+        "EXPO_PUBLIC_APP_URL": "https://staging.mallevo.com.br"
       }
     },
     "production": {
@@ -266,7 +266,7 @@ Cada app mobile tem seu próprio `eas.json`. Estrutura de builds:
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://producao.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx_prod",
-        "EXPO_PUBLIC_APP_URL": "https://mallora.com.br"
+        "EXPO_PUBLIC_APP_URL": "https://mallevo.com.br"
       }
     }
   },
@@ -314,11 +314,11 @@ eas update --branch production --message "Correção de bug"
 
 ```
 1. Acessar https://dashboard.pagar.me
-2. Completar verificação KYC da conta (pessoa jurídica — Mallora)
+2. Completar verificação KYC da conta (pessoa jurídica — Mallevo)
 3. Ativar conta para recebimentos (status: active)
 4. Habilitar métodos de pagamento: cartão de crédito, débito, Pix, boleto
-5. Criar recipient de conta da Mallora (recebe comissões e taxas de entrega)
-6. Ativar antecipação automática no recipient da Mallora (opcional)
+5. Criar recipient de conta da Mallevo (recebe comissões e taxas de entrega)
+6. Ativar antecipação automática no recipient da Mallevo (opcional)
 7. Gerar chave de API de produção (prefixo ak_live_)
 ```
 
@@ -398,7 +398,7 @@ Configurar:
   - Permitir cancelamento de assinatura: Sim
   - Permitir atualização de cartão: Sim
   - Exibir histórico de faturas: Sim
-  - URL de retorno: https://mallora.com.br/dashboard/configuracoes/assinatura
+  - URL de retorno: https://mallevo.com.br/dashboard/configuracoes/assinatura
 ```
 
 -----
@@ -407,7 +407,7 @@ Configurar:
 
 ### Registrar o domínio
 
-Registrar `mallora.com.br` (ou nome final escolhido) no Registro.br:
+Registrar `mallevo.com.br` (ou nome final escolhido) no Registro.br:
 
 - Custo: ~R$40/ano
 - Acesse: https://registro.br
@@ -594,13 +594,13 @@ GitHub → Repositório → Settings → Branches
 
 ### Pagar.me (3 dias antes)
 
-- [ ] Conta Pagar.me verificada e aprovada (KYC da Mallora concluído)
-- [ ] Recipient da Mallora criado e com status `active`
+- [ ] Conta Pagar.me verificada e aprovada (KYC da Mallevo concluído)
+- [ ] Recipient da Mallevo criado e com status `active`
 - [ ] Pix, cartão de crédito, débito e boleto habilitados
 - [ ] Webhook Pagar.me de produção registrado com todos os eventos necessários
 - [ ] `PAGARME_API_KEY` de produção (prefixo `ak_live_`) configurada nos secrets
 - [ ] `PAGARME_WEBHOOK_SECRET` de produção configurado nos secrets do Supabase
-- [ ] `PAGARME_RECIPIENT_ID_MALLORA` de produção configurado
+- [ ] `PAGARME_RECIPIENT_ID_MALLEVO` de produção configurado
 - [ ] Antifraude configurado (Clearsale ou Konduto)
 - [ ] Teste de pagamento no ambiente de produção com valor mínimo (R$1,00)
 - [ ] Teste de onboarding de recipient lojista e entregador em produção
@@ -619,7 +619,7 @@ GitHub → Repositório → Settings → Branches
 - [ ] Build de produção do consumer app gerado via EAS
 - [ ] Build de produção do courier app gerado via EAS
 - [ ] Apps testados em dispositivos iOS e Android físicos
-- [ ] Deep links (`mallora-consumer://` e `mallora-courier://`) funcionando
+- [ ] Deep links (`mallevo-consumer://` e `mallevo-courier://`) funcionando
 - [ ] URLs de redirect do Magic Link configuradas no Supabase de produção
 - [ ] Push notifications funcionando em produção (token registrado e notificação recebida)
 - [ ] Permissões de localização funcionando no courier app

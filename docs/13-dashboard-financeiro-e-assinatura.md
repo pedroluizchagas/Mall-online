@@ -32,7 +32,7 @@ assinatura vem da API Stripe Billing.
 import Stripe from 'stripe'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { formatarReais, calcularTaxaAntecipacao } from '@mallora/lib'
+import { formatarReais, calcularTaxaAntecipacao } from '@mallevo/lib'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-04-10',
@@ -577,7 +577,7 @@ export default async function PaginaFinanceiro() {
 ### components/dashboard/kpis-financeiros.tsx
 
 ```typescript
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Kpis {
   faturamento_bruto: number
@@ -694,7 +694,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   dados: { data: string; bruto: number; liquido: number }[]
@@ -750,7 +750,7 @@ export function GraficoFaturamento({ dados }: Props) {
 ### components/dashboard/card-saldo-pagarme.tsx
 
 ```typescript
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   saldo: { disponivel: number; pendente: number; transferido: number } | null
@@ -812,7 +812,7 @@ export function CardSaldoPagarme({ saldo }: Props) {
 'use client'
 
 import { useState, useTransition } from 'react'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { solicitarAntecipacao } from '@/lib/actions/financeiro'
 
 interface Elegibilidade {
@@ -938,7 +938,7 @@ export function CardAntecipacao({ elegibilidade }: { elegibilidade: Elegibilidad
 ### components/dashboard/lista-repasses.tsx
 
 ```typescript
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 const LABELS_STATUS: Record<string, string> = {
   agendado: 'Agendado',
@@ -1044,7 +1044,7 @@ export function ListaRepasses({ repasses, totalPendente, totalRecebido }: Props)
 
 ```typescript
 import { getDadosAssinatura, getFaturas, getLinkPortalAssinatura } from '@/lib/actions/assinatura'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 const LABELS_BILLING: Record<string, string> = {
   trial: 'Período de teste',

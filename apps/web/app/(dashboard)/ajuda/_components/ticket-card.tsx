@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { SupportTicketPrioridade, SupportTicketStatus } from '@mallora/types'
+import type { SupportTicketPrioridade, SupportTicketStatus } from '@mallevo/types'
 import { Card } from '@/components/ui/card'
 import { AcaoStatusButton } from './acao-status-button'
 

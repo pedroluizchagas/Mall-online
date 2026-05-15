@@ -10,7 +10,7 @@ import { Card } from '@/components/ui/Card'
 import { Botao } from '@/components/ui/Botao'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
 import { metaDoStatus, timelineDoStatus, ehAtivo } from '@/lib/status-pedido'
 

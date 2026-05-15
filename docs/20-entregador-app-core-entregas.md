@@ -140,7 +140,7 @@ import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useEntregaStore } from '@/store/useEntregaStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { EntregaDisponivelCard } from '@/components/EntregaDisponivelCard'
 
 export default function TelaEntregas() {
@@ -457,7 +457,7 @@ function formatarEndereco(end: any): string {
 
 ```typescript
 import { View, Text, TouchableOpacity } from 'react-native'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   entrega: {
@@ -569,7 +569,7 @@ import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useEntregaStore } from '@/store/useEntregaStore'
 import { useAuthStore } from '@/store/useAuthStore'
-import { LOCATION_UPDATE_INTERVAL_MS } from '@mallora/lib'
+import { LOCATION_UPDATE_INTERVAL_MS } from '@mallevo/lib'
 import { ModalConfirmacaoEntrega } from '@/components/ModalConfirmacaoEntrega'
 
 export default function TelaEntregaAtiva() {
@@ -781,7 +781,7 @@ export default function TelaEntregaAtiva() {
             <View className="flex-row justify-between items-center">
               <Text className="text-sm text-gray-500">Valor da entrega</Text>
               <Text className="text-lg font-bold text-[#1A4D3A]">
-                {require('@mallora/lib').formatarReais(ativa.valor_entrega)}
+                {require('@mallevo/lib').formatarReais(ativa.valor_entrega)}
               </Text>
             </View>
           </View>
@@ -1113,7 +1113,7 @@ import { useEffect, useState } from 'react'
 import { View, Text } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 export function HistoricoEntregasDia() {
   const { courier } = useAuthStore()

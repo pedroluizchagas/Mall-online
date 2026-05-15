@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { getTemplateByStore } from '@mallora/lib'
-import type { HorariosFuncionamento } from '@mallora/types'
+import { getTemplateByStore } from '@mallevo/lib'
+import type { HorariosFuncionamento } from '@mallevo/types'
 import { listarAgenda } from '@/lib/actions/agenda'
 import { AgendaSemanal } from '@/components/dashboard/agenda-semanal'
 

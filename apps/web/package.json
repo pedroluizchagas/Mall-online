@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.0",
-    "@mallora/lib": "workspace:*",
-    "@mallora/types": "workspace:*",
+    "@mallevo/lib": "workspace:*",
+    "@mallevo/types": "workspace:*",
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.43.0",
     "date-fns": "^3.6.0",

@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import type { Database } from '@mallora/types'
+import type { Database } from '@mallevo/types'
 
 export function createSupabaseClient() {
   return createBrowserClient<Database>(

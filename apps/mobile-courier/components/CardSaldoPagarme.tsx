@@ -1,5 +1,5 @@
 import { View, Text, ActivityIndicator } from 'react-native'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { courierDesign } from '@/lib/courier-design'
 
 interface Props {

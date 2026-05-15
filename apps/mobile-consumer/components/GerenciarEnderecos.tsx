@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, Alert } from 'react-native'
 import { supabase } from '@/lib/supabase'
-import type { Endereco, Json } from '@mallora/types'
+import type { Endereco, Json } from '@mallevo/types'
 import { Card } from '@/components/ui/Card'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign, softColor } from '@/lib/consumer-design'

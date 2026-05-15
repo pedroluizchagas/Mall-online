@@ -1,5 +1,5 @@
 import { FileText } from 'lucide-react'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/dashboard/empty-state'
 

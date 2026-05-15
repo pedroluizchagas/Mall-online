@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { router } from 'expo-router'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { CourierIcon } from '@/components/CourierIcon'
 import { courierDesign, formatarMomentoCurto } from '@/lib/courier-design'
 

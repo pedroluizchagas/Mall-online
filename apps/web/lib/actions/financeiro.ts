@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { calcularTaxaAntecipacao } from '@mallora/lib'
+import { calcularTaxaAntecipacao } from '@mallevo/lib'
 
 async function chamarEdgeFunction<T>(nome: string): Promise<T | null> {
   const supabase = createSupabaseServer()

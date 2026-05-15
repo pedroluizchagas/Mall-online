@@ -14,7 +14,7 @@ import { useEntregaStore } from '@/store/useEntregaStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useLocalizacaoEntrega } from '@/hooks/useLocalizacaoEntrega'
 import { ModalConfirmacaoEntrega } from '@/components/ModalConfirmacaoEntrega'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { CourierIcon } from '@/components/CourierIcon'
 import { courierDesign } from '@/lib/courier-design'
 

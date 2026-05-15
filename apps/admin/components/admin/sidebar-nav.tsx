@@ -104,7 +104,7 @@ export function SidebarNav({
             <span className="font-bold text-sm" style={{ color: 'var(--brick-ink)' }}>M</span>
           </div>
           <div>
-            <p className="text-sidebar-ink font-bold text-sm leading-none">Mallora</p>
+            <p className="text-sidebar-ink font-bold text-sm leading-none">Mallevo</p>
             <p className="text-sidebar-ink-3 text-[10px] mt-0.5 tracking-wide">Painel Admin</p>
           </div>
         </div>

@@ -9,7 +9,7 @@ import {
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ModalProduto } from '@/components/ModalProduto'
 import { ProdutoCard } from '@/components/ProdutoCard'
