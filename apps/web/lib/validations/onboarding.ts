@@ -4,13 +4,13 @@ export const schemaDadosResponsavel = z.object({
   nome_responsavel: z.string().min(3, 'Nome completo obrigatório'),
   cpf_cnpj: z
     .string()
-    .min(11, 'CPF ou CNPJ inválido')
-    .max(18, 'CPF ou CNPJ inválido')
-    .regex(/^[\d.\-\/]+$/, 'Apenas números e pontuação'),
+    .refine((s) => s.replace(/\D/g, '').length === 14, 'CNPJ inválido — precisa ter 14 dígitos'),
   telefone: z
     .string()
-    .min(10, 'Telefone inválido')
-    .max(15, 'Telefone inválido'),
+    .refine((s) => {
+      const d = s.replace(/\D/g, '').length
+      return d >= 10 && d <= 11
+    }, 'Telefone inválido'),
   email: z.string().email('Email inválido'),
   senha: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres'),
 })

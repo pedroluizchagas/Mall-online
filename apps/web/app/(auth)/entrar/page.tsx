@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import { login } from '@/lib/actions/auth'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Mail, Lock, Loader2, TrendingUp } from 'lucide-react'
 
 export default function PaginaEntrar() {
@@ -28,14 +29,19 @@ export default function PaginaEntrar() {
         <div className="flex-1 flex flex-col justify-center p-8 sm:p-12 lg:px-20 relative">
           <div className="w-full max-w-sm mx-auto">
             <div className="mb-10">
-              <div className="w-12 h-12 rounded-xl bg-[#18181B] flex items-center justify-center mb-8 shadow-md">
-                <span className="text-[#C1F148] font-bold text-2xl">M</span>
-              </div>
+              <Image
+                src="/brand/mallevo-logo-black.png"
+                alt="Mallevo"
+                width={669}
+                height={106}
+                priority
+                className="h-8 w-auto mb-8"
+              />
               <h1 className="text-3xl font-bold tracking-tight text-zinc-900 mb-2">
                 Fazer Login
               </h1>
               <p className="text-zinc-500">
-                Bem-vindo à Mallevo - Acesse o seu painel
+                Bem-vindo à Mallevo — acesse o seu painel.
               </p>
             </div>
 
@@ -135,8 +141,14 @@ export default function PaginaEntrar() {
               
               {/* Main Card */}
               <div className="absolute bottom-0 right-0 w-80 bg-zinc-100 rounded-3xl p-6 shadow-2xl border border-white/10 backdrop-blur-sm z-20 translate-x-4 translate-y-4">
-                <div className="w-8 h-8 rounded-lg bg-[#18181B] flex items-center justify-center mb-6">
-                   <span className="text-[#C1F148] font-bold text-sm">M</span>
+                <div className="mb-6">
+                  <Image
+                    src="/brand/mallevo-logo-black.png"
+                    alt="Mallevo"
+                    width={669}
+                    height={106}
+                    className="h-5 w-auto opacity-90"
+                  />
                 </div>
                 <p className="text-4xl font-semibold text-zinc-900 tracking-tight mb-1">
                   R$ 12.347<span className="text-zinc-400 text-2xl">,23</span>
