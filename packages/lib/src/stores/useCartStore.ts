@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ItemCarrinho, ItemCarrinhoModifier } from '@mallevo/types'
+import { calcularTotalPedido } from '../delivery/coverage'
 
 interface PendingTrocaLoja {
   item: ItemEntrada
@@ -172,11 +173,15 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   subtotal: () => get().itens.reduce((acc, i) => acc + precoLinha(i), 0),
 
-  // Em agendamento, não há taxa de entrega — total = subtotal.
+  // Regra de entrega/cobertura compartilhada (D4): em agendamento não
+  // há taxa de entrega — total = subtotal; caso contrário soma a taxa.
   total: () => {
     const s = get()
-    if (s.itens.some((i) => !!i.agendamento)) return s.subtotal()
-    return s.subtotal() + s.store_taxa_entrega
+    return calcularTotalPedido(
+      { temAgendamento: s.itens.some((i) => !!i.agendamento) },
+      s.subtotal(),
+      s.store_taxa_entrega
+    )
   },
 
   temAgendamento: () => get().itens.some((i) => !!i.agendamento),
