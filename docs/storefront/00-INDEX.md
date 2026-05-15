@@ -64,7 +64,7 @@ dados. Supabase, catálogo, checkout Pagar.me, roteamento de entrega e a tabela
 |---|---|---|
 | 0 | Pré-flight: RLS view, `orders.origem`, extração lib | ✅ concluído (validado tech lead) |
 | 1 | Scaffold `apps/storefront` | ✅ concluído (validado tech lead) |
-| 2 | Roteamento host-based + tenant | ⬜ não iniciado |
+| 2 | Roteamento host-based + tenant | ✅ concluído (validado tech lead) |
 | 3 | Storefront completo (3a–3f) | ⬜ não iniciado |
 | 4 | Corte de domínio Vercel | ⬜ não iniciado |
 
