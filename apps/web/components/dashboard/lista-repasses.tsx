@@ -1,4 +1,4 @@
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { Card } from '@/components/ui/card'
 
 const META: Record<string, { label: string; bg: string; color: string }> = {

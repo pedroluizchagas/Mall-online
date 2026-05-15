@@ -38,7 +38,7 @@ Os 3 caminhos críticos do app estão **completos end-to-end**:
 
 **Todas aditivas, todas aplicadas em staging.** Lojistas pré-existentes continuaram funcionando sem precisar reconfigurar nada.
 
-### Pacote `@mallora/lib/templates`
+### Pacote `@mallevo/lib/templates`
 
 ```
 packages/lib/src/
@@ -63,7 +63,7 @@ packages/lib/src/
 ### Métricas de código
 
 - **~10.000 linhas adicionadas** ao longo das 10 PRs
-- **31 testes unitários** no `@mallora/lib`
+- **31 testes unitários** no `@mallevo/lib`
 - **8 migrations SQL** aditivas
 - **6 templates declarativos** + **20 categorias** + **9 pisos**
 - **Zero quebra** de retrocompatibilidade
@@ -146,7 +146,7 @@ Decisões deliberadas de **escopo**: ficaram fora do MVP mas estão anotadas par
 - **Refator do `metadataSchema`** (Fase 5a) extraindo schemas por template em arquivos separados
 - **`TZ_OFFSET_MIN`** duplicado entre as 2 edge functions de agenda — extrair helper compartilhado
 - **`featuresDoTemplate`** duplicado entre onboarding e tipo-de-loja-card — extrair helper compartilhado
-- **Inconsistência "Mallevo" (docs) vs "Mallora" (package.json)** — decidir e padronizar
+- **Inconsistência "Mallevo" (docs) vs "Mallevo" (package.json)** — decidir e padronizar
 - **Sub-componente `produto-form-food.tsx`** vs UI custom dentro de `produto-form.tsx`: hoje food tem UI custom inline; pode virar componente isolado ao crescer
 
 ---
@@ -193,7 +193,7 @@ Definidas em `06-roadmap-implementacao.md` §"Métricas de Sucesso", para acompa
 
 1. **Executor com sandbox dessincronizado**: aconteceu 2x (Fase 2 inicial e Fase 5b2 com falso alarme de build). Mitigação: instruir o executor a fazer `git fetch + reset main` no Passo 0 obrigatório do prompt; eu sempre rodar build local antes de aprovar.
 
-2. **Inconsistência de naming Mallevo/Mallora**: detectada cedo mas não resolvida (escopo). Vai dar trabalho consertar depois.
+2. **Inconsistência de naming Mallevo/Mallevo**: detectada cedo mas não resolvida (escopo). Vai dar trabalho consertar depois.
 
 3. **Race conditions em estoque/agenda**: estoque tem trigger PostgreSQL (atomicidade do banco); agenda usa re-validação na edge function (lock otimista). Para volume baixo (Divinópolis), aceitável; em escala maior pode precisar `SELECT FOR UPDATE` ou lock de tabela.
 
@@ -217,7 +217,7 @@ Definidas em `06-roadmap-implementacao.md` §"Métricas de Sucesso", para acompa
 2. **Testes de carga** na edge function `create-pagarme-order` (anti double-booking sob concorrência)
 3. **Aplicar migration 021** em staging (e produção quando for o caso)
 4. **Verificar limites do plano**: lojista Básico com 50+ variants em fashion bate em `plans.max_produtos`?
-5. **Revisar inconsistência Mallevo/Mallora** e decidir o nome final
+5. **Revisar inconsistência Mallevo/Mallevo** e decidir o nome final
 
 ### Iteração 1 pós-launch (3-6 semanas)
 

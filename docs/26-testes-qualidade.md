@@ -93,7 +93,7 @@ import {
   formatarReais,
   reaisParaCentavos,
   calcularTaxaAntecipacao,
-} from '@mallora/lib'
+} from '@mallevo/lib'
 
 describe('formatarReais', () => {
   it('formata zero corretamente', () => {
@@ -361,7 +361,7 @@ let tenantB_token: string
 beforeAll(async () => {
   // Criar usuários de teste para dois tenants
   const { data: userA } = await admin.auth.admin.createUser({
-    email: 'tenant-a-test@mallora.test',
+    email: 'tenant-a-test@mallevo.test',
     password: 'senha-teste-123',
     user_metadata: { role: 'tenant' },
     email_confirm: true,
@@ -369,7 +369,7 @@ beforeAll(async () => {
   tenantA_userId = userA.user!.id
 
   const { data: userB } = await admin.auth.admin.createUser({
-    email: 'tenant-b-test@mallora.test',
+    email: 'tenant-b-test@mallevo.test',
     password: 'senha-teste-456',
     user_metadata: { role: 'tenant' },
     email_confirm: true,
@@ -382,7 +382,7 @@ beforeAll(async () => {
     .insert({
       user_id: tenantA_userId,
       nome_responsavel: 'Lojista A Teste',
-      email: 'tenant-a-test@mallora.test',
+      email: 'tenant-a-test@mallevo.test',
     })
     .select('id')
     .single()
@@ -392,7 +392,7 @@ beforeAll(async () => {
     .insert({
       user_id: tenantB_userId,
       nome_responsavel: 'Lojista B Teste',
-      email: 'tenant-b-test@mallora.test',
+      email: 'tenant-b-test@mallevo.test',
     })
     .select('id')
     .single()
@@ -428,14 +428,14 @@ beforeAll(async () => {
   // Obter tokens de autenticação
   const clientA = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   const { data: sessionA } = await clientA.auth.signInWithPassword({
-    email: 'tenant-a-test@mallora.test',
+    email: 'tenant-a-test@mallevo.test',
     password: 'senha-teste-123',
   })
   tenantA_token = sessionA.session!.access_token
 
   const clientB = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   const { data: sessionB } = await clientB.auth.signInWithPassword({
-    email: 'tenant-b-test@mallora.test',
+    email: 'tenant-b-test@mallevo.test',
     password: 'senha-teste-456',
   })
   tenantB_token = sessionB.session!.access_token

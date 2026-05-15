@@ -2,7 +2,7 @@
 
 import { useFormState, useFormStatus } from 'react-dom'
 import { useState, type KeyboardEvent } from 'react'
-import { useTemplateOrGeneric, type CampoExtraDef } from '@mallora/lib'
+import { useTemplateOrGeneric, type CampoExtraDef } from '@mallevo/lib'
 import {
   VariantsEditor,
   payloadParaServer,

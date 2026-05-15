@@ -34,7 +34,7 @@ recipient Pagar.me (com KYC e Prova de Vida) para recebimento de pagamentos.
 - Cadastrado diretamente na plataforma sem vínculo com lojista
 - Atende pedidos de qualquer lojista que use o pool da plataforma
 - Aprovação feita pelo admin via painel super admin
-- Recebe via recipient Pagar.me — transfer da Mallora após alocação no pedido (estágio 2)
+- Recebe via recipient Pagar.me — transfer da Mallevo após alocação no pedido (estágio 2)
 - Precisa completar KYC/Prova de Vida no Pagar.me antes de receber pedidos pagos online
 
 -----
@@ -46,8 +46,8 @@ recipient Pagar.me (com KYC e Prova de Vida) para recebimento de pagamentos.
 ```json
 {
   "expo": {
-    "name": "Mallora Entregador",
-    "slug": "mallora-courier",
+    "name": "Mallevo Entregador",
+    "slug": "mallevo-courier",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -59,7 +59,7 @@ recipient Pagar.me (com KYC e Prova de Vida) para recebimento de pagamentos.
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.mallora.courier",
+      "bundleIdentifier": "com.mallevo.courier",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Usamos sua localização para coordenar as entregas.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Usamos sua localização em segundo plano durante entregas ativas.",
@@ -71,7 +71,7 @@ recipient Pagar.me (com KYC e Prova de Vida) para recebimento de pagamentos.
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1A4D3A"
       },
-      "package": "com.mallora.courier",
+      "package": "com.mallevo.courier",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
@@ -85,13 +85,13 @@ recipient Pagar.me (com KYC e Prova de Vida) para recebimento de pagamentos.
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "A Mallora usa sua localização durante entregas ativas para mostrar sua posição ao consumidor.",
+          "locationAlwaysAndWhenInUsePermission": "A Mallevo usa sua localização durante entregas ativas para mostrar sua posição ao consumidor.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
         }
       ]
     ],
-    "scheme": "mallora-courier"
+    "scheme": "mallevo-courier"
   }
 }
 ```
@@ -151,7 +151,7 @@ app/
 ```typescript
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createClient } from '@supabase/supabase-js'
-import type { Database } from '@mallora/types'
+import type { Database } from '@mallevo/types'
 
 export const supabase = createClient<Database>(
   process.env.EXPO_PUBLIC_SUPABASE_URL!,
@@ -420,7 +420,7 @@ export default function TelaEntrar() {
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim().toLowerCase(),
       options: {
-        emailRedirectTo: 'mallora-courier://auth/callback',
+        emailRedirectTo: 'mallevo-courier://auth/callback',
         data: { role: 'courier' },
       },
     })
@@ -1316,7 +1316,7 @@ CREATE POLICY "leitura_admin_courier"
 - [ ] Bucket `courier-docs` criado como privado no Supabase Storage
 - [ ] Permissões de localização em background configuradas no `app.json`
 - [ ] `expo-image-picker` instalado para seleção de fotos
-- [ ] URL de callback `mallora-courier://auth/callback` adicionada no Supabase Dashboard
+- [ ] URL de callback `mallevo-courier://auth/callback` adicionada no Supabase Dashboard
 - [ ] Edge Function `onboard-courier` deployada (arquivo 07)
 - [ ] Polling de aprovação na tela `aguardando-aprovacao` — intervalo de 15 segundos
 - [ ] Entregador próprio pode pular o Pagar.me Onboarding no MVP (sem repasse online)

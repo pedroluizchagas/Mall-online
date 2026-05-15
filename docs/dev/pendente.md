@@ -9,7 +9,7 @@ Executar as políticas RLS do arquivo `docs/19-entregador-modelo-auth-e-cadastro
 
 ## Authentication — URL de callback do app entregador
   Authentication → URL Configuration
-  → Adicionar: mallora-courier://auth/callback
+  → Adicionar: mallevo-courier://auth/callback
 
 ---
 
@@ -29,7 +29,7 @@ Project Settings > Realtime — verificar que está habilitado.
 
 Configurar no Supabase Dashboard:
   Authentication → URL Configuration
-  → Adicionar: mallora-consumer://auth/callback
+  → Adicionar: mallevo-consumer://auth/callback
 
 (Fizemos porém, óbvio isso em modo de desenvolvimento, adicionar a de produção)
 
@@ -38,7 +38,7 @@ Configurar no Supabase Dashboard:
 
 
 Criar bucket courier-docs como privado no Supabase Storage. (Já foi Criado)
-Configurar URL de callback mallora-courier://auth/callback (modo dev criado).
+Configurar URL de callback mallevo-courier://auth/callback (modo dev criado).
 
 
 

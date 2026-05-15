@@ -118,7 +118,7 @@ Uma fase só é considerada pronta quando:
 | Risco | Mitigação |
 |---|---|
 | Inconsistência durante a transição (telas refatoradas convivendo com não-refatoradas) | Tokens são aditivos — `consumer-design.ts` entra na Fase 1 e telas antigas continuam funcionando. Quebra controlada por PR. |
-| Perda de identidade de marca | Decisão consciente do produto. Marca consumer atual já se sobrepunha à da courier; unificar reforça a operação Mallora. |
+| Perda de identidade de marca | Decisão consciente do produto. Marca consumer atual já se sobrepunha à da courier; unificar reforça a operação Mallevo. |
 | Splash e ícone do app exigem novos assets gráficos | Tratado na Fase 3 (Shell). Enquanto não chegam novos PNGs, ajustamos só o `backgroundColor`. |
 | Reels com fundo dark conflitando com canvas claro do resto | Já era assim antes; a Fase 9 só padroniza tokens, não muda a base. |
 | Lucide ainda referenciado em arquivos não refatorados | Remoção da dependência fica para o último PR (Fase 9), depois que `grep -r lucide` retorna vazio. |

@@ -52,12 +52,12 @@ Passos:
 
 4. Verificar que packages/types/index.ts re-exporta tudo.
 
-5. Verificar que o alias @mallora/types está resolvendo corretamente
+5. Verificar que o alias @mallevo/types está resolvendo corretamente
    em apps/web/tsconfig.json.
 
 Critério de aceite:
-- import { type Database } from '@mallora/types' funciona em apps/web
-- import { type OrderStatus } from '@mallora/types' funciona
+- import { type Database } from '@mallevo/types' funciona em apps/web
+- import { type OrderStatus } from '@mallevo/types' funciona
 - Nenhum erro TypeScript ao rodar pnpm build em apps/web
 ```
 
@@ -164,7 +164,7 @@ Passos:
 
 3. Configurar os secrets necessários:
    supabase secrets set PAGARME_API_KEY=ak_test_xxx
-   supabase secrets set PAGARME_RECIPIENT_ID_MALLORA=re_xxx
+   supabase secrets set PAGARME_RECIPIENT_ID_MALLEVO=re_xxx
    supabase secrets set STRIPE_SECRET_KEY=sk_test_xxx
    supabase secrets set APP_URL=http://localhost:3000
 
@@ -462,7 +462,7 @@ Criar:
 
 Configurar no Supabase Dashboard:
   Authentication → URL Configuration
-  → Adicionar: mallora-consumer://auth/callback
+  → Adicionar: mallevo-consumer://auth/callback
 
 Critério de aceite:
 - Magic Link enviado ao digitar email válido
@@ -591,7 +591,7 @@ Criar:
 11. app/pagarme-onboarding.tsx chamando onboard-courier
 
 Criar bucket courier-docs como privado no Supabase Storage.
-Configurar URL de callback mallora-courier://auth/callback.
+Configurar URL de callback mallevo-courier://auth/callback.
 
 Critério de aceite:
 - Wizard navega corretamente entre as 3 etapas
@@ -787,10 +787,10 @@ SUPABASE:
 7. Criar backup manual antes de abrir para usuários
 
 PAGARME:
-8. Verificar conta Pagar.me para produção (KYC da Mallora concluído)
-9. Criar recipient da Mallora e confirmar status active
+8. Verificar conta Pagar.me para produção (KYC da Mallevo concluído)
+9. Criar recipient da Mallevo e confirmar status active
 10. Registrar webhook Pagar.me de produção com todos os eventos
-11. Copiar PAGARME_API_KEY, PAGARME_WEBHOOK_SECRET e PAGARME_RECIPIENT_ID_MALLORA para secrets
+11. Copiar PAGARME_API_KEY, PAGARME_WEBHOOK_SECRET e PAGARME_RECIPIENT_ID_MALLEVO para secrets
 12. Configurar antifraude (Clearsale ou Konduto)
 
 STRIPE BILLING:

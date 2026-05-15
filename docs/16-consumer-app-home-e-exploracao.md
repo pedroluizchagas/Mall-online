@@ -390,7 +390,7 @@ export function CategoriaChip({ categoria, ativa, onPress }: Props) {
 
 ```typescript
 import { View, Text, Image, TouchableOpacity } from 'react-native'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   loja: {
@@ -476,7 +476,7 @@ import {
 import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { LojaCard } from '@/components/LojaCard'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface ResultadoLoja {
   tipo: 'loja'
@@ -711,7 +711,7 @@ import {
 } from 'react-native'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { supabase } from '@/lib/supabase'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { Skeleton } from '@/components/Skeleton'
 import { ModalProduto } from '@/components/ModalProduto'
 import { useCartStore } from '@/store/useCartStore'
@@ -1065,7 +1065,7 @@ import {
   Dimensions,
 } from 'react-native'
 import { useCartStore } from '@/store/useCartStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 const { height } = Dimensions.get('window')
 

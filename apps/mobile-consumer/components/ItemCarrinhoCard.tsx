@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { useCartStore } from '@/store/useCartStore'
-import { formatarReais } from '@mallora/lib'
-import type { ItemCarrinho, ItemCarrinhoAgendamento } from '@mallora/types'
+import { formatarReais } from '@mallevo/lib'
+import type { ItemCarrinho, ItemCarrinhoAgendamento } from '@mallevo/types'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
 

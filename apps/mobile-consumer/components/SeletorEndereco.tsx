@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
-import type { Endereco, Json } from '@mallora/types'
+import type { Endereco, Json } from '@mallevo/types'
 import { Botao } from '@/components/ui/Botao'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'

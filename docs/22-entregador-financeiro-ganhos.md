@@ -14,7 +14,7 @@ saldo disponível no recipient Pagar.me.
 
 A liquidação é gerenciada automaticamente pelo Pagar.me conforme
 o cronograma configurado no recipient. O entregador autônomo recebe
-via transfer da Mallora após a alocação no pedido (estágio 2) e a
+via transfer da Mallevo após a alocação no pedido (estágio 2) e a
 liquidação ocorre conforme o calendário da conta bancária cadastrada.
 
 -----
@@ -36,7 +36,7 @@ import {
 } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { Skeleton } from '@/components/Skeleton'
 
 type Periodo = 'hoje' | 'semana' | 'mes'
@@ -326,7 +326,7 @@ export default function TelaGanhos() {
 
 ```typescript
 import { View, Text, ActivityIndicator } from 'react-native'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   saldo: { disponivel: number; pendente: number; transferido: number } | null
@@ -384,7 +384,7 @@ export function CardSaldoPagarme({ saldo }: Props) {
 
 ```typescript
 import { View, Text } from 'react-native'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 const LABELS_STATUS: Record<string, string> = {
   pendente: 'Pendente',

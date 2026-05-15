@@ -609,7 +609,7 @@ export function UsoPlanoBarra({ atual, maximo, percentual }: Props) {
 'use client'
 
 import { useState, useTransition } from 'react'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { toggleDisponibilidade, excluirProduto } from '@/lib/actions/produtos'
 
 interface Produto {
@@ -759,7 +759,7 @@ sem perder o estado da página.
 'use client'
 
 import { useFormState, useFormStatus } from 'react-dom'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Categoria {
   id: string

@@ -1,6 +1,6 @@
 # Dashboard do Lojista — Redesenho de UX e Arquitetura de Informação
 
-### Plataforma Mallevo (Mall-online)
+### Plataforma Mallevo
 
 *Versão 1.0 — 09/05/2026*
 *Branch de implementação: `claude/improve-merchant-dashboard-b9sMl`*

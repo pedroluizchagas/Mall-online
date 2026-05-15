@@ -1,5 +1,5 @@
 import { LifeBuoy } from 'lucide-react'
-import type { SupportTicketStatus } from '@mallora/types'
+import type { SupportTicketStatus } from '@mallevo/types'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { createSupabaseServer } from '@/lib/supabase/server'

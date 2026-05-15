@@ -1,5 +1,5 @@
 import { getConciliacaoFinanceira } from '@/lib/actions/admin'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { BarChart3, TrendingUp, ArrowRightLeft, Clock } from 'lucide-react'
 
 export default async function PaginaFinanceiroAdmin({

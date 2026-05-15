@@ -1,4 +1,4 @@
-import type { MessageAutorTipo } from '@mallora/types'
+import type { MessageAutorTipo } from '@mallevo/types'
 
 const FORMATO_HORA = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' })
 

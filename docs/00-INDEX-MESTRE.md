@@ -10,7 +10,7 @@
 
 |Tema                  |Decisão                                                   |
 |----------------------|----------------------------------------------------------|
-|**Nome**              |Mallora ou Mallux — a definir                             |
+|**Nome**              |Mallevo ou Mallux — a definir                             |
 |**Conceito**          |Shopping digital regional, Divinópolis MG                 |
 |**Atores**            |Plataforma · Lojista · Consumidor · Entregador            |
 |**Receita 1**         |Assinatura mensal do lojista (Stripe Billing)             |
@@ -21,7 +21,7 @@
 |**Merchant of Record**|Plataforma                                                |
 |**Recebedores**       |Recipients Pagar.me (lojistas + entregadores)             |
 |**Liquidação lojista**|Pix D+0 · Cartão D+29+2 · D+15 com antecipação automática |
-|**Liquidação entregador**|D+1 (transfer estágio 2 da Mallora para o recipient)   |
+|**Liquidação entregador**|D+1 (transfer estágio 2 da Mallevo para o recipient)   |
 |**Repasses operacionais**|Liquidação automática Pagar.me (sem cron próprio)      |
 |**Migration 001**     |Aplicada                                                |
 |**Paleta**            |Verde Minas: `#1A4D3A` · `#4CAF82` · `#F5A623` · `#FFF8ED`|
@@ -60,17 +60,17 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
      Pagar.me debita MDR (~3,5% cartão / ~0,99% Pix — rateado)
                   ↓
      Estágio 1 — split na criação da Order:
-        Mallora       R$1,00 (comissão fixa)
-        Mallora       R$10,00 (taxa de entrega — temporária)
+        Mallevo       R$1,00 (comissão fixa)
+        Mallevo       R$10,00 (taxa de entrega — temporária)
         Lojista       R$49,00
                   ↓
      Estágio 2 — após o lojista alocar entregador:
-        Transfer Mallora → Entregador  R$10,00
+        Transfer Mallevo → Entregador  R$10,00
                   ↓
      Liquidação automática do Pagar.me:
         Lojista:    Pix D+0 · Cartão D+29+2 (ou D+15 c/ antecipação)
         Entregador: D+1 (configuração padrão do recipient)
-        Mallora:    saldo da conta principal
+        Mallevo:    saldo da conta principal
 ```
 
 -----
@@ -144,7 +144,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 **`06` — Arquitetura Pagar.me & Modelo Financeiro**
 
 - Pagar.me como gateway de pedidos; Stripe Billing apenas para assinatura
-- Estrutura de split (Mallora, lojista, entregador) com `charge_processing_fee` e `liable`
+- Estrutura de split (Mallevo, lojista, entregador) com `charge_processing_fee` e `liable`
 - Modelo de dois estágios para alocação de motoboy após checkout
 - Fluxo de dinheiro detalhado com valores reais e taxas Pagar.me Brasil
 - Cadastro de recipients (lojistas e entregadores) com KYC para PF
@@ -159,7 +159,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 - `onboard-tenant` — cria recipient Pagar.me + Stripe Customer (para Billing)
 - `onboard-courier` — cria recipient Pagar.me + gera kyc_link
-- `create-pagarme-order` — cria Order com split estágio 1 (Mallora + lojista)
+- `create-pagarme-order` — cria Order com split estágio 1 (Mallevo + lojista)
 - `transfer-to-courier` — Transfer estágio 2 (taxa de entrega ao entregador)
 - `pagarme-webhook` — eventos: `order.paid` · `charge.paid` · `charge.refunded` · `charge.chargeback.created` · `recipient.status.changed` · `transfer.created` / `paid` / `failed`
 - `request-advance` — antecipação via API Pagar.me com taxa contratual

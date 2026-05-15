@@ -1,5 +1,5 @@
 import { getMetricasGlobais } from '@/lib/actions/admin'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { GraficoGMV } from '@/components/admin/grafico-gmv'
 import { MiniCalendario } from '@/components/admin/mini-calendario'
 import {
@@ -73,7 +73,7 @@ export default async function PaginaAdminVisaoGeral() {
             {saudar()}, Admin!
           </h1>
           <p className="text-[13px] text-ink-3 mt-0.5">
-            Aqui está a visão geral da plataforma Mallora.
+            Aqui está a visão geral da plataforma Mallevo.
           </p>
         </div>
 
@@ -93,7 +93,7 @@ export default async function PaginaAdminVisaoGeral() {
           </div>
           <div className="text-right">
             <p className="text-[13px] font-semibold text-ink leading-tight">Super Admin</p>
-            <p className="text-[11px] text-ink-3">Mallora Plataforma</p>
+            <p className="text-[11px] text-ink-3">Mallevo Plataforma</p>
           </div>
         </div>
       </div>

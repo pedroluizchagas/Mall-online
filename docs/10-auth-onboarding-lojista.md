@@ -59,7 +59,7 @@ Cliente para uso em Server Components e Server Actions.
 ```typescript
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import type { Database } from '@mallora/types'
+import type { Database } from '@mallevo/types'
 
 export function createSupabaseServer() {
   const cookieStore = cookies()
@@ -110,7 +110,7 @@ Cliente para uso em Client Components.
 'use client'
 
 import { createBrowserClient } from '@supabase/ssr'
-import type { Database } from '@mallora/types'
+import type { Database } from '@mallevo/types'
 
 export function createSupabaseClient() {
   return createBrowserClient<Database>(

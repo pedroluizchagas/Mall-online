@@ -126,7 +126,7 @@ function SplashAnimacao({ onConcluido }: { onConcluido: () => void }) {
 
       <View style={styles.branding}>
         <Text style={[styles.brandingTitulo, { color: colors.accent }]}>
-          Mallora
+          Mallevo
         </Text>
         <Text style={[styles.brandingSubtitulo, { color: '#6B6E75' }]}>
           Entregas

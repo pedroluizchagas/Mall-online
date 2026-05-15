@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   dados: { data: string; bruto: number; liquido: number }[]

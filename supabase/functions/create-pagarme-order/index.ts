@@ -1,7 +1,7 @@
 // supabase/functions/create-pagarme-order/index.ts
 //
-// Cria uma Order no Pagar.me com split entre Mallora e lojista (estágio 1).
-// A taxa de entrega é depositada na Mallora em custódia e repassada ao
+// Cria uma Order no Pagar.me com split entre Mallevo e lojista (estágio 1).
+// A taxa de entrega é depositada na Mallevo em custódia e repassada ao
 // entregador via Transfer (estágio 2 — vide transfer-to-courier).
 //
 // Body:
@@ -30,7 +30,7 @@ import {
 } from '../helpers/auth.ts'
 import { pagarmeRequest } from '../helpers/pagarme.ts'
 
-const PLATFORM_FEE_CENTAVOS = 100 // R$1,00 — comissão fixa Mallora
+const PLATFORM_FEE_CENTAVOS = 100 // R$1,00 — comissão fixa Mallevo
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -533,9 +533,9 @@ Deno.serve(async (req) => {
     const total = subtotal + taxa_entrega
     const platform_fee = PLATFORM_FEE_CENTAVOS
 
-    // Estágio 1 (entrega): lojista recebe (subtotal - comissão); Mallora retém
+    // Estágio 1 (entrega): lojista recebe (subtotal - comissão); Mallevo retém
     // comissão + taxa de entrega em custódia até a alocação do entregador.
-    // Em agendamento não há entrega: Mallora retém apenas a comissão fixa.
+    // Em agendamento não há entrega: Mallevo retém apenas a comissão fixa.
     const valorLojista = subtotal - platform_fee
 
     const itemAgendado = itensProcessados.find((i) => i.agendamento)?.agendamento ?? null
@@ -667,9 +667,9 @@ Deno.serve(async (req) => {
           card_token,
           installments: parcelas,
           // 'customer' = juros pagos pelo consumidor (parcelado com juros);
-          // a Mallora não absorve o custo do parcelamento.
+          // a Mallevo não absorve o custo do parcelamento.
           installment_type: 'customer',
-          statement_descriptor: 'Mallora',
+          statement_descriptor: 'Mallevo',
         },
         amount: total,
         split: splitRules,

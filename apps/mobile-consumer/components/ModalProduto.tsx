@@ -12,7 +12,7 @@ import {
 } from 'react-native'
 import { useCartStore } from '@/store/useCartStore'
 import { supabase } from '@/lib/supabase'
-import { formatarReais, getTemplateBySlug } from '@mallora/lib'
+import { formatarReais, getTemplateBySlug } from '@mallevo/lib'
 import { Botao } from '@/components/ui/Botao'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
@@ -22,7 +22,7 @@ import type {
   ItemCarrinhoAgendamento,
   ItemCarrinhoModifier,
   ItemCarrinhoVariant,
-} from '@mallora/types'
+} from '@mallevo/types'
 
 /**
  * Bottom-sheet de detalhe do produto + adicionar ao carrinho.

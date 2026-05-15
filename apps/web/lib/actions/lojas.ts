@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { z } from 'zod'
-import type { HorariosFuncionamento } from '@mallora/types'
+import type { HorariosFuncionamento } from '@mallevo/types'
 
 const schemaDadosGerais = z.object({
   nome: z.string().min(2, 'Nome obrigatório'),

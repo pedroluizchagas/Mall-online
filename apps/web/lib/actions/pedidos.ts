@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import type { OrderStatus } from '@mallora/types'
+import type { OrderStatus } from '@mallevo/types'
 
 // Transições de status permitidas pelo lojista
 const transicoesPermitidas: Record<OrderStatus, OrderStatus[]> = {

@@ -90,7 +90,7 @@ Adicionais para acessibilidade:
 - pt-BR é primário. Datas: `Intl.DateTimeFormat('pt-BR')`. Moeda:
   `Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' })`.
 - Componente utilitário `formatarReais` (já existe em
-  `@mallora/lib`).
+  `@mallevo/lib`).
 
 ---
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { supabase } from '@/lib/supabase'
 import { CourierIcon } from '@/components/CourierIcon'
 import { courierDesign, formatarMomentoCurto } from '@/lib/courier-design'

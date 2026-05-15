@@ -474,7 +474,7 @@ os componentes específicos do estoque.
 'use client'
 
 import { useState, useTransition } from 'react'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { registrarEntradaEstoque, registrarAjusteEstoque } from '@/lib/actions/estoque'
 import { BarraEstoque } from './barra-estoque'
 import { ModalMovimentacao } from './modal-movimentacao'

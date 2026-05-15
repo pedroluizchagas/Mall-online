@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { atribuirEntregador } from '@/lib/actions/pedidos'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   pedidoId: string

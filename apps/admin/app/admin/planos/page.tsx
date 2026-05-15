@@ -1,6 +1,6 @@
 import { getPlanos } from '@/lib/actions/admin'
 import { FormularioPlano } from '@/components/admin/formulario-plano'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { CreditCard, CheckCircle2, XCircle, Plus } from 'lucide-react'
 
 export default async function PaginaPlanos() {

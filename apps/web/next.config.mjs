@@ -9,7 +9,7 @@ const nextConfig = {
       },
     ]
   },
-  transpilePackages: ['@mallora/types', '@mallora/lib'],
+  transpilePackages: ['@mallevo/types', '@mallevo/lib'],
   images: {
     remotePatterns: [
       {

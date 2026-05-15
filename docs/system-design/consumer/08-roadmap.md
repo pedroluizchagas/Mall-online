@@ -407,5 +407,5 @@ Itens fora do escopo desta documentação que ficam para depois:
 3. **App icon**: refresh do ícone e adaptive icon Android.
 4. **Backend de banners**: hoje `BANNERS_MOCK` em `lib/banners-mock.ts`; quando vier do banco, é só trocar a fonte de dados.
 5. **Backend de notificações**: hoje `NotificacoesPopup` lê mock; conexão com Supabase fica para outra iniciativa.
-6. **Pacote `@mallora/design`** (se ficar valendo a pena consolidar tokens compartilhados entre courier e consumer): considerar em revisão pós-projeto.
+6. **Pacote `@mallevo/design`** (se ficar valendo a pena consolidar tokens compartilhados entre courier e consumer): considerar em revisão pós-projeto.
 7. **Testes visuais**: adicionar Storybook ou testes de regressão visual com Maestro/Detox em fases posteriores.

@@ -29,7 +29,7 @@ navegação fragmentada.
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { z } from 'zod'
-import type { HorariosFuncionamento } from '@mallora/types'
+import type { HorariosFuncionamento } from '@mallevo/types'
 
 const schemaDadosLoja = z.object({
   nome: z.string().min(2, 'Nome obrigatório'),
@@ -581,7 +581,7 @@ export function AbaGeral({ loja }: { loja: any }) {
 
 import { useState, useTransition } from 'react'
 import { atualizarHorarios } from '@/lib/actions/lojas'
-import type { HorariosFuncionamento } from '@mallora/types'
+import type { HorariosFuncionamento } from '@mallevo/types'
 
 const DIAS = [
   { id: 'seg', label: 'Segunda-feira' },

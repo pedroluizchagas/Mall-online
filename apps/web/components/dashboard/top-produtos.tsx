@@ -1,4 +1,4 @@
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Produto {
   nome: string

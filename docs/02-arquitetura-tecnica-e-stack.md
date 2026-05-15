@@ -72,8 +72,8 @@ recebedores em contas bancárias brasileiras (Stripe Connect não suporta);
 contratada por recipient via API.
 
 A plataforma é Merchant of Record: na criação da Order, define `split_rules`
-com Mallora e lojista (estágio 1). Após o lojista alocar um entregador
-autônomo, a Edge Function executa um Transfer da Mallora para o recipient
+com Mallevo e lojista (estágio 1). Após o lojista alocar um entregador
+autônomo, a Edge Function executa um Transfer da Mallevo para o recipient
 do entregador (estágio 2). Esse modelo de dois estágios resolve a
 particularidade operacional de o motoboy ser conhecido apenas após o
 checkout do consumidor.
@@ -89,7 +89,7 @@ operam em domínios separados.
 
 O Pagar.me opera a liquidação automaticamente conforme o calendário do
 método de pagamento (Pix D+0, cartão D+29+2 ou D+15 com antecipação) e
-o plano configurado por recipient. A Mallora não opera mais um cron
+o plano configurado por recipient. A Mallevo não opera mais um cron
 diário de repasses — apenas registra as transferências do estágio 2 e
 as antecipações manuais na tabela `payouts` para fins de auditoria.
 
@@ -304,7 +304,7 @@ App do entregador (Expo Location)
 Consumidor finaliza checkout
       → App chama Edge Function create-pagarme-order
       → Edge Function cria Order no Pagar.me com split estágio 1
-        (Mallora + lojista; taxa de entrega temporariamente na Mallora)
+        (Mallevo + lojista; taxa de entrega temporariamente na Mallevo)
       → Resposta: qr_code (Pix) ou status (cartão)
       → App exibe QR code ou confirmação de cartão
       → Consumidor paga
@@ -314,7 +314,7 @@ Consumidor finaliza checkout
 
 Lojista aceita e atribui entregador autônomo
       → Edge Function transfer-to-courier
-      → POST /core/v5/transfers (Mallora → recipient do entregador)
+      → POST /core/v5/transfers (Mallevo → recipient do entregador)
       → Registra em payouts (estágio 2)
 
 Liquidação automática (gerenciada pelo Pagar.me)

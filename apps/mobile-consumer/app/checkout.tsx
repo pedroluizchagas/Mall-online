@@ -7,7 +7,7 @@ import { tokenizarCartao } from '@/lib/pagarme'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { ItemCarrinhoCard, formatarAgendamento } from '@/components/ItemCarrinhoCard'
 import { SeletorEndereco } from '@/components/SeletorEndereco'
 import { SeletorPagamento } from '@/components/SeletorPagamento'
@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/Input'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { consumerDesign } from '@/lib/consumer-design'
-import type { Endereco } from '@mallora/types'
+import type { Endereco } from '@mallevo/types'
 
 const { colors } = consumerDesign
 

@@ -3,7 +3,7 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import {
   getPisosByCategoria,
   getTemplateByStore,
-} from '@mallora/lib'
+} from '@mallevo/lib'
 import { TipoDeLojaCard } from '@/components/dashboard/tipo-de-loja-card'
 
 type StoreComCategoria = {

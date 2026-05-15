@@ -258,7 +258,7 @@ export async function criarPlano(formData: FormData) {
   const stripeProduct = await stripe.products.create({
     name: dados.data.nome,
     description: dados.data.descricao,
-    metadata: { plataforma: 'mallora' },
+    metadata: { plataforma: 'mallevo' },
   })
 
   let stripePrice = null

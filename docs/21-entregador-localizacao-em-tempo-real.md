@@ -54,7 +54,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import * as Location from 'expo-location'
 import { Alert } from 'react-native'
 import { supabase } from '@/lib/supabase'
-import { LOCATION_UPDATE_INTERVAL_MS } from '@mallora/lib'
+import { LOCATION_UPDATE_INTERVAL_MS } from '@mallevo/lib'
 
 interface Opcoes {
   courierId: string

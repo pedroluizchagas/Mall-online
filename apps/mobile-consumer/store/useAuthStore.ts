@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { User } from '@supabase/supabase-js'
-import type { Endereco } from '@mallora/types'
+import type { Endereco } from '@mallevo/types'
 
 interface ConsumerProfile {
   id: string

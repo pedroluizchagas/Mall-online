@@ -91,7 +91,7 @@ export function AbaIdentificacao({ loja, emailComercial }: Props) {
               className="px-3 py-2.5 text-sm flex-shrink-0"
               style={{ background: 'var(--bg-2)', color: 'var(--ink-3)', borderRight: '1px solid var(--line)' }}
             >
-              mallora.app/
+              mallevo.app/
             </span>
             <input
               name="slug"

@@ -7,7 +7,7 @@ import type {
   PaletaVitrine,
   StoreTheme,
   TemplateVitrine,
-} from '@mallora/types'
+} from '@mallevo/types'
 
 const BUCKET = 'store-assets'
 const TAMANHO_MAX_BYTES = 5 * 1024 * 1024

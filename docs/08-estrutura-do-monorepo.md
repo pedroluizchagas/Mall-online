@@ -64,7 +64,7 @@ packages:
 
 ```json
 {
-  "name": "mallora-monorepo",
+  "name": "mallevo-monorepo",
   "private": true,
   "scripts": {
     "dev:web": "pnpm --filter web dev",
@@ -247,8 +247,8 @@ apps/web/
     "lint": "next lint"
   },
   "dependencies": {
-    "@mallora/lib": "workspace:*",
-    "@mallora/types": "workspace:*",
+    "@mallevo/lib": "workspace:*",
+    "@mallevo/types": "workspace:*",
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.43.0",
     "next": "14.2.0",
@@ -290,7 +290,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'mallora.com.br'],
+      allowedOrigins: ['localhost:3000', 'mallevo.com.br'],
     },
   },
 }
@@ -423,8 +423,8 @@ apps/mobile-consumer/
     "lint": "eslint ."
   },
   "dependencies": {
-    "@mallora/lib": "workspace:*",
-    "@mallora/types": "workspace:*",
+    "@mallevo/lib": "workspace:*",
+    "@mallevo/types": "workspace:*",
     "@supabase/supabase-js": "^2.43.0",
     "expo": "~51.0.0",
     "expo-router": "~3.5.0",
@@ -501,8 +501,8 @@ apps/mobile-courier/
     "lint": "eslint ."
   },
   "dependencies": {
-    "@mallora/lib": "workspace:*",
-    "@mallora/types": "workspace:*",
+    "@mallevo/lib": "workspace:*",
+    "@mallevo/types": "workspace:*",
     "@supabase/supabase-js": "^2.43.0",
     "expo": "~51.0.0",
     "expo-router": "~3.5.0",
@@ -536,7 +536,7 @@ packages/types/
 
 ```json
 {
-  "name": "@mallora/types",
+  "name": "@mallevo/types",
   "version": "0.0.1",
   "private": true,
   "main": "./index.ts",
@@ -627,7 +627,7 @@ packages/lib/
 
 ```json
 {
-  "name": "@mallora/lib",
+  "name": "@mallevo/lib",
   "version": "0.0.1",
   "private": true,
   "main": "./index.ts",
@@ -770,8 +770,8 @@ APP_URL=http://localhost:3000
     "strictNullChecks": true,
     "skipLibCheck": true,
     "paths": {
-      "@mallora/types": ["../../packages/types/index.ts"],
-      "@mallora/lib": ["../../packages/lib/index.ts"]
+      "@mallevo/types": ["../../packages/types/index.ts"],
+      "@mallevo/lib": ["../../packages/lib/index.ts"]
     }
   }
 }
@@ -783,8 +783,8 @@ APP_URL=http://localhost:3000
 
 ```bash
 # 1. Clonar ou criar o repositório
-git init mallora
-cd mallora
+git init mallevo
+cd mallevo
 
 # 2. Criar estrutura base
 mkdir -p apps packages supabase/migrations supabase/functions

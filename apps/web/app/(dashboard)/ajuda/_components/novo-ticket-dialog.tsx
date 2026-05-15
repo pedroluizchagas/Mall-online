@@ -2,7 +2,7 @@
 
 import { useState, useTransition, type ReactNode } from 'react'
 import { Plus } from 'lucide-react'
-import type { SupportTicketPrioridade } from '@mallora/types'
+import type { SupportTicketPrioridade } from '@mallevo/types'
 import { criarTicket } from '../actions'
 import { showToast } from '@/components/ui/toast'
 

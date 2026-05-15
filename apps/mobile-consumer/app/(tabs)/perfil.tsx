@@ -12,7 +12,7 @@ import { Card } from '@/components/ui/Card'
 import { Botao } from '@/components/ui/Botao'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
-import type { Endereco } from '@mallora/types'
+import type { Endereco } from '@mallevo/types'
 
 const { colors, radius, spacing } = consumerDesign
 

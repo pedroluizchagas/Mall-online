@@ -4,7 +4,7 @@
     "strict": true,
     "paths": {
       "@/*": ["./*"],
-      "@mallora/types": ["../../packages/types/src/index.ts"]
+      "@mallevo/types": ["../../packages/types/src/index.ts"]
     }
   }
 }

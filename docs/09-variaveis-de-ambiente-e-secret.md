@@ -47,7 +47,7 @@ Usada apenas dentro de Edge Functions e Server Actions com `createClient` server
 |----------------------------------|-------------------------------------|--------------------------------------------------------------------|
 |`PAGARME_API_KEY`                 |Apenas servidor / Edge Functions     |Pagar.me Dashboard > Developer > API Keys                           |
 |`PAGARME_WEBHOOK_SECRET`          |Edge Function pagarme-webhook        |Pagar.me Dashboard > Developer > Webhooks > Signing secret          |
-|`PAGARME_PLATFORM_RECIPIENT_ID`   |Apenas servidor / Edge Functions     |`rp_xxx` do recipient principal da Mallora (criado no onboarding)   |
+|`PAGARME_PLATFORM_RECIPIENT_ID`   |Apenas servidor / Edge Functions     |`rp_xxx` do recipient principal da Mallevo (criado no onboarding)   |
 |`EXPO_PUBLIC_PAGARME_APPID`       |Apps mobile (tokenização client-side)|Pagar.me Dashboard > Developer > Public API Key (`appId` para `/tokens`)|
 
 Em desenvolvimento, usar chaves `ak_test_` e webhook secret de sandbox. A
@@ -113,7 +113,7 @@ PAGARME_API_KEY=ak_test_xxx
 # Secret HMAC dos webhooks (cabeçalho X-Hub-Signature)
 PAGARME_WEBHOOK_SECRET=whsec_xxx
 
-# recipient_id da Mallora (recebedor padrão da plataforma)
+# recipient_id da Mallevo (recebedor padrão da plataforma)
 PAGARME_PLATFORM_RECIPIENT_ID=rp_test_xxx
 
 # ============================================================
@@ -210,7 +210,7 @@ Secrets necessários nas Edge Functions:
 |----------------------------------|-----------------------------------------------------------|
 |`PAGARME_API_KEY`                 |Chave secreta Pagar.me                                     |
 |`PAGARME_WEBHOOK_SECRET`          |Secret HMAC para verificação de webhook Pagar.me           |
-|`PAGARME_PLATFORM_RECIPIENT_ID`   |recipient_id da Mallora (recebedor padrão)                 |
+|`PAGARME_PLATFORM_RECIPIENT_ID`   |recipient_id da Mallevo (recebedor padrão)                 |
 |`STRIPE_SECRET_KEY`                |Chave secreta Stripe (Billing)                             |
 |`STRIPE_WEBHOOK_SECRET`            |Secret de assinatura do webhook Stripe (Billing)           |
 |`APP_URL`                          |URL base do dashboard web                                  |
@@ -244,7 +244,7 @@ Adicionar para cada ambiente (Production, Preview, Development):
 |`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`|`pk_live_xxx`           |`pk_test_xxx`         |
 |`STRIPE_SECRET_KEY`                 |`sk_live_xxx`           |`sk_test_xxx`         |
 |`STRIPE_WEBHOOK_SECRET`             |Secret prod             |Secret staging        |
-|`APP_URL`                           |`https://mallora.com.br`|URL do preview Vercel |
+|`APP_URL`                           |`https://mallevo.com.br`|URL do preview Vercel |
 
 ### Como configurar via Vercel CLI
 
@@ -292,7 +292,7 @@ configuradas no arquivo `eas.json` e no dashboard do Expo.
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br",
+        "EXPO_PUBLIC_APP_URL": "https://staging.mallevo.com.br",
         "EXPO_PUBLIC_PAGARME_APPID": "app_id_sandbox"
       }
     },
@@ -301,7 +301,7 @@ configuradas no arquivo `eas.json` e no dashboard do Expo.
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_APP_URL": "https://staging.mallora.com.br",
+        "EXPO_PUBLIC_APP_URL": "https://staging.mallevo.com.br",
         "EXPO_PUBLIC_PAGARME_APPID": "app_id_sandbox"
       }
     },
@@ -309,7 +309,7 @@ configuradas no arquivo `eas.json` e no dashboard do Expo.
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://xxxxxxxxxxxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJxxx",
-        "EXPO_PUBLIC_APP_URL": "https://mallora.com.br",
+        "EXPO_PUBLIC_APP_URL": "https://mallevo.com.br",
         "EXPO_PUBLIC_PAGARME_APPID": "app_id_producao"
       }
     }
@@ -361,7 +361,7 @@ eas secret:create --scope project --name SUPABASE_SERVICE_ROLE_KEY --value eyJxx
    → Sandbox: ak_test_xxx
    → Produção: ak_live_xxx
 4. Recipients
-   → Criar recipient principal da Mallora
+   → Criar recipient principal da Mallevo
    → Anotar rp_xxx em PAGARME_PLATFORM_RECIPIENT_ID
 ```
 
@@ -475,7 +475,7 @@ EXPO_PUBLIC_PROJECT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 - [ ] Registrar webhook de produção no Pagar.me Dashboard (eventos do § 6 do doc 30)
 - [ ] Registrar webhook de produção no Stripe Dashboard (apenas eventos de Billing)
 - [ ] Confirmar que `PAGARME_WEBHOOK_SECRET` e `STRIPE_WEBHOOK_SECRET` de produção estão corretos
-- [ ] Confirmar `PAGARME_PLATFORM_RECIPIENT_ID` aponta para o `rp_live_` da Mallora
+- [ ] Confirmar `PAGARME_PLATFORM_RECIPIENT_ID` aponta para o `rp_live_` da Mallevo
 - [ ] Confirmar que `APP_URL` aponta para o domínio de produção
 - [ ] Verificar que nenhuma chave de teste (`ak_test_`, `pk_test_`, `sk_test_`) está no ambiente de produção
 

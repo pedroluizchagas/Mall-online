@@ -9,7 +9,7 @@
 ## 1. VISAO GERAL DA INTEGRACAO PAGAR.ME
 
 O Pagar.me é o gateway responsável pelo processamento de todos os pagamentos
-de pedidos na Mallora. Ele opera como provedor de infraestrutura financeira
+de pedidos na Mallevo. Ele opera como provedor de infraestrutura financeira
 no ecossistema brasileiro, suportando:
 
 - Pix (liquidação instantânea)
@@ -20,9 +20,9 @@ no ecossistema brasileiro, suportando:
 - Antecipação automática de recebíveis configurável por recebedor
 - KYC e Prova de Vida integrados para validação de identidade (PF)
 
-A Mallora permanece como Merchant of Record — o consumidor paga para a
-conta Mallora, e o Pagar.me executa o rateio (split) automaticamente entre
-os recebedores cadastrados (lojista, entregador e própria Mallora) conforme
+A Mallevo permanece como Merchant of Record — o consumidor paga para a
+conta Mallevo, e o Pagar.me executa o rateio (split) automaticamente entre
+os recebedores cadastrados (lojista, entregador e própria Mallevo) conforme
 as regras definidas em cada Order.
 
 O Stripe é mantido exclusivamente para a cobrança da assinatura mensal dos
@@ -34,7 +34,7 @@ e não se sobrepõem.
 ```
 Pagar.me:
   - Processamento de pagamentos de pedidos
-  - Split entre Mallora, lojista e entregador
+  - Split entre Mallevo, lojista e entregador
   - Gestão de recipients (lojistas e entregadores)
   - KYC/Prova de Vida para entregadores autônomos
   - Antecipação automática de recebíveis
@@ -91,9 +91,9 @@ PAGARME_API_KEY=ak_test_xxx
 # Assinatura HMAC dos webhooks recebidos do Pagar.me
 PAGARME_WEBHOOK_SECRET=whsec_xxx
 
-# recipient_id da conta principal da Mallora
+# recipient_id da conta principal da Mallevo
 # Criado uma vez ao configurar a conta Pagar.me
-PAGARME_PLATFORM_RECIPIENT_ID=rp_mallora_xxx
+PAGARME_PLATFORM_RECIPIENT_ID=rp_mallevo_xxx
 ```
 
 ### Como obter as credenciais
@@ -112,7 +112,7 @@ PAGARME_PLATFORM_RECIPIENT_ID=rp_mallora_xxx
 ### Conceito
 
 Cada lojista e cada entregador autônomo é cadastrado como `recipient` na API
-do Pagar.me. O recipient não precisa ter conta própria no gateway — a Mallora
+do Pagar.me. O recipient não precisa ter conta própria no gateway — a Mallevo
 faz o cadastro pela API e o Pagar.me associa a conta bancária ou chave Pix ao
 recipient.
 
@@ -217,7 +217,7 @@ O link é exibido ao usuário no app. O resultado chega via webhook
 |`pending`  |Aguardando KYC ou validação de documentos            |
 |`active`   |Apto a receber — onboarding concluído                |
 |`refused`  |KYC recusado — dados inválidos ou fraude detectada   |
-|`suspended`|Conta suspensa pela Mallora ou pelo Pagar.me         |
+|`suspended`|Conta suspensa pela Mallevo ou pelo Pagar.me         |
 
 -----
 
@@ -255,7 +255,7 @@ Content-Type: application/json
       "amount": 6000,
       "split": [
         {
-          "recipient_id": "rp_mallora_xxx",
+          "recipient_id": "rp_mallevo_xxx",
           "amount": 1100,
           "type": "flat",
           "options": { "charge_processing_fee": false, "liable": false }
@@ -277,8 +277,8 @@ Content-Type: application/json
 }
 ```
 
-A taxa de entrega (R$10,00) fica no split da Mallora no estágio 1. Após
-alocação do entregador, a Mallora executa um Transfer separado (estágio 2).
+A taxa de entrega (R$10,00) fica no split da Mallevo no estágio 1. Após
+alocação do entregador, a Mallevo executa um Transfer separado (estágio 2).
 
 ### Resposta
 
@@ -309,11 +309,11 @@ alocação do entregador, a Mallora executa um Transfer separado (estágio 2).
 
 Quando `true`, a taxa percentual do Pagar.me (MDR) incide proporcionalmente
 sobre o recebedor no valor do seu split. Quando `false`, o MDR não é cobrado
-daquele recebedor e cai inteiramente na conta principal da Mallora.
+daquele recebedor e cai inteiramente na conta principal da Mallevo.
 
 |Recebedor  |charge_processing_fee|Justificativa                                  |
 |-----------|---------------------|-----------------------------------------------|
-|Mallora    |`false`              |Comissão fixa de R$1,00 não pode ser reduzida  |
+|Mallevo    |`false`              |Comissão fixa de R$1,00 não pode ser reduzida  |
 |Lojista    |`true`               |MDR rateado proporcionalmente ao valor recebido|
 |Entregador |`true`               |MDR rateado proporcionalmente ao valor recebido|
 
@@ -321,11 +321,11 @@ daquele recebedor e cai inteiramente na conta principal da Mallora.
 
 Quando `true`, o recebedor responde solidariamente por chargebacks na
 proporção do seu split. Quando `false`, o chargeback é absorvido pela conta
-principal (Mallora).
+principal (Mallevo).
 
 |Recebedor  |liable  |Justificativa                                           |
 |-----------|--------|--------------------------------------------------------|
-|Mallora    |`false` |Comissão fixa não responde por disputas do produto      |
+|Mallevo    |`false` |Comissão fixa não responde por disputas do produto      |
 |Lojista    |`true`  |Lojista responde pelo produto entregue                  |
 |Entregador |`false` |Taxa de entrega não está em disputa no chargeback típico|
 
@@ -342,7 +342,7 @@ pagamento do consumidor é capturado no momento do checkout.
 Consumidor paga R$60
   ↓
 Order Pagar.me criada com split:
-  Mallora:  R$11 (R$1 comissão + R$10 taxa de entrega em custódia)
+  Mallevo:  R$11 (R$1 comissão + R$10 taxa de entrega em custódia)
   Lojista:  R$49 (R$50 produto - R$1 comissão)
 ```
 
@@ -360,7 +360,7 @@ Edge Function transfer-to-courier:
     "metadata": { "order_id": "...", "assignment_id": "..." }
   }
 
-  → Mallora transfere R$10 do saldo para o entregador.
+  → Mallevo transfere R$10 do saldo para o entregador.
   → transfer_id salvo em delivery_assignments.pagarme_transfer_id.
   → Registro em payouts (tipo: 'entregador').
 ```
@@ -372,13 +372,13 @@ Consumidor paga R$60
         ↓
     Pagar.me processa
         ↓
-  Mallora            ← R$11 (R$1 comissão + R$10 custódia)
+  Mallevo            ← R$11 (R$1 comissão + R$10 custódia)
   Lojista            ← R$49 (produto - comissão)
         ↓
   [Estágio 2 — após alocação do entregador]
         ↓
-  Entregador         ← R$10 (transfer da Mallora)
-  Mallora retém      ← R$1 (comissão líquida)
+  Entregador         ← R$10 (transfer da Mallevo)
+  Mallevo retém      ← R$1 (comissão líquida)
 ```
 
 ### Estratégia B (Transfer) em vez de Estratégia A (reconfigurar split)
@@ -482,7 +482,7 @@ O Pagar.me debita automaticamente os recebedores com `liable: true`.
 ```
 Order R$60:
   Lojista: R$49 (liable: true)  → debitado em chargeback total
-  Mallora: R$11 (liable: false) → absorvido pela conta principal
+  Mallevo: R$11 (liable: false) → absorvido pela conta principal
 
 Webhook charge.chargeback.created:
   → orders.payment_status = 'em_disputa'
@@ -509,7 +509,7 @@ POST /core/v5/charges/{charge_id}
 {
   "amount": 1500,
   "split_rules": [
-    { "recipient_id": "rp_mallora_xxx", "amount": 100, "type": "flat" },
+    { "recipient_id": "rp_mallevo_xxx", "amount": 100, "type": "flat" },
     { "recipient_id": "rp_lojista_xxx", "amount": 1400, "type": "flat" }
   ]
 }
@@ -533,14 +533,14 @@ Pagar.me ou absorvido como custo de cancelamento).
 ```bash
 PAGARME_API_KEY=ak_test_xxx
 PAGARME_WEBHOOK_SECRET=whsec_xxx
-PAGARME_PLATFORM_RECIPIENT_ID=rp_mallora_xxx
+PAGARME_PLATFORM_RECIPIENT_ID=rp_mallevo_xxx
 
 STRIPE_SECRET_KEY=sk_test_xxx          # apenas Billing
 STRIPE_WEBHOOK_SECRET=whsec_stripe_xxx # apenas Billing
 
 SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJxxx
-APP_URL=https://app.mallora.com.br
+APP_URL=https://app.mallevo.com.br
 ```
 
 ### Configuração Supabase
@@ -548,7 +548,7 @@ APP_URL=https://app.mallora.com.br
 ```bash
 supabase secrets set PAGARME_API_KEY=ak_test_xxx
 supabase secrets set PAGARME_WEBHOOK_SECRET=whsec_xxx
-supabase secrets set PAGARME_PLATFORM_RECIPIENT_ID=rp_mallora_xxx
+supabase secrets set PAGARME_PLATFORM_RECIPIENT_ID=rp_mallevo_xxx
 supabase secrets set STRIPE_SECRET_KEY=sk_test_xxx
 supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_stripe_xxx
 ```
@@ -563,7 +563,7 @@ vercel env add STRIPE_SECRET_KEY production
 ### App mobile
 
 **Compliance PCI — regra absoluta:** o app **nunca** envia número de cartão,
-CVV ou data de validade para a Edge Function da Mallora. A captura visual dos
+CVV ou data de validade para a Edge Function da Mallevo. A captura visual dos
 campos do cartão é feita na UI do app, mas eles saem do dispositivo apenas
 em uma única chamada HTTPS — direto para a Pagar.me, no endpoint público de
 tokens:

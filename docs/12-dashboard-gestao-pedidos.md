@@ -440,7 +440,7 @@ export function PainelPedidosRealtime({
 'use client'
 
 import { useState, useTransition } from 'react'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { atualizarStatusPedido } from '@/lib/actions/pedidos'
 import { ModalAtribuirEntregador } from './modal-atribuir-entregador'
 
@@ -679,7 +679,7 @@ export function PedidoCard({ pedido }: { pedido: any }) {
 import { useEffect, useState, useTransition } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { atribuirEntregador } from '@/lib/actions/pedidos'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 
 interface Props {
   pedidoId: string

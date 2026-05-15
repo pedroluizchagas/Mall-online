@@ -22,8 +22,8 @@ config.resolver.nodeModulesPaths = [
 ]
 
 config.resolver.extraNodeModules = {
-  '@mallora/lib': path.resolve(monorepoRoot, 'packages/lib'),
-  '@mallora/types': path.resolve(monorepoRoot, 'packages/types'),
+  '@mallevo/lib': path.resolve(monorepoRoot, 'packages/lib'),
+  '@mallevo/types': path.resolve(monorepoRoot, 'packages/types'),
   react: path.resolve(projectRoot, 'node_modules', 'react'),
   'react-native': path.resolve(projectRoot, 'node_modules', 'react-native'),
   'react-dom': path.resolve(projectRoot, 'node_modules', 'react-dom'),

@@ -55,7 +55,7 @@ export function ToastBoasVindas() {
                 <Sparkles className="w-4 h-4" style={{ color: 'var(--brick)' }} />
               </div>
               <p className="text-sm text-ink-3 leading-relaxed">
-                Bem-vindo à Mallora! Sua loja está pronta. Configure os detalhes do seu negócio quando quiser.
+                Bem-vindo à Mallevo! Sua loja está pronta. Configure os detalhes do seu negócio quando quiser.
               </p>
             </div>
           </div>

@@ -24,7 +24,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
-import type { DashboardTemplate } from '@mallora/lib'
+import type { DashboardTemplate } from '@mallevo/lib'
 import { useRealtimeCount } from './hooks/use-realtime-count'
 
 type GrupoLabel = 'OPERAR' | 'ANALISAR' | 'MINHA LOJA' | 'CONTA'

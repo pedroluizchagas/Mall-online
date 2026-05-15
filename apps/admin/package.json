@@ -9,8 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@mallora/lib": "workspace:*",
-    "@mallora/types": "workspace:*",
+    "@mallevo/lib": "workspace:*",
+    "@mallevo/types": "workspace:*",
     "@supabase/ssr": "^0.4.0",
     "@supabase/supabase-js": "^2.43.0",
     "lucide-react": "^1.11.0",

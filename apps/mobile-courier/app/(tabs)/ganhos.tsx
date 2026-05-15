@@ -8,7 +8,7 @@ import {
 } from 'react-native'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { Skeleton } from '@/components/Skeleton'
 import { CardSaldoPagarme } from '@/components/CardSaldoPagarme'
 import { EntregaHistoricoCard } from '@/components/EntregaHistoricoCard'

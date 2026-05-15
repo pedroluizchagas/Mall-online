@@ -94,8 +94,8 @@ Dois sub-tipos:
 - Liquidação padrão do lojista: cartão D+29+2 / Pix D+0
 - Lojista em planos pagos pode habilitar **antecipação automática** via Pagar.me, recebendo em D+15 (cartão) com taxa contratual (referência inicial: a partir de 1,25% a.m.)
 - Antecipação manual sob demanda também disponível via API Pagar.me
-- A Mallora repassa a taxa Pagar.me integralmente ao lojista, sem margem adicional no MVP
-- O entregador autônomo recebe via transfer Mallora → recipient após alocação no pedido (D+1 padrão na conta bancária)
+- A Mallevo repassa a taxa Pagar.me integralmente ao lojista, sem margem adicional no MVP
+- O entregador autônomo recebe via transfer Mallevo → recipient após alocação no pedido (D+1 padrão na conta bancária)
 
 -----
 
@@ -110,7 +110,7 @@ Dois sub-tipos:
       ↓
 4. Finaliza o checkout
    → Paga via Pagar.me (cartão ou Pix)
-   → Order criada com split entre Mallora e lojista (estágio 1)
+   → Order criada com split entre Mallevo e lojista (estágio 1)
       ↓
 5. Pedido criado com status "novo"
       ↓
@@ -120,7 +120,7 @@ Dois sub-tipos:
       ↓
 8. Lojista despacha → atribui entregador
    → Entregador recebe notificação
-   → Edge Function `transfer-to-courier` executa estágio 2: transfer Mallora → recipient do entregador (taxa de entrega)
+   → Edge Function `transfer-to-courier` executa estágio 2: transfer Mallevo → recipient do entregador (taxa de entrega)
       ↓
 9. Entregador aceita → status "saiu para entrega"
    → Localização do entregador aparece no mapa do consumidor
@@ -142,19 +142,19 @@ Consumidor paga R$60,00
          ↓
 Plataforma é Merchant of Record — Pagar.me cria Order com split:
   Estágio 1:
-    Mallora       R$1,00 (comissão fixa) + R$10,00 (frete temporário)
+    Mallevo       R$1,00 (comissão fixa) + R$10,00 (frete temporário)
     Lojista       R$49,00
          ↓
 Pagar.me debita MDR (~3,5% cartão / ~0,99% Pix), rateado entre
 recebedores que pagam taxa (lojista e, no estágio 2, entregador)
          ↓
 Estágio 2 (após alocação do entregador):
-  Transfer Mallora → recipient do entregador  R$10,00
+  Transfer Mallevo → recipient do entregador  R$10,00
          ↓
 Liquidação automática do Pagar.me:
   Lojista:    Pix D+0 · Cartão D+29+2 (ou D+15 com antecipação)
   Entregador: D+1 padrão na conta bancária do recipient
-  Mallora:    saldo da conta principal
+  Mallevo:    saldo da conta principal
 
 Lojista em plano pago com antecipação automática:
   → Recebíveis de cartão liquidam em D+15 com taxa Pagar.me

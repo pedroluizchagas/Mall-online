@@ -188,7 +188,7 @@ Linha de item no carrinho (checkout).
 
 ```tsx
 interface ItemCarrinhoCardProps {
-  item: ItemCarrinho           // do @mallora/types
+  item: ItemCarrinho           // do @mallevo/types
   // ações vêm do useCartStore — componente lê store internamente
 }
 ```

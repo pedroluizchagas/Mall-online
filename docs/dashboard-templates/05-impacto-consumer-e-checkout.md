@@ -275,8 +275,8 @@ O split atual (documentado em `docs/30-integracao-pagarme...`) é por valor de p
 ```
 Total = Σ preco_total_item + frete
 Split:
-  Mallora:    R$ 1,00 (comissão fixa)
-  Mallora:    R$ X (frete)
+  Mallevo:    R$ 1,00 (comissão fixa)
+  Mallevo:    R$ X (frete)
   Lojista:    Total - 1 - X
 ```
 

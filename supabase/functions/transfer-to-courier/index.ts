@@ -2,7 +2,7 @@
 //
 // Estágio 2 do split de pagamentos: após o lojista aceitar o pedido e alocar
 // um entregador autônomo, esta function executa um Transfer Pagar.me da
-// conta da Mallora para o recipient do entregador, no valor da taxa de
+// conta da Mallevo para o recipient do entregador, no valor da taxa de
 // entrega (em custódia desde o checkout).
 //
 // Pré-condições rígidas (vide docs/06 e docs/30):

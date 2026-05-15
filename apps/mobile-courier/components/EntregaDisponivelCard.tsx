@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity } from 'react-native'
-import { formatarReais } from '@mallora/lib'
+import { formatarReais } from '@mallevo/lib'
 import { CourierIcon } from '@/components/CourierIcon'
 import { courierDesign } from '@/lib/courier-design'
 import { RotaIlustrada } from '@/components/RotaIlustrada'

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { getTemplateByStore } from '@mallora/lib'
+import { getTemplateByStore } from '@mallevo/lib'
 import { listarStaff } from '@/lib/actions/staff'
 import { StaffLista } from '@/components/dashboard/staff-lista'
 

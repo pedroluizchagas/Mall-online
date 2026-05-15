@@ -52,7 +52,7 @@ const NOTIFICACOES_MOCK: Notificacao[] = [
     id: '3',
     tipo: 'novidade',
     titulo: 'Nova loja disponível',
-    corpo: 'Farmácia Aroeira chegou no Mallora! Confira já.',
+    corpo: 'Farmácia Aroeira chegou no Mallevo! Confira já.',
     tempo: '3 h',
     lida: true,
   },
@@ -75,7 +75,7 @@ const NOTIFICACOES_MOCK: Notificacao[] = [
   {
     id: '6',
     tipo: 'sistema',
-    titulo: 'Bem-vindo ao Mallora',
+    titulo: 'Bem-vindo ao Mallevo',
     corpo: 'Seu cadastro foi concluído. Explore as melhores lojas!',
     tempo: '1 sem',
     lida: true,
