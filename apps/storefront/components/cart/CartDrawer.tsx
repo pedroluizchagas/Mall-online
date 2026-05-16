@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useCartStore } from '@mallevo/lib'
 
 import { formatarReais } from '@/lib/format'
@@ -11,13 +12,14 @@ import { ItemCarrinhoCard } from '@/components/cart/ItemCarrinhoCard'
  * carrinho VISÍVEL). Lista os itens via `ItemCarrinhoCard` e mostra
  * subtotal/total reativos do `useCartStore` (@mallevo/lib).
  *
- * Aberto/fechado é controlado pelo `CartFab` (host). O CTA de finalizar é
- * Stage 3d (Pagar.me/checkout) — aqui fica INERTE e desabilitado, sem
- * navegação, espelhando a nota "FORA DE ESCOPO" já existente no CartFab.
+ * Aberto/fechado é controlado pelo `CartFab` (host). O CTA "Finalizar
+ * pedido" navega para `/checkout` (Stage 3d) — o gate de sessão consumer
+ * vive no próprio checkout (decisão TL §3d).
  *
- * Spec/decisão: docs/storefront/05-stage-3-storefront.md §3c.
+ * Spec/decisão: docs/storefront/05-stage-3-storefront.md §3c/§3d.
  */
 export function CartDrawer({ onFechar }: { onFechar: () => void }) {
+  const router = useRouter()
   const itens = useCartStore((s) => s.itens)
   const subtotal = useCartStore((s) => s.subtotal())
   const total = useCartStore((s) => s.total())
@@ -108,11 +110,13 @@ export function CartDrawer({ onFechar }: { onFechar: () => void }) {
             <span>{formatarReais(total)}</span>
           </div>
 
-          {/* FORA DE ESCOPO 3c: checkout/pagamento é Stage 3d. Inerte. */}
           <button
             type="button"
-            disabled
-            className="mt-1 h-12 w-full cursor-not-allowed rounded-pill bg-surfaceMuted text-sm font-extrabold text-ink-muted"
+            onClick={() => {
+              onFechar()
+              router.push('/checkout')
+            }}
+            className="mt-1 h-12 w-full rounded-pill bg-accent text-sm font-extrabold text-ink transition-opacity hover:opacity-90"
           >
             Finalizar pedido
           </button>
