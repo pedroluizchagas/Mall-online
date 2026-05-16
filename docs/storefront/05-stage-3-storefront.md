@@ -121,6 +121,26 @@ Ref: `apps/mobile-consumer/app/checkout.tsx` (622 LOC), `lib/pagarme.ts`.
 - `components/checkout/`: `SeletorEndereco`, `SeletorPagamento`,
   `SeletorParcelas`, `FormularioCartao`.
 
+> **Decisão do tech lead (aprovada) — sequenciamento 3d↔3e:** os três
+> fluxos de `apps/mobile-consumer/app/checkout.tsx` dependem de **sessão
+> consumer autenticada**, que só nasce no 3e: `fluxoCartao`/`fluxoPix`
+> enviam `Authorization: Bearer ${session.access_token}` à edge function
+> `create-pagarme-order`; `fluxoPagamentoOffline` usa `session.user.id`
+> (lookup de endereço + insert RLS em `orders`/`order_items`);
+> `obterSessaoOuFalhar()` lança sem sessão. O próprio §3e define o gate
+> `sem sessão → /entrar?next=/checkout`. **3d é construído agora de forma
+> estrutural, com o caminho sem-sessão como fronteira INERTE** (mesmo
+> padrão de `erroValidacao` no 3b e do ramo de agendamento no 3c):
+> `lib/pagarme.ts` (tokenização browser→`api.pagar.me`, SAQ-A) é
+> **funcional já agora** (não depende de sessão); a página de checkout, os
+> seletores e os três fluxos são portados RN→DOM ligados ao
+> `useAuthStore`/`supabase` **reais** de `@mallevo/lib`/`lib/supabase`,
+> mas sem sessão o `obterSessaoOuFalhar()` redireciona para
+> `/entrar?next=/checkout` — rota que passa a existir no 3e. Não se
+> reordena 3d↔3e nem se reimplementa auth aqui; a regra de cobertura/
+> entrega vem de `@mallevo/lib` (D4), não reimplementada. PAN/CVV nunca
+> tocam nosso servidor. `origem: 'storefront'` em todos os caminhos.
+
 ## 3e — Auth consumidor
 Ref: `app/(auth)/entrar.tsx`, `verificar.tsx`.
 
