@@ -4,6 +4,7 @@ import { getStore, getStoreSlug, type Store } from '@/lib/tenant'
 import { carregarCatalogo, carregarDetalhesCatalogo } from '@/lib/catalog'
 import { StoreHeader } from '@/components/StoreHeader'
 import { CartFab } from '@/components/cart/CartFab'
+import { CartPersistence } from '@/components/cart/CartPersistence'
 import { CatalogClient } from '@/components/store/CatalogClient'
 
 /**
@@ -76,6 +77,7 @@ export default async function HomePage() {
         detalhes={detalhes}
       />
 
+      <CartPersistence />
       <CartFab />
     </main>
   )
