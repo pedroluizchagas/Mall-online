@@ -62,11 +62,19 @@ variants, observações, agendamento → `useCartStore().adicionarItem` (de
 > `public_catalog_product_variant_options` + `categoria_slug` anexado a
 > `public_catalog_stores` (LEFT JOIN categories). Padrão D2 (security_invoker,
 > GRANT só na view, sem tenant_id/sku/estoque). Stage 0/tabelas base não
-> editados. **2ª passada do 3b PENDENTE:** implementar modifiers/variants no
-> `ProductModal` consumindo as novas views (RN→DOM de `ModalProduto.tsx`;
-> `erroValidacao` passa a ativo). **Agendamento/services adiado p/ pós-3e**
-> (depende de sessão autenticada de consumer); `categoria_slug` já exposto
-> para essa etapa futura, mas o storefront ainda não cobre agendamento.
+> editados. **2ª passada do 3b CONFORME** (validada tech lead, commit
+> `4aa254d`): `lib/catalog.ts` ganhou `carregarDetalhesCatalogo` (loader
+> Server em lote, só views `public_catalog_*`); `ProductModal` renderiza
+> modifiers (radio/checkbox por min/max) e variants (swatch `hex_color`),
+> resolve `precoBase` pelo variant, soma `preco_extra`, e `erroValidacao`
+> está ATIVO (variant incompleto/indisponível + min/max). Item montado no
+> shape real `ItemCarrinho(Variant|Modifier)`; `rotulo` com ` × ` (paridade
+> `ModalProduto.tsx`). Boundary Server/client preservado (`import type` de
+> `@/lib/catalog`). Aviso de estoque do mobile não é portável (D2 não expõe
+> `stock_quantity` à view) — esperado. **Agendamento/services adiado p/
+> pós-3e** (depende de sessão autenticada de consumer); `categoria_slug` já
+> exposto para essa etapa futura, mas o storefront ainda não cobre
+> agendamento.
 
 ## 3c — Carrinho
 `useCartStore` de `@mallevo/lib`. Adicionar `persist` em `sessionStorage`
