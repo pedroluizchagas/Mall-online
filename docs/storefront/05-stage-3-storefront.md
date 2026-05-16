@@ -54,6 +54,19 @@ variants, observações, agendamento → `useCartStore().adicionarItem` (de
 > mesmo padrão D2) — fora do escopo de 3b. `ProductModal` mantém a estrutura
 > de validação (`erroValidacao`, hoje inerte) para encaixe 1:1 quando as
 > views forem estendidas.
+>
+> **Decisão do tech lead (aprovada):** migration incremental Stage 0
+> `20260516160000_storefront_public_catalog_modifiers_variants.sql` criada —
+> views `public_catalog_product_modifier_groups`,
+> `public_catalog_product_option_groups`, `public_catalog_product_options`,
+> `public_catalog_product_variant_options` + `categoria_slug` anexado a
+> `public_catalog_stores` (LEFT JOIN categories). Padrão D2 (security_invoker,
+> GRANT só na view, sem tenant_id/sku/estoque). Stage 0/tabelas base não
+> editados. **2ª passada do 3b PENDENTE:** implementar modifiers/variants no
+> `ProductModal` consumindo as novas views (RN→DOM de `ModalProduto.tsx`;
+> `erroValidacao` passa a ativo). **Agendamento/services adiado p/ pós-3e**
+> (depende de sessão autenticada de consumer); `categoria_slug` já exposto
+> para essa etapa futura, mas o storefront ainda não cobre agendamento.
 
 ## 3c — Carrinho
 `useCartStore` de `@mallevo/lib`. Adicionar `persist` em `sessionStorage`
