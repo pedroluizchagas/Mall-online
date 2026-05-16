@@ -27,6 +27,34 @@ variants, observações, agendamento → `useCartStore().adicionarItem` (de
 `@mallevo/lib`). `cart/TrocaLojaDialog.tsx` para `pendingTrocaLoja`
 (regra single-store).
 
+> **Status: conforme parcial — validado pelo tech lead** (commits
+> `ee429d1`/`de85519`/`76eaedd`; 8 arquivos `apps/storefront/*`). Verificado
+> independentemente: typecheck limpo, build OK (rotas `/`, `/produto/[id]`),
+> sem query a tabela base (só views `public_catalog_*`, D2), `useCartStore`
+> consumido sem reimplementação (assinatura `adicionarItem` conferida em
+> `useCartStore.ts:74`), Middleware/tenant intactos. Entregue: quantidade,
+> observações, preço/promo, total, single-store via `pendingTrocaLoja`,
+> wiring `ProductCard→ProductModal`, rota `/produto/[id]` (deep-link que
+> reabre o modal — **não** PDP própria; mantém URL indexável do sitemap 3a).
+>
+> **⚠ Bloqueio de fundação (Stage 0) — decisão do tech lead PENDENTE:**
+> modifiers, variants e agendamento **não** foram portados porque as views
+> públicas do Stage 0 não expõem os dados necessários:
+> - `public_catalog_product_modifiers`: sem `product_id` (só `group_id`) e
+>   sem metadados do grupo (`nome`/`min_select`/`max_select`) — impossível
+>   agrupar/validar obrigatoriedade.
+> - `public_catalog_product_variants`: tem `product_id` mas sem rótulo nem
+>   views de option groups/options/variant_options (`ItemCarrinhoVariant`
+>   exige `rotulo`).
+> - Agendamento (services): view só expõe `categoria_id` (sem
+>   `categoria_slug` p/ `getTemplateBySlug`) e a disponibilidade exige
+>   sessão autenticada (auth = 3e).
+>
+> Resolver exige **migration incremental Stage 0** (novas views públicas,
+> mesmo padrão D2) — fora do escopo de 3b. `ProductModal` mantém a estrutura
+> de validação (`erroValidacao`, hoje inerte) para encaixe 1:1 quando as
+> views forem estendidas.
+
 ## 3c — Carrinho
 `useCartStore` de `@mallevo/lib`. Adicionar `persist` em `sessionStorage`
 (origin-scoped, reforça single-store) sem quebrar invariantes do store.
