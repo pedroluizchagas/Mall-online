@@ -77,9 +77,32 @@ variants, observações, agendamento → `useCartStore().adicionarItem` (de
 > agendamento.
 
 ## 3c — Carrinho
-`useCartStore` de `@mallevo/lib`. Adicionar `persist` em `sessionStorage`
-(origin-scoped, reforça single-store) sem quebrar invariantes do store.
-`ItemCarrinhoCard.tsx` (← mobile, com `formatarAgendamento`).
+Persistência do carrinho em `sessionStorage` (origin-scoped, reforça
+single-store) + `ItemCarrinhoCard.tsx` (← mobile).
+
+> **Decisão do tech lead (aprovada) — corrige a redação original
+> "Adicionar `persist` no `useCartStore`":** `useCartStore` vive em
+> `packages/lib` e é consumido **também pelo `apps/mobile-consumer`
+> (React Native) via shim `apps/mobile-consumer/store/useCartStore.ts`
+> → `export * from '@mallevo/lib'`**. Adicionar o middleware `persist`
+> com `sessionStorage` no store compartilhado quebraria o mobile (RN não
+> tem `window`/`sessionStorage`) e o SSR do storefront (server sem
+> `sessionStorage` → hydration mismatch). Portanto a persistência é
+> **local ao `apps/storefront`, SEM editar `@mallevo/lib`**: um
+> componente/hook `'use client'` que (1) espelha o estado relevante do
+> `useCartStore` → `sessionStorage` em mudança e (2) re-hidrata uma vez
+> no mount via `useCartStore.setState(...)` (já exposto pelo zustand, sem
+> alterar a definição do store). SSR-safe (efeito client-only),
+> origin-scoped por natureza do `sessionStorage`, reversível, zero risco
+> de regressão p/ mobile/web. Invariantes do store preservadas (single-
+> store, `linha_id`, regra de agendamento) — a persistência só serializa/
+> restaura `itens`/`store_*`, nunca reimplementa lógica do store.
+>
+> `ItemCarrinhoCard.tsx` RN→DOM: o ramo de agendamento
+> (`formatarAgendamento`) é mantido **estruturalmente porém inerte** — o
+> storefront não cria itens de agendamento até pós-3e (mesmo padrão de
+> `erroValidacao` no 3b). Sem segmento de rota `/loja/`. Dados de catálogo
+> seguem só via views `public_catalog_*` (D2).
 
 ## 3d — Checkout
 Ref: `apps/mobile-consumer/app/checkout.tsx` (622 LOC), `lib/pagarme.ts`.
