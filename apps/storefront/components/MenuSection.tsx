@@ -14,9 +14,15 @@ import { ProductCard, type ProductCardModel } from '@/components/ProductCard'
 export function MenuSection({
   titulo,
   produtos,
+  onSelect,
 }: {
   titulo: string
   produtos: ProductCardModel[]
+  /**
+   * Stage 3b: ligado pelo `CatalogClient` (client) para abrir o
+   * `ProductModal`. Ausente em contextos sem interação.
+   */
+  onSelect?: (id: string) => void
 }) {
   return (
     <section className="mt-4 px-6">
@@ -24,7 +30,7 @@ export function MenuSection({
         {titulo}
       </h2>
       {produtos.map((p) => (
-        <ProductCard key={p.id} produto={p} />
+        <ProductCard key={p.id} produto={p} onSelect={onSelect} />
       ))}
     </section>
   )

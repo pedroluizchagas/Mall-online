@@ -7,11 +7,10 @@ import { formatarReais } from '@/lib/format'
  * (variante 'lista' — a única usada pelo catálogo da loja). Imagem 88x88 à
  * direita, info à esquerda, preço com riscado quando há promocional.
  *
- * `'use client'`: o clique abre o ProductModal — mas o modal é Stage 3b.
- * Aqui o card só dispara um placeholder (`onSelect`/console.debug). O wiring
- * real (`useCartStore().adicionarItem` via ProductModal) é o subestágio 3b.
+ * `'use client'`: o clique chama `onSelect(id)`. Em 3b o `CatalogClient`
+ * liga isso à abertura do `ProductModal` (→ `useCartStore().adicionarItem`).
  *
- * Spec: docs/storefront/05-stage-3-storefront.md §3a (ProductCard ← ProdutoCard).
+ * Spec: docs/storefront/05-stage-3-storefront.md §3a/§3b (ProductCard ← ProdutoCard).
  */
 
 export interface ProductCardModel {
@@ -28,10 +27,7 @@ export function ProductCard({
   onSelect,
 }: {
   produto: ProductCardModel
-  /**
-   * Placeholder de seleção. Em 3a não há ProductModal — o handler só
-   * sinaliza a intenção. 3b liga isto ao `ProductModal` + `useCartStore`.
-   */
+  /** Seleção do produto. 3b: abre o `ProductModal` (via `CatalogClient`). */
   onSelect?: (id: string) => void
 }) {
   const temPromo =
@@ -41,7 +37,6 @@ export function ProductCard({
   return (
     <button
       type="button"
-      // FORA DE ESCOPO 3a: abrir ProductModal/adicionar ao carrinho é 3b.
       onClick={() => onSelect?.(produto.id)}
       className="flex w-full items-center gap-3 border-b border-line px-1 py-4 text-left transition-opacity hover:opacity-75"
     >
