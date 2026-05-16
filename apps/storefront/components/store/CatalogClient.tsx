@@ -6,7 +6,11 @@ import { MenuSection } from '@/components/MenuSection'
 import type { ProductCardModel } from '@/components/ProductCard'
 import { ProductModal, type LojaModal } from '@/components/store/ProductModal'
 import { TrocaLojaDialog } from '@/components/cart/TrocaLojaDialog'
-import type { SecaoCatalogo, ProdutoCatalogo } from '@/lib/catalog'
+import type {
+  SecaoCatalogo,
+  ProdutoCatalogo,
+  ProdutoDetalhe,
+} from '@/lib/catalog'
 
 /**
  * CatalogClient — ilha client do catálogo (Stage 3b). Recebe as seções já
@@ -24,10 +28,13 @@ import type { SecaoCatalogo, ProdutoCatalogo } from '@/lib/catalog'
 export function CatalogClient({
   secoes,
   loja,
+  detalhes,
   initialProdutoId,
 }: {
   secoes: SecaoCatalogo[]
   loja: LojaModal
+  /** modifiers+variants por product_id (Server → ProductModal, 2ª passada 3b). */
+  detalhes: Record<string, ProdutoDetalhe>
   initialProdutoId?: string
 }) {
   const [selecionadoId, setSelecionadoId] = useState<string | null>(
@@ -73,6 +80,7 @@ export function CatalogClient({
             metadata: produtoSelecionado.metadata,
           }}
           loja={loja}
+          detalhe={detalhes[produtoSelecionado.id]}
           onFechar={() => setSelecionadoId(null)}
         />
       ) : null}

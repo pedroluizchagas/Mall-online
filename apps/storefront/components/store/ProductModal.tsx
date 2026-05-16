@@ -2,26 +2,38 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useCartStore } from '@mallevo/lib'
+import type { ItemCarrinhoModifier, ItemCarrinhoVariant } from '@mallevo/types'
 
 import { formatarReais } from '@/lib/format'
+import type {
+  ModifierGrupoCatalogo,
+  OptionGrupoCatalogo,
+  OptionItemCatalogo,
+  ProdutoDetalhe,
+} from '@/lib/catalog'
 
 /**
  * ProductModal — reescrita RN→DOM de
  * apps/mobile-consumer/components/ModalProduto.tsx (subestágio 3b).
  *
  * Bottom-sheet de detalhe do produto: foto, título, preço/promo, descrição,
- * aviso `exige_receita` (de `products.metadata`), observações, quantidade,
- * total e CTA. Confirmar → `useCartStore().adicionarItem(...)` (assinatura
- * real de @mallevo/lib). A regra single-store é do próprio store: quando há
- * outra loja no carrinho, `adicionarItem` NÃO adiciona — seta
- * `pendingTrocaLoja`; o `TrocaLojaDialog` (nível catálogo) resolve.
+ * aviso `exige_receita` (de `products.metadata`), variants, modifiers,
+ * observações, quantidade, total e CTA. Confirmar →
+ * `useCartStore().adicionarItem(...)` (assinatura real de @mallevo/lib). A
+ * regra single-store é do próprio store: quando há outra loja no carrinho,
+ * `adicionarItem` NÃO adiciona — seta `pendingTrocaLoja`; o
+ * `TrocaLojaDialog` (nível catálogo) resolve.
  *
- * Paridade parcial vs ModalProduto.tsx: quantidade, observações, preço,
- * total, validação e o fluxo de adicionar/troca-de-loja são portados 1:1.
- * Modifiers, variants e agendamento NÃO são portados aqui — as views
- * públicas do Stage 0 (D2) não expõem os dados necessários (grupos de
- * modifier com nome/min/max, option groups/options/variant_options,
- * categoria_slug p/ services). Ver RESUMO → Decisões PENDENTES.
+ * 2ª passada do 3b: modifiers e variants portados 1:1 de ModalProduto.tsx,
+ * consumindo as novas views públicas (Stage 0 `20260516160000`, via
+ * `lib/catalog.ts` → `ProdutoDetalhe`). `erroValidacao` agora ATIVO
+ * (obrigatórios não atendidos → CTA desabilitado + mensagem). Preço base
+ * resolvido pelo variant selecionado; `preco_extra` dos modifiers somado.
+ *
+ * Paridade parcial vs ModalProduto.tsx: AGENDAMENTO/services NÃO é portado
+ * (adiado p/ pós-3e por decisão do tech lead — depende de sessão consumer).
+ * Aviso "Apenas N em estoque" também não: a view pública não expõe
+ * `stock_quantity` (D2 — sem estoque/SKU). Ver RESUMO.
  *
  * Spec: docs/storefront/05-stage-3-storefront.md §3b.
  */
@@ -42,36 +54,183 @@ export type LojaModal = {
   taxa_entrega: number
 }
 
+/** Conjunto vazio estável — evita recriar em cada render de grupo sem seleção. */
+const EMPTY_SET: ReadonlySet<string> = new Set<string>()
+
+/**
+ * Detalhe vazio default — produto sem modifiers/variants. Definido aqui
+ * (não importado de `lib/catalog`) para o componente client não arrastar
+ * `createSupabaseServer` (server-only) para o bundle.
+ */
+const DETALHE_VAZIO: ProdutoDetalhe = {
+  modifierGroups: [],
+  optionGroups: [],
+  variants: [],
+}
+
 export function ProductModal({
   produto,
   loja,
+  detalhe,
   onFechar,
 }: {
   produto: ProdutoModalModel
   loja: LojaModal
+  detalhe?: ProdutoDetalhe
   onFechar: () => void
 }) {
+  const { modifierGroups, optionGroups, variants } = detalhe ?? DETALHE_VAZIO
+
   const [quantidade, setQuantidade] = useState(1)
   const [observacoes, setObservacoes] = useState('')
+  // grupo_id → conjunto de modifier_ids selecionados.
+  const [selecoes, setSelecoes] = useState<Record<string, Set<string>>>({})
+  // option_group_id → option_id selecionada (sempre single-select).
+  const [selecoesVariant, setSelecoesVariant] = useState<
+    Record<string, string>
+  >({})
 
   const adicionarItem = useCartStore((s) => s.adicionarItem)
 
-  // Preço base efetivo (sem variant — não resolvível via views públicas):
-  // promocional > base. Espelha o ramo "sem variantAtivo" do mobile.
-  const precoBase = produto.preco_promocional ?? produto.preco
-  const precoOriginal = produto.preco
-  const temPromo =
-    produto.preco_promocional != null &&
-    produto.preco_promocional < produto.preco
+  // Variant ativo = único variant cujas options batem exatamente com a
+  // seleção. Seleção incompleta → null. Espelha ModalProduto.tsx.
+  const variantAtivo = useMemo(() => {
+    if (variants.length === 0 || optionGroups.length === 0) return null
+    if (Object.keys(selecoesVariant).length < optionGroups.length) return null
 
-  const totalItem = precoBase * quantidade
+    const optionsSelecionadas = new Set(Object.values(selecoesVariant))
+    return (
+      variants.find((v) => {
+        if (v.option_ids.length !== optionsSelecionadas.size) return false
+        return v.option_ids.every((id) => optionsSelecionadas.has(id))
+      }) ?? null
+    )
+  }, [variants, optionGroups, selecoesVariant])
+
+  // Preço base efetivo: variant > produto (promocional > base).
+  const precoBase = variantAtivo
+    ? variantAtivo.preco_promocional ?? variantAtivo.preco
+    : produto.preco_promocional ?? produto.preco
+  const precoOriginal = variantAtivo ? variantAtivo.preco : produto.preco
+  const temPromo = variantAtivo
+    ? variantAtivo.preco_promocional != null &&
+      variantAtivo.preco_promocional < variantAtivo.preco
+    : produto.preco_promocional != null &&
+      produto.preco_promocional < produto.preco
+
+  const fotoExibida = variantAtivo?.foto_url ?? produto.foto_url ?? null
+
+  const temVariants = variants.length > 0 && optionGroups.length > 0
+  const selecaoVariantCompleta =
+    !temVariants ||
+    Object.keys(selecoesVariant).length === optionGroups.length
+
+  const modifiersSelecionados = useMemo<ItemCarrinhoModifier[]>(() => {
+    const out: ItemCarrinhoModifier[] = []
+    for (const grupo of modifierGroups) {
+      const ids = selecoes[grupo.id]
+      if (!ids || ids.size === 0) continue
+      for (const m of grupo.modifiers) {
+        if (ids.has(m.id)) {
+          out.push({
+            modifier_id: m.id,
+            nome: m.nome,
+            preco_extra: m.preco_extra,
+          })
+        }
+      }
+    }
+    return out
+  }, [modifierGroups, selecoes])
+
+  const precoExtraTotal = modifiersSelecionados.reduce(
+    (acc, m) => acc + m.preco_extra,
+    0
+  )
+  const totalItem = (precoBase + precoExtraTotal) * quantidade
 
   const exigeReceita = produto.metadata?.exige_receita === true
 
-  // Sem grupos obrigatórios alcançáveis (modifiers/variants são PENDENTES).
-  // Estrutura mantida para espelhar a lógica do mobile quando as views
-  // forem estendidas.
-  const erroValidacao = useMemo<string | null>(() => null, [])
+  // Validação ATIVA (2ª passada). Espelha o ramo "sem agendamento" de
+  // ModalProduto.tsx: variant incompleto/indisponível, depois min/max
+  // dos grupos de modifiers.
+  const erroValidacao = useMemo<string | null>(() => {
+    if (temVariants) {
+      if (!selecaoVariantCompleta) {
+        return optionGroups.length === 2
+          ? `Selecione ${optionGroups[0].nome.toLowerCase()} e ${optionGroups[1].nome.toLowerCase()}`
+          : `Selecione ${optionGroups
+              .map((g) => g.nome.toLowerCase())
+              .join(', ')}`
+      }
+      if (!variantAtivo) {
+        return 'Esta combinação não está disponível'
+      }
+    }
+    for (const grupo of modifierGroups) {
+      const count = selecoes[grupo.id]?.size ?? 0
+      if (grupo.min_select > 0 && count < grupo.min_select) {
+        return `Selecione ${
+          grupo.min_select === 1 ? '1 opção' : `${grupo.min_select} opções`
+        } em "${grupo.nome}"`
+      }
+      if (count > grupo.max_select) {
+        return `Limite excedido em "${grupo.nome}"`
+      }
+    }
+    return null
+  }, [
+    modifierGroups,
+    selecoes,
+    temVariants,
+    selecaoVariantCompleta,
+    variantAtivo,
+    optionGroups,
+  ])
+
+  function alternarSelecao(grupo: ModifierGrupoCatalogo, modifierId: string) {
+    setSelecoes((prev) => {
+      const atual = new Set(prev[grupo.id] ?? [])
+      if (grupo.max_select === 1) {
+        if (atual.has(modifierId)) {
+          atual.delete(modifierId)
+        } else {
+          atual.clear()
+          atual.add(modifierId)
+        }
+      } else {
+        if (atual.has(modifierId)) {
+          atual.delete(modifierId)
+        } else if (atual.size < grupo.max_select) {
+          atual.add(modifierId)
+        }
+      }
+      return { ...prev, [grupo.id]: atual }
+    })
+  }
+
+  // Uma option é alcançável se existe variant que a inclua e respeite a
+  // seleção atual dos OUTROS groups. Não-alcançável → riscada/desabilitada.
+  function optionAlcancavel(grupoId: string, optionId: string): boolean {
+    return variants.some((v) => {
+      if (!v.option_ids.includes(optionId)) return false
+      for (const [gId, oId] of Object.entries(selecoesVariant)) {
+        if (gId === grupoId) continue
+        if (!v.option_ids.includes(oId)) return false
+      }
+      return true
+    })
+  }
+
+  function selecionarOption(grupoId: string, optionId: string) {
+    setSelecoesVariant((prev) => {
+      if (prev[grupoId] === optionId) {
+        const { [grupoId]: _omit, ...rest } = prev
+        return rest
+      }
+      return { ...prev, [grupoId]: optionId }
+    })
+  }
 
   // Trava o scroll do body enquanto o sheet está aberto.
   useEffect(() => {
@@ -93,6 +252,23 @@ export function ProductModal({
 
   function handleAdicionar() {
     if (erroValidacao) return
+
+    let variant: ItemCarrinhoVariant | undefined
+    if (variantAtivo) {
+      // rotulo = valores das options selecionadas, na ordem dos groups
+      // (ex.: "M × Preto"). Espelha ModalProduto.tsx (separador ' × ').
+      const valoresSelecionados = optionGroups
+        .map((g) => {
+          const optionId = selecoesVariant[g.id]
+          return g.options.find((o) => o.id === optionId)?.valor
+        })
+        .filter((v): v is string => !!v)
+      variant = {
+        variant_id: variantAtivo.id,
+        rotulo: valoresSelecionados.join(' × '),
+      }
+    }
+
     // Single-store: se houver outra loja no carrinho, o store NÃO adiciona —
     // seta pendingTrocaLoja (snapshot do item). O TrocaLojaDialog resolve.
     adicionarItem(
@@ -101,8 +277,11 @@ export function ProductModal({
         nome: produto.nome,
         preco: precoBase,
         quantidade,
-        foto_url: produto.foto_url ?? undefined,
+        foto_url: fotoExibida ?? undefined,
         observacoes: observacoes.trim() || undefined,
+        modifiers:
+          modifiersSelecionados.length > 0 ? modifiersSelecionados : undefined,
+        variant,
       },
       loja.id,
       loja.nome,
@@ -143,11 +322,11 @@ export function ProductModal({
         </button>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {/* Foto */}
-          {produto.foto_url ? (
+          {/* Foto (do variant ativo, se houver) */}
+          {fotoExibida ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={produto.foto_url}
+              src={fotoExibida}
               alt=""
               className="h-60 w-full bg-canvasAlt object-cover"
             />
@@ -192,6 +371,33 @@ export function ProductModal({
                 {produto.descricao}
               </p>
             ) : null}
+
+            {/* Grupos de variações */}
+            {temVariants
+              ? optionGroups.map((grupo) => (
+                  <GrupoVariants
+                    key={grupo.id}
+                    grupo={grupo}
+                    selecionada={selecoesVariant[grupo.id] ?? null}
+                    optionAlcancavel={(optionId) =>
+                      optionAlcancavel(grupo.id, optionId)
+                    }
+                    aoSelecionar={(optionId) =>
+                      selecionarOption(grupo.id, optionId)
+                    }
+                  />
+                ))
+              : null}
+
+            {/* Grupos de modificadores */}
+            {modifierGroups.map((grupo) => (
+              <GrupoModifiers
+                key={grupo.id}
+                grupo={grupo}
+                selecionados={selecoes[grupo.id] ?? EMPTY_SET}
+                aoAlternar={(modifierId) => alternarSelecao(grupo, modifierId)}
+              />
+            ))}
 
             {/* Observações */}
             <label className="flex flex-col gap-1.5">
@@ -247,7 +453,15 @@ export function ProductModal({
             disabled={!!erroValidacao}
             className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-ink transition-opacity hover:opacity-90 disabled:opacity-40"
           >
-            Adicionar &mdash; {formatarReais(totalItem)}
+            {temVariants && !selecaoVariantCompleta
+              ? optionGroups.length > 1
+                ? `Selecione ${optionGroups
+                    .map((g) => g.nome.toLowerCase())
+                    .join(' e ')}`
+                : `Selecione ${
+                    optionGroups[0]?.nome.toLowerCase() ?? 'opção'
+                  }`
+              : `Adicionar — ${formatarReais(totalItem)}`}
           </button>
         </div>
       </div>
@@ -280,6 +494,229 @@ function QtyButton({
     >
       {children}
     </button>
+  )
+}
+
+function GrupoVariants({
+  grupo,
+  selecionada,
+  optionAlcancavel,
+  aoSelecionar,
+}: {
+  grupo: OptionGrupoCatalogo
+  selecionada: string | null
+  optionAlcancavel: (optionId: string) => boolean
+  aoSelecionar: (optionId: string) => void
+}) {
+  const ehCor = grupo.nome.toLowerCase() === 'cor'
+  const valorSelecionado = selecionada
+    ? grupo.options.find((o) => o.id === selecionada)?.valor
+    : null
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="flex-1 text-sm font-bold text-ink">
+          {grupo.nome}
+          <span className="text-danger"> *</span>
+        </span>
+        {valorSelecionado ? (
+          <span className="text-xs font-semibold text-ink-muted">
+            {valorSelecionado}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {grupo.options.map((opcao) => (
+          <ChipOption
+            key={opcao.id}
+            opcao={opcao}
+            ehCor={ehCor}
+            selecionada={selecionada === opcao.id}
+            alcancavel={optionAlcancavel(opcao.id)}
+            aoTocar={() => aoSelecionar(opcao.id)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ChipOption({
+  opcao,
+  ehCor,
+  selecionada,
+  alcancavel,
+  aoTocar,
+}: {
+  opcao: OptionItemCatalogo
+  ehCor: boolean
+  selecionada: boolean
+  alcancavel: boolean
+  aoTocar: () => void
+}) {
+  const desabilitado = !alcancavel && !selecionada
+  return (
+    <button
+      type="button"
+      onClick={aoTocar}
+      disabled={desabilitado}
+      aria-pressed={selecionada}
+      className={`flex items-center gap-2 rounded-pill px-3 py-2 text-[13px] font-bold transition-opacity hover:opacity-90 disabled:cursor-not-allowed ${
+        selecionada
+          ? 'border-2 border-ink bg-ink text-accent'
+          : desabilitado
+            ? 'border border-line bg-surface text-ink-soft line-through opacity-40'
+            : 'border border-line bg-surface text-ink'
+      }`}
+    >
+      {ehCor && opcao.hex_color ? (
+        <span
+          aria-hidden
+          className="h-4 w-4 rounded-sm border border-black/10"
+          style={{ backgroundColor: opcao.hex_color }}
+        />
+      ) : null}
+      {opcao.valor}
+    </button>
+  )
+}
+
+function GrupoModifiers({
+  grupo,
+  selecionados,
+  aoAlternar,
+}: {
+  grupo: ModifierGrupoCatalogo
+  selecionados: ReadonlySet<string>
+  aoAlternar: (modifierId: string) => void
+}) {
+  const obrigatorio = grupo.min_select > 0
+  const single = grupo.max_select === 1
+
+  let dica: string
+  if (single) {
+    dica = obrigatorio ? 'Escolha 1' : 'Escolha 1 (opcional)'
+  } else if (grupo.min_select === grupo.max_select) {
+    dica = `Escolha ${grupo.max_select}`
+  } else if (obrigatorio) {
+    dica = `Mín ${grupo.min_select}, máx ${grupo.max_select}`
+  } else {
+    dica = `Até ${grupo.max_select}`
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="flex-1 text-sm font-bold text-ink">
+          {grupo.nome}
+          {obrigatorio ? <span className="text-danger"> *</span> : null}
+        </span>
+        <span className="text-[11px] font-bold uppercase tracking-wide text-ink-soft">
+          {dica}
+        </span>
+      </div>
+
+      <div className="overflow-hidden rounded-md border border-line">
+        {grupo.modifiers.map((m, idx) => (
+          <ModifierLinha
+            key={m.id}
+            modifier={m}
+            selecionado={selecionados.has(m.id)}
+            single={single}
+            ultimo={idx === grupo.modifiers.length - 1}
+            aoTocar={() => aoAlternar(m.id)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ModifierLinha({
+  modifier,
+  selecionado,
+  single,
+  ultimo,
+  aoTocar,
+}: {
+  modifier: { id: string; nome: string; preco_extra: number; disponivel: boolean }
+  selecionado: boolean
+  single: boolean
+  ultimo: boolean
+  aoTocar: () => void
+}) {
+  const desabilitado = !modifier.disponivel
+  return (
+    <button
+      type="button"
+      onClick={aoTocar}
+      disabled={desabilitado}
+      className={`flex w-full items-center gap-3 px-3.5 py-3 text-left transition-opacity hover:opacity-90 disabled:opacity-40 ${
+        ultimo ? '' : 'border-b border-line'
+      }`}
+    >
+      <SeletorIndicador selecionado={selecionado} single={single} />
+      <span className="flex-1 text-sm font-semibold text-ink">
+        {modifier.nome}
+        {desabilitado ? (
+          <span className="font-medium text-ink-soft">{'  '}· esgotado</span>
+        ) : null}
+      </span>
+      {modifier.preco_extra > 0 ? (
+        <span className="text-[13px] font-bold text-ink-muted">
+          + {formatarReais(modifier.preco_extra)}
+        </span>
+      ) : null}
+    </button>
+  )
+}
+
+function SeletorIndicador({
+  selecionado,
+  single,
+}: {
+  selecionado: boolean
+  single: boolean
+}) {
+  if (single) {
+    return (
+      <span
+        aria-hidden
+        className={`flex h-5 w-5 items-center justify-center rounded-full border-2 ${
+          selecionado ? 'border-ink' : 'border-line'
+        }`}
+      >
+        {selecionado ? (
+          <span className="h-2.5 w-2.5 rounded-full bg-ink" />
+        ) : null}
+      </span>
+    )
+  }
+  return (
+    <span
+      aria-hidden
+      className={`flex h-5 w-5 items-center justify-center rounded-sm border-2 ${
+        selecionado ? 'border-ink bg-ink' : 'border-line'
+      }`}
+    >
+      {selecionado ? (
+        <svg
+          width="12"
+          height="12"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-accent"
+        >
+          <path d="M5 13l4 4L19 7" />
+        </svg>
+      ) : null}
+    </span>
   )
 }
 

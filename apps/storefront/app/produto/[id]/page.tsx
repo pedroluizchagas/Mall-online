@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 
 import { getStore, getStoreSlug, type Store } from '@/lib/tenant'
-import { carregarCatalogo } from '@/lib/catalog'
+import { carregarCatalogo, carregarDetalhesCatalogo } from '@/lib/catalog'
 import { StoreHeader } from '@/components/StoreHeader'
 import { CartFab } from '@/components/cart/CartFab'
 import { CatalogClient } from '@/components/store/CatalogClient'
@@ -81,6 +81,9 @@ export default async function ProdutoPage({
   const existe = secoes.some((s) => s.produtos.some((p) => p.id === params.id))
   if (!existe) notFound()
 
+  const produtoIds = secoes.flatMap((s) => s.produtos.map((p) => p.id))
+  const detalhes = await carregarDetalhesCatalogo(produtoIds)
+
   return (
     <main className="min-h-screen bg-canvas pb-24">
       <StoreHeader store={store} />
@@ -92,6 +95,7 @@ export default async function ProdutoPage({
           nome: store.nome,
           taxa_entrega: store.taxa_entrega ?? 0,
         }}
+        detalhes={detalhes}
         initialProdutoId={params.id}
       />
 
