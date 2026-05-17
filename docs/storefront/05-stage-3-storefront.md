@@ -150,6 +150,29 @@ Gate no checkout: sem sessão → `/entrar?next=/checkout`.
 `AuthProvider.tsx` hidrata `useAuthStore` via `onAuthStateChange`.
 Sessão escopada ao subdomínio (D5) — não setar `domain=.mallevo.com.br`.
 
+> **Decisão do tech lead (aprovada) — escopo 3e:** port fiel das telas
+> `entrar.tsx`/`verificar.tsx` RN→DOM. `entrar` mantém os dois modos do
+> mobile (`signInWithPassword` e `signUp` com `options.data.role:
+> 'consumer'`; signup sem sessão → tela "confirme seu email");
+> `verificar` faz `verifyOtp({type:'email'})` + reenvio via
+> `signInWithOtp`. O gate do checkout (`/entrar?next=/checkout`, já
+> emitido pelo `CheckoutClient` no 3d) passa a ter rota real — `entrar`/
+> `verificar` leem `?next=` e redirecionam para lá pós-auth (default
+> `/`), substituindo o `router.replace('/(tabs)')` do mobile (rota
+> inexistente no storefront). `lib/auth.ts.getConsumer()` lê a tabela
+> `consumers` por `user_id` (leitura autenticada por RLS — **não** é
+> catálogo, não cai na restrição D2 das views `public_catalog_*`).
+> `AuthProvider` (client) é montado no `app/layout.tsx`, hidrata
+> `useAuthStore` (user via `getSession`/`onAuthStateChange`; consumer via
+> `getConsumer`) — `useAuthStore` é consumido de `@mallevo/lib` **sem
+> edição** (espelha 3c). **D5 já satisfeito** pela infra existente: o
+> middleware (Stage 2) e o `@supabase/ssr` (browser/server clients)
+> escrevem cookies host-scoped por padrão; nenhum código seta
+> `domain=.mallevo.com.br` — 3e não introduz override. 3e **ativa** a
+> fronteira inerte do 3d (card/pix passam a alcançar o POST autenticado;
+> offline continua gated). 3e **não** resolve a decisão aberta do
+> `tenant_id` do pedido offline (§3d) — permanece pendente.
+
 ## 3f — Acompanhamento
 Ref: `app/pedido/[id].tsx`.
 
