@@ -1,6 +1,8 @@
 import './globals.css'
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 
+import { AuthProvider } from '@/components/auth/AuthProvider'
+
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
@@ -27,7 +29,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR" className={`${jakarta.variable} ${jetbrains.variable}`}>
-      <body className="bg-canvas">{children}</body>
+      <body className="bg-canvas">
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   )
 }
