@@ -62,10 +62,11 @@ dados. Supabase, catálogo, checkout Pagar.me, roteamento de entrega e a tabela
 
 | Stage | Descrição | Status |
 |---|---|---|
-| 0 | Pré-flight: RLS view, `orders.origem`, extração lib | ⬜ não iniciado |
-| 1 | Scaffold `apps/storefront` | ⬜ não iniciado |
-| 2 | Roteamento host-based + tenant | ⬜ não iniciado |
-| 3 | Storefront completo (3a–3f) | ⬜ não iniciado |
+| 0 | Pré-flight: RLS view, `orders.origem`, extração lib | ✅ concluído (validado tech lead) |
+| 1 | Scaffold `apps/storefront` | ✅ concluído (validado tech lead) |
+| 2 | Roteamento host-based + tenant | ✅ concluído (validado tech lead) |
+| 3 | Storefront completo (3a–3f) | 🟡 em execução (3a + 3b **conformes**, validados tech lead; 3c–3f pendentes) |
+| 3 ⚠ | Stage 0 incremental: migration `20260516160000` (views modifiers/variants + `categoria_slug`) — decisão tech lead aprovada, aplicada. 3b 2ª passada consumiu as views; agendamento/services adiado p/ pós-3e | 🟢 migration + 3b modifiers/variants conformes (validados tech lead) |
 | 4 | Corte de domínio Vercel | ⬜ não iniciado |
 
 > Atualizar esta tabela ao fim de cada stage (responsabilidade do tech lead).

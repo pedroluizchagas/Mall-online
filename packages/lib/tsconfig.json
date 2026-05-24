@@ -2,7 +2,10 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "paths": {}
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "paths": {
+      "@mallevo/types": ["../types/index.ts"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "index.ts"]
 }

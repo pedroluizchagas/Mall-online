@@ -25,6 +25,10 @@ custo, sem `tenant_id`, sem campos internos):
   análogo, filtrados a produto disponível.
 - `categories` já tem `categories_select_publico` para anon — reusar; não
   recriar. Validar que cobre o que o storefront precisa.
+- `public_catalog_categories` — adicionada depois, em migration incremental
+  (`20260515200000_storefront_public_catalog_categories.sql`, Stage 3a),
+  seguindo o mesmo padrão D2 (`security_invoker = true`, GRANT só na view),
+  colunas `id, store_id, nome, ordem`, filtrada a categoria ativa + loja ativa.
 
 Regras:
 - NÃO usar `SECURITY DEFINER` sem necessidade; default invoker + GRANT explícito.
