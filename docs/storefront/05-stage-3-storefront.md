@@ -179,6 +179,29 @@ Ref: `app/pedido/[id].tsx`.
 `app/pedido/[id]/page.tsx` (server fetch + filho `'use client'` com Realtime em
 `orders`/localização). `components/order/{OrderStatusTimeline,OrderItemsList}`.
 
+> **Decisão do tech lead (aprovada) — escopo 3f:** port fiel de
+> `app/pedido/[id].tsx` RN→DOM. Server Component faz gate de sessão
+> (sem sessão → `redirect('/entrar?next=/pedido/<id>')`, mesmo gate do
+> 3d/3e) e busca `orders` + `order_items` (leitura **autenticada por
+> RLS**, não catálogo → não cai em D2). O `join stores(id, nome,
+> telefone, slug)` do mobile é **substituído por `getStore` (view
+> `public_catalog_stores`, D2)** — a view já expõe `nome`/`telefone`/
+> `slug`; nada da tabela base é lido. Realtime via `@supabase/ssr`
+> browser singleton (3e), assinando `orders.id=eq.<id>` e
+> `courier_locations.courier_id=eq.<id>`. `status-pedido` é **duplicado
+> localmente** (mesmo princípio do `consumer-design`: "Copiado, não
+> compartilhado"; tokens idênticos por construção). `useOrderStore`
+> consumido de `@mallevo/lib` **sem editar** (espelha 3c/3e).
+> **Sem mapa nesta fase**: o `MapaEntregador` do mobile usa
+> `react-native-maps`; o equivalente DOM exigiria adicionar Leaflet/
+> Google Maps (dep pesada fora do escopo de "port estrutural"). A
+> localização do entregador é mostrada de forma textual (nome + lat/long
+> + indicador "ao vivo"), mantendo o sinal informacional — adicionar
+> mapa real é trabalho posterior, sem impacto em 3f conforme. Sem
+> agendamento ativo no storefront até pós-3e/services; o ramo
+> `tipo==='agendamento'` é portado **estrutural porém inerte** (mesmo
+> padrão dos 3b/3c/3d).
+
 ## Critérios de aceite (e2e, por subestágio)
 
 Caminho feliz local: catálogo → ProductModal → add carrinho → CartFab →
