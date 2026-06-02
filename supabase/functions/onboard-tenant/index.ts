@@ -290,6 +290,36 @@ Deno.serve(async (req) => {
 
     if (storeError) throw storeError
 
+    // Registra o subdomínio da loja no projeto storefront da Vercel.
+    // O wildcard CNAME (*.mallevo.com.br → cname.vercel-dns.com) já roteia o
+    // tráfego; aqui a Vercel passa a reconhecer o host e emite o cert via
+    // HTTP-01 (não precisa de cert wildcard / DNS-01). Best-effort: falha aqui
+    // NÃO reverte o onboarding (Stripe/Pagar.me já concluídos). 409 = já existe.
+    try {
+      const vercelToken = Deno.env.get('VERCEL_TOKEN')
+      const vercelProjectId = Deno.env.get('VERCEL_STOREFRONT_PROJECT_ID')
+      if (vercelToken && vercelProjectId) {
+        const res = await fetch(
+          `https://api.vercel.com/v10/projects/${vercelProjectId}/domains`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${vercelToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ name: `${storeSlug}.mallevo.com.br` }),
+          }
+        )
+        if (!res.ok && res.status !== 409) {
+          console.error('Vercel addDomain falhou:', storeSlug, await res.text())
+        }
+      } else {
+        console.warn('VERCEL_TOKEN/VERCEL_STOREFRONT_PROJECT_ID ausentes — domínio da loja não registrado:', storeSlug)
+      }
+    } catch (err) {
+      console.error('Vercel addDomain exception:', storeSlug, err)
+    }
+
     // Recipient já ativo (PJ verificada automaticamente) → cria a Subscription
     // Stripe Billing imediatamente. Caso contrário, o webhook
     // recipient.status.changed dispara create-subscription quando status='active'.
