@@ -60,7 +60,7 @@ export default function EtapaDadosPessoais() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <TouchableOpacity onPress={() => router.back()} activeOpacity={0.7} style={{ marginBottom: 32 }}>
+        <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/entrar')} activeOpacity={0.7} style={{ marginBottom: 32 }}>
           <CourierIcon name="back" size={24} color={colors.white} />
         </TouchableOpacity>
 

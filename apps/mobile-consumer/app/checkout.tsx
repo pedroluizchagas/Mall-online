@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { View, Text, ScrollView, Alert } from 'react-native'
-import { router, Stack } from 'expo-router'
+import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { tokenizarCartao } from '@/lib/pagarme'
@@ -312,21 +312,17 @@ export default function TelaCheckout() {
 
   if (etapa === 'processando') {
     return (
-      <>
-        <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
-        <LoadingState
-          modo="tela"
-          variante="escuro"
-          mensagem="Processando seu pedido..."
-        />
-      </>
+      <LoadingState
+        modo="tela"
+        variante="escuro"
+        mensagem="Processando seu pedido..."
+      />
     )
   }
 
   if (itens.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-        <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
         <HeaderTela variante="voltar" titulo="Seu pedido" />
         <EmptyState
           icone="bag"
@@ -358,8 +354,6 @@ export default function TelaCheckout() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-      <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
-
       <HeaderTela variante="voltar" titulo="Seu pedido" />
 
       <ScrollView

@@ -32,25 +32,11 @@ export default function LayoutRaiz() {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
-        try {
-          setUser(session?.user ?? null)
-          if (session?.user) {
-            await carregarCourier(session.user.id)
-          }
-        } catch (error) {
-          console.error('Falha ao carregar sessao inicial do courier:', error)
-          setCourier(null)
-        } finally {
-          setCarregando(false)
-        }
-      })
-      .catch((error) => {
-        console.error('Falha ao verificar sessao:', error)
-        setCarregando(false)
-      })
-
+    // Via única de resolução de sessão. No supabase-js v2, onAuthStateChange
+    // dispara INITIAL_SESSION com a sessão atual logo na inscrição, cobrindo o
+    // boot. Não usar getSession() em paralelo: duas vias liberariam `carregando`
+    // em momentos diferentes (uma com courier ainda null), causando um redirect
+    // transitório /(auth)/cadastro -> /(tabs) e o aviso "GO_BACK not handled".
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         try {
@@ -114,7 +100,7 @@ function SplashAnimacao({ onConcluido }: { onConcluido: () => void }) {
   }
 
   return (
-    <Animated.View style={[styles.overlay, { backgroundColor: colors.surfaceDark }, estiloAnimado]}>
+    <Animated.View style={[styles.overlay, { backgroundColor: colors.splash }, estiloAnimado]}>
       <LottieView
         source={require('../assets/Food Courier.json')}
         autoPlay

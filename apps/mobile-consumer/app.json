@@ -21,7 +21,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#111216"
+        "backgroundColor": "#6A3DE8"
       },
       "package": "com.mallevo.consumer",
       "permissions": [

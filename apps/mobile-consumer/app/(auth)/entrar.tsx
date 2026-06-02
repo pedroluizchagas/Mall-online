@@ -6,6 +6,7 @@ import {
   Platform,
   ScrollView,
   StatusBar,
+  Image,
 } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -178,20 +179,16 @@ export default function TelaEntrar() {
             paddingBottom: insets.bottom + 24,
           }}
         >
-          {/* Hero ícone */}
-          <View
+          {/* Hero logo */}
+          <Image
+            source={require('../../assets/logoGreen.png')}
+            resizeMode="contain"
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: radius.pill,
-              backgroundColor: colors.accentSoft,
-              alignItems: 'center',
-              justifyContent: 'center',
+              width: 180,
+              height: 44,
               marginBottom: 32,
             }}
-          >
-            <ConsumerIcon name="bag" size={24} color={colors.accent} />
-          </View>
+          />
 
           {/* Título */}
           <Text

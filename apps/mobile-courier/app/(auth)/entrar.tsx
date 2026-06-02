@@ -8,6 +8,8 @@ import {
   Platform,
   ActivityIndicator,
   StatusBar,
+  Image,
+  ImageBackground,
 } from 'react-native'
 import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
@@ -62,27 +64,24 @@ export default function TelaEntrar() {
   }
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <ImageBackground
+      source={require('../../assets/login-entregador.png')}
+      resizeMode="cover"
       style={{ flex: 1, backgroundColor: colors.surfaceDark }}
     >
-      <StatusBar barStyle="light-content" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+      >
+        <StatusBar barStyle="light-content" />
 
-      <View style={{ flex: 1, paddingHorizontal: 24 }}>
-        <View style={{ flex: 1, justifyContent: 'center', paddingBottom: 24 }}>
-          <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: radius.pill,
-              backgroundColor: colors.accentSoft,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginBottom: 32,
-            }}
-          >
-            <CourierIcon name="package" size={24} color={colors.accent} />
-          </View>
+        <View style={{ flex: 1, paddingHorizontal: 24 }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: 24 }}>
+          <Image
+            source={require('../../assets/logoGreen.png')}
+            resizeMode="contain"
+            style={{ width: 220, height: 35, marginBottom: 28 }}
+          />
 
           <Text
             style={{
@@ -203,8 +202,9 @@ export default function TelaEntrar() {
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
-    </KeyboardAvoidingView>
+        </View>
+      </KeyboardAvoidingView>
+    </ImageBackground>
   )
 }
 

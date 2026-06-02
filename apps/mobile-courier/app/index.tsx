@@ -9,7 +9,7 @@ export default function TelaInicial() {
 
   if (carregando) {
     return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceDark }}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.splash }}>
         <ActivityIndicator color={colors.accent} />
       </View>
     )
