@@ -258,80 +258,37 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
     if (ehAgendamento) {
       throw new Error('Agendamentos só aceitam pagamento online.')
     }
+
+    // Edge function `create-offline-order` resolve `tenant_id` server-side
+    // (D2 — storefront não relê a tabela base `stores`). Espelha o
+    // contrato de `chamarCreatePagarmeOrder` (Bearer, payload base + extras).
     const session = await obterSessaoOuFalhar()
-
-    const { data: consumer_data } = await supabase
-      .from('consumers')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .single()
-
-    if (!consumer_data) {
-      throw new Error('Perfil do consumidor não encontrado.')
+    const resposta = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-offline-order`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          ...payloadBase(),
+          forma_pagamento: formaPagamento,
+          troco_para: trocoPara
+            ? Math.round(parseFloat(trocoPara) * 100)
+            : undefined,
+        }),
+      }
+    )
+    const resultado = await resposta.json()
+    if (!resposta.ok) {
+      throw new Error(resultado.error ?? 'Erro no servidor.')
     }
 
-    // DECISÃO TL ABERTA §3d (pós-3e): o insert direto de `orders` do mobile
-    // usa `tenant_id: loja.tenant_id` lido da tabela base `stores`. No
-    // storefront isso viola D2 (só views `public_catalog_*`, que não
-    // expõem `tenant_id`). O campo é deliberadamente OMITIDO aqui — o
-    // caminho é estrutural e inerte (gated por `obterSessaoOuFalhar()` =
-    // 3e). Ao ativar o pagamento offline no 3e, resolver a origem do
-    // tenant server-side (provável: edge function derivando o tenant a
-    // partir de `store_id`, igual a card/pix), não relendo a tabela base.
-    const { data: pedido, error: pedidoError } = await supabase
-      .from('orders')
-      .insert({
-        consumer_id: consumer_data.id,
-        store_id: store_id!,
-        status: 'novo',
-        payment_status: 'pendente',
-        forma_pagamento: formaPagamento,
-        subtotal,
-        taxa_entrega: store_taxa_entrega,
-        total,
-        platform_fee_amount: 100,
-        endereco_entrega: enderecoSelecionado,
-        observacoes: observacoes.trim() || null,
-        troco_para: trocoPara
-          ? Math.round(parseFloat(trocoPara) * 100)
-          : null,
-        origem: 'storefront',
-      })
-      .select('id')
-      .single()
-
-    if (pedidoError) throw new Error(pedidoError.message)
-
-    const orderItems = itens.map((i) => {
-      const precoExtra =
-        i.modifiers?.reduce((acc, m) => acc + m.preco_extra, 0) ?? 0
-      const precoUnit = i.preco + precoExtra
-      return {
-        order_id: pedido.id,
-        product_id: i.product_id,
-        variant_id: i.variant?.variant_id ?? null,
-        nome: i.nome,
-        preco_unit: precoUnit,
-        quantidade: i.quantidade,
-        subtotal: precoUnit * i.quantidade,
-        observacoes: i.observacoes ?? null,
-        modifiers:
-          i.modifiers && i.modifiers.length > 0
-            ? i.modifiers.map((m) => ({
-                modifier_id: m.modifier_id,
-                nome: m.nome,
-                preco_extra: m.preco_extra,
-              }))
-            : null,
-      }
-    })
-
-    await supabase.from('order_items').insert(orderItems)
-
     limparCarrinho()
-    setPedidoAtivo(pedido.id)
+    setPedidoAtivo(resultado.order_id)
     setEtapa('concluido')
-    router.replace(`/pedido/${pedido.id}`)
+    router.replace(`/pedido/${resultado.order_id}`)
   }
 
   if (!montado) return null
