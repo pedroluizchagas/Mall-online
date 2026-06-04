@@ -65,7 +65,7 @@ dados. Supabase, catálogo, checkout Pagar.me, roteamento de entrega e a tabela
 | 0 | Pré-flight: RLS view, `orders.origem`, extração lib | ✅ concluído (validado tech lead) |
 | 1 | Scaffold `apps/storefront` | ✅ concluído (validado tech lead) |
 | 2 | Roteamento host-based + tenant | ✅ concluído (validado tech lead) |
-| 3 | Storefront completo (3a–3f) | 🟡 em execução (3a + 3b **conformes**, validados tech lead; 3c–3f pendentes) |
+| 3 | Storefront completo (3a–3f) | ✅ concluído (3a–3f conformes, validados tech lead; mergeado via PR #60 `fa29c97` — "Stages 0–3 completos (3a–3f) + DB push aplicado") |
 | 3 ⚠ | Stage 0 incremental: migration `20260516160000` (views modifiers/variants + `categoria_slug`) — decisão tech lead aprovada, aplicada. 3b 2ª passada consumiu as views; agendamento/services adiado p/ pós-3e | 🟢 migration + 3b modifiers/variants conformes (validados tech lead) |
 | 4 | Corte de domínio Vercel | 🟢 corte operacional confirmado estável (tech lead, 2026-06-04); passo 6 (código) aplicado — `web/middleware.ts` sem bloco de subdomínio, stub `loja/[slug]` removido, `link-publico-botao` → `https://{slug}.mallevo.com.br`, `allowedOrigins` do web limpo. Script back-to-back do passo 4 em `scripts/vercel-cutover-wildcard.mjs`. Pendente operacional: `VERCEL_PROJECT_ID` do web → projeto storefront (passo 7) + provisionar tenant e2e (passo 8) |
 
