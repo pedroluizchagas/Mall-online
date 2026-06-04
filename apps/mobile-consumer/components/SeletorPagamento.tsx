@@ -4,16 +4,15 @@ import { consumerDesign, softColor } from '@/lib/consumer-design'
 
 const { colors, radius } = consumerDesign
 
-type FormaPagamento =
-  | 'online_cartao'
-  | 'online_pix'
-  | 'dinheiro'
-  | 'cartao_maquininha'
+// Gateway-only: política Mallevo aceita só pagamento online (cartão/Pix
+// via Pagar.me) em todos os canais (mobile + storefront). Dinheiro e
+// cartão na maquininha foram removidos das telas de checkout; as flags
+// `aceita_dinheiro`/`aceita_cartao_maquininha` permanecem no schema mas
+// são ignoradas pelos consumer-facing apps.
+type FormaPagamento = 'online_cartao' | 'online_pix'
 
 interface Loja {
-  aceita_dinheiro: boolean
   aceita_pix: boolean
-  aceita_cartao_maquininha: boolean
   aceita_cartao_online: boolean
 }
 
@@ -39,20 +38,6 @@ const OPCOES: OpcaoPagamento[] = [
     descricao: 'Aprovação imediata via QR Code',
     icone: 'phone',
     condicao: (l) => l.aceita_pix,
-  },
-  {
-    id: 'dinheiro',
-    label: 'Dinheiro na entrega',
-    descricao: 'Pague ao receber seu pedido',
-    icone: 'cash',
-    condicao: (l) => l.aceita_dinheiro,
-  },
-  {
-    id: 'cartao_maquininha',
-    label: 'Cartão na maquininha',
-    descricao: 'Débito ou crédito na entrega',
-    icone: 'wallet',
-    condicao: (l) => l.aceita_cartao_maquininha,
   },
 ]
 

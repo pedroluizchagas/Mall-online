@@ -5,23 +5,23 @@
  * apps/mobile-consumer/components/SeletorPagamento.tsx (Stage 3d).
  *
  * UI pura. `loja` vem da view `public_catalog_stores` (D2, via Server →
- * props), não da tabela base. Mesmas opções/condições do mobile.
+ * props), não da tabela base.
+ *
+ * **Gateway-only:** desde a política "online = sempre via Pagar.me", só
+ * `online_cartao` e `online_pix` são oferecidos no storefront. Dinheiro
+ * e cartão na maquininha foram removidos (não fazem sentido em pedidos
+ * web). As flags `aceita_dinheiro`/`aceita_cartao_maquininha` continuam
+ * no schema mas são ignoradas neste canal.
  */
 
-export type FormaPagamento =
-  | 'online_cartao'
-  | 'online_pix'
-  | 'dinheiro'
-  | 'cartao_maquininha'
+export type FormaPagamento = 'online_cartao' | 'online_pix'
 
 interface Loja {
-  aceita_dinheiro: boolean
   aceita_pix: boolean
-  aceita_cartao_maquininha: boolean
   aceita_cartao_online: boolean
 }
 
-type IconeNome = 'wallet' | 'phone' | 'cash'
+type IconeNome = 'wallet' | 'phone'
 
 interface OpcaoPagamento {
   id: FormaPagamento
@@ -45,20 +45,6 @@ const OPCOES: OpcaoPagamento[] = [
     descricao: 'Aprovação imediata via QR Code',
     icone: 'phone',
     condicao: (l) => l.aceita_pix,
-  },
-  {
-    id: 'dinheiro',
-    label: 'Dinheiro na entrega',
-    descricao: 'Pague ao receber seu pedido',
-    icone: 'cash',
-    condicao: (l) => l.aceita_dinheiro,
-  },
-  {
-    id: 'cartao_maquininha',
-    label: 'Cartão na maquininha',
-    descricao: 'Débito ou crédito na entrega',
-    icone: 'wallet',
-    condicao: (l) => l.aceita_cartao_maquininha,
   },
 ]
 
@@ -85,12 +71,6 @@ function IconePagamento({ nome }: { nome: IconeNome }) {
         <>
           <rect x="7" y="3" width="10" height="18" rx="2" />
           <path d="M11 18h2" />
-        </>
-      )}
-      {nome === 'cash' && (
-        <>
-          <rect x="2" y="6" width="20" height="12" rx="2" />
-          <circle cx="12" cy="12" r="2.5" />
         </>
       )}
     </svg>

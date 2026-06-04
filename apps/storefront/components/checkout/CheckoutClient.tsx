@@ -29,32 +29,36 @@ import type { Endereco } from '@mallevo/types'
 
 /**
  * CheckoutClient — port RN→DOM de apps/mobile-consumer/app/checkout.tsx
- * (Stage 3d). Decisão TL §3d: estrutural/inerte. Os três fluxos exigem
- * sessão consumer (3e); sem sessão `obterSessaoOuFalhar()` redireciona
- * p/ `/entrar?next=/checkout` (rota que nasce no 3e) — fronteira INERTE.
+ * (Stage 3d).
  *
- * `loja` vem da view `public_catalog_stores` (D2, via Server → props),
- * substituindo o `supabase.from('stores')` da base que o mobile faz.
- * Regra de cobertura/entrega vem de @mallevo/lib (D4) via o store
- * (`total()`/`subtotal()`), não reimplementada. `origem: 'storefront'`
- * em todos os caminhos. Ramo de agendamento estrutural porém inerte
- * (storefront não cria itens de agendamento até pós-3e).
+ * **Gateway-only:** só `online_cartao` e `online_pix` (decisão de
+ * política). Dinheiro/maquininha removidos do storefront E do mobile;
+ * a edge function `create-offline-order` foi removida junto (PR de
+ * remoção sobrescreve o PR #61 que a tinha introduzido).
+ *
+ * Sem sessão consumer (3e) o `obterSessaoOuFalhar()` redireciona p/
+ * `/entrar?next=/checkout`. `loja` vem da view `public_catalog_stores`
+ * (D2, via Server → props). Regra de cobertura/entrega vem de
+ * `@mallevo/lib` (D4) via o store. `origem: 'storefront'` em todos os
+ * caminhos. Ramo de agendamento estrutural porém inerte (storefront
+ * não cria agendamento até pós-3e).
  */
 
 export interface LojaCheckout {
   id: string
   nome: string
   taxa_entrega: number | null
-  aceita_dinheiro: boolean
   aceita_pix: boolean
-  aceita_cartao_maquininha: boolean
   aceita_cartao_online: boolean
 }
 
+// Gateway-only: se a loja não aceita cartão online, cai em Pix; se nem
+// isso, mantém `online_cartao` como default — o `SeletorPagamento` renderiza
+// "Nenhuma forma disponível" e o CTA é bloqueado por `validar()`.
 function formaPadrao(loja: LojaCheckout): FormaPagamento {
   if (loja.aceita_cartao_online) return 'online_cartao'
   if (loja.aceita_pix) return 'online_pix'
-  return 'dinheiro'
+  return 'online_cartao'
 }
 
 export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
@@ -82,7 +86,6 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
   )
   const [installments, setInstallments] = useState(1)
   const [dadosCartao, setDadosCartao] = useState<DadosCartao | null>(null)
-  const [trocoPara, setTrocoPara] = useState('')
   const [observacoes, setObservacoes] = useState('')
   const [processando, setProcessando] = useState(false)
   const [etapa, setEtapa] = useState<
@@ -108,23 +111,9 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
     if (!ehAgendamento && !enderecoSelecionado) {
       return 'Selecione um endereço de entrega.'
     }
-    if (
-      ehAgendamento &&
-      formaPagamento !== 'online_cartao' &&
-      formaPagamento !== 'online_pix'
-    ) {
-      return 'Agendamentos só aceitam pagamento online (cartão ou Pix).'
-    }
     if (!formaPagamento) return 'Selecione uma forma de pagamento.'
     if (formaPagamento === 'online_cartao' && !dadosCartao) {
       return 'Preencha os dados do cartão.'
-    }
-    if (
-      formaPagamento === 'dinheiro' &&
-      trocoPara &&
-      parseFloat(trocoPara) < total / 100
-    ) {
-      return 'Valor do troco deve ser maior que o total do pedido.'
     }
     return null
   }
@@ -142,10 +131,8 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
     try {
       if (formaPagamento === 'online_cartao') {
         await fluxoCartao()
-      } else if (formaPagamento === 'online_pix') {
-        await fluxoPix()
       } else {
-        await fluxoPagamentoOffline()
+        await fluxoPix()
       }
     } catch (e) {
       const msg =
@@ -254,43 +241,6 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
     router.replace(`/checkout/pix?order_id=${resultado.order_id}`)
   }
 
-  async function fluxoPagamentoOffline() {
-    if (ehAgendamento) {
-      throw new Error('Agendamentos só aceitam pagamento online.')
-    }
-
-    // Edge function `create-offline-order` resolve `tenant_id` server-side
-    // (D2 — storefront não relê a tabela base `stores`). Espelha o
-    // contrato de `chamarCreatePagarmeOrder` (Bearer, payload base + extras).
-    const session = await obterSessaoOuFalhar()
-    const resposta = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-offline-order`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          ...payloadBase(),
-          forma_pagamento: formaPagamento,
-          troco_para: trocoPara
-            ? Math.round(parseFloat(trocoPara) * 100)
-            : undefined,
-        }),
-      }
-    )
-    const resultado = await resposta.json()
-    if (!resposta.ok) {
-      throw new Error(resultado.error ?? 'Erro no servidor.')
-    }
-
-    limparCarrinho()
-    setPedidoAtivo(resultado.order_id)
-    setEtapa('concluido')
-    router.replace(`/pedido/${resultado.order_id}`)
-  }
-
   if (!montado) return null
 
   if (etapa === 'processando') {
@@ -329,10 +279,7 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
     if (formaPagamento === 'online_cartao') {
       return `Pagar ${formatarReais(total)} em ${installments}×`
     }
-    if (formaPagamento === 'online_pix') {
-      return `Gerar Pix de ${formatarReais(total)}`
-    }
-    return `Fazer pedido — ${formatarReais(total)}`
+    return `Gerar Pix de ${formatarReais(total)}`
   })()
 
   const qtdTotal = itens.reduce((a, i) => a + i.quantidade, 0)
@@ -435,21 +382,6 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
             onSelecionar={setInstallments}
           />
         </>
-      )}
-
-      {formaPagamento === 'dinheiro' && (
-        <div className="px-6 pt-6">
-          <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-            Troco para quanto? (opcional)
-          </label>
-          <input
-            inputMode="numeric"
-            value={trocoPara}
-            onChange={(e) => setTrocoPara(e.target.value)}
-            placeholder={`Ex: ${formatarReais(total + 500)}`}
-            className="h-12 w-full rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink outline-none placeholder:text-ink-soft focus:border-ink"
-          />
-        </div>
       )}
 
       <div className="px-6 pt-6">

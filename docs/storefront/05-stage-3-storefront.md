@@ -105,7 +105,7 @@ single-store) + `ItemCarrinhoCard.tsx` (← mobile).
 > seguem só via views `public_catalog_*` (D2).
 
 ## 3d — Checkout
-Ref: `apps/mobile-consumer/app/checkout.tsx` (622 LOC), `lib/pagarme.ts`.
+Ref: `apps/mobile-consumer/app/checkout.tsx`, `lib/pagarme.ts`.
 
 - `lib/pagarme.ts`: portar `tokenizarCartao`. **PAN/CVV só browser→`api.pagar.me`,
   nunca nosso servidor** (mantém SAQ-A). `NEXT_PUBLIC_PAGARME_APPID` é chave
@@ -113,33 +113,29 @@ Ref: `apps/mobile-consumer/app/checkout.tsx` (622 LOC), `lib/pagarme.ts`.
 - `app/checkout/page.tsx` (`'use client'`):
   - `fluxoCartao`/`fluxoPix` → `POST ${NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-pagarme-order`
     com Bearer da sessão. Incluir `origem: 'storefront'` no payload.
-  - `fluxoPagamentoOffline` → insert direto `orders` + `order_items`
-    (incl. `platform_fee_amount`, troco, **`origem: 'storefront'`**).
   - Usar a regra de cobertura/entrega de `@mallevo/lib` (D4) — entrega vs
     retirada, `taxa_entrega`. Não reimplementar.
 - `app/checkout/pix/page.tsx`: QR + poll/realtime.
 - `components/checkout/`: `SeletorEndereco`, `SeletorPagamento`,
   `SeletorParcelas`, `FormularioCartao`.
 
-> **Decisão do tech lead (aprovada) — sequenciamento 3d↔3e:** os três
-> fluxos de `apps/mobile-consumer/app/checkout.tsx` dependem de **sessão
-> consumer autenticada**, que só nasce no 3e: `fluxoCartao`/`fluxoPix`
-> enviam `Authorization: Bearer ${session.access_token}` à edge function
-> `create-pagarme-order`; `fluxoPagamentoOffline` usa `session.user.id`
-> (lookup de endereço + insert RLS em `orders`/`order_items`);
-> `obterSessaoOuFalhar()` lança sem sessão. O próprio §3e define o gate
-> `sem sessão → /entrar?next=/checkout`. **3d é construído agora de forma
-> estrutural, com o caminho sem-sessão como fronteira INERTE** (mesmo
-> padrão de `erroValidacao` no 3b e do ramo de agendamento no 3c):
-> `lib/pagarme.ts` (tokenização browser→`api.pagar.me`, SAQ-A) é
-> **funcional já agora** (não depende de sessão); a página de checkout, os
-> seletores e os três fluxos são portados RN→DOM ligados ao
-> `useAuthStore`/`supabase` **reais** de `@mallevo/lib`/`lib/supabase`,
-> mas sem sessão o `obterSessaoOuFalhar()` redireciona para
-> `/entrar?next=/checkout` — rota que passa a existir no 3e. Não se
-> reordena 3d↔3e nem se reimplementa auth aqui; a regra de cobertura/
-> entrega vem de `@mallevo/lib` (D4), não reimplementada. PAN/CVV nunca
-> tocam nosso servidor. `origem: 'storefront'` em todos os caminhos.
+> **Decisão do tech lead (aprovada) — gateway-only (sobrescreve a §3d
+> original e o PR #61 `create-offline-order`):** política Mallevo é
+> pagamento sempre **online via Pagar.me** em todos os consumer-facing
+> apps (storefront + mobile). `dinheiro` e `cartao_maquininha` foram
+> removidos do `SeletorPagamento` e do `CheckoutClient`/`checkout.tsx`
+> (storefront e mobile). `fluxoPagamentoOffline` deixou de existir nos
+> dois canais. A edge function `supabase/functions/create-offline-order`
+> introduzida no PR #61 foi **deletada** (dead code após a política). As
+> flags `aceita_dinheiro`/`aceita_cartao_maquininha` permanecem no
+> schema/admin (não migradas pra fora — fora de escopo); só ficaram
+> ignoradas no consumer-side. Os fluxos remanescentes (`fluxoCartao`,
+> `fluxoPix`) continuam exigindo sessão consumer (3e) — `obterSessaoOuFalhar()`
+> redireciona p/ `/entrar?next=/checkout` sem sessão. `lib/pagarme.ts`
+> (tokenização browser→`api.pagar.me`, SAQ-A) é **funcional já agora**;
+> a regra de cobertura/entrega vem de `@mallevo/lib` (D4), não
+> reimplementada. PAN/CVV nunca tocam nosso servidor.
+> `origem: 'storefront'` continua no payload p/ telemetria de canal.
 
 ## 3e — Auth consumidor
 Ref: `app/(auth)/entrar.tsx`, `verificar.tsx`.

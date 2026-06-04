@@ -60,8 +60,7 @@ export default function PaginaLoja() {
         .select(`
           id, nome, descricao, logo_url, banner_url,
           taxa_entrega, tempo_entrega, telefone,
-          aceita_dinheiro, aceita_pix,
-          aceita_cartao_maquininha, aceita_cartao_online,
+          aceita_pix, aceita_cartao_online,
           horarios, tenant_id,
           categoria:categories(slug)
         `)
@@ -147,11 +146,10 @@ export default function PaginaLoja() {
     )
   }
 
+  // Gateway-only: só métodos online aparecem (política Mallevo, §3d).
   const metodos: MetodoPagamento[] = [
-    { rotulo: 'Dinheiro', ativo: !!loja?.aceita_dinheiro },
+    { rotulo: 'Cartão de crédito', ativo: !!loja?.aceita_cartao_online },
     { rotulo: 'Pix', ativo: !!loja?.aceita_pix },
-    { rotulo: 'Cartão na entrega', ativo: !!loja?.aceita_cartao_maquininha },
-    { rotulo: 'Online (cartão / Pix)', ativo: !!loja?.aceita_cartao_online },
   ].filter((m) => m.ativo)
 
   const espacoFinal = totalItens > 0 ? 120 : 40

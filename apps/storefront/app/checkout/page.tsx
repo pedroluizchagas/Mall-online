@@ -21,13 +21,14 @@ export default async function CheckoutPage() {
   // Slug ausente/inexistente/inativo → notFound() (Stage 2, via getStore).
   const store = await getStore(slug)
 
+  // Gateway-only: só `aceita_pix` e `aceita_cartao_online` interessam ao
+  // storefront. As flags offline (`aceita_dinheiro`/`aceita_cartao_maquininha`)
+  // permanecem no schema/admin mas são ignoradas neste canal.
   const loja: LojaCheckout = {
     id: store.id,
     nome: store.nome,
     taxa_entrega: store.taxa_entrega,
-    aceita_dinheiro: store.aceita_dinheiro ?? false,
     aceita_pix: store.aceita_pix ?? false,
-    aceita_cartao_maquininha: store.aceita_cartao_maquininha ?? false,
     aceita_cartao_online: store.aceita_cartao_online ?? false,
   }
 
