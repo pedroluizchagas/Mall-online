@@ -115,10 +115,10 @@ Refatorar:
 
 | ID | Item | Risco | Status |
 |---|---|---|---|
-| 3.1 | Paginação real + índices de FK | Baixo | ☐ |
-| 3.2 | Estratégia de cache (substituir `force-dynamic`) | Médio | ☐ |
-| 3.3 | Trigram index para busca | Baixo | ☐ |
-| 3.4 | Connection pooling (pooler URL) | Médio | ☐ |
+| 3.1 | Paginação real + índices de FK | Baixo | ✅ Já feito (verificado 2026-06-06) — pedidos `.limit(100)`, relatórios `.limit+range de data`, avaliações/mensagens paginação `.range(PAGE_SIZE)`, busca `.limit(5/10)`; FKs já indexadas (orders/order_items/assignments/couriers/messages/reviews via `idx_*`/`idx_ss_*`/`idx_sb_*`). Sem gap real |
+| 3.2 | Estratégia de cache (substituir `force-dynamic`) | Médio | ⚪ N/A prática — só 1 `force-dynamic` (home); demais páginas são per-user (leem cookie de auth) → dinâmicas por natureza. Dedup de tenant via `cache()` = ganho marginal, adiado |
+| 3.3 | Trigram index para busca | Baixo | ✅ 2026-06-06 — migration `20260606120000_perf_trigram_search`: `pg_trgm` + GIN trigram em `stores.nome` e `products.nome` (ILIKE `%termo%` do consumer). Aplicada no remoto |
+| 3.4 | Connection pooling (pooler URL) | Médio | ⚪ N/A — zero acesso Postgres direto; tudo via supabase-js (REST/PostgREST), que faz pool server-side. Pooler só importaria com driver PG direto (Prisma/postgres.js) |
 
 ## FASE 4 — Resiliência e observabilidade
 
