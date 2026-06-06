@@ -86,7 +86,8 @@ export async function toggleControleEstoque(
 
   if (error) return { erro: error.message }
 
-  revalidatePath('/dashboard/produtos')
+  revalidatePath('/produtos')
+  revalidatePath('/estoque')
   return { sucesso: true }
 }
 
@@ -157,8 +158,8 @@ export async function registrarEntradaEstoque(
 
   if (prodError) return { erro: prodError.message }
 
-  revalidatePath('/dashboard/produtos')
-  revalidatePath('/dashboard/estoque')
+  revalidatePath('/produtos')
+  revalidatePath('/estoque')
   return { sucesso: true, quantidade_posterior }
 }
 
@@ -235,8 +236,8 @@ export async function registrarAjusteEstoque(
 
   if (prodError) return { erro: prodError.message }
 
-  revalidatePath('/dashboard/produtos')
-  revalidatePath('/dashboard/estoque')
+  revalidatePath('/produtos')
+  revalidatePath('/estoque')
   return { sucesso: true, quantidade_posterior }
 }
 
@@ -262,7 +263,7 @@ export async function atualizarEstoqueMinimo(
 
   if (error) return { erro: error.message }
 
-  revalidatePath('/dashboard/estoque')
+  revalidatePath('/estoque')
   return { sucesso: true }
 }
 

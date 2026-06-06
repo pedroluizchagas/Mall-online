@@ -1,8 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { BarraEstoque } from './barra-estoque'
 import { ModalMovimentacao } from './modal-movimentacao'
+import { toggleControleEstoque } from '@/lib/actions/estoque'
 
 interface Produto {
   id: string
@@ -70,11 +72,16 @@ export function PainelEstoque({ produtos }: Props) {
             {semEstoque.map((produto) => (
               <div
                 key={produto.id}
-                className="rounded-xl px-4 py-3 flex items-center justify-between"
+                className="rounded-xl px-4 py-3 flex items-center justify-between gap-3"
                 style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
               >
                 <span className="text-sm text-ink">{produto.nome}</span>
-                <span className="text-xs text-ink-3">Controle desativado</span>
+                <BotaoToggleEstoque
+                  produtoId={produto.id}
+                  ativar
+                  label="Ativar controle"
+                  variante="primario"
+                />
               </div>
             ))}
           </div>
@@ -161,6 +168,15 @@ function CardEstoque({ produto }: { produto: Produto }) {
             Histórico
           </a>
         </div>
+
+        <div className="flex justify-end mt-2">
+          <BotaoToggleEstoque
+            produtoId={produto.id}
+            ativar={false}
+            label="Desativar controle"
+            variante="sutil"
+          />
+        </div>
       </div>
 
       {modalAberto && (
@@ -171,5 +187,57 @@ function CardEstoque({ produto }: { produto: Produto }) {
         />
       )}
     </>
+  )
+}
+
+function BotaoToggleEstoque({
+  produtoId,
+  ativar,
+  label,
+  variante,
+}: {
+  produtoId: string
+  ativar: boolean
+  label: string
+  variante: 'primario' | 'sutil'
+}) {
+  const router = useRouter()
+  const [pendente, iniciar] = useTransition()
+
+  function handleClick() {
+    if (
+      !ativar &&
+      !window.confirm(
+        'Desativar o controle de estoque deste produto? A quantidade atual e o estoque mínimo serão zerados.'
+      )
+    ) {
+      return
+    }
+
+    iniciar(async () => {
+      const resultado = await toggleControleEstoque(produtoId, ativar)
+      if (resultado?.erro) {
+        window.alert(resultado.erro)
+        return
+      }
+      router.refresh()
+    })
+  }
+
+  const estilo =
+    variante === 'primario'
+      ? { background: 'var(--brick)', color: 'var(--brick-ink)' }
+      : { border: '1px solid var(--line)', color: 'var(--ink-3)' }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={pendente}
+      className="text-xs px-3 py-1.5 rounded-full font-medium whitespace-nowrap disabled:opacity-50 hover:opacity-90 transition-opacity"
+      style={estilo}
+    >
+      {pendente ? 'Aguarde…' : label}
+    </button>
   )
 }
