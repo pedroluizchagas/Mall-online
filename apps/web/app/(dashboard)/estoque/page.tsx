@@ -1,23 +1,36 @@
 import { Boxes } from 'lucide-react'
+import { getProdutosEstoque } from '@/lib/actions/estoque'
 import { PageHeader } from '@/components/dashboard/page-header'
+import { PainelEstoque } from '@/components/dashboard/painel-estoque'
+import { TelaUpgradeEstoque } from '@/components/dashboard/tela-upgrade-estoque'
 import { EmptyState } from '@/components/dashboard/empty-state'
 
-// TODO(dashboard-redesign Fase 2): implementar listagem geral conforme
-// docs/dashboard-redesign/02-arquitetura-de-informacao.md §3
-export default function PaginaEstoque() {
+export default async function PaginaEstoque() {
+  const { produtos, upgrade, erro } = (await getProdutosEstoque()) as {
+    produtos: any[]
+    upgrade?: boolean
+    erro?: string
+  }
+
   return (
-    <div className="p-9 slide-up">
+    <div className="p-9 max-w-3xl slide-up">
       <PageHeader
         titulo="Estoque"
-        subtitulo="Visão geral do estoque dos seus produtos."
-        badgeCabecalho={{ texto: 'Em breve', cor: 'info' }}
+        subtitulo="Acompanhe o estoque dos seus produtos, registre entradas e ajustes."
       />
-      <EmptyState
-        icone={Boxes}
-        titulo="Esta área está chegando"
-        descricao="Em breve você terá uma visão consolidada do estoque, alertas de produtos críticos e atalhos para movimentações."
-        cta={{ label: 'Voltar para o início', href: '/' }}
-      />
+
+      {upgrade ? (
+        <TelaUpgradeEstoque mensagem={erro} />
+      ) : produtos.length === 0 ? (
+        <EmptyState
+          icone={Boxes}
+          titulo="Nenhum produto ainda"
+          descricao="Cadastre produtos e ative o controle de estoque na edição de cada um para acompanhá-los aqui."
+          cta={{ label: 'Cadastrar produto', href: '/produtos/novo' }}
+        />
+      ) : (
+        <PainelEstoque produtos={produtos} />
+      )}
     </div>
   )
 }
