@@ -16,11 +16,11 @@ export function StoreHeader({ store }: { store: Store }) {
   const fretGratis = store.taxa_entrega === 0
   const inicial = (store.nome ?? '?').charAt(0).toUpperCase()
 
+  // Gateway-only: só métodos online aparecem na info da loja (política
+  // Mallevo, ver docs/storefront/05-stage-3-storefront.md §3d).
   const metodos: string[] = [
-    store.aceita_dinheiro ? 'Dinheiro' : null,
+    store.aceita_cartao_online ? 'Cartão de crédito' : null,
     store.aceita_pix ? 'Pix' : null,
-    store.aceita_cartao_maquininha ? 'Cartão na entrega' : null,
-    store.aceita_cartao_online ? 'Online (cartão / Pix)' : null,
   ].filter((m): m is string => m !== null)
 
   return (

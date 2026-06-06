@@ -27,11 +27,11 @@ import type { Endereco } from '@mallevo/types'
 
 const { colors } = consumerDesign
 
-type FormaPagamento =
-  | 'online_cartao'
-  | 'online_pix'
-  | 'dinheiro'
-  | 'cartao_maquininha'
+// Gateway-only (política Mallevo): pagamento sempre via Pagar.me.
+// Dinheiro/maquininha removidos do mobile + storefront. As flags
+// `aceita_dinheiro`/`aceita_cartao_maquininha` permanecem no schema mas
+// são ignoradas pelos consumer-facing apps.
+type FormaPagamento = 'online_cartao' | 'online_pix'
 
 export default function TelaCheckout() {
   const insets = useSafeAreaInsets()
@@ -58,7 +58,6 @@ export default function TelaCheckout() {
     useState<FormaPagamento>('online_cartao')
   const [installments, setInstallments] = useState(1)
   const [dadosCartao, setDadosCartao] = useState<DadosCartao | null>(null)
-  const [trocoPara, setTrocoPara] = useState('')
   const [observacoes, setObservacoes] = useState('')
   const [processando, setProcessando] = useState(false)
   const [etapa, setEtapa] = useState<'revisao' | 'processando' | 'concluido'>(
@@ -75,19 +74,22 @@ export default function TelaCheckout() {
       const { data } = await supabase
         .from('stores')
         .select(
-          'id, nome, taxa_entrega, aceita_dinheiro, aceita_pix, aceita_cartao_maquininha, aceita_cartao_online'
+          'id, nome, taxa_entrega, aceita_pix, aceita_cartao_online'
         )
         .eq('id', store_id!)
         .single()
 
       setLoja(data)
 
+      // Gateway-only: default cartão; se a loja não aceita, cai em Pix;
+      // se nem isso, mantém `online_cartao` (SeletorPagamento renderiza
+      // "Nenhuma forma disponível" e o CTA é bloqueado por validar()).
       if (data?.aceita_cartao_online) {
         setFormaPagamento('online_cartao')
       } else if (data?.aceita_pix) {
         setFormaPagamento('online_pix')
       } else {
-        setFormaPagamento('dinheiro')
+        setFormaPagamento('online_cartao')
       }
     }
 
@@ -109,19 +111,9 @@ export default function TelaCheckout() {
     if (!ehAgendamento && !enderecoSelecionado) {
       return 'Selecione um endereço de entrega.'
     }
-    if (ehAgendamento && formaPagamento !== 'online_cartao' && formaPagamento !== 'online_pix') {
-      return 'Agendamentos só aceitam pagamento online (cartão ou Pix).'
-    }
     if (!formaPagamento) return 'Selecione uma forma de pagamento.'
     if (formaPagamento === 'online_cartao' && !dadosCartao) {
       return 'Preencha os dados do cartão.'
-    }
-    if (
-      formaPagamento === 'dinheiro' &&
-      trocoPara &&
-      parseFloat(trocoPara) < total() / 100
-    ) {
-      return 'Valor do troco deve ser maior que o total do pedido.'
     }
     return null
   }
@@ -139,10 +131,8 @@ export default function TelaCheckout() {
     try {
       if (formaPagamento === 'online_cartao') {
         await fluxoCartao()
-      } else if (formaPagamento === 'online_pix') {
-        await fluxoPix()
       } else {
-        await fluxoPagamentoOffline()
+        await fluxoPix()
       }
     } catch (e: any) {
       Alert.alert('Erro', e.message ?? 'Não foi possível processar o pedido.')
@@ -240,75 +230,6 @@ export default function TelaCheckout() {
     router.replace(`/checkout/pix?order_id=${resultado.order_id}`)
   }
 
-  async function fluxoPagamentoOffline() {
-    if (ehAgendamento) {
-      throw new Error('Agendamentos só aceitam pagamento online.')
-    }
-    const session = await obterSessaoOuFalhar()
-
-    const { data: consumer_data } = await supabase
-      .from('consumers')
-      .select('id')
-      .eq('user_id', session.user.id)
-      .single()
-
-    if (!consumer_data) throw new Error('Perfil do consumidor não encontrado.')
-
-    const { data: pedido, error: pedidoError } = await supabase
-      .from('orders')
-      .insert({
-        consumer_id: consumer_data.id,
-        store_id: store_id!,
-        tenant_id: loja.tenant_id,
-        status: 'novo',
-        payment_status: 'pendente',
-        forma_pagamento: formaPagamento!,
-        subtotal: subtotal(),
-        taxa_entrega: store_taxa_entrega,
-        total: total(),
-        platform_fee_amount: 100,
-        endereco_entrega: enderecoSelecionado as any,
-        observacoes: observacoes.trim() || null,
-        troco_para: trocoPara
-          ? Math.round(parseFloat(trocoPara) * 100)
-          : null,
-      })
-      .select('id')
-      .single()
-
-    if (pedidoError) throw new Error(pedidoError.message)
-
-    const orderItems = itens.map((i) => {
-      const precoExtra =
-        i.modifiers?.reduce((acc, m) => acc + m.preco_extra, 0) ?? 0
-      const precoUnit = i.preco + precoExtra
-      return {
-        order_id: pedido.id,
-        product_id: i.product_id,
-        variant_id: i.variant?.variant_id ?? null,
-        nome: i.nome,
-        preco_unit: precoUnit,
-        quantidade: i.quantidade,
-        subtotal: precoUnit * i.quantidade,
-        observacoes: i.observacoes ?? null,
-        modifiers:
-          i.modifiers && i.modifiers.length > 0
-            ? i.modifiers.map((m) => ({
-                modifier_id: m.modifier_id,
-                nome: m.nome,
-                preco_extra: m.preco_extra,
-              }))
-            : null,
-      }
-    })
-
-    await supabase.from('order_items').insert(orderItems)
-
-    limparCarrinho()
-    setPedidoAtivo(pedido.id)
-    setEtapa('concluido')
-    router.replace(`/pedido/${pedido.id}`)
-  }
 
   if (etapa === 'processando') {
     return (
@@ -344,10 +265,7 @@ export default function TelaCheckout() {
     if (formaPagamento === 'online_cartao') {
       return `Pagar ${formatarReais(total())} em ${installments}×`
     }
-    if (formaPagamento === 'online_pix') {
-      return `Gerar Pix de ${formatarReais(total())}`
-    }
-    return `Fazer pedido — ${formatarReais(total())}`
+    return `Gerar Pix de ${formatarReais(total())}`
   })()
 
   const qtdTotal = itens.reduce((a, i) => a + i.quantidade, 0)
@@ -481,17 +399,6 @@ export default function TelaCheckout() {
           </>
         )}
 
-        {formaPagamento === 'dinheiro' && (
-          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-            <Input
-              rotulo="Troco para quanto? (opcional)"
-              valor={trocoPara}
-              aoMudar={setTrocoPara}
-              placeholder={`Ex: ${formatarReais(total() + 500)}`}
-              tipo="numero"
-            />
-          </View>
-        )}
 
         <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
           <Input

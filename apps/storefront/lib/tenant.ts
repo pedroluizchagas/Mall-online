@@ -20,9 +20,10 @@ export type Store = {
   horarios: unknown | null
   taxa_entrega: number | null
   tempo_entrega: string | null
-  aceita_dinheiro: boolean | null
+  // Gateway-only (storefront): `aceita_dinheiro`/`aceita_cartao_maquininha`
+  // permanecem no schema mas não são expostas aqui — política Mallevo,
+  // ver docs/storefront/05-stage-3-storefront.md §3d.
   aceita_pix: boolean | null
-  aceita_cartao_maquininha: boolean | null
   aceita_cartao_online: boolean | null
   categoria_id: string | null
   theme: unknown | null
@@ -54,7 +55,7 @@ export const getStore = cache(async (slug: string | null): Promise<Store> => {
   const { data, error } = await supabase
     .from('public_catalog_stores')
     .select(
-      'id, slug, nome, descricao, logo_url, banner_url, telefone, horarios, taxa_entrega, tempo_entrega, aceita_dinheiro, aceita_pix, aceita_cartao_maquininha, aceita_cartao_online, categoria_id, theme'
+      'id, slug, nome, descricao, logo_url, banner_url, telefone, horarios, taxa_entrega, tempo_entrega, aceita_pix, aceita_cartao_online, categoria_id, theme'
     )
     .eq('slug', slug)
     .single()
