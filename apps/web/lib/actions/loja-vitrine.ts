@@ -135,7 +135,6 @@ export async function publicarVitrine(formData: FormData): Promise<ResultadoAcao
   if (error) return { erro: error.message }
 
   revalidatePath('/minha-loja')
-  if (loja.slug) revalidatePath(`/loja/${loja.slug}`)
 
   return { sucesso: true }
 }
@@ -162,7 +161,6 @@ export async function alternarStatusLoja(ativo: boolean): Promise<ResultadoAcao>
   if (error) return { erro: error.message }
 
   revalidatePath('/minha-loja')
-  if (loja.slug) revalidatePath(`/loja/${loja.slug}`)
 
   return { sucesso: true }
 }

@@ -17,18 +17,23 @@ export default function LayoutRaiz() {
   useNotificacaoListener()
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setCarregando(false)
-    })
-
+    // Via única de resolução de sessão. No supabase-js v2, onAuthStateChange
+    // dispara INITIAL_SESSION com a sessão atual logo na inscrição, cobrindo o
+    // boot. Não usar getSession() em paralelo: a segunda via não tem catch e,
+    // quando o refresh token persistido está inválido (Invalid Refresh Token),
+    // `setCarregando(false)` pode nunca rodar e o app trava no splash.
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setUser(session?.user ?? null)
-
-      if (session?.user) {
-        await registrarPushToken(session.user.id, null, 'consumer')
+      try {
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          await registrarPushToken(session.user.id, null, 'consumer')
+        }
+      } catch (error) {
+        console.error('Falha ao atualizar autenticacao do consumer:', error)
+      } finally {
+        setCarregando(false)
       }
     })
 
@@ -42,7 +47,19 @@ export default function LayoutRaiz() {
           headerShown: false,
           contentStyle: { backgroundColor: colors.canvas },
         }}
-      />
+      >
+        {/*
+         * `presentation` é prop de montagem do native-stack: alterá-la em
+         * runtime força remontar a tela. Por isso o modal do checkout é
+         * declarado aqui, estático — declarar via <Stack.Screen> dentro da
+         * própria tela criava um loop de remontagem (abre cartão → pix → repete).
+         */}
+        <Stack.Screen name="checkout" options={{ presentation: 'modal' }} />
+        <Stack.Screen
+          name="checkout/pix"
+          options={{ presentation: 'modal' }}
+        />
+      </Stack>
       <StatusBar style="dark" />
       {splashVisivel && (
         <SplashAnimado onFim={() => setSplashVisivel(false)} />

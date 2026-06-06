@@ -1,10 +1,10 @@
 import '../global.css'
-import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, Dimensions } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import { StyleSheet } from 'react-native'
 import { Stack } from 'expo-router'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import * as SplashScreen from 'expo-splash-screen'
-import LottieView from 'lottie-react-native'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,9 +17,9 @@ import { courierDesign } from '@/lib/courier-design'
 
 SplashScreen.preventAutoHideAsync()
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const LOTTIE_W = SCREEN_WIDTH * 0.72
-const LOTTIE_H = LOTTIE_W * (1024 / 1280)
+// Splash mudo por padrão: tocar áudio a cada abertura do app é intrusivo.
+// Trocar para false caso a trilha do vídeo deva ser ouvida no boot.
+const MUDO = true
 
 export default function LayoutRaiz() {
   const { setUser, setCourier, setCarregando } = useAuthStore()
@@ -32,25 +32,11 @@ export default function LayoutRaiz() {
   }, [])
 
   useEffect(() => {
-    supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
-        try {
-          setUser(session?.user ?? null)
-          if (session?.user) {
-            await carregarCourier(session.user.id)
-          }
-        } catch (error) {
-          console.error('Falha ao carregar sessao inicial do courier:', error)
-          setCourier(null)
-        } finally {
-          setCarregando(false)
-        }
-      })
-      .catch((error) => {
-        console.error('Falha ao verificar sessao:', error)
-        setCarregando(false)
-      })
-
+    // Via única de resolução de sessão. No supabase-js v2, onAuthStateChange
+    // dispara INITIAL_SESSION com a sessão atual logo na inscrição, cobrindo o
+    // boot. Não usar getSession() em paralelo: duas vias liberariam `carregando`
+    // em momentos diferentes (uma com courier ainda null), causando um redirect
+    // transitório /(auth)/cadastro -> /(tabs) e o aviso "GO_BACK not handled".
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         try {
@@ -103,39 +89,46 @@ export default function LayoutRaiz() {
 function SplashAnimacao({ onConcluido }: { onConcluido: () => void }) {
   const { colors } = courierDesign
   const opacidade = useSharedValue(1)
+  const fechado = useRef(false)
 
   const estiloAnimado = useAnimatedStyle(() => ({
     opacity: opacidade.value,
   }))
 
-  function handleAnimacaoFim() {
-    opacidade.value = withTiming(0, { duration: 480 })
-    setTimeout(onConcluido, 480)
-  }
+  const player = useVideoPlayer(
+    require('../assets/mallevo-copa.mp4'),
+    (p) => {
+      p.loop = false
+      p.muted = MUDO
+      p.play()
+    },
+  )
+
+  useEffect(() => {
+    function handleAnimacaoFim() {
+      if (fechado.current) return
+      fechado.current = true
+      opacidade.value = withTiming(0, { duration: 480 })
+      setTimeout(onConcluido, 480)
+    }
+
+    const sub = player.addListener('playToEnd', handleAnimacaoFim)
+    // Salvaguarda: se o evento de fim não disparar, não travar o app no splash.
+    const timeout = setTimeout(handleAnimacaoFim, 10000)
+    return () => {
+      sub.remove()
+      clearTimeout(timeout)
+    }
+  }, [])
 
   return (
-    <Animated.View style={[styles.overlay, { backgroundColor: colors.surfaceDark }, estiloAnimado]}>
-      <LottieView
-        source={require('../assets/Food Courier.json')}
-        autoPlay
-        loop={false}
-        onAnimationFinish={handleAnimacaoFim}
-        style={{ width: LOTTIE_W, height: LOTTIE_H }}
-        resizeMode="contain"
+    <Animated.View style={[styles.overlay, { backgroundColor: colors.splash }, estiloAnimado]}>
+      <VideoView
+        player={player}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        nativeControls={false}
       />
-
-      <View style={styles.branding}>
-        <Text style={[styles.brandingTitulo, { color: colors.accent }]}>
-          Mallevo
-        </Text>
-        <Text style={[styles.brandingSubtitulo, { color: '#6B6E75' }]}>
-          Entregas
-        </Text>
-      </View>
-
-      <View style={[styles.indicador, { backgroundColor: colors.accentSoft }]}>
-        <View style={[styles.indicadorBarra, { backgroundColor: colors.accent }]} />
-      </View>
     </Animated.View>
   )
 }
@@ -145,34 +138,5 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  branding: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  brandingTitulo: {
-    fontSize: 32,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-  },
-  brandingSubtitulo: {
-    fontSize: 13,
-    fontWeight: '500',
-    marginTop: 3,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  indicador: {
-    position: 'absolute',
-    bottom: 60,
-    width: 48,
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  indicadorBarra: {
-    height: '100%',
-    width: '100%',
-    borderRadius: 2,
   },
 })

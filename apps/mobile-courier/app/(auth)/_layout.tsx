@@ -3,6 +3,11 @@ import { View, ActivityIndicator } from 'react-native'
 import { useAuthStore } from '@/store/useAuthStore'
 import { courierDesign } from '@/lib/courier-design'
 
+// Garante que `entrar` (login) seja sempre a rota base deste grupo. Sem isso,
+// um <Redirect> direto para /(auth)/cadastro deixa a pilha vazia e qualquer
+// router.back() dispara "GO_BACK was not handled".
+export const unstable_settings = { initialRouteName: 'entrar' }
+
 export default function LayoutAuth() {
   const { user, courier, carregando } = useAuthStore()
   const { colors } = courierDesign

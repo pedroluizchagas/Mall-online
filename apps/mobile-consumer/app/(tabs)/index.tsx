@@ -43,11 +43,11 @@ interface Loja {
  * título/subtítulo abaixo (na ordem da array).
  */
 const SECOES = [
-  { titulo: 'Praça de Alimentação', subtitulo: 'Restaurantes, fast food e cafés' },
-  { titulo: 'Essenciais do Dia a Dia', subtitulo: 'Mercado, farmácia e bebidas' },
-  { titulo: 'Moda & Beleza', subtitulo: 'Roupas, calçados e cosméticos' },
-  { titulo: 'Tecnologia & Eletrônicos', subtitulo: 'Celulares, informática e games' },
-  { titulo: 'Casa & Vida', subtitulo: 'Decoração, pet shop e papelaria' },
+  { titulo: 'Praça de Alimentação', subtitulo: 'Piso Térreo · Restaurantes e cafés' },
+  { titulo: 'Essenciais do Dia a Dia', subtitulo: 'Piso Térreo · Mercado, farmácia e bebidas' },
+  { titulo: 'Moda & Beleza', subtitulo: 'Piso 1 · Roupas, calçados e cosméticos' },
+  { titulo: 'Tecnologia & Eletrônicos', subtitulo: 'Piso 2 · Celulares, informática e games' },
+  { titulo: 'Casa & Vida', subtitulo: 'Piso 3 · Decoração, pet shop e papelaria' },
 ] as const
 
 const SECAO_SIZE = 6

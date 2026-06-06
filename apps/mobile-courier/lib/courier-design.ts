@@ -6,6 +6,7 @@ export const courierDesign = {
     surfaceMuted: '#ECECE9',
     surfaceDark: '#2F3034',
     surfaceDarkSoft: '#3A3B40',
+    splash: '#1A4D3A',
     ink: '#111216',
     inkMuted: '#5E6168',
     inkSoft: '#8B8E94',

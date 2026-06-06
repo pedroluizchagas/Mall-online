@@ -1,0 +1,40 @@
+{
+  "cli": {
+    "version": ">= 18.13.0",
+    "appVersionSource": "local"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "channel": "preview",
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://rtesdjobtgqkiuywadnl.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0ZXNkam9idGdxa2l1eXdhZG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzOTM1MzksImV4cCI6MjA4OTk2OTUzOX0.DNP6R-QjIH6JtkGbFBsJ32jw3NubjY41vuRPjURIWNM",
+        "EXPO_PUBLIC_PROJECT_ID": "4345e7d8-f26a-43d1-93c2-9f9458eb8fb0",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51RAvjnR2LBVsx3rRquVwpbS50mQOEKKnPwxKKBA0BGdi4oBFhQBUb3Xy5pkR2Agag9aY9bUUOF7FPismOKmCk9BJ00KZ8sGqAQ",
+        "EXPO_PUBLIC_USE_MOCK": "true"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://rtesdjobtgqkiuywadnl.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0ZXNkam9idGdxa2l1eXdhZG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzOTM1MzksImV4cCI6MjA4OTk2OTUzOX0.DNP6R-QjIH6JtkGbFBsJ32jw3NubjY41vuRPjURIWNM",
+        "EXPO_PUBLIC_PROJECT_ID": "4345e7d8-f26a-43d1-93c2-9f9458eb8fb0",
+        "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51RAvjnR2LBVsx3rRquVwpbS50mQOEKKnPwxKKBA0BGdi4oBFhQBUb3Xy5pkR2Agag9aY9bUUOF7FPismOKmCk9BJ00KZ8sGqAQ",
+        "EXPO_PUBLIC_USE_MOCK": "false"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

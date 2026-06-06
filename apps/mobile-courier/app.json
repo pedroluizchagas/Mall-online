@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Mallevo Entregador",
+    "name": "Entregadores Mallevo",
     "slug": "mallevo-courier",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1A4D3A"
+      "backgroundColor": "#D8FF3E"
     },
     "ios": {
       "supportsTablet": false,
@@ -20,13 +20,14 @@
         "UIBackgroundModes": [
           "location",
           "fetch"
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1A4D3A"
+        "backgroundColor": "#1B1B1B"
       },
       "package": "com.mallevo.courier",
       "permissions": [
@@ -57,9 +58,15 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "2e1ec895-3230-4fc2-b373-60904bdb4dbd"
+        "projectId": "10df1133-ca54-48b4-a2ea-45039cbcfd8a"
       }
     },
-    "owner": "pedrochagas"
+    "owner": "pedrochagas",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/10df1133-ca54-48b4-a2ea-45039cbcfd8a"
+    }
   }
 }

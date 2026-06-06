@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Mallevo",
-    "slug": "mallevo-consumer",
+    "slug": "mallora-consumer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -15,13 +15,14 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.mallevo.consumer",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Usamos sua localização para mostrar lojas próximas."
+        "NSLocationWhenInUseUsageDescription": "Usamos sua localização para mostrar lojas próximas.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#111216"
+        "backgroundColor": "#6A3DE8"
       },
       "package": "com.mallevo.consumer",
       "permissions": [
@@ -49,6 +50,12 @@
         "projectId": "4345e7d8-f26a-43d1-93c2-9f9458eb8fb0"
       }
     },
-    "owner": "pedrochagas"
+    "owner": "pedrochagas",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4345e7d8-f26a-43d1-93c2-9f9458eb8fb0"
+    }
   }
 }

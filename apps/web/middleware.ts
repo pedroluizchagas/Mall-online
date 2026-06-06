@@ -1,25 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const IGNORED_SUBDOMAINS = new Set(['www', 'app', 'admin', 'api'])
-const MAIN_DOMAINS = ['mallevo.com.br', 'mallevo.localhost']
-
-function getSubdomain(hostname: string): string | null {
-  const host = hostname.split(':')[0]
-
-  for (const domain of MAIN_DOMAINS) {
-    if (host === domain) return null
-    if (host.endsWith(`.${domain}`)) {
-      const sub = host.slice(0, host.length - domain.length - 1)
-      if (!sub.includes('.') && !IGNORED_SUBDOMAINS.has(sub)) {
-        return sub
-      }
-    }
-  }
-
-  return null
-}
-
 function comCookies(destino: URL, response: NextResponse): NextResponse {
   const redirect = NextResponse.redirect(destino)
   response.cookies.getAll().forEach((c) => redirect.cookies.set(c.name, c.value, c))
@@ -27,18 +8,6 @@ function comCookies(destino: URL, response: NextResponse): NextResponse {
 }
 
 export async function middleware(request: NextRequest) {
-  const hostname = request.headers.get('host') || ''
-  const slug = getSubdomain(hostname)
-
-  if (slug) {
-    const url = request.nextUrl.clone()
-    const pathname = url.pathname
-    url.pathname = `/loja/${slug}${pathname === '/' ? '' : pathname}`
-    const response = NextResponse.rewrite(url)
-    response.headers.set('x-subdomain', slug)
-    return response
-  }
-
   const pathname = request.nextUrl.pathname
 
   // Remover a restrição de rota pública para garantir que o token seja sempre renovado

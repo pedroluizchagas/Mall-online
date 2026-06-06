@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native'
-import { router, Stack, useLocalSearchParams } from 'expo-router'
+import { router, useLocalSearchParams } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { formatarReais } from '@mallevo/lib'
 import { HeaderTela } from '@/components/HeaderTela'
@@ -111,7 +111,6 @@ export default function TelaCheckoutPix() {
   if (carregando) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-        <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
         <LoadingState modo="tela" mensagem="Gerando seu Pix..." />
       </View>
     )
@@ -120,7 +119,6 @@ export default function TelaCheckoutPix() {
   if (erro || !pedido) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-        <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
         <HeaderTela variante="voltar" titulo="Pagamento via Pix" />
         <EmptyState
           icone="info"
@@ -139,7 +137,6 @@ export default function TelaCheckoutPix() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-      <Stack.Screen options={{ headerShown: false, presentation: 'modal' }} />
       <HeaderTela variante="voltar" titulo="Pagamento via Pix" />
 
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
