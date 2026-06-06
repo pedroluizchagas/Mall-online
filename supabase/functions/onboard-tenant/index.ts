@@ -297,7 +297,7 @@ Deno.serve(async (req) => {
     // NÃO reverte o onboarding (Stripe/Pagar.me já concluídos). 409 = já existe.
     try {
       const vercelToken = Deno.env.get('VERCEL_TOKEN')
-      const vercelProjectId = Deno.env.get('VERCEL_STOREFRONT_PROJECT_ID')
+      const vercelProjectId = Deno.env.get('VERCEL_PROJECT_ID')
       if (vercelToken && vercelProjectId) {
         const res = await fetch(
           `https://api.vercel.com/v10/projects/${vercelProjectId}/domains`,
@@ -314,7 +314,7 @@ Deno.serve(async (req) => {
           console.error('Vercel addDomain falhou:', storeSlug, await res.text())
         }
       } else {
-        console.warn('VERCEL_TOKEN/VERCEL_STOREFRONT_PROJECT_ID ausentes — domínio da loja não registrado:', storeSlug)
+        console.warn('VERCEL_TOKEN/VERCEL_PROJECT_ID ausentes — domínio da loja não registrado:', storeSlug)
       }
     } catch (err) {
       console.error('Vercel addDomain exception:', storeSlug, err)
