@@ -133,7 +133,7 @@ Refatorar:
 
 | ID | Item | Risco | Status |
 |---|---|---|---|
-| 5.1 | Checklist deploy consolidado em `docs/dev/deploy-checklist.md` | Nulo | ☐ |
+| 5.1 | Checklist deploy consolidado em `docs/dev/deploy-checklist.md` | Nulo | ✅ 2026-06-06 — checklist criado e aterrado no projeto. Auditoria gerou 2 fixes: Realtime de `orders` (migration) e `WEBHOOK_SECRET` no `.env.example` |
 
 ## FASE 6 — Blueprint v2 (pós-deploy)
 
