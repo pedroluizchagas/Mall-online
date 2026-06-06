@@ -39,39 +39,39 @@ export default async function PaginaConfiguracoes() {
           {
             id: 'identificacao',
             label: 'Identificação',
-            render: () => (
+            content: (
               <AbaIdentificacao loja={loja} emailComercial={dadosConta.email} />
             ),
           },
           {
             id: 'localizacao',
             label: 'Localização',
-            render: () => <AbaLocalizacao loja={loja} />,
+            content: <AbaLocalizacao loja={loja} />,
           },
           {
             id: 'horarios',
             label: 'Horários',
-            render: () => <AbaHorarios horarios={loja.horarios} />,
+            content: <AbaHorarios horarios={loja.horarios} />,
           },
           {
             id: 'entrega',
             label: 'Entrega',
-            render: () => <AbaEntrega loja={loja} />,
+            content: <AbaEntrega loja={loja} />,
           },
           {
             id: 'pagamentos',
             label: 'Pagamentos',
-            render: () => <AbaPagamentos loja={loja} />,
+            content: <AbaPagamentos loja={loja} />,
           },
           {
             id: 'recebimentos',
             label: 'Recebimentos',
-            render: () => <AbaRecebimentos tenant={tenant} />,
+            content: <AbaRecebimentos tenant={tenant} />,
           },
           {
             id: 'notificacoes',
             label: 'Notificações',
-            render: () => <AbaNotificacoes />,
+            content: <AbaNotificacoes />,
           },
         ]}
       />

@@ -7,20 +7,23 @@ import { ProdutoForm } from '@/components/dashboard/produto-form'
 export default async function PaginaNovoProduto() {
   const supabase = createSupabaseServer()
 
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
   const { data: storeResult } = await supabase
     .from('stores')
     .select('id')
-    .single()
+    .eq('tenant_id', tenant?.id ?? '')
+    .limit(1)
+    .maybeSingle()
 
   const store = storeResult as any
-  if (!store) redirect('/dashboard/produtos')
+  if (!store) redirect('/produtos')
 
   const { categorias } = await getCategorias()
 
   async function action(_estado: any, formData: FormData) {
     'use server'
     const resultado = await criarProduto(store!.id, formData)
-    if (resultado.sucesso) redirect('/dashboard/produtos')
+    if (resultado.sucesso) redirect('/produtos')
     return resultado
   }
 

@@ -6,7 +6,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 interface AbaDef {
   id: string
   label: string
-  render: () => ReactNode
+  content: ReactNode
 }
 
 export interface AbasProps {
@@ -73,7 +73,7 @@ export function Abas({ defs, searchParam, defaultId }: AbasProps) {
         })}
       </div>
 
-      <div role="tabpanel">{ativa ? ativa.render() : null}</div>
+      <div role="tabpanel">{ativa ? ativa.content : null}</div>
     </div>
   )
 }

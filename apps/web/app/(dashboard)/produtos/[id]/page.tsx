@@ -21,7 +21,7 @@ export default async function PaginaEditarProduto({ params }: Props) {
     .single()
 
   const tenant = tenantResult as any
-  if (!tenant) redirect('/dashboard/produtos')
+  if (!tenant) redirect('/produtos')
 
   const { data: produtoResult } = await supabase
     .from('products')
@@ -45,7 +45,7 @@ export default async function PaginaEditarProduto({ params }: Props) {
   async function action(_estado: any, formData: FormData) {
     'use server'
     const resultado = await atualizarProduto(params.id, formData)
-    if (resultado.sucesso) redirect('/dashboard/produtos')
+    if (resultado.sucesso) redirect('/produtos')
     return resultado
   }
 

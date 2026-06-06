@@ -9,7 +9,13 @@ import { PageHeader } from '@/components/dashboard/page-header'
 export default async function PaginaProdutos() {
   const supabase = createSupabaseServer()
 
-  const { data: store } = await supabase.from('stores').select('id, nome').single()
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  const { data: store } = await supabase
+    .from('stores')
+    .select('id, nome')
+    .eq('tenant_id', tenant?.id ?? '')
+    .limit(1)
+    .maybeSingle()
 
   if (!store) {
     return (

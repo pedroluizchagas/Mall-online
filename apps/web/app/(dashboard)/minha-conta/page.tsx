@@ -29,29 +29,29 @@ export default async function PaginaMinhaConta() {
           {
             id: 'pessoa',
             label: 'Pessoa',
-            render: () => <AbaPessoa dados={dadosConta} />,
+            content: <AbaPessoa dados={dadosConta} />,
           },
           {
             id: 'seguranca',
             label: 'Segurança',
-            render: () => <AbaSeguranca />,
+            content: <AbaSeguranca />,
           },
           {
             id: 'assinatura',
             label: 'Assinatura',
-            render: () => (
+            content: (
               <AbaAssinatura assinatura={dadosAssinatura.assinatura} linkPortal={linkPortal} />
             ),
           },
           {
             id: 'faturas',
             label: 'Faturas',
-            render: () => <AbaFaturas faturas={faturas} />,
+            content: <AbaFaturas faturas={faturas} />,
           },
           {
             id: 'privacidade',
             label: 'Privacidade',
-            render: () => <AbaPrivacidade />,
+            content: <AbaPrivacidade />,
           },
         ]}
       />
