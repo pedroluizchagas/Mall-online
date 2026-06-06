@@ -23,10 +23,11 @@ const schemaEntrega = z.object({
   usa_entregadores_proprios: z.boolean(),
 })
 
+// Gateway-only: o checkout (storefront + mobile) só oferece pagamento online
+// via Pagar.me — cartão (aceita_cartao_online) e Pix (aceita_pix). Dinheiro e
+// maquininha foram removidos do produto; as colunas seguem no schema por compat.
 const schemaPagamentos = z.object({
-  aceita_dinheiro: z.boolean(),
   aceita_pix: z.boolean(),
-  aceita_cartao_maquininha: z.boolean(),
   aceita_cartao_online: z.boolean(),
 })
 
@@ -152,9 +153,7 @@ export async function atualizarMetodosPagamento(
   if (!loja) return { erro: 'Loja não encontrada' }
 
   const dados = schemaPagamentos.safeParse({
-    aceita_dinheiro: formData.get('aceita_dinheiro') === 'true',
     aceita_pix: formData.get('aceita_pix') === 'true',
-    aceita_cartao_maquininha: formData.get('aceita_cartao_maquininha') === 'true',
     aceita_cartao_online: formData.get('aceita_cartao_online') === 'true',
   })
 

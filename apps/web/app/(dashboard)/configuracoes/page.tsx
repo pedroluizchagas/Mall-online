@@ -8,7 +8,6 @@ import { AbaHorarios } from '@/components/dashboard/configuracoes/aba-horarios'
 import { AbaEntrega } from '@/components/dashboard/configuracoes/aba-entrega'
 import { AbaPagamentos } from '@/components/dashboard/configuracoes/aba-pagamentos'
 import { AbaRecebimentos } from '@/components/dashboard/configuracoes/aba-recebimentos'
-import { AbaNotificacoes } from '@/components/dashboard/configuracoes/aba-notificacoes'
 
 export default async function PaginaConfiguracoes() {
   const [dadosLoja, dadosConta] = await Promise.all([
@@ -67,11 +66,6 @@ export default async function PaginaConfiguracoes() {
             id: 'recebimentos',
             label: 'Recebimentos',
             content: <AbaRecebimentos tenant={tenant} />,
-          },
-          {
-            id: 'notificacoes',
-            label: 'Notificações',
-            content: <AbaNotificacoes />,
           },
         ]}
       />

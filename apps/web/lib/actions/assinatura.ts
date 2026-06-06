@@ -82,7 +82,7 @@ export async function getLinkPortalAssinatura() {
   try {
     const sessao = await stripe.billingPortal.sessions.create({
       customer: tenant.stripe_customer_id,
-      return_url: `${process.env.APP_URL}/dashboard/configuracoes/assinatura`,
+      return_url: `${process.env.APP_URL}/minha-conta?aba=assinatura`,
     })
     return sessao.url
   } catch {

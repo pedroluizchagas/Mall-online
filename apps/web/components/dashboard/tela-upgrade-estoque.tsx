@@ -16,7 +16,7 @@ export function TelaUpgradeEstoque({ mensagem }: Props) {
         {mensagem ?? 'O controle de estoque está disponível nos planos Profissional e Premium.'}
       </p>
       <a
-        href="/configuracoes/assinatura"
+        href="/minha-conta?aba=assinatura"
         className="inline-block px-6 py-2.5 rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
         style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
       >

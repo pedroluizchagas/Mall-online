@@ -23,7 +23,7 @@ export function BannerRecebimentosPendente() {
         </div>
       </div>
       <a
-        href="/configuracoes/conta"
+        href="/configuracoes?aba=recebimentos"
         className="flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0"
         style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
       >

@@ -233,8 +233,8 @@ export function PreviewLoja({ loja, produtos }: Props) {
             Editar conteúdo
           </p>
           {[
-            { label: 'Banner e logo', href: '/configuracoes/loja', Icon: Store },
-            { label: 'Horários e entrega', href: '/configuracoes/loja', Icon: Clock },
+            { label: 'Banner e logo', href: '/minha-loja', Icon: Store },
+            { label: 'Horários e entrega', href: '/configuracoes?aba=horarios', Icon: Clock },
             { label: 'Produtos', href: '/produtos', Icon: Package },
           ].map(({ label, href, Icon }) => (
             <Link

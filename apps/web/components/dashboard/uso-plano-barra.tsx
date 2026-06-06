@@ -34,7 +34,7 @@ export function UsoPlanoBarra({ atual, maximo, percentual }: Props) {
       {percentual >= 90 && (
         <p className="text-xs mt-2" style={{ color: 'var(--err)' }}>
           Limite quase atingido.{' '}
-          <a href="/configuracoes/assinatura" className="underline">
+          <a href="/minha-conta?aba=assinatura" className="underline">
             Faça upgrade do seu plano.
           </a>
         </p>

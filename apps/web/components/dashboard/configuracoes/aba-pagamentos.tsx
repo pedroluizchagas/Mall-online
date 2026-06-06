@@ -6,24 +6,14 @@ import { atualizarMetodosPagamento } from '@/lib/actions/lojas'
 
 const METODOS = [
   {
-    id: 'aceita_dinheiro',
-    label: 'Dinheiro na entrega',
-    descricao: 'Entregador recebe em dinheiro e faz o troco',
+    id: 'aceita_cartao_online',
+    label: 'Cartão de crédito',
+    descricao: 'Pagamento online via Pagar.me — exige conta de recebimentos ativa',
   },
   {
     id: 'aceita_pix',
-    label: 'PIX na entrega',
-    descricao: 'Consumidor paga por PIX direto ao entregador',
-  },
-  {
-    id: 'aceita_cartao_maquininha',
-    label: 'Cartão na maquininha',
-    descricao: 'Entregador leva a maquininha para o pagamento',
-  },
-  {
-    id: 'aceita_cartao_online',
-    label: 'Cartão ou PIX online',
-    descricao: 'Pagamento via Pagar.me no app — necessário conta de recebimentos ativa',
+    label: 'Pix',
+    descricao: 'Pagamento online via Pagar.me — exige conta de recebimentos ativa',
   },
 ]
 
@@ -44,10 +34,8 @@ function BotaoSalvar() {
 export function AbaPagamentos({ loja }: { loja: any }) {
   const [estado, dispatch] = useFormState(atualizarMetodosPagamento, null)
   const [metodos, setMetodos] = useState({
-    aceita_dinheiro: loja.aceita_dinheiro as boolean,
-    aceita_pix: loja.aceita_pix as boolean,
-    aceita_cartao_maquininha: loja.aceita_cartao_maquininha as boolean,
     aceita_cartao_online: loja.aceita_cartao_online as boolean,
+    aceita_pix: loja.aceita_pix as boolean,
   })
 
   return (

@@ -30,7 +30,7 @@ export function SetupWizard({
       id: 'recebimentos',
       titulo: 'Configurar recebimentos',
       descricao: 'Conclua a verificação Pagar.me para receber pagamentos.',
-      href: '/configuracoes/conta',
+      href: '/configuracoes?aba=recebimentos',
       icone: CreditCard,
       concluido: recebimentosOk,
     },

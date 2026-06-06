@@ -134,7 +134,7 @@ export async function atualizarDadosPessoais(
 
   if (errAuth || errTenant) return { erro: 'Erro ao atualizar dados. Tente novamente.' }
 
-  revalidatePath('/configuracoes/conta')
+  revalidatePath('/minha-conta')
   return { sucesso: true }
 }
 

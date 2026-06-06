@@ -106,7 +106,7 @@ export default async function LayoutDashboard({
             >
               <p className="text-sm" style={{ color: '#92400e' }}>
                 Sua assinatura está com pagamento em atraso.{' '}
-                <a href="/configuracoes/conta" className="underline font-medium">
+                <a href="/minha-conta?aba=assinatura" className="underline font-medium">
                   Regularize agora
                 </a>
               </p>
@@ -126,7 +126,7 @@ export default async function LayoutDashboard({
                     Reative sua assinatura para continuar usando a plataforma.
                   </p>
                   <a
-                    href="/configuracoes/conta"
+                    href="/minha-conta?aba=assinatura"
                     className="px-6 py-2.5 rounded-full font-bold inline-block transition-colors"
                     style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
                   >
