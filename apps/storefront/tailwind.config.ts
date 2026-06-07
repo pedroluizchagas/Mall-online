@@ -19,35 +19,39 @@ const config: Config = {
         mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
       },
       colors: {
-        // Backgrounds claros
-        canvas: '#F3F3F1',
-        canvasAlt: '#E8E8E3',
-        surface: '#FFFFFF',
-        surfaceMuted: '#ECECE9',
-        // Backgrounds escuros (destaque)
+        // Tokens dirigidos por StoreTheme: `var(--token, <fallback Mallevo>)`.
+        // Sem tema injetado, o fallback reproduz exatamente a paleta Mallevo
+        // (ver app/globals.css :root). Lojas com preset v2 sobrescrevem as vars
+        // no wrapper StoreThemeRoot. Ver docs/store-theme/04 §4.3.
+        canvas: 'var(--bg, #F3F3F1)',
+        canvasAlt: 'var(--surface-alt, #E8E8E3)',
+        surface: 'var(--surface, #FFFFFF)',
+        surfaceMuted: 'var(--surface-alt, #ECECE9)',
+        // Superfícies escuras fixas (banner/auth) — fora do escopo de tema.
         surfaceDark: '#2F3034',
         surfaceDarkSoft: '#3A3B40',
         // Texto
         ink: {
-          DEFAULT: '#111216',
-          muted: '#5E6168',
+          DEFAULT: 'var(--ink, #111216)',
+          muted: 'var(--ink-muted, #5E6168)',
           soft: '#8B8E94',
         },
         // Linhas
         line: {
-          DEFAULT: '#E5E5E0',
+          DEFAULT: 'var(--line, #E5E5E0)',
           dark: '#4A4B50',
         },
-        // Accent (CTA primário)
+        // Accent (CTA primário) + cor de texto legível sobre ele (accent-ink).
         accent: {
-          DEFAULT: '#D8FF3E',
-          strong: '#C8F22E',
-          soft: 'rgba(216, 255, 62, 0.18)',
+          DEFAULT: 'var(--accent, #D8FF3E)',
+          strong: 'var(--accent, #C8F22E)',
+          soft: 'var(--accent-soft, rgba(216, 255, 62, 0.18))',
+          ink: 'var(--accent-ink, #111216)',
         },
         // Status
-        warning: '#F2B84B',
-        success: '#8ED14F',
-        danger: '#FF6D5E',
+        warning: 'var(--warning, #F2B84B)',
+        success: 'var(--success, #8ED14F)',
+        danger: 'var(--danger, #FF6D5E)',
         info: '#5BB7FF',
       },
       borderRadius: {

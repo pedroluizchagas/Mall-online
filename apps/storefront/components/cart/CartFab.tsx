@@ -38,10 +38,10 @@ export function CartFab() {
           aria-label="Abrir sacola"
           className="pointer-events-auto flex h-14 w-full max-w-md items-center justify-between rounded-pill bg-accent px-5 shadow-floating transition-opacity hover:opacity-90"
         >
-          <span className="text-[15px] font-extrabold text-ink">
+          <span className="text-[15px] font-extrabold text-accent-ink">
             {totalItens} {totalItens === 1 ? 'item' : 'itens'}
           </span>
-          <span className="text-[15px] font-extrabold text-ink">
+          <span className="text-[15px] font-extrabold text-accent-ink">
             {formatarReais(total)}
           </span>
         </button>

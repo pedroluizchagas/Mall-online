@@ -23,6 +23,22 @@ function isArquetipo(value: unknown): value is ArquetipoCodigo {
 }
 
 /**
+ * `true` apenas quando o valor cru de `stores.theme` é um StoreThemeConfig v2
+ * com `preset` válido — ou seja, o lojista ESCOLHEU uma pele explicitamente.
+ *
+ * Use para decidir se vale sobrescrever os tokens default da plataforma: tema
+ * nulo ou legado (v1) → `false`, mantém a aparência Mallevo padrão; só presets
+ * v2 explícitos disparam a tematização da loja.
+ */
+export function hasExplicitPreset(raw: unknown): boolean {
+  return (
+    !!raw &&
+    typeof raw === 'object' &&
+    isArquetipo((raw as Record<string, unknown>).preset)
+  )
+}
+
+/**
  * Normaliza qualquer valor cru de `stores.theme` (null, v1 ou v2) num
  * `StoreThemeConfig` v2 válido. Defensivo: nunca lança.
  */

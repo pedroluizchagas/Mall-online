@@ -6,6 +6,7 @@ import { StoreHeader } from '@/components/StoreHeader'
 import { CartFab } from '@/components/cart/CartFab'
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { CatalogClient } from '@/components/store/CatalogClient'
+import { StoreThemeRoot } from '@/components/store/StoreThemeRoot'
 
 /**
  * Catálogo da loja (Stage 3a). Server Component, host-based (D1):
@@ -64,7 +65,7 @@ export default async function HomePage() {
   const detalhes = await carregarDetalhesCatalogo(produtoIds)
 
   return (
-    <main className="min-h-screen bg-canvas pb-24">
+    <StoreThemeRoot theme={store.theme} className="min-h-screen bg-canvas pb-24">
       <StoreHeader store={store} />
 
       <CatalogClient
@@ -79,6 +80,6 @@ export default async function HomePage() {
 
       <CartPersistence />
       <CartFab />
-    </main>
+    </StoreThemeRoot>
   )
 }

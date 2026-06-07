@@ -9,14 +9,15 @@
 - [ ] **(Fase 3)** `packages/types/src/domain.ts`: consolidar/depreciar `TemplateVitrine`/`PaletaVitrine`/`StoreTheme` v1 a favor do `StoreThemeConfig` — adiado para não quebrar o `minha-loja-editor.tsx` agora.
 - **Saída:** `resolveTheme(raw) → ThemeTokens` confiável e compartilhado, com mapeamento categoria→arquétipo testado.
 
-## Fase 1 — Storefront aplica o tema (web)
+## Fase 1 — Storefront aplica o tema (web) ✅ IMPLEMENTADA
 **Objetivo:** a vitrine web veste a loja. Maior impacto visível, menor superfície (single-tenant por request).
-- [ ] Layout raiz injeta CSS vars via `toCssVars` ([04 §4.3]).
-- [ ] `tailwind.config.ts`: cores fixas → `var(--*)`.
-- [ ] `apps/storefront/lib/tenant.ts`: tipar `theme` corretamente (hoje `unknown`) e repassar.
-- [ ] Tematizar `StoreHeader`, `ProductCard`, `ProductModal`, `MenuSection` ([05 §5.1]).
-- [ ] Fonts por arquétipo via `next/font`.
-- **Saída:** duas lojas com presets diferentes renderizam visivelmente diferentes no storefront.
+- [x] `components/store/StoreThemeRoot.tsx`: wrapper `<main>` injeta CSS vars via `toCssVars`/`resolveTheme` ([04 §4.3]). Ligado em `app/page.tsx`.
+- [x] `tailwind.config.ts`: cores → `var(--token, <fallback Mallevo>)`. `app/globals.css` `:root` redefinido com os nomes de token de `toCssVars` (paleta Mallevo como default).
+- [x] `lib/tenant.ts` já expõe `theme` (repassado ao wrapper; tipado `unknown` e resolvido na lib).
+- [x] Componentes do catálogo tematizam por classe semântica sem mudança de markup (`StoreHeader`, `ProductCard`, `MenuSection`). `ProductModal`/CTAs: idioma "selecionado/primário" (`bg-ink text-accent`, que quebra em ~9/11 presets) migrado para `bg-accent text-accent-ink`; botões `bg-accent` usam `text-accent-ink`.
+- [x] **Guard anti-regressão:** só sobrescreve quando há preset v2 explícito (`hasExplicitPreset`). Lojas sem tema / legado v1 → paleta Mallevo intacta. Build de produção + typecheck OK.
+- [ ] **(adiado)** Fonts por arquétipo via `next/font` — tokens `--font-display/--font-body` já emitidos; carregamento dinâmico fica para refinamento (Fase 4).
+- **Saída:** loja com `{v:2,preset:'noir'}` e outra com `{v:2,preset:'heritage'}` renderizam visivelmente diferentes; lojas atuais inalteradas.
 
 ## Fase 2 — App consumidor aplica o tema (mobile)
 **Objetivo:** "o app se transforma na loja" ao entrar nela.

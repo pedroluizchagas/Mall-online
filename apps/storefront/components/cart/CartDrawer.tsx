@@ -116,7 +116,7 @@ export function CartDrawer({ onFechar }: { onFechar: () => void }) {
               onFechar()
               router.push('/checkout')
             }}
-            className="mt-1 h-12 w-full rounded-pill bg-accent text-sm font-extrabold text-ink transition-opacity hover:opacity-90"
+            className="mt-1 h-12 w-full rounded-pill bg-accent text-sm font-extrabold text-accent-ink transition-opacity hover:opacity-90"
           >
             Finalizar pedido
           </button>

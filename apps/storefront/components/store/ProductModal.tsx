@@ -451,7 +451,7 @@ export function ProductModal({
             type="button"
             onClick={handleAdicionar}
             disabled={!!erroValidacao}
-            className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-ink transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {temVariants && !selecaoVariantCompleta
               ? optionGroups.length > 1
@@ -489,7 +489,7 @@ function QtyButton({
       onClick={onClick}
       disabled={desabilitado}
       className={`flex h-9 w-9 items-center justify-center rounded-full text-lg font-extrabold transition-opacity hover:opacity-75 disabled:opacity-40 ${
-        primario ? 'bg-ink text-accent' : 'bg-surfaceMuted text-ink'
+        primario ? 'bg-accent text-accent-ink' : 'bg-surfaceMuted text-ink'
       }`}
     >
       {children}
@@ -565,7 +565,7 @@ function ChipOption({
       aria-pressed={selecionada}
       className={`flex items-center gap-2 rounded-pill px-3 py-2 text-[13px] font-bold transition-opacity hover:opacity-90 disabled:cursor-not-allowed ${
         selecionada
-          ? 'border-2 border-ink bg-ink text-accent'
+          ? 'border-2 border-accent bg-accent text-accent-ink'
           : desabilitado
             ? 'border border-line bg-surface text-ink-soft line-through opacity-40'
             : 'border border-line bg-surface text-ink'
@@ -698,7 +698,7 @@ function SeletorIndicador({
     <span
       aria-hidden
       className={`flex h-5 w-5 items-center justify-center rounded-sm border-2 ${
-        selecionado ? 'border-ink bg-ink' : 'border-line'
+        selecionado ? 'border-accent bg-accent' : 'border-line'
       }`}
     >
       {selecionado ? (
@@ -711,7 +711,7 @@ function SeletorIndicador({
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="text-accent"
+          className="text-accent-ink"
         >
           <path d="M5 13l4 4L19 7" />
         </svg>

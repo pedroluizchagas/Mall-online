@@ -88,7 +88,7 @@ export function TrocaLojaDialog() {
           <button
             type="button"
             onClick={confirmar}
-            className="h-11 flex-1 rounded-pill bg-accent text-sm font-extrabold text-ink transition-opacity hover:opacity-90"
+            className="h-11 flex-1 rounded-pill bg-accent text-sm font-extrabold text-accent-ink transition-opacity hover:opacity-90"
           >
             Trocar
           </button>

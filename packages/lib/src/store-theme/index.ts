@@ -31,7 +31,7 @@ export {
   getArquetiposOferecidos,
 } from './mapping'
 
-export { normalizeThemeConfig, resolveTheme } from './resolve'
+export { hasExplicitPreset, normalizeThemeConfig, resolveTheme } from './resolve'
 export { toCssVars, RADIUS_PX } from './to-css-vars'
 export { contrastRatio, ensureAccentInk, pickInkOn } from './contrast'
 

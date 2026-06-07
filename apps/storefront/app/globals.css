@@ -3,17 +3,21 @@
 @tailwind utilities;
 
 :root {
-  /* Tokens traduzidos de consumer-design.ts (referência: lib/consumer-design.ts) */
-  --canvas: #f3f3f1;
-  --canvas-alt: #e8e8e3;
+  /* Paleta Mallevo padrão (fora de loja / loja sem preset v2). Os nomes das
+     vars espelham a saída de toCssVars (@mallevo/lib) — uma loja com preset
+     explícito sobrescreve estas no wrapper StoreThemeRoot. */
+  --bg: #f3f3f1;
   --surface: #ffffff;
-  --surface-muted: #ecece9;
+  --surface-alt: #ecece9;
   --ink: #111216;
   --ink-muted: #5e6168;
-  --ink-soft: #8b8e94;
   --line: #e5e5e0;
   --accent: #d8ff3e;
-  --accent-strong: #c8f22e;
+  --accent-ink: #111216;
+  --accent-soft: rgba(216, 255, 62, 0.18);
+  --success: #8ed14f;
+  --warning: #f2b84b;
+  --danger: #ff6d5e;
 }
 
 *,
@@ -26,7 +30,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: var(--canvas);
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--font-jakarta), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
