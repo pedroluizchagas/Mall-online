@@ -48,4 +48,3 @@ Ao concluir, o onboarding chama a action de publicar tema — evolução de `app
 ## 6.6 Edição posterior
 
 Tudo isso continua acessível fora do onboarding, na página **Minha Loja** do dashboard (`minha-loja-editor.tsx`), para o lojista reabrir e ajustar template/paleta/branding quando quiser.
-</content>

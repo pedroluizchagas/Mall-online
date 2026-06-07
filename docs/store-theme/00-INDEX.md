@@ -42,5 +42,4 @@ Ver detalhes em [01-conceito-e-relacao-templates.md](01-conceito-e-relacao-templ
 - Os designs premium das referências (`design-lojas.md`) nunca foram traduzidos em código.
 
 Este conjunto de docs corrige isso: transforma o `StoreTheme` num sistema de tokens reais, aplicado de ponta a ponta.
-</content>
 </invoke>

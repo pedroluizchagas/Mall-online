@@ -22,16 +22,18 @@ resolveTheme(theme)  ──►  ThemeTokens completos   [packages/lib/src/store-
 
 ## 4.2 Pacote compartilhado
 
-Novo módulo `packages/lib/src/store-theme/`, espelhando a organização de `packages/lib/src/templates/`:
+Módulo **implementado** em `packages/lib/src/store-theme/`, espelhando a organização de `packages/lib/src/templates/` e exportado via `@mallevo/lib`:
 
 ```
 packages/lib/src/store-theme/
-├── types.ts        // ThemeTokens, StoreTheme, ArquetipoCodigo, FontSpec
-├── presets.ts      // os 6 presets default (tabela 03 §3.3)
-├── resolve.ts      // resolveTheme(theme): ThemeTokens  + migração v1→v2
-├── to-css-vars.ts  // ThemeTokens → Record<string,string> de CSS custom properties
-├── provider.tsx    // <StoreThemeProvider> + useStoreTheme()  (web + RN, igual a templates/provider.tsx)
-└── __tests__/
+├── types.ts        // ThemeTokens, StoreThemeConfig, ArquetipoCodigo, Archetype, FontSpec
+├── presets.ts      // os 11 presets default (ARQUETIPOS) — tabela 03 §3.3
+├── mapping.ts      // CATEGORIA_SLUG_TO_ARQUETIPO (default + alternativas) + helpers
+├── contrast.ts     // WCAG: contrastRatio, ensureAccentInk (corrige accentInk ilegível)
+├── resolve.ts      // resolveTheme(raw): ThemeTokens  + normalizeThemeConfig (migração v1→v2)
+├── to-css-vars.ts  // ThemeTokens → CSS custom properties (web)
+├── provider.tsx    // <StoreThemeProvider> + useStoreTheme()  (web + RN)
+└── __tests__/      // cobertura de categorias + resolve + contraste (15 testes)
 ```
 
 `provider.tsx` segue o padrão já provado em `packages/lib/src/templates/provider.tsx` (usa `createElement`, compatível com Next.js e Expo).
@@ -85,4 +87,3 @@ Componentes deixam de importar `consumerDesign.colors.X` e passam a ler `useStor
 - `theme` v1 antigo → `resolveTheme` migra (mapa em [07](07-roadmap-implementacao.md)).
 - Override com cor inválida → ignora o override e usa o default do preset (validar no `resolve`).
 - `accentInk` é sempre derivado/validado para contraste mínimo sobre `accent` (acessibilidade — ver [05 §5.5]).
-</content>

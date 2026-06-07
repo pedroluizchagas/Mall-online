@@ -55,4 +55,3 @@ A **listagem do catálogo** também pode variar de estrutura por nicho (lista de
 - Contraste mínimo AA entre `ink`/`bg` e `accentInk`/`accent`. O `resolve` valida e corrige `accentInk` (preto/branco) automaticamente quando o override do lojista falha no contraste.
 - Tamanhos de fonte mínimos preservados independentemente de `scale`.
 - `mode: dark` não pode reduzir contraste de status (success/warning/danger fixos).
-</content>

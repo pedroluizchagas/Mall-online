@@ -2,12 +2,12 @@
 
 > Ordem de implementação do StoreTheme, das fundações compartilhadas até o onboarding. Cada fase é entregável e testável isoladamente. Nada aqui quebra o `DashboardTemplate`.
 
-## Fase 0 — Fundações compartilhadas (`packages/lib` + `packages/types`)
+## Fase 0 — Fundações compartilhadas (`packages/lib`) ✅ IMPLEMENTADA
 **Objetivo:** o engine existe e é testado, sem ainda ser consumido.
-- [ ] `packages/types/src/domain.ts`: substituir `TemplateVitrine`/`PaletaVitrine`/`StoreTheme` por `ArquetipoCodigo` + `StoreTheme v2` + `ThemeTokens` ([03 §3.5]).
-- [ ] `packages/lib/src/store-theme/`: `types.ts`, `presets.ts` (6 presets — [03 §3.3]), `resolve.ts` (+ migração v1→v2), `to-css-vars.ts`, `provider.tsx`.
-- [ ] Testes unitários de `resolveTheme` (defaults, overrides, theme nulo, migração v1, validação de contraste).
-- **Saída:** `resolveTheme(theme) → ThemeTokens` confiável, compartilhado.
+- [x] `packages/lib/src/store-theme/`: `types.ts`, `presets.ts` (**11 presets** `ARQUETIPOS` — [03 §3.3]), `mapping.ts` (`CATEGORIA_SLUG_TO_ARQUETIPO`, cobertura das 20 categorias), `contrast.ts` (WCAG), `resolve.ts` (`resolveTheme` + `normalizeThemeConfig` migração v1→v2), `to-css-vars.ts`, `provider.tsx`. Exportado via `@mallevo/lib`.
+- [x] Testes unitários (15): cobertura de categorias, defaults/overrides, theme nulo, migração v1, validação de contraste. Typecheck limpo.
+- [ ] **(Fase 3)** `packages/types/src/domain.ts`: consolidar/depreciar `TemplateVitrine`/`PaletaVitrine`/`StoreTheme` v1 a favor do `StoreThemeConfig` — adiado para não quebrar o `minha-loja-editor.tsx` agora.
+- **Saída:** `resolveTheme(raw) → ThemeTokens` confiável e compartilhado, com mapeamento categoria→arquétipo testado.
 
 ## Fase 1 — Storefront aplica o tema (web)
 **Objetivo:** a vitrine web veste a loja. Maior impacto visível, menor superfície (single-tenant por request).
@@ -63,4 +63,3 @@ Paletas v1 (`midnight/ocean/...`) são descartadas (não tinham aplicação real
 - Nenhuma das duas cópias de `consumer-design.ts` é mais a fonte de cor dentro de loja.
 - `theme` nulo nunca quebra a renderização.
 - `DashboardTemplate` e `layoutPdp` seguem funcionando sem alteração.
-</content>

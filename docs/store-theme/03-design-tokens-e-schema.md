@@ -53,7 +53,9 @@ interface FontSpec { family: string; weights: number[] }
 
 ## 3.3 Presets de tokens por arquétipo (valores iniciais)
 
-Pontos de partida — refináveis. Hex derivados da análise das referências em [02](02-arquetipos-de-design.md). Cada arquétipo tem **uma paleta default**; o eixo de paleta troca `bg/surface/ink/accent`.
+> **Implementado:** `packages/lib/src/store-theme/presets.ts` (`ARQUETIPOS`). Os hex abaixo são os valores reais em código — refináveis sem quebra, pois lojas guardam só overrides.
+
+Os **11 arquétipos** ([02](02-arquetipos-de-design.md)). Cada um tem **uma paleta default**; o eixo de paleta troca `bg/surface/ink/accent`. Os 6 primeiros vêm de referência; os 5 últimos (clinic/tech/market/utility/playful) foram desenhados internamente.
 
 ### Heritage (`heritage`)
 ```
@@ -105,11 +107,57 @@ shape: radius round, density comfortable, scale regular
 mode: light
 color: bg #F4F0E9  surface #FBF9F4  ink #2B271F  inkMuted #6E6655
        accent #7C6A4E  accentInk #FFFFFF  line #E3DCCD
-type: display = sans/serif refinada, body = sans
+type: display = "Spectral" (serif), body = "Inter"
 shape: radius soft, density comfortable, scale spacious
 ```
 
-> Semânticos (`success/warning/danger`) ficam fixos no padrão Mallevo em todos os arquétipos para preservar consistência de status (ex.: estado de pedido).
+### Clinic (`clinic`) — farmácia / saúde / veterinária
+```
+mode: light
+color: bg #F4F9F8  surface #FFFFFF  surfaceAlt #E9F3F1  ink #14302C  inkMuted #5A716D
+       accent #12A594  accentInk #FFFFFF  line #DCEAE7
+type: display = "Inter", body = "Inter"
+shape: radius soft, density compact, scale regular
+```
+
+### Tech (`tech`) — eletrônicos / tecnologia
+```
+mode: light
+color: bg #FFFFFF  surface #F7F8FA  surfaceAlt #EEF1F5  ink #0B1220  inkMuted #5B6676
+       accent #2563EB  accentInk #FFFFFF  line #E4E8EE
+type: display = "Space Grotesk", body = "Inter"
+shape: radius sharp, density compact, scale regular
+```
+
+### Market (`market`) — mercado / conveniência
+```
+mode: light
+color: bg #FFFFFF  surface #FFFFFF  surfaceAlt #F4F6F3  ink #1B2519  inkMuted #5E6B59
+       accent #2EA043  accentInk #FFFFFF  line #E7EBE4
+type: display = "Inter", body = "Inter"
+shape: radius soft, density compact, scale compact
+```
+
+### Utility (`utility`) — construção / oficinas / autopeças
+```
+mode: dark
+color: bg #14161A  surface #1D2025  surfaceAlt #262A31  ink #F4F5F7  inkMuted #9AA1AC
+       accent #F5A623  accentInk #14161A  line #2D323A
+type: display = "Archivo", body = "Inter"
+shape: radius sharp, density compact, scale compact
+```
+
+### Playful (`playful`) — brinquedos / papelaria
+```
+mode: light
+color: bg #FFFFFF  surface #FFFFFF  surfaceAlt #FFF3E6  ink #2A1A3E  inkMuted #6E5E80
+       accent #7C3AED  accentInk #FFFFFF  line #F0E4F5
+type: display = "Baloo 2", body = "Nunito"
+shape: radius round, density comfortable, scale regular
+```
+
+> Semânticos fixos em todos os arquétipos: `success #16A34A`, `warning #E8A33D`, `danger #E5544B` — preserva consistência de status (ex.: estado de pedido).
+> O `accentInk` é **validado por contraste** no resolve (`contrast.ts` / WCAG AA ≥ 4.5): override ruim do lojista é corrigido para preto/branco automaticamente.
 
 ## 3.4 Evolução do `stores.theme`
 
@@ -120,32 +168,42 @@ shape: radius soft, density comfortable, scale spacious
 { "template": "market", "paleta": null }
 ```
 
-**Depois:**
+**Depois** (shape real — `StoreThemeConfig` em `store-theme/types.ts`):
 ```json
 {
   "v": 2,
   "preset": "heritage",
-  "palette": { "bg": "#FBF7F0", "surface": "#FFFFFF", "ink": "#1A1714",
-               "accent": "#8C5A2B", "accentInk": "#FFFFFF" },
-  "typography": { "display": "Fraunces", "body": "Inter" },
+  "color": { "accent": "#8C5A2B", "accentInk": "#FFFFFF" },
+  "fonts": { "display": "Fraunces", "body": "Inter" },
   "shape": { "radius": "soft", "density": "comfortable" },
   "mode": "light"
 }
 ```
 
-Regras:
-- `preset` é obrigatório; demais campos são **overrides opcionais** sobre o default do preset. Ausência → usa o default do arquétipo. Isso mantém o JSON enxuto e o tema resiliente a evolução dos presets.
-- `v` (versão do shape) permite migração suave. `theme` antigo (`{template,paleta}`) é tratado como `v1` e mapeado: `market→editorial`, `boutique→editorial`, `artesanal→artisan`, `neon→raw` (tabela em [07](07-roadmap-implementacao.md)).
-- A resolução final (`preset default` + overrides) acontece no engine ([04](04-theme-engine.md)), não no banco.
+Regras (implementadas em `store-theme/resolve.ts`):
+- `preset` é obrigatório; `color`/`fonts`/`shape`/`mode` são **overrides parciais opcionais** sobre o default do preset. Ausência → usa o default do arquétipo. JSON enxuto e resiliente à evolução dos presets.
+- `v` versiona o shape. `theme` antigo (`{template,paleta}`) é tratado como `v1` e migrado por `normalizeThemeConfig`: `market→editorial`, `boutique→editorial`, `artesanal→artisan`, `neon→raw` (paletas v1 descartadas). Ver [07](07-roadmap-implementacao.md).
+- A resolução final (`resolveTheme`) aplica defaults + overrides + correção de contraste do `accentInk`, e é a **única** porta usada por storefront, app e preview do onboarding ([04](04-theme-engine.md)).
 
 ## 3.5 Tipos compartilhados
 
-Os tipos vivem em `packages/types/src/domain.ts`, **substituindo** `TemplateVitrine`/`PaletaVitrine`/`StoreTheme` atuais:
+**Implementado** em `packages/lib/src/store-theme/types.ts` (módulo aditivo, não-quebrante), exportado via `@mallevo/lib`:
 
 ```ts
-export type ArquetipoCodigo = 'heritage' | 'raw' | 'editorial' | 'noir' | 'soft' | 'artisan'
-export interface StoreTheme { v: 2; preset: ArquetipoCodigo; palette?: Partial<...>; ... }
+export type ArquetipoCodigo =
+  | 'heritage' | 'raw' | 'editorial' | 'noir' | 'soft' | 'artisan'
+  | 'clinic' | 'tech' | 'market' | 'utility' | 'playful'   // os 11
+
+export interface StoreThemeConfig {   // shape persistido em stores.theme
+  v: 2
+  preset: ArquetipoCodigo
+  color?: Partial<ColorTokens>
+  fonts?: { display?: string; body?: string }
+  shape?: Partial<ShapeTokens>
+  mode?: 'light' | 'dark'
+}
+
+export interface ThemeTokens { mode; color: ColorTokens; typography; shape }  // resolvido
 ```
 
-Os presets default (a tabela §3.3) vivem em `packages/lib/src/store-theme/presets.ts` — compartilhados por web e mobile, igual ao `packages/lib/src/templates/` do `DashboardTemplate`.
-</content>
+> **Nota de migração:** `packages/types/src/domain.ts` ainda exporta os tipos v1 (`TemplateVitrine`/`PaletaVitrine`/`StoreTheme`) usados pelo `minha-loja-editor.tsx`. Consolidar/depreciar esses tipos a favor do `StoreThemeConfig` é a **Fase 3** ([07](07-roadmap-implementacao.md)) — feito junto com a troca do editor para os 11 arquétipos, para não quebrar o web agora.

@@ -41,29 +41,31 @@ StoreTheme.pele       ← preset (arquétipo) + paleta + tipografia     [escolh�
 
 ## 1.4 A ponte: nicho → arquétipo sugerido
 
-Cada nicho do `DashboardTemplate` tem um arquétipo visual **default sugerido**, mas o lojista pode trocar dentro de um conjunto compatível:
+Cada **categoria** tem um arquétipo visual **default sugerido**, mas o lojista pode trocar dentro de um conjunto compatível. O mapeamento é por categoria (mais fino que por template) — a matriz completa das 20 categorias está em [02 §2.3](02-arquetipos-de-design.md) e em código em `packages/lib/src/store-theme/mapping.ts`. Visão por template funcional:
 
-| Nicho (`DashboardTemplate`) | Arquétipo sugerido | Alternativas oferecidas |
+| Nicho (`DashboardTemplate`) | Default típico | Observação |
 |---|---|---|
-| `food` | Heritage | Soft Care (casual) |
-| `fashion` | Editorial Minimal | Raw/Street, Noir Luxe |
-| `pharmacy` | Soft Care | Editorial Minimal |
-| `pet` | Soft Care | Editorial Minimal |
-| `services` | Soft Care | Editorial Minimal |
-| `generic` | Editorial Minimal | qualquer um |
+| `food` | Heritage | casual/rápido → Market ou Soft |
+| `fashion` | Editorial / Noir | sport → Raw |
+| `pharmacy` | **Clinic** | clínico/confiança, não fofo |
+| `pet` | Soft Care | infantil → Playful |
+| `services` | Soft / **Clinic** / **Utility** | beleza→Soft, saúde/vet→Clinic, oficina→Utility |
+| `generic` | varia por categoria | tech→Tech, mercado→Market, construção→Utility, brinquedos→Playful, decoração→Artisan |
 
-Detalhe dos arquétipos em [02-arquetipos-de-design.md](02-arquetipos-de-design.md).
+São **11 arquétipos** no total (6 de referência + 5 desenhados internamente para fechar lacunas de saúde, tech, mercado, utilidade e lúdico). Detalhe em [02-arquetipos-de-design.md](02-arquetipos-de-design.md).
 
 ## 1.5 Contrato conceitual (resumo)
 
 O `StoreTheme` persistido evolui de `{ template, paleta }` para um contrato de tokens. Forma conceitual (schema concreto em [03](03-design-tokens-e-schema.md)):
 
 ```ts
-interface StoreTheme {
-  preset: ArquetiptoCodigo          // 'heritage' | 'raw' | 'editorial' | 'noir' | 'soft' | 'artisan'
-  palette: PaletteTokens            // cores resolvidas (do preset ou override do lojista)
-  typography: TypographyTokens      // par de fontes + escala
-  shape: ShapeTokens                // raios, densidade
+interface StoreThemeConfig {        // persistido em stores.theme; schema real em [03 §3.5]
+  v: 2
+  preset: ArquetipoCodigo           // 1 de 11: heritage|raw|editorial|noir|soft|artisan|clinic|tech|market|utility|playful
+  color?: Partial<ColorTokens>      // overrides de cor do lojista (do preset, por padrão)
+  fonts?: { display?; body? }       // override de família tipográfica
+  shape?: Partial<ShapeTokens>      // raios, densidade
+  mode?: 'light' | 'dark'
   // estrutura NÃO entra aqui — vem do DashboardTemplate (nicho)
 }
 ```
@@ -75,4 +77,3 @@ interface StoreTheme {
 - As categorias (`categories`) e o `categoria_id` da loja seguem iguais.
 
 O StoreTheme é **aditivo**: substitui apenas o conteúdo do campo `stores.theme` e adiciona o theme engine que hoje não existe.
-</content>

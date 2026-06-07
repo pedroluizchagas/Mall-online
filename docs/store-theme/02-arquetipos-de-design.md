@@ -1,87 +1,134 @@
 # 02 — Arquétipos de design
 
-> Este doc absorve e estrutura o antigo `design-lojas.md`. As ~25 referências do Framer não são 25 designs distintos — elas colapsam em **6 arquétipos**. Cada loja parceira veste **um arquétipo + uma paleta**; o nicho sugere o default.
+> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **6 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **11 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
+>
+> **Implementação:** `packages/lib/src/store-theme/presets.ts` (catálogo `ARQUETIPOS`).
 
 ## 2.1 Por que arquétipos (e não um design por loja)
 
-Implementar e manter 25 layouts é inviável. Mas as referências, quando agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), revelam **6 famílias**. Isso reduz o trabalho de "25 designs" para "6 presets parametrizáveis por paleta" — e dá ao lojista variedade real sem explosão de manutenção.
+Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "11 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
 
-## 2.2 Os 6 arquétipos
+## 2.2 Os 11 arquétipos
 
-### A. Heritage — `heritage`
+### Derivados de referência (6)
+
+#### A. Heritage — `heritage`
 - **Nichos:** restaurantes, churrascarias, cafeterias boutique.
-- **DNA:** serifa de display em destaque; neutros quentes/creme **ou** versão dark; foto de comida full-bleed; selos de tradição ("Since 1980"); muito respiro; CTA discreto.
-- **Mood:** sofisticado, atemporal, acolhedor, exclusivo.
-- **Refs-âncora:** [Veloria](https://veloriarestaurant.framer.website/), [Savoria](https://savoriarestro.framer.website/), [Bistora](https://bistora.framer.website/), [La Paloma](https://lapaloma.framer.website/), [Multiple Influence](https://multiple-influence-475025.framer.app/).
+- **DNA:** serifa de display; neutros quentes/creme; foto de comida full-bleed; selos de tradição; muito respiro.
+- **Mood:** sofisticado, atemporal, acolhedor.
+- **Refs:** [Veloria](https://veloriarestaurant.framer.website/), [Savoria](https://savoriarestro.framer.website/), [Bistora](https://bistora.framer.website/), [La Paloma](https://lapaloma.framer.website/), [Multiple Influence](https://multiple-influence-475025.framer.app/).
 
-### B. Raw / Street — `raw`
+#### B. Raw / Street — `raw`
 - **Nichos:** moda masculina/sport, streetwear.
-- **DNA:** sans pesada e condensada; alto contraste; fundo dark; copy provocativa ("Wear the hype raw"); grid de "drops" com badges; lifestyle.
-- **Mood:** ousado, urbano, rebelde, premium-cru.
-- **Refs-âncora:** [Rawline](https://rawline.framer.website/), [Wearix](https://wearix.framer.website/), [Wearvo](https://wearvo.framer.website/).
+- **DNA:** sans pesada e condensada; alto contraste; fundo dark; grid de "drops" com badges.
+- **Mood:** ousado, urbano, rebelde.
+- **Refs:** [Rawline](https://rawline.framer.website/), [Wearix](https://wearix.framer.website/), [Wearvo](https://wearvo.framer.website/).
 
-### C. Editorial Minimal — `editorial`
-- **Nichos:** moda feminina elegante, unissex, simples; default genérico.
-- **DNA:** sans clean; paleta neutra (preto/branco/cinza); seções numeradas (01·02·03); foto de produto editorial; whitespace generoso; badges "New/Sale".
-- **Mood:** sofisticado, minimalista, curado, aspiracional.
-- **Refs-âncora:** [Veonn](https://veonn.framer.website/), [Zaro](https://zaro.framer.website/), [Marion](https://marionshop.framer.website/), [AXM](https://axm.framer.website/), [Axels](https://axels.framer.website/).
+#### C. Editorial Minimal — `editorial`
+- **Nichos:** moda elegante/unissex, cosméticos; **default neutro** de qualquer loja.
+- **DNA:** sans clean; paleta neutra; seções numeradas; whitespace generoso; foto editorial.
+- **Mood:** minimalista, curado, sofisticado.
+- **Refs:** [Veonn](https://veonn.framer.website/), [Zaro](https://zaro.framer.website/), [Marion](https://marionshop.framer.website/), [AXM](https://axm.framer.website/), [Axels](https://axels.framer.website/).
 
-### D. Noir Luxe — `noir`
-- **Nichos:** acessórios de luxo, joias, automóveis premium.
-- **DNA:** fundo preto; acentos metálicos; imagem domina o texto; tipografia de alto contraste com tracking largo; restrição máxima ("simplicity signals confidence").
-- **Mood:** luxuoso, exclusivo, dramático, contemporâneo.
-- **Refs-âncora:** [Caelora](https://caelora.framer.website/), [Aurum](https://aurum-frameship-template.framer.website/), [Esteem](https://esteem.framer.website/).
+#### D. Noir Luxe — `noir`
+- **Nichos:** acessórios de luxo, joias, automóveis premium, beleza high-end.
+- **DNA:** fundo preto; acentos metálicos; imagem domina o texto; tipografia de alto contraste.
+- **Mood:** luxuoso, exclusivo, dramático.
+- **Refs:** [Caelora](https://caelora.framer.website/), [Aurum](https://aurum-frameship-template.framer.website/), [Esteem](https://esteem.framer.website/).
 
-### E. Soft Care — `soft`
-- **Nichos:** petshop, serviços/salões, farmácia.
-- **DNA:** cantos bem arredondados; acentos quentes e suaves; sans amigável; stats de prova social ("1.200+ pets"); tiers de preço; tom acolhedor e seguro.
-- **Mood:** caloroso, confiável, amigável, profissional.
-- **Refs-âncora:** [Groomerly](https://groomerly.framer.website/), [PetPals](https://petpals.framer.website/).
+#### E. Soft Care — `soft`
+- **Nichos:** petshop, salões/estética, beleza-serviço.
+- **DNA:** cantos bem arredondados; acentos quentes; sans amigável; stats + tiers; tom acolhedor.
+- **Mood:** caloroso, amigável, confiável.
+- **Refs:** [Groomerly](https://groomerly.framer.website/), [PetPals](https://petpals.framer.website/).
 
-### F. Artisan Warm — `artisan`
-- **Nichos:** móveis e artigos de decoração.
-- **DNA:** neutros naturais e tons de madeira; matte; narrativa de materialidade ("solid European oak, hand-oiled"); seções numeradas; foto tátil; ritmo calmo.
-- **Mood:** refinado, calmo, artesanal, minimalista-luxe.
-- **Refs-âncora:** [Graft](https://graft.framer.website/), [Drivoxe](https://drivoxe.framer.website/) (variante padrão automotiva).
+#### F. Artisan Warm — `artisan`
+- **Nichos:** móveis, decoração, floricultura.
+- **DNA:** neutros naturais e tons de madeira; matte; narrativa de materialidade; foto tátil.
+- **Mood:** refinado, calmo, artesanal.
+- **Refs:** [Graft](https://graft.framer.website/).
 
-## 2.3 Mapa nicho → arquétipo
+### Desenhados internamente (5) — fecham as lacunas
 
-Espelha a tabela de sugestão em [01 §1.4](01-conceito-e-relacao-templates.md). O default é o que o onboarding pré-seleciona; as alternativas são as peles compatíveis oferecidas.
+> Sem referência Framer; seguem o mesmo método (paleta + tipografia + forma + densidade coerentes com o contexto de uso e a jornada do nicho).
 
-| Nicho | Default | Alternativas |
-|---|---|---|
-| `food` | Heritage | Soft Care |
-| `fashion` | Editorial Minimal | Raw, Noir |
-| `pharmacy` | Soft Care | Editorial |
-| `pet` | Soft Care | Editorial |
-| `services` | Soft Care | Editorial |
-| `generic` | Editorial Minimal | qualquer |
+#### G. Clinic — `clinic`
+- **Nichos:** **farmácia & medicamentos**, **saúde & bem-estar**, **veterinária**.
+- **Problema que resolve:** saúde exige **credibilidade e legibilidade**, não fofura (Soft) nem luxo (Noir). Catálogos densos (bula, princípio ativo, validade) pedem alta densidade e contraste.
+- **DNA:** limpo e clínico; paleta verde-água (saúde/confiança); alta legibilidade; densidade compacta; cantos suaves; ícones funcionais.
+- **Mood:** clínico, confiável, sereno.
+
+#### H. Tech — `tech`
+- **Nichos:** **eletrônicos & tecnologia**.
+- **Problema que resolve:** eletrônicos têm linguagem própria — grade de specs, comparação, precisão. Editorial é minimalista demais; falta o "tom techy".
+- **DNA:** cantos retos; grade densa; acento azul elétrico; tipografia geométrica (display) + neutra (corpo); ênfase em especificação.
+- **Mood:** moderno, preciso, tecnológico.
+
+#### I. Market — `market`
+- **Nichos:** **mercado & conveniência** (e alimentação casual/rápida como alternativa).
+- **Problema que resolve:** compra de mercado é **escaneável e por preço/oferta** — grade densa, muitos itens, destaque de promoção. Nenhum arquétipo boutique serve.
+- **DNA:** brilhante e eficiente; acento verde fresco; densidade compacta; ênfase em preço; chips de categoria.
+- **Mood:** eficiente, fresco, direto.
+
+#### J. Utility — `utility`
+- **Nichos:** **construção & ferramentas**, **oficinas & manutenção**, **autopeças**.
+- **Problema que resolve:** público técnico/profissional quer **robustez e função**, não estética boutique. Precisa transmitir resistência e confiança operacional.
+- **DNA:** aço escuro + âmbar de segurança; cantos retos; alta densidade; sans forte; foco em SKU/compatibilidade.
+- **Mood:** robusto, industrial, direto.
+
+#### K. Playful — `playful`
+- **Nichos:** **brinquedos & presentes**, **papelaria & livraria** (e cursos infantis).
+- **Problema que resolve:** público família/criança responde a **cor e energia**; Soft é calmo demais, Editorial é frio.
+- **DNA:** cantos bem arredondados; acento violeta energético; sans amigável e divertida (display); ilustração/cor vibrante.
+- **Mood:** vibrante, lúdico, energético.
+
+## 2.3 Matriz de cobertura — 20 categorias → arquétipo
+
+> Fonte de verdade do mapeamento em código: `packages/lib/src/store-theme/mapping.ts` (`CATEGORIA_SLUG_TO_ARQUETIPO`). `default` = pré-seleção do onboarding; `alternativas` = peles compatíveis também oferecidas (modelo híbrido, [01](01-conceito-e-relacao-templates.md)).
+
+| Categoria (slug) | Template funcional | Arquétipo default | Alternativas |
+|---|---|---|---|
+| `alimentos-bebidas` | food | **heritage** | market, soft |
+| `vestuario-calcados` | fashion | **editorial** | raw, noir |
+| `acessorios-joias` | fashion | **noir** | editorial |
+| `farmacia-medicamentos` | pharmacy | **clinic** | market |
+| `beleza-cosmeticos` | generic | **editorial** | noir, soft |
+| `saloes-estetica` | services | **soft** | noir, editorial |
+| `saude-bem-estar` | services | **clinic** | soft |
+| `pet-shop` | pet | **soft** | playful |
+| `veterinaria` | services | **clinic** | soft |
+| `eletronicos-tecnologia` | generic | **tech** | editorial |
+| `casa-decoracao` | generic | **artisan** | editorial |
+| `construcao-ferramentas` | generic | **utility** | market |
+| `papelaria-livraria` | generic | **playful** | editorial |
+| `brinquedos-presentes` | generic | **playful** | soft |
+| `floricultura-plantas` | generic | **artisan** | soft, editorial |
+| `automotivo` | generic | **utility** | noir |
+| `mercado-conveniencia` | generic | **market** | utility |
+| `oficinas-manutencao` | services | **utility** | market |
+| `aulas-cursos` | services | **editorial** | playful, soft |
+| `outros` | generic | **editorial** | market, soft |
+
+**Garantias (testadas em `__tests__/store-theme.test.ts`):**
+- Toda categoria do seed tem sugestão (zero lacunas) — `satisfies Record<CategoriaSlug, …>`.
+- Todo arquétipo é usado por ≥1 categoria (sem preset órfão).
+- `default`/`alternativas` referenciam apenas arquétipos existentes.
 
 ## 2.4 Eixo de paleta (independente do arquétipo)
 
-Cada arquétipo tem uma **paleta default** mas aceita troca. As paletas devem ser derivadas, idealmente, da logo do lojista (ver [06](06-onboarding-e-extracao-cor.md)); na ausência, oferecemos presets de paleta por arquétipo. Cada paleta precisa resolver, no mínimo:
-
-- `bg` / `surface` / `surfaceAlt` — fundos.
-- `ink` / `inkMuted` — texto.
-- `accent` / `accentInk` — ação (botões/CTA) e seu texto legível.
-- `line` — divisores.
-- `success` / `warning` / `danger` — semânticos (podem ser fixos do Mallevo).
-
-Hex concretos por arquétipo ficam em [03-design-tokens-e-schema.md](03-design-tokens-e-schema.md).
+Cada arquétipo tem **paleta default** (hex em [03](03-design-tokens-e-schema.md)) e aceita troca — idealmente derivada da logo do lojista ([06](06-onboarding-e-extracao-cor.md)). A paleta resolve no mínimo: `bg`, `surface`, `surfaceAlt`, `ink`, `inkMuted`, `line`, `accent`, `accentInk`. Semânticos (`success/warning/danger`) são **fixos** em todos os arquétipos para consistência de status.
 
 ## 2.5 Como evoluir esta lista
 
-Novas referências devem ser **classificadas num arquétipo existente** antes de se cogitar um 7º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (ex.: um nicho com estrutura de layout genuinamente diferente). Cada arquétipo carrega seu conjunto de paletas — é aí que entra a variedade, não em novos arquétipos.
+Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 12º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
 
 ## 2.6 Referências completas (fonte: design-lojas.md)
 
-Catálogo bruto original, agora rotulado por arquétipo:
-
-- **Praça de alimentação** → Heritage: Veloria, Savoria, Bistora (churrascaria), La Paloma + Multiple Influence (cafeteria boutique).
+- **Praça de alimentação** → Heritage: Veloria, Savoria, Bistora, La Paloma, Multiple Influence.
 - **Vestuário masculino / sport** → Raw: Wearix, Rawline, Wearvo.
-- **Vestuário feminino elegante / simples / unissex** → Editorial: Veonn, Zaro, Marion, AXM.
-- **Acessórios** → Editorial (padrão: Axels) / Noir Luxe (luxo: Caelora, Aurum).
-- **Petshop** → Soft Care: Groomerly (elegante/minimalista), PetPals (padrão).
-- **Automóveis** → Noir Luxe (luxo: Esteem) / Artisan-Padrão (Drivoxe).
-- **Móveis e decoração** → Artisan Warm: Graft.
-</content>
+- **Vestuário feminino / unissex** → Editorial: Veonn, Zaro, Marion, AXM.
+- **Acessórios** → Editorial (Axels) / Noir (Caelora, Aurum).
+- **Petshop** → Soft Care: Groomerly, PetPals.
+- **Automóveis** → Noir (Esteem, luxo) / Utility (Drivoxe, padrão).
+- **Móveis e decoração** → Artisan: Graft.
+- **Sem referência (internos):** Clinic (farmácia/saúde/vet), Tech (eletrônicos), Market (mercado), Utility (construção/oficinas), Playful (brinquedos/papelaria).
