@@ -3,11 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import type {
-  PaletaVitrine,
-  StoreTheme,
-  TemplateVitrine,
-} from '@mallevo/types'
+import { ARQUETIPOS, type ArquetipoCodigo } from '@mallevo/lib'
 
 const BUCKET = 'store-assets'
 const TAMANHO_MAX_BYTES = 5 * 1024 * 1024
@@ -18,14 +14,21 @@ const MIME_PERMITIDOS = [
   'image/svg+xml',
 ] as const
 
-const TEMPLATES = ['market', 'boutique', 'artesanal', 'neon'] as const
-const PALETAS = ['midnight', 'ocean', 'berry', 'ember', 'slate', 'matcha'] as const
+// Os 11 arquétipos (presets v2). Fonte da verdade: @mallevo/lib.
+const PRESETS = Object.keys(ARQUETIPOS) as [ArquetipoCodigo, ...ArquetipoCodigo[]]
+const HEX = /^#[0-9a-fA-F]{6}$/
 
 type ResultadoAcao = { sucesso: true } | { erro: string }
 
 const schemaPublicar = z.object({
-  template: z.enum(TEMPLATES),
-  paleta: z.enum(PALETAS).nullable(),
+  preset: z.enum(PRESETS),
+  // Override opcional da cor de destaque (hex). accentInk é derivado no
+  // resolveTheme (contraste WCAG garantido) na hora de renderizar.
+  accent: z
+    .string()
+    .regex(HEX, 'Cor inválida')
+    .optional()
+    .nullable(),
   nome: z.string().min(2, 'Nome obrigatório').max(60, 'Nome muito longo'),
   tagline: z.string().max(140, 'Tagline muito longa').optional(),
 })
@@ -86,20 +89,23 @@ export async function publicarVitrine(formData: FormData): Promise<ResultadoAcao
     .single()
   if (!loja) return { erro: 'Loja não encontrada' }
 
-  const paletaRaw = formData.get('paleta')
+  const accentRaw = formData.get('accent')
   const taglineRaw = formData.get('tagline')
 
   const parsed = schemaPublicar.safeParse({
-    template: formData.get('template'),
-    paleta: paletaRaw === null || paletaRaw === '' ? null : paletaRaw,
+    preset: formData.get('preset'),
+    accent: accentRaw === null || accentRaw === '' ? null : accentRaw,
     nome: formData.get('nome'),
     tagline: taglineRaw && String(taglineRaw).length > 0 ? String(taglineRaw) : undefined,
   })
   if (!parsed.success) return { erro: parsed.error.errors[0].message }
 
-  const theme: StoreTheme = {
-    template: parsed.data.template as TemplateVitrine,
-    paleta: parsed.data.paleta as PaletaVitrine | null,
+  // StoreThemeConfig v2: preset + override opcional de cor. JSON enxuto —
+  // o accentInk e o resto da paleta são derivados pelo resolveTheme.
+  const theme: Record<string, unknown> = {
+    v: 2,
+    preset: parsed.data.preset,
+    ...(parsed.data.accent ? { color: { accent: parsed.data.accent } } : {}),
   }
 
   const atualizacao: Record<string, unknown> = {

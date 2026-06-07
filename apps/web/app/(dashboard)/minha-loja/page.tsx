@@ -22,6 +22,16 @@ export default async function PaginaMinhaLoja() {
 
   const produtos = (produtosRaw ?? []) as ProdutoEditorInicial[]
 
+  // Slug da categoria → sugere o arquétipo (pele) no editor.
+  const { data: lojaCat } = await supabase
+    .from('stores')
+    .select('categoria:categories(slug)')
+    .eq('id', loja.id)
+    .single()
+  const categoriaSlug =
+    (lojaCat as { categoria?: { slug?: string | null } | null } | null)?.categoria
+      ?.slug ?? null
+
   return (
     <MinhaLojaEditor
       loja={{
@@ -32,6 +42,7 @@ export default async function PaginaMinhaLoja() {
         theme: loja.theme ?? null,
         ativo: loja.ativo ?? true,
         slug: loja.slug ?? null,
+        categoriaSlug,
       }}
       produtos={produtos}
     />

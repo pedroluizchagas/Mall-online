@@ -29,14 +29,17 @@
 - [ ] **(adiado)** Fonts via `expo-font` (Fase 4) e transição de motion ao entrar na loja.
 - **Saída:** paridade visual storefront ↔ app para a mesma loja; lojas atuais inalteradas.
 
-## Fase 3 — Onboarding e edição
+## Fase 3 — Editor de tema (lojista escolhe a pele) ✅ IMPLEMENTADA
 **Objetivo:** o lojista escolhe e ajusta o tema sozinho.
-- [ ] `minha-loja-editor.tsx`: trocar `market/boutique/artesanal/neon` pelos 6 arquétipos, com cards de preview vivos.
-- [ ] `loja-vitrine.ts`: gravar `StoreTheme v2`.
-- [ ] Extração de cor da logo + sugestão de paletas ([06 §6.3]).
-- [ ] Etapa de tema dentro do fluxo de onboarding ([06 §6.1]).
-- [ ] Validação de contraste no save.
-- **Saída:** loja nova nasce com tema coerente sem intervenção manual.
+- [x] `minha-loja-editor.tsx`: substitui `market/boutique/artesanal/neon` + 6 paletas pelos **11 arquétipos**, **sugeridos pela categoria** (`getArquetipoSugestao` → recomendados + outros estilos), com cards de preview (nome, descrição, mood). Preview do "celular" reusa o subsistema existente, agora alimentado por `temaFromTokens(resolveTheme(config))` — a MESMA engine do storefront/app ("o que vejo é o que publico"). Override de **cor de destaque** via color picker (+ restaurar). Tipografia mostra a fonte do arquétipo.
+- [x] `loja-vitrine.ts`: grava `StoreThemeConfig v2` (`{v:2, preset, color?:{accent}}`); valida preset (enum dos 11) e accent (hex). `accentInk` é derivado no `resolveTheme` (contraste WCAG) na renderização.
+- [x] `minha-loja/page.tsx`: passa `categoriaSlug` (sugere o arquétipo). `packages/types/supabase.ts`: coluna `theme` relaxada para `Json | null` (aceita v1 e v2).
+- [x] Init resiliente: lê preset v2 salvo; senão sugere pela categoria. Build de produção web + `tsc` OK.
+- [ ] **(adiado p/ Fase 4)** Extração de cor da logo ([06 §6.3], precisa de lib de quantização) e etapa de tema embutida no fluxo de onboarding ([06 §6.1]) — o editor `/minha-loja` já é a superfície canônica, acessível a qualquer momento.
+- **Saída:** lojista escolhe um dos 11 estilos (sugeridos por nicho) + cor, vê o preview fiel e publica `StoreThemeConfig v2` que o storefront (Fase 1) e o app (Fase 2) renderizam.
+
+## Tipos v1 (`packages/types/domain.ts`)
+`TemplateVitrine`/`PaletaVitrine`/`StoreTheme` ficam no arquivo mas **não são mais usados** (editor/action/supabase migrados). Podem ser removidos num passo de limpeza futuro; mantidos por ora para não quebrar imports externos eventuais.
 
 ## Fase 4 — Refinamento dos presets
 **Objetivo:** elevar de "funciona" para "premium".

@@ -2,18 +2,22 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Check, Lock, Upload, Zap, ImagePlus } from 'lucide-react'
-import type { PaletaVitrine, StoreTheme, TemplateVitrine } from '@mallevo/types'
+import {
+  ARQUETIPOS,
+  getArquetipoSugestao,
+  resolveTheme,
+  type ArquetipoCodigo,
+  type ThemeTokens,
+} from '@mallevo/lib'
 import { publicarVitrine } from '@/lib/actions/loja-vitrine'
 import { showToast } from '@/components/ui/toast'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { StoreStatusToggle } from '@/components/dashboard/store-status-toggle'
 import { LinkPublicoBotao } from '@/components/dashboard/link-publico-botao'
 
-// ─── Templates ───────────────────────────────────────────────────────────────
+// ─── Tema (forma consumida pelo preview) ───────────────────────────────────────
 
 type Tema = {
-  id: TemplateVitrine
-  nome: string
   acento: string
   acentoDk: string
   acentoInk: string
@@ -25,136 +29,25 @@ type Tema = {
   linha: string
 }
 
-const TEMPLATES: Tema[] = [
-  {
-    id: 'market',
-    nome: 'Market',
-    acento: '#c1f148',
-    acentoDk: '#a3d22a',
-    acentoInk: '#18181b',
-    bgTela: '#f6f6f3',
-    bgHeader: '#a3d22a',
-    bgCard: '#ffffff',
-    textoPrimario: '#0f0f0d',
-    textoSecundario: '#8a8a84',
-    linha: '#ececea',
-  },
-  {
-    id: 'boutique',
-    nome: 'Boutique',
-    acento: '#e8c4b8',
-    acentoDk: '#c4907a',
-    acentoInk: '#2a1412',
-    bgTela: '#fdf8f5',
-    bgHeader: '#f0e4dc',
-    bgCard: '#ffffff',
-    textoPrimario: '#2a1412',
-    textoSecundario: '#9a7868',
-    linha: '#eeddd5',
-  },
-  {
-    id: 'artesanal',
-    nome: 'Artesanal',
-    acento: '#e8a060',
-    acentoDk: '#c07030',
-    acentoInk: '#ffffff',
-    bgTela: '#fdf4ec',
-    bgHeader: '#d4845a',
-    bgCard: '#fff8f0',
-    textoPrimario: '#1a0f08',
-    textoSecundario: '#8a6a50',
-    linha: '#e8d4c0',
-  },
-  {
-    id: 'neon',
-    nome: 'Neon',
-    acento: '#39ff14',
-    acentoDk: '#28cc0e',
-    acentoInk: '#000000',
-    bgTela: '#080808',
-    bgHeader: '#0f0f0f',
-    bgCard: '#141414',
-    textoPrimario: '#f0f0f0',
-    textoSecundario: '#555555',
-    linha: '#1e1e1e',
-  },
-]
-
-// ─── Paletas ─────────────────────────────────────────────────────────────────
-
-type Paleta = {
-  id: PaletaVitrine
-  nome: string
-  cor1: string
-  cor2: string
-  bg: string
-  acento: string
-  acentoDk: string
-  acentoInk: string
+/**
+ * Deriva o `Tema` do preview a partir dos tokens resolvidos do StoreTheme — a
+ * MESMA engine (`resolveTheme`, @mallevo/lib) que o storefront e o app usam.
+ * Garante "o que vejo é o que publico". Preço/realce em `ink` (igual aos apps
+ * reais, onde o preço é renderizado em text-ink, não no accent).
+ */
+function temaFromTokens(t: ThemeTokens): Tema {
+  return {
+    acento: t.color.accent,
+    acentoDk: t.color.ink,
+    acentoInk: t.color.accentInk,
+    bgTela: t.color.bg,
+    bgHeader: t.color.surface,
+    bgCard: t.color.surface,
+    textoPrimario: t.color.ink,
+    textoSecundario: t.color.inkMuted,
+    linha: t.color.line,
+  }
 }
-
-const PALETAS: Paleta[] = [
-  {
-    id: 'midnight',
-    nome: 'Midnight',
-    cor1: '#14b8a6',
-    cor2: '#3b82f6',
-    bg: '#0f172a',
-    acento: '#14b8a6',
-    acentoDk: '#0d9488',
-    acentoInk: '#000000',
-  },
-  {
-    id: 'ocean',
-    nome: 'Ocean',
-    cor1: '#38bdf8',
-    cor2: '#0ea5e9',
-    bg: '#0c1a2e',
-    acento: '#38bdf8',
-    acentoDk: '#0284c7',
-    acentoInk: '#000000',
-  },
-  {
-    id: 'berry',
-    nome: 'Berry',
-    cor1: '#d946ef',
-    cor2: '#a855f7',
-    bg: '#1a082e',
-    acento: '#d946ef',
-    acentoDk: '#a21caf',
-    acentoInk: '#ffffff',
-  },
-  {
-    id: 'ember',
-    nome: 'Ember',
-    cor1: '#fb923c',
-    cor2: '#ef4444',
-    bg: '#1c0800',
-    acento: '#fb923c',
-    acentoDk: '#ea580c',
-    acentoInk: '#000000',
-  },
-  {
-    id: 'slate',
-    nome: 'Slate',
-    cor1: '#94a3b8',
-    cor2: '#475569',
-    bg: '#0f172a',
-    acento: '#94a3b8',
-    acentoDk: '#64748b',
-    acentoInk: '#000000',
-  },
-  {
-    id: 'matcha',
-    nome: 'Matcha',
-    cor1: '#84cc16',
-    cor2: '#22c55e',
-    bg: '#0a1a00',
-    acento: '#84cc16',
-    acentoDk: '#65a30d',
-    acentoInk: '#000000',
-  },
-]
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -163,9 +56,12 @@ export interface LojaEditorInicial {
   descricao: string | null
   logo_url: string | null
   banner_url: string | null
-  theme: StoreTheme | null
+  /** `stores.theme` cru (StoreThemeConfig v2 ou legado v1). */
+  theme: Record<string, unknown> | null
   ativo: boolean
   slug: string | null
+  /** Slug da categoria — sugere o arquétipo default no editor. */
+  categoriaSlug: string | null
 }
 
 const TAMANHO_MAX_BYTES = 5 * 1024 * 1024
@@ -198,10 +94,15 @@ type TabPreview = 'home' | 'produto' | 'carrinho'
 // ─── Editor principal ─────────────────────────────────────────────────────────
 
 export function MinhaLojaEditor({ loja, produtos }: Props) {
-  const [templateId, setTemplateId] = useState<TemplateVitrine>(
-    (loja.theme?.template as TemplateVitrine | undefined) ?? 'market'
-  )
-  const [paletaId, setPaletaId] = useState<PaletaVitrine | null>(loja.theme?.paleta ?? null)
+  const presetInicial: ArquetipoCodigo =
+    loja.theme && typeof loja.theme.preset === 'string' && loja.theme.preset in ARQUETIPOS
+      ? (loja.theme.preset as ArquetipoCodigo)
+      : getArquetipoSugestao(loja.categoriaSlug).default
+  const accentInicial =
+    (loja.theme?.color as { accent?: string } | undefined)?.accent ?? null
+
+  const [preset, setPreset] = useState<ArquetipoCodigo>(presetInicial)
+  const [accent, setAccent] = useState<string | null>(accentInicial)
   const [nome, setNome] = useState(loja.nome)
   const [tagline, setTagline] = useState(loja.descricao ?? '')
   const [logoUrl, setLogoUrl] = useState<string | null>(loja.logo_url)
@@ -225,15 +126,19 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
     }
   }, [])
 
-  const template = TEMPLATES.find((t) => t.id === templateId) ?? TEMPLATES[0]
-  const paleta = paletaId ? PALETAS.find((p) => p.id === paletaId) : null
+  // Tema do preview derivado da engine real (preset + override de accent).
+  const tokens = resolveTheme({
+    v: 2,
+    preset,
+    ...(accent ? { color: { accent } } : {}),
+  })
+  const temaAtivo: Tema = temaFromTokens(tokens)
 
-  const temaAtivo: Tema = {
-    ...template,
-    acento: paleta?.acento ?? template.acento,
-    acentoDk: paleta?.acentoDk ?? template.acentoDk,
-    acentoInk: paleta?.acentoInk ?? template.acentoInk,
-  }
+  const sugestao = getArquetipoSugestao(loja.categoriaSlug)
+  const recomendados: ArquetipoCodigo[] = [sugestao.default, ...sugestao.alternativas]
+  const outros = (Object.keys(ARQUETIPOS) as ArquetipoCodigo[]).filter(
+    (c) => !recomendados.includes(c)
+  )
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -271,8 +176,8 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
     setSaving(true)
 
     const formData = new FormData()
-    formData.set('template', templateId)
-    formData.set('paleta', paletaId ?? '')
+    formData.set('preset', preset)
+    formData.set('accent', accent ?? '')
     formData.set('nome', nome)
     formData.set('tagline', tagline)
     if (logoFile) formData.set('logo', logoFile)
@@ -330,18 +235,43 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
             }
           />
 
-          {/* ── TEMPLATE ─────────────────────────────────────── */}
-          <Secao titulo="TEMPLATE">
+          {/* ── ESTILO DA LOJA ───────────────────────────────── */}
+          <Secao titulo="ESTILO DA LOJA">
+            <p className="text-xs text-ink-3 -mt-2 mb-3">
+              Sugeridos para a sua categoria — escolha o que combina com o tom da
+              sua marca. Você pode mudar quando quiser.
+            </p>
             <div className="space-y-3">
-              {TEMPLATES.map((t) => (
-                <TemplateCard
-                  key={t.id}
-                  template={t}
-                  selected={templateId === t.id}
-                  onSelect={() => setTemplateId(t.id)}
+              {recomendados.map((code) => (
+                <ArquetipoCard
+                  key={code}
+                  code={code}
+                  selected={preset === code}
+                  recomendado={code === sugestao.default}
+                  onSelect={() => setPreset(code)}
                 />
               ))}
             </div>
+            {outros.length > 0 && (
+              <>
+                <p
+                  className="text-[10px] uppercase font-semibold mt-5 mb-3"
+                  style={{ color: 'var(--ink-3)', letterSpacing: '0.14em' }}
+                >
+                  Outros estilos
+                </p>
+                <div className="space-y-3">
+                  {outros.map((code) => (
+                    <ArquetipoCard
+                      key={code}
+                      code={code}
+                      selected={preset === code}
+                      onSelect={() => setPreset(code)}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </Secao>
 
           {/* ── IDENTIDADE ───────────────────────────────────── */}
@@ -427,17 +357,46 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
             </div>
           </Secao>
 
-          {/* ── PALETA DE CORES ──────────────────────────────── */}
-          <Secao titulo="PALETA DE CORES">
-            <div className="grid grid-cols-3 gap-3">
-              {PALETAS.map((p) => (
-                <PaletaCard
-                  key={p.id}
-                  paleta={p}
-                  selected={paletaId === p.id}
-                  onSelect={() => setPaletaId(paletaId === p.id ? null : p.id)}
+          {/* ── COR DE DESTAQUE ──────────────────────────────── */}
+          <Secao titulo="COR DE DESTAQUE">
+            <div
+              className="flex items-center gap-4 px-5 py-4 rounded-2xl"
+              style={{ border: '1px solid var(--line)', background: 'var(--bg)' }}
+            >
+              <label
+                className="relative w-11 h-11 rounded-xl overflow-hidden flex-shrink-0 cursor-pointer"
+                style={{ boxShadow: 'inset 0 0 0 1px var(--line-2)' }}
+              >
+                <span
+                  className="block w-full h-full"
+                  style={{ background: tokens.color.accent }}
                 />
-              ))}
+                <input
+                  type="color"
+                  value={tokens.color.accent}
+                  onChange={(e) => setAccent(e.target.value)}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                  aria-label="Cor de destaque"
+                />
+              </label>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-ink">Cor dos botões e destaques</p>
+                <p className="text-xs text-ink-3 mt-0.5">
+                  {accent
+                    ? 'Personalizada'
+                    : `Padrão do estilo ${ARQUETIPOS[preset].nome}`}{' '}
+                  · {tokens.color.accent.toUpperCase()}
+                </p>
+              </div>
+              {accent && (
+                <button
+                  onClick={() => setAccent(null)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-full flex-shrink-0 hover:opacity-90 transition-opacity"
+                  style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
+                >
+                  Restaurar
+                </button>
+              )}
             </div>
           </Secao>
 
@@ -455,11 +414,13 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
                   Aa
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-ink">Plus Jakarta Sans</p>
+                  <p className="text-sm font-bold text-ink">
+                    {ARQUETIPOS[preset].tokens.typography.display.family}
+                  </p>
                   <p className="text-xs text-ink-3 mt-0.5">
-                    Amarrada ao template{' '}
+                    Tipografia do estilo{' '}
                     <span className="font-semibold" style={{ color: 'var(--ink-2)' }}>
-                      {template.nome}
+                      {ARQUETIPOS[preset].nome}
                     </span>
                     . Garante consistência visual.
                   </p>
@@ -595,15 +556,19 @@ function Secao({ titulo, children }: { titulo: string; children: React.ReactNode
   )
 }
 
-function TemplateCard({
-  template,
+function ArquetipoCard({
+  code,
   selected,
+  recomendado,
   onSelect,
 }: {
-  template: Tema
+  code: ArquetipoCodigo
   selected: boolean
+  recomendado?: boolean
   onSelect: () => void
 }) {
+  const arq = ARQUETIPOS[code]
+  const template = temaFromTokens(arq.tokens)
   return (
     <button
       onClick={onSelect}
@@ -616,111 +581,90 @@ function TemplateCard({
       <div className="flex">
         {/* Mini UI preview */}
         <div
-          className="flex-1 relative"
-          style={{ background: template.bgTela, height: 90, overflow: 'hidden' }}
+          className="flex-shrink-0 relative"
+          style={{ width: 132, background: template.bgTela, height: 100, overflow: 'hidden' }}
         >
           {/* Header strip */}
           <div
-            style={{ height: 22, background: template.bgHeader, display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px' }}
+            style={{ height: 22, background: template.bgHeader, display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', borderBottom: `1px solid ${template.linha}` }}
           >
             <div
               style={{ width: 14, height: 14, borderRadius: 4, background: template.acento, flexShrink: 0 }}
             />
-            <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(0,0,0,0.12)' }} />
-            <div style={{ width: 14, height: 14, borderRadius: 14, background: 'rgba(0,0,0,0.1)' }} />
+            <div style={{ flex: 1, height: 5, borderRadius: 3, background: template.linha }} />
+            <div style={{ width: 14, height: 14, borderRadius: 14, background: template.linha }} />
           </div>
           {/* Content simulation */}
-          <div style={{ padding: '0 10px', marginTop: -10, position: 'relative' }}>
+          <div style={{ padding: '0 10px', marginTop: 8, position: 'relative' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 7 }}>
               <div
                 style={{
                   width: 28, height: 28, borderRadius: 8,
-                  border: `2px solid ${template.bgTela}`,
                   background: template.acento, flexShrink: 0,
                 }}
               />
               <div>
-                <div style={{ width: 60, height: 5, borderRadius: 3, background: template.textoPrimario, opacity: 0.3, marginBottom: 4 }} />
-                <div style={{ width: 40, height: 4, borderRadius: 3, background: template.textoSecundario, opacity: 0.3 }} />
+                <div style={{ width: 50, height: 5, borderRadius: 3, background: template.textoPrimario, opacity: 0.7, marginBottom: 4 }} />
+                <div style={{ width: 34, height: 4, borderRadius: 3, background: template.textoSecundario, opacity: 0.6 }} />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 4 }}>
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  style={{ height: 28, borderRadius: 5, background: i === 0 ? template.acento : template.linha }}
+                  style={{ height: 26, borderRadius: 5, background: i === 0 ? template.acento : template.bgCard, border: `1px solid ${template.linha}` }}
                 />
               ))}
             </div>
           </div>
         </div>
 
-        {/* Name + check */}
+        {/* Nome + descrição + check */}
         <div
-          className="flex flex-col items-center justify-between py-3 px-4 flex-shrink-0"
-          style={{ width: 90, background: selected ? 'var(--brick-lt)' : 'var(--bg-2)' }}
+          className="flex-1 min-w-0 flex flex-col justify-between py-3 px-4"
+          style={{ background: selected ? 'var(--brick-lt)' : 'var(--bg-2)' }}
         >
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center"
-            style={{
-              background: selected ? 'var(--brick-dk)' : 'var(--line-2)',
-            }}
-          >
-            {selected && <Check style={{ width: 12, height: 12, color: '#fff' }} />}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p
+                  className="text-sm font-bold truncate"
+                  style={{ color: selected ? 'var(--brick-dk)' : 'var(--ink)' }}
+                >
+                  {arq.nome}
+                </p>
+                {recomendado && (
+                  <span
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                    style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+                  >
+                    Recomendado
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-ink-3 mt-1 leading-snug line-clamp-2">
+                {arq.descricao}
+              </p>
+            </div>
+            <div
+              className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: selected ? 'var(--brick-dk)' : 'var(--line-2)' }}
+            >
+              {selected && <Check style={{ width: 12, height: 12, color: '#fff' }} />}
+            </div>
           </div>
-          <p
-            className="text-xs font-bold text-center"
-            style={{ color: selected ? 'var(--brick-dk)' : 'var(--ink-2)' }}
-          >
-            {template.nome}
-          </p>
+          <div className="flex gap-1 mt-2">
+            {arq.mood.map((m) => (
+              <span
+                key={m}
+                className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
+                style={{ background: 'var(--bg-3)', color: 'var(--ink-3)' }}
+              >
+                {m}
+              </span>
+            ))}
+          </div>
         </div>
-      </div>
-    </button>
-  )
-}
-
-function PaletaCard({
-  paleta,
-  selected,
-  onSelect,
-}: {
-  paleta: Paleta
-  selected: boolean
-  onSelect: () => void
-}) {
-  return (
-    <button
-      onClick={onSelect}
-      className="rounded-2xl overflow-hidden text-left transition-all hover:opacity-90"
-      style={{
-        border: `2px solid ${selected ? 'var(--brick-dk)' : 'transparent'}`,
-        outline: selected ? '3px solid var(--brick-lt)' : 'none',
-      }}
-    >
-      {/* Gradient strip */}
-      <div
-        style={{
-          height: 8,
-          background: `linear-gradient(90deg, ${paleta.cor1} 0%, ${paleta.cor2} 100%)`,
-        }}
-      />
-      {/* Dark card */}
-      <div
-        className="flex items-center justify-between px-3 py-2.5"
-        style={{ background: paleta.bg }}
-      >
-        <p className="text-[11px] font-semibold" style={{ color: '#f0f0ee' }}>
-          {paleta.nome}
-        </p>
-        {selected && (
-          <div
-            className="w-4 h-4 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--brick-dk)' }}
-          >
-            <Check style={{ width: 9, height: 9, color: '#fff' }} />
-          </div>
-        )}
       </div>
     </button>
   )
