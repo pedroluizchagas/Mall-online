@@ -19,14 +19,15 @@
 - [ ] **(adiado)** Fonts por arquétipo via `next/font` — tokens `--font-display/--font-body` já emitidos; carregamento dinâmico fica para refinamento (Fase 4).
 - **Saída:** loja com `{v:2,preset:'noir'}` e outra com `{v:2,preset:'heritage'}` renderizam visivelmente diferentes; lojas atuais inalteradas.
 
-## Fase 2 — App consumidor aplica o tema (mobile)
+## Fase 2 — App consumidor aplica o tema (mobile) ✅ IMPLEMENTADA
 **Objetivo:** "o app se transforma na loja" ao entrar nela.
-- [ ] `app/loja/[slug].tsx`: carregar `theme`, envolver com `StoreThemeProvider` ([04 §4.4]).
-- [ ] Migrar componentes de loja de `consumerDesign.colors` → `useStoreTheme()`.
-- [ ] Manter tema Mallevo nas abas/home (fronteira dentro/fora — [05 §5.2]).
-- [ ] Fonts via `expo-font` (conjunto fechado).
-- [ ] (Opcional) transição de motion ao entrar na loja.
-- **Saída:** paridade visual storefront ↔ app para a mesma loja.
+- [x] `lib/store-theme.tsx`: adaptador RN — `colorsFromTheme(theme)` mapeia `ThemeTokens`→forma de `consumerDesign.colors` (+`accentInk`); `StoreColorsProvider`/`useStoreColors` (contexto com **default = paleta Mallevo**).
+- [x] `app/loja/[slug].tsx`: `select` passa a trazer `theme`; `colors = colorsFromTheme(loja.theme)`; árvore envolvida em `StoreColorsProvider`; FAB usa `accentInk`.
+- [x] Componentes migrados de `consumerDesign.colors` (módulo) → `useStoreColors()` por componente: `ProdutoCard` (3), `ModalProduto` (9), `ui/Botao` (shared). Idioma "selecionado/primário" (`bg ink + texto/ícone accent`) → `accent + accentInk` (chips, checkbox, qty, CTA).
+- [x] **Fronteira dentro/fora:** como o default do contexto é Mallevo, abas/home/checkout e componentes compartilhados (`Botao`) ficam idênticos fora da loja; só dentro de loja com preset v2 a pele muda. RN `Modal` preserva o contexto (modal tematiza junto).
+- [x] **Guard anti-regressão:** `hasExplicitPreset` — loja sem tema / v1 → Mallevo intacto. `tsc --noEmit` limpo (remoção do `colors` de módulo garante que todo componente tem o hook).
+- [ ] **(adiado)** Fonts via `expo-font` (Fase 4) e transição de motion ao entrar na loja.
+- **Saída:** paridade visual storefront ↔ app para a mesma loja; lojas atuais inalteradas.
 
 ## Fase 3 — Onboarding e edição
 **Objetivo:** o lojista escolhe e ajusta o tema sozinho.

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   View,
   Text,
@@ -17,8 +17,13 @@ import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { consumerDesign } from '@/lib/consumer-design'
+import {
+  StoreColorsProvider,
+  useStoreColors,
+  colorsFromTheme,
+} from '@/lib/store-theme'
 
-const { colors, radius, shadow } = consumerDesign
+const { radius, shadow } = consumerDesign
 
 interface Produto {
   id: string
@@ -53,6 +58,9 @@ export default function PaginaLoja() {
   const totalItens = useCartStore((s) => s.totalItens())
   const total = useCartStore((s) => s.total())
 
+  // Pele da loja: preset v2 explícito tematiza; sem tema / v1 → Mallevo.
+  const colors = useMemo(() => colorsFromTheme(loja?.theme), [loja?.theme])
+
   useEffect(() => {
     async function carregar() {
       const { data: lojaData } = await supabase
@@ -61,7 +69,7 @@ export default function PaginaLoja() {
           id, nome, descricao, logo_url, banner_url,
           taxa_entrega, tempo_entrega, telefone,
           aceita_pix, aceita_cartao_online,
-          horarios, tenant_id,
+          horarios, tenant_id, theme,
           categoria:categories(slug)
         `)
         .eq('slug', slug)
@@ -155,6 +163,7 @@ export default function PaginaLoja() {
   const espacoFinal = totalItens > 0 ? 120 : 40
 
   return (
+    <StoreColorsProvider value={colors}>
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -407,12 +416,12 @@ export default function PaginaLoja() {
           ]}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <ConsumerIcon name="bag" size={20} color={colors.ink} strokeWidth={2.1} />
-            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.ink }}>
+            <ConsumerIcon name="bag" size={20} color={colors.accentInk} strokeWidth={2.1} />
+            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.accentInk }}>
               {totalItens} {totalItens === 1 ? 'item' : 'itens'}
             </Text>
           </View>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.ink }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.accentInk }}>
             {formatarReais(total)}
           </Text>
         </TouchableOpacity>
@@ -427,6 +436,7 @@ export default function PaginaLoja() {
         />
       )}
     </View>
+    </StoreColorsProvider>
   )
 }
 
@@ -437,6 +447,7 @@ function BotaoCircular({
   icone: 'back'
   aoTocar: () => void
 }) {
+  const colors = useStoreColors()
   return (
     <TouchableOpacity
       onPress={aoTocar}

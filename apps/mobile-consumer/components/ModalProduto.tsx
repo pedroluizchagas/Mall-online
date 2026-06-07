@@ -18,6 +18,7 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
+import { useStoreColors } from '@/lib/store-theme'
 import type {
   ItemCarrinhoAgendamento,
   ItemCarrinhoModifier,
@@ -30,7 +31,7 @@ import type {
  * Spec: docs/system-design/consumer/04-componentes-dominio.md §6
  */
 
-const { colors, radius, shadow } = consumerDesign
+const { radius, shadow } = consumerDesign
 const { height } = Dimensions.get('window')
 
 interface Produto {
@@ -115,6 +116,7 @@ interface VariantRow {
 }
 
 export function ModalProduto({ produto, loja, onFechar }: Props) {
+  const colors = useStoreColors()
   const [quantidade, setQuantidade] = useState(1)
   const [observacoes, setObservacoes] = useState('')
   const [trocandoLoja, setTrocandoLoja] = useState(false)
@@ -1063,6 +1065,7 @@ function SecaoAgendamento({
   staffSelecionado: string | null
   aoSelecionarStaff: (id: string | null) => void
 }) {
+  const colors = useStoreColors()
   const dias = useMemo(() => {
     const out: Array<{ ymd: string; rotuloDia: string; rotuloData: string }> = []
     const hoje = new Date()
@@ -1264,6 +1267,7 @@ function LinhaStaff({
   ultimo?: boolean
   aoTocar: () => void
 }) {
+  const colors = useStoreColors()
   return (
     <TouchableOpacity
       onPress={aoTocar}
@@ -1328,6 +1332,7 @@ function GrupoVariants({
   optionAlcancavel: (optionId: string) => boolean
   aoSelecionar: (optionId: string) => void
 }) {
+  const colors = useStoreColors()
   const ehCor = grupo.nome.toLowerCase() === 'cor'
   return (
     <View style={{ gap: 8 }}>
@@ -1389,15 +1394,12 @@ function ChipOption({
   alcancavel: boolean
   aoTocar: () => void
 }) {
+  const colors = useStoreColors()
   const desabilitado = !alcancavel && !selecionada
-  const corBorda = selecionada
-    ? colors.ink
-    : desabilitado
-      ? colors.line
-      : colors.line
-  const corFundo = selecionada ? colors.ink : colors.surface
+  const corBorda = selecionada ? colors.accent : colors.line
+  const corFundo = selecionada ? colors.accent : colors.surface
   const corTexto = selecionada
-    ? colors.accent
+    ? colors.accentInk
     : desabilitado
       ? colors.inkSoft
       : colors.ink
@@ -1454,6 +1456,7 @@ function GrupoModifiers({
   selecionados: Set<string>
   aoAlternar: (modifierId: string) => void
 }) {
+  const colors = useStoreColors()
   const obrigatorio = grupo.min_select > 0
   const single = grupo.max_select === 1
 
@@ -1535,6 +1538,7 @@ function ModifierLinha({
   ultimo: boolean
   aoTocar: () => void
 }) {
+  const colors = useStoreColors()
   const desabilitado = !modifier.disponivel
   return (
     <TouchableOpacity
@@ -1581,6 +1585,7 @@ function SeletorIndicador({
   selecionado: boolean
   single: boolean
 }) {
+  const colors = useStoreColors()
   if (single) {
     return (
       <View
@@ -1614,14 +1619,14 @@ function SeletorIndicador({
         height: 20,
         borderRadius: 4,
         borderWidth: 2,
-        borderColor: selecionado ? colors.ink : colors.line,
-        backgroundColor: selecionado ? colors.ink : 'transparent',
+        borderColor: selecionado ? colors.accent : colors.line,
+        backgroundColor: selecionado ? colors.accent : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
       }}
     >
       {selecionado && (
-        <ConsumerIcon name="check" size={12} color={colors.accent} strokeWidth={3} />
+        <ConsumerIcon name="check" size={12} color={colors.accentInk} strokeWidth={3} />
       )}
     </View>
   )
@@ -1638,8 +1643,9 @@ function BotaoQty({
   desabilitado?: boolean
   primario?: boolean
 }) {
-  const fundo = primario ? colors.ink : colors.surfaceMuted
-  const cor = primario ? colors.accent : colors.ink
+  const colors = useStoreColors()
+  const fundo = primario ? colors.accent : colors.surfaceMuted
+  const cor = primario ? colors.accentInk : colors.ink
   return (
     <TouchableOpacity
       onPress={aoTocar}

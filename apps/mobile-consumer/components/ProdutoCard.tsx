@@ -2,6 +2,7 @@ import { View, Text, Image, TouchableOpacity } from 'react-native'
 import { formatarReais } from '@mallevo/lib'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
+import { useStoreColors } from '@/lib/store-theme'
 
 /**
  * Card de produto. 2 variantes:
@@ -11,7 +12,7 @@ import { consumerDesign } from '@/lib/consumer-design'
  * Spec: docs/system-design/consumer/04-componentes-dominio.md §3
  */
 
-const { colors, radius } = consumerDesign
+const { radius } = consumerDesign
 
 export interface ProdutoCardModel {
   id: string
@@ -29,6 +30,7 @@ interface Props {
 }
 
 export function ProdutoCard({ produto, aoTocar, variante = 'lista' }: Props) {
+  const colors = useStoreColors()
   const precoFinal = produto.preco_promocional ?? produto.preco
   const temPromo = !!produto.preco_promocional
 
@@ -113,6 +115,7 @@ function ImagemProduto({
   altura: number
   largura?: number | `${number}%`
 }) {
+  const colors = useStoreColors()
   if (url) {
     return (
       <Image
@@ -151,6 +154,7 @@ function PrecoLinha({
   preco: number
   precoOriginal?: number
 }) {
+  const colors = useStoreColors()
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
       <Text style={{ fontSize: 15, fontWeight: '800', color: colors.ink }}>

@@ -1,5 +1,6 @@
 import { TouchableOpacity, Text, ActivityIndicator } from 'react-native'
 import { consumerDesign } from '@/lib/consumer-design'
+import { useStoreColors } from '@/lib/store-theme'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 
 /**
@@ -8,7 +9,7 @@ import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
  * Spec: docs/system-design/consumer/03-componentes-base.md §1
  */
 
-const { colors, radius } = consumerDesign
+const { radius } = consumerDesign
 
 export type BotaoVariante = 'primario' | 'secundario' | 'ghost' | 'dark' | 'danger'
 export type BotaoTamanho = 'sm' | 'md' | 'lg'
@@ -24,22 +25,6 @@ interface BotaoProps {
   iconeDireita?: ConsumerIconName
   /** 'completa' (default) ocupa toda a largura do pai; 'auto' encolhe ao conteúdo. */
   largura?: 'auto' | 'completa'
-}
-
-const VARIANTE_BG: Record<BotaoVariante, string> = {
-  primario: colors.accent,
-  secundario: colors.surface,
-  ghost: 'transparent',
-  dark: colors.ink,
-  danger: colors.danger,
-}
-
-const VARIANTE_TEXTO: Record<BotaoVariante, string> = {
-  primario: colors.ink,
-  secundario: colors.ink,
-  ghost: colors.inkMuted,
-  dark: colors.accent,
-  danger: colors.white,
 }
 
 const TAMANHO: Record<BotaoTamanho, { altura: number; padX: number; fonte: number; tamIcone: number }> = {
@@ -59,8 +44,24 @@ export function Botao({
   iconeDireita,
   largura = 'completa',
 }: BotaoProps) {
+  const colors = useStoreColors()
   const inativo = carregando || desabilitado
   const t = TAMANHO[tamanho]
+
+  const VARIANTE_BG: Record<BotaoVariante, string> = {
+    primario: colors.accent,
+    secundario: colors.surface,
+    ghost: 'transparent',
+    dark: colors.ink,
+    danger: colors.danger,
+  }
+  const VARIANTE_TEXTO: Record<BotaoVariante, string> = {
+    primario: colors.accentInk,
+    secundario: colors.ink,
+    ghost: colors.inkMuted,
+    dark: colors.accent,
+    danger: colors.white,
+  }
   const cor = VARIANTE_TEXTO[variante]
 
   return (
