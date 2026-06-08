@@ -17,6 +17,9 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
         mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
+        // Dirigidas por StoreTheme: fora da loja caem no Jakarta (:root).
+        display: ['var(--font-display)', 'var(--font-jakarta)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body)', 'var(--font-jakarta)', 'system-ui', 'sans-serif'],
       },
       colors: {
         // Tokens dirigidos por StoreTheme: `var(--token, <fallback Mallevo>)`.

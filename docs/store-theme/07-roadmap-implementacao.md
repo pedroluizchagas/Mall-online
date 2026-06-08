@@ -38,15 +38,16 @@
 - [ ] **(adiado p/ Fase 4)** Extração de cor da logo ([06 §6.3], precisa de lib de quantização) e etapa de tema embutida no fluxo de onboarding ([06 §6.1]) — o editor `/minha-loja` já é a superfície canônica, acessível a qualquer momento.
 - **Saída:** lojista escolhe um dos 11 estilos (sugeridos por nicho) + cor, vê o preview fiel e publica `StoreThemeConfig v2` que o storefront (Fase 1) e o app (Fase 2) renderizam.
 
-## Tipos v1 (`packages/types/domain.ts`)
-`TemplateVitrine`/`PaletaVitrine`/`StoreTheme` ficam no arquivo mas **não são mais usados** (editor/action/supabase migrados). Podem ser removidos num passo de limpeza futuro; mantidos por ora para não quebrar imports externos eventuais.
+## Tipos v1 (`packages/types/domain.ts`) ✅ REMOVIDOS (Fase 4)
+`TemplateVitrine`/`PaletaVitrine`/`StoreTheme` removidos — substituídos por `StoreThemeConfig`/`ThemeTokens` em `@mallevo/lib`. Coluna `stores.theme` tipada como `Json | null`.
 
-## Fase 4 — Refinamento dos presets
+## Fase 4 — Refinamento (tipografia + limpeza) 🟡 PARCIAL
 **Objetivo:** elevar de "funciona" para "premium".
-- [ ] Ajustar hex/fontes/raios de cada arquétipo contra as refs-âncora ([02](02-arquetipos-de-design.md)).
-- [ ] Prova de conceito 1:1 com uma ref por arquétipo (ex.: reproduzir o "feel" de Veloria no `heritage`).
-- [ ] Paletas adicionais por arquétipo.
-- [ ] Mapeamento fino wizard→arquétipo ([06 §6.4]).
+- [x] **Tipografia dinâmica no storefront:** `StoreThemeRoot` resolve as fontes do arquétipo, injeta `<link>` do Google Fonts **só das famílias daquela loja** (eficiente por tenant) e seta `--font-display`/`--font-body`. `tailwind.config` ganha `font-display`/`font-body`; `globals.css :root` faz default = Jakarta (fora da loja inalterado). Títulos (`StoreHeader` nome, `MenuSection`, `ProductModal`) usam `font-display`; corpo herda `font-body`. Build de produção OK — cada arquétipo agora tem sua voz tipográfica (Heritage=Fraunces serif, Raw=Archivo, Noir=Cormorant, etc.).
+- [x] **Limpeza dos tipos v1** (`domain.ts`).
+- [ ] **(pendente) Fonts no mobile:** precisa de `@expo-google-fonts/*` + `expo-font` (instalação de deps + gate de carregamento). O adaptador já expõe a família via tokens; falta carregar as fontes no boot.
+- [ ] **(pendente) Extração de cor da logo** no onboarding ([06 §6.3]) — precisa de lib de quantização (ex.: node-vibrant) ou canvas no client.
+- [ ] Ajuste fino de hex/raios de cada arquétipo contra as refs-âncora ([02](02-arquetipos-de-design.md)); paletas adicionais por arquétipo; mapeamento fino wizard→arquétipo ([06 §6.4]).
 
 ## Migração de dados (`stores.theme` v1 → v2)
 

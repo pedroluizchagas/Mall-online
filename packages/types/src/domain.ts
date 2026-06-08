@@ -96,20 +96,8 @@ export interface HorariosFuncionamento {
   dom?: { abre: string; fecha: string } | null
 }
 
-// Vitrine — template visual da loja (preset de layout/tipografia)
-export type TemplateVitrine = 'market' | 'boutique' | 'artesanal' | 'neon'
-
-// Vitrine — paleta de cores aplicada sobre o template
-export type PaletaVitrine =
-  | 'midnight'
-  | 'ocean'
-  | 'berry'
-  | 'ember'
-  | 'slate'
-  | 'matcha'
-
-// Vitrine — tema persistido em stores.theme (jsonb)
-export interface StoreTheme {
-  template: TemplateVitrine
-  paleta: PaletaVitrine | null
-}
+// Vitrine — o tema visual da loja (StoreTheme) agora vive em
+// @mallevo/lib (packages/lib/src/store-theme): `StoreThemeConfig` (persistido
+// em stores.theme) + `ThemeTokens` (resolvido). Os tipos v1
+// (TemplateVitrine/PaletaVitrine/StoreTheme) foram removidos na Fase 4 —
+// ver docs/store-theme/.

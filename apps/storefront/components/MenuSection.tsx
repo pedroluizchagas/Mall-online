@@ -26,7 +26,7 @@ export function MenuSection({
 }) {
   return (
     <section className="mt-4 px-6">
-      <h2 className="mb-1 text-lg font-extrabold tracking-tight text-ink">
+      <h2 className="mb-1 font-display text-lg font-extrabold tracking-tight text-ink">
         {titulo}
       </h2>
       {produtos.map((p) => (

@@ -18,6 +18,9 @@
   --success: #8ed14f;
   --warning: #f2b84b;
   --danger: #ff6d5e;
+  /* Tipografia: default Mallevo (Jakarta). StoreThemeRoot sobrescreve por loja. */
+  --font-display: var(--font-jakarta);
+  --font-body: var(--font-jakarta);
 }
 
 *,

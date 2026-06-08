@@ -341,7 +341,7 @@ export function ProductModal({
           <div className="flex flex-col gap-4 p-5">
             {/* Título + preço */}
             <div className="flex items-start justify-between gap-4">
-              <h2 className="min-w-0 flex-1 text-xl font-extrabold tracking-tight text-ink">
+              <h2 className="min-w-0 flex-1 font-display text-xl font-extrabold tracking-tight text-ink">
                 {produto.nome}
               </h2>
               <div className="flex flex-col items-end">
