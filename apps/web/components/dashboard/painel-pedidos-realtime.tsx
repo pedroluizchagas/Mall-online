@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
-import { Search, Filter, MapPin, Check, X, Bike, Phone, Download, CreditCard } from 'lucide-react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { Search, MapPin, Check, X, Bike, Phone, Download, CreditCard, Volume2, VolumeX } from 'lucide-react'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { atualizarStatusPedido } from '@/lib/actions/pedidos'
 import { Card } from '@/components/ui/card'
@@ -11,6 +12,24 @@ import { ProductThumb } from '@/components/ui/product-thumb'
 import { money } from '@/lib/format'
 
 type FiltroKey = 'todos' | 'novo' | 'em_preparo' | 'saiu_para_entrega' | 'entregue'
+
+const FILTROS_VALIDOS: readonly FiltroKey[] = [
+  'todos',
+  'novo',
+  'em_preparo',
+  'saiu_para_entrega',
+  'entregue',
+]
+
+/** Normaliza para busca: minúsculas, sem acentos. */
+function normalizarBusca(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+}
+
+const CHAVE_SOM = 'pedidos-som'
 
 interface Pedido {
   id: string
@@ -50,12 +69,51 @@ interface Pedido {
 }
 
 export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pedido[] }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   const [pedidos, setPedidos] = useState<Pedido[]>(pedidosIniciais)
-  const [filtro, setFiltro] = useState<FiltroKey>('todos')
-  const [search, setSearch] = useState('')
+  // Filtro e busca vivem na URL (?f= / ?q=): sobrevivem a reload/navegação
+  // e são compartilháveis (dashboard-redesign Fase 3 §1).
+  const [filtro, setFiltro] = useState<FiltroKey>(() => {
+    const f = searchParams.get('f') as FiltroKey | null
+    return f && FILTROS_VALIDOS.includes(f) ? f : 'todos'
+  })
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '')
   const [selectedId, setSelectedId] = useState<string | null>(pedidosIniciais[0]?.id ?? null)
+  // Som de novo pedido é opt-out persistido (Fase 3 §1: "som opt-in").
+  const [somAtivo, setSomAtivo] = useState(true)
   const supabase = createSupabaseClient()
   const audioRef = useRef<AudioContext | null>(null)
+  const somAtivoRef = useRef(somAtivo)
+
+  useEffect(() => {
+    setSomAtivo(localStorage.getItem(CHAVE_SOM) !== 'off')
+  }, [])
+  useEffect(() => {
+    somAtivoRef.current = somAtivo
+  }, [somAtivo])
+
+  function alternarSom() {
+    setSomAtivo((s) => {
+      localStorage.setItem(CHAVE_SOM, s ? 'off' : 'on')
+      return !s
+    })
+  }
+
+  // Espelha filtro/busca na URL (replace: sem poluir o histórico; busca
+  // levemente debounced para não reescrever a URL a cada tecla).
+  useEffect(() => {
+    const t = setTimeout(() => {
+      const params = new URLSearchParams()
+      if (filtro !== 'todos') params.set('f', filtro)
+      if (search.trim()) params.set('q', search.trim())
+      const qs = params.toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    }, 300)
+    return () => clearTimeout(t)
+  }, [filtro, search, pathname, router])
 
   // Audio context unlock
   useEffect(() => {
@@ -127,7 +185,7 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
                 .single()
               if (data) {
                 setPedidos((prev) => [data as unknown as Pedido, ...prev])
-                tocarSom()
+                if (somAtivoRef.current) tocarSom()
               }
             }
             if (payload.eventType === 'UPDATE') {
@@ -167,9 +225,21 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
     } else if (filtro !== 'todos' && o.status !== filtro) {
       return false
     }
-    if (!search) return true
-    const q = search.toLowerCase()
-    return o.id.toLowerCase().includes(q) || (o.consumers?.nome ?? '').toLowerCase().includes(q)
+    if (!search.trim()) return true
+
+    // Busca por nº do pedido, cliente, telefone ou bairro (Fase 3 §1).
+    const q = normalizarBusca(search.trim().replace(/^#/, ''))
+    const qDigitos = q.replace(/\D/g, '')
+    if (o.id.toLowerCase().includes(q)) return true
+    if (normalizarBusca(o.consumers?.nome ?? '').includes(q)) return true
+    if (normalizarBusca(o.endereco_entrega?.bairro ?? '').includes(q)) return true
+    if (
+      qDigitos.length >= 4 &&
+      (o.consumers?.telefone ?? '').replace(/\D/g, '').includes(qDigitos)
+    ) {
+      return true
+    }
+    return false
   })
 
   const novosCount = pedidos.filter((o) => o.status === 'novo').length
@@ -189,9 +259,15 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
         <div className="flex gap-2">
           <SearchInput value={search} onChange={setSearch} />
           <button
+            type="button"
+            onClick={alternarSom}
+            aria-pressed={somAtivo}
+            title={somAtivo ? 'Silenciar som de novos pedidos' : 'Ativar som de novos pedidos'}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors"
+            style={somAtivo ? undefined : { color: 'var(--ink-3)' }}
           >
-            <Filter className="w-3.5 h-3.5" /> Filtros
+            {somAtivo ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+            Som
           </button>
         </div>
       </div>
@@ -607,7 +683,7 @@ function SearchInput({ value, onChange }: { value: string; onChange: (v: string)
       <input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Buscar #id, cliente..."
+        placeholder="Buscar #id, cliente, telefone, bairro…"
         className="bg-transparent border-none outline-none flex-1 text-[13px]"
       />
     </div>
