@@ -1,15 +1,15 @@
 import { TouchableOpacity, Text, ActivityIndicator } from 'react-native'
 import { consumerDesign } from '@/lib/consumer-design'
-import { useStoreColors } from '@/lib/store-theme'
+import { useStoreDesign } from '@/lib/store-theme'
+import { fontStyle } from '@/lib/store-fonts'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 
 /**
- * Botão padrão do mobile-consumer.
+ * Botão padrão do mobile-consumer. Dentro de uma loja com StoreTheme, veste
+ * a pele dela (accent/raio/fonte via useStoreDesign); fora, design Mallevo.
  *
  * Spec: docs/system-design/consumer/03-componentes-base.md §1
  */
-
-const { radius } = consumerDesign
 
 export type BotaoVariante = 'primario' | 'secundario' | 'ghost' | 'dark' | 'danger'
 export type BotaoTamanho = 'sm' | 'md' | 'lg'
@@ -44,7 +44,8 @@ export function Botao({
   iconeDireita,
   largura = 'completa',
 }: BotaoProps) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors } = design
   const inativo = carregando || desabilitado
   const t = TAMANHO[tamanho]
 
@@ -72,7 +73,7 @@ export function Botao({
       style={{
         height: t.altura,
         paddingHorizontal: t.padX,
-        borderRadius: radius.pill,
+        borderRadius: design.radius.pill,
         backgroundColor: VARIANTE_BG[variante],
         alignItems: 'center',
         justifyContent: 'center',
@@ -91,7 +92,14 @@ export function Botao({
           {iconeEsquerda && (
             <ConsumerIcon name={iconeEsquerda} size={t.tamIcone} color={cor} strokeWidth={2.1} />
           )}
-          <Text style={{ fontSize: t.fonte, fontWeight: '800', color: cor, letterSpacing: 0.2 }}>
+          <Text
+            style={{
+              fontSize: t.fonte,
+              color: cor,
+              letterSpacing: 0.2,
+              ...fontStyle(design.body, 800),
+            }}
+          >
             {label}
           </Text>
           {iconeDireita && (

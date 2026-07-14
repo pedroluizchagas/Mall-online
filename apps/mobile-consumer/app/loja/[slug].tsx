@@ -18,12 +18,13 @@ import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { consumerDesign } from '@/lib/consumer-design'
 import {
-  StoreColorsProvider,
-  useStoreColors,
-  colorsFromTheme,
+  StoreDesignProvider,
+  useStoreDesign,
+  useStoreDesignFromTheme,
 } from '@/lib/store-theme'
+import { fontStyle } from '@/lib/store-fonts'
 
-const { radius, shadow } = consumerDesign
+const { shadow } = consumerDesign
 
 interface Produto {
   id: string
@@ -58,8 +59,10 @@ export default function PaginaLoja() {
   const totalItens = useCartStore((s) => s.totalItens())
   const total = useCartStore((s) => s.total())
 
-  // Pele da loja: preset v2 explícito tematiza; sem tema / v1 → Mallevo.
-  const colors = useMemo(() => colorsFromTheme(loja?.theme), [loja?.theme])
+  // Pele da loja: preset v2 explícito tematiza (cores + forma + densidade +
+  // tipografia, fontes carregadas em background); sem tema / v1 → Mallevo.
+  const design = useStoreDesignFromTheme(loja?.theme)
+  const { colors, spacing, typeFactor } = design
 
   useEffect(() => {
     async function carregar() {
@@ -163,7 +166,7 @@ export default function PaginaLoja() {
   const espacoFinal = totalItens > 0 ? 120 : 40
 
   return (
-    <StoreColorsProvider value={colors}>
+    <StoreDesignProvider value={design}>
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
       <Stack.Screen options={{ headerShown: false }} />
 
@@ -202,12 +205,12 @@ export default function PaginaLoja() {
           style={{
             flex: 1,
             fontSize: 16,
-            fontWeight: '800',
             color: colors.ink,
             textAlign: 'center',
             opacity: titleOpacity,
             marginRight: 40,
             letterSpacing: -0.2,
+            ...fontStyle(design.display, 800),
           }}
           numberOfLines={1}
         >
@@ -277,17 +280,17 @@ export default function PaginaLoja() {
         <View
           style={{
             backgroundColor: colors.surface,
-            paddingHorizontal: 24,
+            paddingHorizontal: spacing.screenX,
             paddingVertical: 24,
             gap: 12,
           }}
         >
           <Text
             style={{
-              fontSize: 26,
-              fontWeight: '800',
+              fontSize: Math.round(26 * typeFactor),
               color: colors.ink,
               letterSpacing: -0.5,
+              ...fontStyle(design.display, 800),
             }}
           >
             {loja?.nome}
@@ -298,8 +301,8 @@ export default function PaginaLoja() {
               style={{
                 fontSize: 14,
                 color: colors.inkMuted,
-                fontWeight: '500',
                 lineHeight: 20,
+                ...fontStyle(design.body, 500),
               }}
               numberOfLines={3}
             >
@@ -336,7 +339,11 @@ export default function PaginaLoja() {
                 }}
               />
               <Text
-                style={{ fontSize: 13, color: colors.inkMuted, fontWeight: '600' }}
+                style={{
+                  fontSize: 13,
+                  color: colors.inkMuted,
+                  ...fontStyle(design.body, 600),
+                }}
               >
                 Aberto
               </Text>
@@ -368,15 +375,15 @@ export default function PaginaLoja() {
         {secoes.map((secao) => (
           <View
             key={secao.titulo}
-            style={{ marginTop: 16, paddingHorizontal: 24 }}
+            style={{ marginTop: spacing.section, paddingHorizontal: spacing.screenX }}
           >
             <Text
               style={{
-                fontSize: 18,
-                fontWeight: '800',
+                fontSize: Math.round(18 * typeFactor),
                 color: colors.ink,
                 letterSpacing: -0.2,
                 marginBottom: 4,
+                ...fontStyle(design.display, 800),
               }}
             >
               {secao.titulo}
@@ -405,7 +412,7 @@ export default function PaginaLoja() {
               right: 16,
               bottom: insets.bottom + 16,
               height: 56,
-              borderRadius: radius.pill,
+              borderRadius: design.radius.pill,
               backgroundColor: colors.accent,
               flexDirection: 'row',
               alignItems: 'center',
@@ -417,11 +424,15 @@ export default function PaginaLoja() {
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <ConsumerIcon name="bag" size={20} color={colors.accentInk} strokeWidth={2.1} />
-            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.accentInk }}>
+            <Text
+              style={{ fontSize: 15, color: colors.accentInk, ...fontStyle(design.body, 800) }}
+            >
               {totalItens} {totalItens === 1 ? 'item' : 'itens'}
             </Text>
           </View>
-          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.accentInk }}>
+          <Text
+            style={{ fontSize: 15, color: colors.accentInk, ...fontStyle(design.body, 800) }}
+          >
             {formatarReais(total)}
           </Text>
         </TouchableOpacity>
@@ -436,7 +447,7 @@ export default function PaginaLoja() {
         />
       )}
     </View>
-    </StoreColorsProvider>
+    </StoreDesignProvider>
   )
 }
 
@@ -447,7 +458,7 @@ function BotaoCircular({
   icone: 'back'
   aoTocar: () => void
 }) {
-  const colors = useStoreColors()
+  const { colors } = useStoreDesign()
   return (
     <TouchableOpacity
       onPress={aoTocar}
@@ -478,10 +489,11 @@ function LinhaMeta({
   rotulo: string
   cor: string
 }) {
+  const design = useStoreDesign()
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
       <ConsumerIcon name={icone} size={14} color={cor} />
-      <Text style={{ fontSize: 13, color: cor, fontWeight: '600' }}>
+      <Text style={{ fontSize: 13, color: cor, ...fontStyle(design.body, 600) }}>
         {rotulo}
       </Text>
     </View>

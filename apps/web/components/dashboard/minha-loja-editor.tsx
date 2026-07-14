@@ -4,7 +4,10 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, Lock, Upload, Zap, ImagePlus } from 'lucide-react'
 import {
   ARQUETIPOS,
+  RADIUS_STEPS_PX,
+  TYPE_SCALE_FACTOR,
   getArquetipoSugestao,
+  googleFontsHref,
   resolveTheme,
   type ArquetipoCodigo,
   type ThemeTokens,
@@ -27,15 +30,36 @@ type Tema = {
   textoPrimario: string
   textoSecundario: string
   linha: string
+  /** Raio (px, já na escala do preview) de cards/imagens. */
+  raioCard: number
+  /** Raio (px, escala do preview) de chips e CTAs "stadium". */
+  raioPill: number
+  /** Família display do arquétipo (carregada via Google Fonts no preview). */
+  fonteDisplay: string
+  /** Fator de escala dos títulos (typography.scale do arquétipo). */
+  fatorTipo: number
+}
+
+/** O phone mockup é ~55% do device real — raios acompanham a miniatura. */
+const ESCALA_PREVIEW = 0.55
+function raioPreview(px: number): number {
+  return px >= 999 ? 999 : Math.max(2, Math.round(px * ESCALA_PREVIEW))
+}
+
+/** Pilha de fonte do display no preview (fallback de sistema). */
+function fonteDisplayCss(tema: Tema): string {
+  return `"${tema.fonteDisplay}", system-ui, sans-serif`
 }
 
 /**
  * Deriva o `Tema` do preview a partir dos tokens resolvidos do StoreTheme — a
- * MESMA engine (`resolveTheme`, @mallevo/lib) que o storefront e o app usam.
- * Garante "o que vejo é o que publico". Preço/realce em `ink` (igual aos apps
- * reais, onde o preço é renderizado em text-ink, não no accent).
+ * MESMA engine (`resolveTheme`, @mallevo/lib) que o storefront e o app usam,
+ * incluindo forma (RADIUS_STEPS_PX) e tipografia (família display +
+ * TYPE_SCALE_FACTOR). Garante "o que vejo é o que publico". Preço/realce em
+ * `ink` (igual aos apps reais, onde o preço é renderizado em text-ink).
  */
 function temaFromTokens(t: ThemeTokens): Tema {
+  const raios = RADIUS_STEPS_PX[t.shape.radius]
   return {
     acento: t.color.accent,
     acentoDk: t.color.ink,
@@ -46,6 +70,10 @@ function temaFromTokens(t: ThemeTokens): Tema {
     textoPrimario: t.color.ink,
     textoSecundario: t.color.inkMuted,
     linha: t.color.line,
+    raioCard: raioPreview(raios.md),
+    raioPill: raioPreview(raios.pill),
+    fonteDisplay: t.typography.display.family,
+    fatorTipo: TYPE_SCALE_FACTOR[t.typography.scale],
   }
 }
 
@@ -133,6 +161,8 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
     ...(accent ? { color: { accent } } : {}),
   })
   const temaAtivo: Tema = temaFromTokens(tokens)
+  // Fonte display do arquétipo ativo — o preview tipografa como os apps reais.
+  const fontsHref = googleFontsHref(tokens)
 
   const sugestao = getArquetipoSugestao(loja.categoriaSlug)
   const recomendados: ArquetipoCodigo[] = [sugestao.default, ...sugestao.alternativas]
@@ -204,6 +234,12 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
 
   return (
     <div className="flex" style={{ height: '100%' }}>
+      {fontsHref && (
+        <>
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+          <link rel="stylesheet" href={fontsHref} />
+        </>
+      )}
       {/* ── Painel esquerdo (editor) ──────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-w-0">
         <div className="p-9 max-w-[720px]">
@@ -569,6 +605,9 @@ function ArquetipoCard({
 }) {
   const arq = ARQUETIPOS[code]
   const template = temaFromTokens(arq.tokens)
+  // Mini-preview (~40% do phone): raio reduzido proporcionalmente para que o
+  // DNA de forma do arquétipo (sharp/soft/round) apareça já na seleção.
+  const raioMini = Math.max(1, Math.round(template.raioCard * 0.6))
   return (
     <button
       onClick={onSelect}
@@ -599,7 +638,7 @@ function ArquetipoCard({
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 7 }}>
               <div
                 style={{
-                  width: 28, height: 28, borderRadius: 8,
+                  width: 28, height: 28, borderRadius: raioMini,
                   background: template.acento, flexShrink: 0,
                 }}
               />
@@ -612,7 +651,7 @@ function ArquetipoCard({
               {[0, 1, 2, 3].map((i) => (
                 <div
                   key={i}
-                  style={{ height: 26, borderRadius: 5, background: i === 0 ? template.acento : template.bgCard, border: `1px solid ${template.linha}` }}
+                  style={{ height: 26, borderRadius: raioMini, background: i === 0 ? template.acento : template.bgCard, border: `1px solid ${template.linha}` }}
                 />
               ))}
             </div>
@@ -804,7 +843,7 @@ function HomeScreen({
         <div
           style={{
             padding: '2px 9px',
-            borderRadius: 20,
+            borderRadius: tema.raioPill,
             background: tema.acento,
             fontSize: 9,
             fontWeight: 800,
@@ -838,7 +877,7 @@ function HomeScreen({
             style={{
               width: 36,
               height: 36,
-              borderRadius: 10,
+              borderRadius: tema.raioCard,
               overflow: 'hidden',
               flexShrink: 0,
               background: tema.acento,
@@ -859,8 +898,9 @@ function HomeScreen({
           <div style={{ flex: 1, minWidth: 0 }}>
             <div
               style={{
-                fontSize: 11,
+                fontSize: Math.round(11 * tema.fatorTipo),
                 fontWeight: 700,
+                fontFamily: fonteDisplayCss(tema),
                 color: tema.textoPrimario,
                 letterSpacing: '-0.02em',
                 overflow: 'hidden',
@@ -905,7 +945,7 @@ function HomeScreen({
             style={{
               display: 'inline-block',
               padding: '4px 11px',
-              borderRadius: 20,
+              borderRadius: tema.raioPill,
               background: tema.acento,
               color: tema.acentoInk,
               fontSize: 8,
@@ -943,7 +983,7 @@ function HomeScreen({
               key={c}
               style={{
                 padding: '2px 8px',
-                borderRadius: 20,
+                borderRadius: tema.raioPill,
                 fontSize: 7,
                 fontWeight: 600,
                 background: i === 0 ? tema.acento : 'rgba(128,128,128,0.12)',
@@ -965,7 +1005,7 @@ function HomeScreen({
               key={p.id}
               style={{
                 background: tema.bgCard,
-                borderRadius: 10,
+                borderRadius: tema.raioCard,
                 overflow: 'hidden',
                 border: `1px solid ${tema.linha}`,
               }}
@@ -1019,7 +1059,11 @@ function HomeScreen({
             [0, 1, 2, 3].map((i) => (
               <div
                 key={i}
-                style={{ height: 90, borderRadius: 10, border: `1.5px dashed ${tema.linha}` }}
+                style={{
+                  height: 90,
+                  borderRadius: tema.raioCard,
+                  border: `1.5px dashed ${tema.linha}`,
+                }}
               />
             ))}
         </div>
@@ -1076,7 +1120,14 @@ function ProdutoScreen({
         }}
       >
         <span style={{ fontSize: 14, color: tema.textoSecundario }}>←</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: tema.textoPrimario }}>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            fontFamily: fonteDisplayCss(tema),
+            color: tema.textoPrimario,
+          }}
+        >
           {produto?.nome ?? 'Produto'}
         </span>
       </div>
@@ -1096,8 +1147,9 @@ function ProdutoScreen({
       <div style={{ padding: '10px 12px', flex: 1 }}>
         <div
           style={{
-            fontSize: 13,
+            fontSize: Math.round(13 * tema.fatorTipo),
             fontWeight: 700,
+            fontFamily: fonteDisplayCss(tema),
             color: tema.textoPrimario,
             letterSpacing: '-0.02em',
             marginBottom: 4,
@@ -1130,7 +1182,7 @@ function ProdutoScreen({
               alignItems: 'center',
               gap: 8,
               padding: '4px 10px',
-              borderRadius: 20,
+              borderRadius: tema.raioPill,
               border: `1px solid ${tema.linha}`,
               background: tema.bgCard,
             }}
@@ -1144,7 +1196,7 @@ function ProdutoScreen({
         <div
           style={{
             padding: '9px 14px',
-            borderRadius: 24,
+            borderRadius: tema.raioPill,
             background: tema.acento,
             color: tema.acentoInk,
             fontSize: 10,
@@ -1176,7 +1228,16 @@ function CarrinhoScreen({
 
       {/* Title */}
       <div style={{ padding: '10px 12px 6px', borderBottom: `1px solid ${tema.linha}` }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: tema.textoPrimario }}>Meu carrinho</span>
+        <span
+          style={{
+            fontSize: Math.round(14 * tema.fatorTipo),
+            fontWeight: 700,
+            fontFamily: fonteDisplayCss(tema),
+            color: tema.textoPrimario,
+          }}
+        >
+          Meu carrinho
+        </span>
       </div>
 
       {/* Items */}
@@ -1202,7 +1263,7 @@ function CarrinhoScreen({
               display: 'flex',
               gap: 8,
               background: tema.bgCard,
-              borderRadius: 10,
+              borderRadius: tema.raioCard,
               padding: 7,
               border: `1px solid ${tema.linha}`,
               alignItems: 'center',
@@ -1212,7 +1273,7 @@ function CarrinhoScreen({
               style={{
                 width: 38,
                 height: 38,
-                borderRadius: 8,
+                borderRadius: Math.max(2, tema.raioCard - 2),
                 background: tema.linha,
                 overflow: 'hidden',
                 flexShrink: 0,
@@ -1245,7 +1306,7 @@ function CarrinhoScreen({
                 alignItems: 'center',
                 gap: 6,
                 padding: '2px 7px',
-                borderRadius: 16,
+                borderRadius: tema.raioPill,
                 border: `1px solid ${tema.linha}`,
                 fontSize: 10,
                 color: tema.textoSecundario,
@@ -1268,7 +1329,7 @@ function CarrinhoScreen({
         <div
           style={{
             padding: '9px 14px',
-            borderRadius: 24,
+            borderRadius: tema.raioPill,
             background: tema.acento,
             color: tema.acentoInk,
             fontSize: 10,

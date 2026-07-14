@@ -18,7 +18,8 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
-import { useStoreColors } from '@/lib/store-theme'
+import { useStoreDesign } from '@/lib/store-theme'
+import { fontStyle } from '@/lib/store-fonts'
 import type {
   ItemCarrinhoAgendamento,
   ItemCarrinhoModifier,
@@ -27,11 +28,12 @@ import type {
 
 /**
  * Bottom-sheet de detalhe do produto + adicionar ao carrinho.
+ * Dentro de loja tematizada, cores/raios/densidade/fontes vêm do StoreDesign.
  *
  * Spec: docs/system-design/consumer/04-componentes-dominio.md §6
  */
 
-const { radius, shadow } = consumerDesign
+const { shadow } = consumerDesign
 const { height } = Dimensions.get('window')
 
 interface Produto {
@@ -116,7 +118,8 @@ interface VariantRow {
 }
 
 export function ModalProduto({ produto, loja, onFechar }: Props) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors, radius } = design
   const [quantidade, setQuantidade] = useState(1)
   const [observacoes, setObservacoes] = useState('')
   const [trocandoLoja, setTrocandoLoja] = useState(false)
@@ -637,7 +640,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
               </View>
             )}
 
-            <View style={{ padding: 20, gap: 16 }}>
+            <View style={{ padding: design.spacing.sheet, gap: 16 }}>
               {/* Título + preço */}
               <View
                 style={{
@@ -650,17 +653,21 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                 <Text
                   style={{
                     flex: 1,
-                    fontSize: 20,
-                    fontWeight: '800',
+                    fontSize: Math.round(20 * design.typeFactor),
                     color: colors.ink,
                     letterSpacing: -0.3,
+                    ...fontStyle(design.display, 800),
                   }}
                 >
                   {produto.nome}
                 </Text>
                 <View style={{ alignItems: 'flex-end' }}>
                   <Text
-                    style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}
+                    style={{
+                      fontSize: 18,
+                      color: colors.ink,
+                      ...fontStyle(design.body, 800),
+                    }}
                   >
                     {formatarReais(precoBase)}
                   </Text>
@@ -670,6 +677,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                         fontSize: 13,
                         color: colors.inkSoft,
                         textDecorationLine: 'line-through',
+                        ...fontStyle(design.body, 400),
                       }}
                     >
                       {formatarReais(precoOriginal)}
@@ -703,10 +711,12 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                       fontSize: 13,
                       color: colors.ink,
                       lineHeight: 18,
-                      fontWeight: '500',
+                      ...fontStyle(design.body, 500),
                     }}
                   >
-                    <Text style={{ fontWeight: '800' }}>Exige receita médica.</Text>{' '}
+                    <Text style={fontStyle(design.body, 800)}>
+                      Exige receita médica.
+                    </Text>{' '}
                     Anexe a receita ao finalizar o pedido.
                   </Text>
                 </View>
@@ -718,7 +728,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                     fontSize: 14,
                     color: colors.inkMuted,
                     lineHeight: 20,
-                    fontWeight: '500',
+                    ...fontStyle(design.body, 500),
                   }}
                 >
                   {produto.descricao}
@@ -734,7 +744,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                     style={{
                       fontSize: 12,
                       color: colors.warning,
-                      fontWeight: '700',
+                      ...fontStyle(design.body, 700),
                     }}
                   >
                     Apenas {variantAtivo.stock_quantity} em estoque
@@ -812,7 +822,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                     }}
                   >
                     <Text
-                      style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}
+                      style={{ fontSize: 14, color: colors.ink, ...fontStyle(design.body, 600) }}
                     >
                       Quantidade
                     </Text>
@@ -825,10 +835,10 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                       <Text
                         style={{
                           fontSize: 18,
-                          fontWeight: '800',
                           color: colors.ink,
                           width: 28,
                           textAlign: 'center',
+                          ...fontStyle(design.body, 800),
                         }}
                       >
                         {quantidade}
@@ -860,9 +870,9 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                 style={{
                   fontSize: 12,
                   color: colors.danger,
-                  fontWeight: '600',
                   marginBottom: 8,
                   textAlign: 'center',
+                  ...fontStyle(design.body, 600),
                 }}
               >
                 {erroValidacaoAtual}
@@ -919,7 +929,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                   <ConsumerIcon name="info" size={22} color={colors.warning} />
                 </View>
                 <Text
-                  style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}
+                  style={{ fontSize: 18, color: colors.ink, ...fontStyle(design.display, 800) }}
                 >
                   Trocar de loja?
                 </Text>
@@ -928,11 +938,11 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                     fontSize: 14,
                     color: colors.inkMuted,
                     lineHeight: 20,
-                    fontWeight: '500',
+                    ...fontStyle(design.body, 500),
                   }}
                 >
                   Seu carrinho atual será esvaziado para adicionar itens de{' '}
-                  <Text style={{ fontWeight: '700', color: colors.ink }}>
+                  <Text style={{ color: colors.ink, ...fontStyle(design.body, 700) }}>
                     {loja.nome}
                   </Text>
                   .
@@ -994,7 +1004,9 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                 >
                   <ConsumerIcon name="info" size={22} color={colors.warning} />
                 </View>
-                <Text style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}>
+                <Text
+                  style={{ fontSize: 18, color: colors.ink, ...fontStyle(design.display, 800) }}
+                >
                   Substituir agendamento?
                 </Text>
                 <Text
@@ -1002,7 +1014,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
                     fontSize: 14,
                     color: colors.inkMuted,
                     lineHeight: 20,
-                    fontWeight: '500',
+                    ...fontStyle(design.body, 500),
                   }}
                 >
                   Você só pode ter um agendamento no carrinho por vez. O item
@@ -1065,7 +1077,8 @@ function SecaoAgendamento({
   staffSelecionado: string | null
   aoSelecionarStaff: (id: string | null) => void
 }) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors, radius } = design
   const dias = useMemo(() => {
     const out: Array<{ ymd: string; rotuloDia: string; rotuloData: string }> = []
     const hoje = new Date()
@@ -1096,14 +1109,16 @@ function SecaoAgendamento({
   return (
     <View style={{ gap: 16 }}>
       {duracaoMin != null && (
-        <Text style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '600' }}>
+        <Text
+          style={{ fontSize: 12, color: colors.inkMuted, ...fontStyle(design.body, 600) }}
+        >
           Duração: {duracaoMin} min
         </Text>
       )}
 
       {/* Calendário 14 dias */}
       <View style={{ gap: 8 }}>
-        <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
+        <Text style={{ fontSize: 14, color: colors.ink, ...fontStyle(design.body, 700) }}>
           Escolha a data
           <Text style={{ color: colors.danger }}> *</Text>
         </Text>
@@ -1130,10 +1145,10 @@ function SecaoAgendamento({
                   <Text
                     style={{
                       fontSize: 11,
-                      fontWeight: '700',
                       color: ativo ? colors.accent : colors.inkMuted,
                       textTransform: 'uppercase',
                       letterSpacing: 0.6,
+                      ...fontStyle(design.body, 700),
                     }}
                   >
                     {d.rotuloDia}
@@ -1141,9 +1156,9 @@ function SecaoAgendamento({
                   <Text
                     style={{
                       fontSize: 14,
-                      fontWeight: '800',
                       color: ativo ? colors.accent : colors.ink,
                       marginTop: 2,
+                      ...fontStyle(design.body, 800),
                     }}
                   >
                     {d.rotuloData}
@@ -1158,7 +1173,7 @@ function SecaoAgendamento({
       {/* Slots */}
       {dataSelecionada && (
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
+          <Text style={{ fontSize: 14, color: colors.ink, ...fontStyle(design.body, 700) }}>
             Horários disponíveis
             <Text style={{ color: colors.danger }}> *</Text>
           </Text>
@@ -1168,7 +1183,9 @@ function SecaoAgendamento({
             </Text>
           )}
           {erro && (
-            <Text style={{ fontSize: 12, color: colors.danger, fontWeight: '600' }}>
+            <Text
+              style={{ fontSize: 12, color: colors.danger, ...fontStyle(design.body, 600) }}
+            >
               {erro}
             </Text>
           )}
@@ -1194,7 +1211,7 @@ function SecaoAgendamento({
                     style={{
                       paddingVertical: 8,
                       paddingHorizontal: 14,
-                      borderRadius: 999,
+                      borderRadius: radius.pill,
                       borderWidth: ativo ? 2 : 1,
                       borderColor: ativo ? colors.ink : colors.line,
                       backgroundColor: ativo ? colors.ink : colors.surface,
@@ -1203,8 +1220,8 @@ function SecaoAgendamento({
                     <Text
                       style={{
                         fontSize: 13,
-                        fontWeight: '700',
                         color: ativo ? colors.accent : colors.ink,
+                        ...fontStyle(design.body, 700),
                       }}
                     >
                       {formatarHora(s.inicio_at)}
@@ -1220,7 +1237,7 @@ function SecaoAgendamento({
       {/* Staff */}
       {slotSelecionado && staffParaListar.length > 0 && (
         <View style={{ gap: 8 }}>
-          <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
+          <Text style={{ fontSize: 14, color: colors.ink, ...fontStyle(design.body, 700) }}>
             Profissional
           </Text>
           <View
@@ -1267,7 +1284,8 @@ function LinhaStaff({
   ultimo?: boolean
   aoTocar: () => void
 }) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors } = design
   return (
     <TouchableOpacity
       onPress={aoTocar}
@@ -1314,7 +1332,9 @@ function LinhaStaff({
           }}
         />
       )}
-      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink, flex: 1 }}>
+      <Text
+        style={{ fontSize: 14, color: colors.ink, flex: 1, ...fontStyle(design.body, 600) }}
+      >
         {nome}
       </Text>
     </TouchableOpacity>
@@ -1332,7 +1352,8 @@ function GrupoVariants({
   optionAlcancavel: (optionId: string) => boolean
   aoSelecionar: (optionId: string) => void
 }) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors } = design
   const ehCor = grupo.nome.toLowerCase() === 'cor'
   return (
     <View style={{ gap: 8 }}>
@@ -1345,7 +1366,7 @@ function GrupoVariants({
         }}
       >
         <Text
-          style={{ fontSize: 14, fontWeight: '700', color: colors.ink, flex: 1 }}
+          style={{ fontSize: 14, color: colors.ink, flex: 1, ...fontStyle(design.body, 700) }}
         >
           {grupo.nome}
           <Text style={{ color: colors.danger }}> *</Text>
@@ -1354,8 +1375,8 @@ function GrupoVariants({
           <Text
             style={{
               fontSize: 12,
-              fontWeight: '600',
               color: colors.inkMuted,
+              ...fontStyle(design.body, 600),
             }}
           >
             {grupo.product_options.find((o) => o.id === selecionada)?.valor}
@@ -1394,7 +1415,8 @@ function ChipOption({
   alcancavel: boolean
   aoTocar: () => void
 }) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors } = design
   const desabilitado = !alcancavel && !selecionada
   const corBorda = selecionada ? colors.accent : colors.line
   const corFundo = selecionada ? colors.accent : colors.surface
@@ -1414,7 +1436,7 @@ function ChipOption({
         gap: 8,
         paddingVertical: 8,
         paddingHorizontal: 12,
-        borderRadius: 999,
+        borderRadius: design.radius.pill,
         borderWidth: selecionada ? 2 : 1,
         borderColor: corBorda,
         backgroundColor: corFundo,
@@ -1436,9 +1458,9 @@ function ChipOption({
       <Text
         style={{
           fontSize: 13,
-          fontWeight: '700',
           color: corTexto,
           textDecorationLine: desabilitado ? 'line-through' : 'none',
+          ...fontStyle(design.body, 700),
         }}
       >
         {opcao.valor}
@@ -1456,7 +1478,8 @@ function GrupoModifiers({
   selecionados: Set<string>
   aoAlternar: (modifierId: string) => void
 }) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors, radius } = design
   const obrigatorio = grupo.min_select > 0
   const single = grupo.max_select === 1
 
@@ -1482,7 +1505,7 @@ function GrupoModifiers({
         }}
       >
         <Text
-          style={{ fontSize: 14, fontWeight: '700', color: colors.ink, flex: 1 }}
+          style={{ fontSize: 14, color: colors.ink, flex: 1, ...fontStyle(design.body, 700) }}
         >
           {grupo.nome}
           {obrigatorio && (
@@ -1492,10 +1515,10 @@ function GrupoModifiers({
         <Text
           style={{
             fontSize: 11,
-            fontWeight: '700',
             color: colors.inkSoft,
             letterSpacing: 0.6,
             textTransform: 'uppercase',
+            ...fontStyle(design.body, 700),
           }}
         >
           {dica}
@@ -1538,7 +1561,8 @@ function ModifierLinha({
   ultimo: boolean
   aoTocar: () => void
 }) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors } = design
   const desabilitado = !modifier.disponivel
   return (
     <TouchableOpacity
@@ -1558,10 +1582,10 @@ function ModifierLinha({
     >
       <SeletorIndicador selecionado={selecionado} single={single} />
       <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}>
+        <Text style={{ fontSize: 14, color: colors.ink, ...fontStyle(design.body, 600) }}>
           {modifier.nome}
           {desabilitado && (
-            <Text style={{ color: colors.inkSoft, fontWeight: '500' }}>
+            <Text style={{ color: colors.inkSoft, ...fontStyle(design.body, 500) }}>
               {'  '}· esgotado
             </Text>
           )}
@@ -1569,7 +1593,7 @@ function ModifierLinha({
       </View>
       {modifier.preco_extra > 0 && (
         <Text
-          style={{ fontSize: 13, fontWeight: '700', color: colors.inkMuted }}
+          style={{ fontSize: 13, color: colors.inkMuted, ...fontStyle(design.body, 700) }}
         >
           + {formatarReais(modifier.preco_extra)}
         </Text>
@@ -1585,7 +1609,7 @@ function SeletorIndicador({
   selecionado: boolean
   single: boolean
 }) {
-  const colors = useStoreColors()
+  const colors = useStoreDesign().colors
   if (single) {
     return (
       <View
@@ -1643,7 +1667,7 @@ function BotaoQty({
   desabilitado?: boolean
   primario?: boolean
 }) {
-  const colors = useStoreColors()
+  const colors = useStoreDesign().colors
   const fundo = primario ? colors.accent : colors.surfaceMuted
   const cor = primario ? colors.accentInk : colors.ink
   return (

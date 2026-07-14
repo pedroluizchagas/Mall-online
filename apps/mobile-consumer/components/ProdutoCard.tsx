@@ -2,17 +2,18 @@ import { View, Text, Image, TouchableOpacity } from 'react-native'
 import { formatarReais } from '@mallevo/lib'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
-import { useStoreColors } from '@/lib/store-theme'
+import { useStoreDesign } from '@/lib/store-theme'
+import { fontStyle } from '@/lib/store-fonts'
 
 /**
  * Card de produto. 2 variantes:
  * - 'lista' (default): row, imagem 88x88 à direita, info à esquerda.
  * - 'grade': coluna, imagem topo, info abaixo.
  *
+ * Dentro de loja tematizada, raio/densidade/fonte vêm do StoreDesign.
+ *
  * Spec: docs/system-design/consumer/04-componentes-dominio.md §3
  */
-
-const { radius } = consumerDesign
 
 export interface ProdutoCardModel {
   id: string
@@ -30,7 +31,8 @@ interface Props {
 }
 
 export function ProdutoCard({ produto, aoTocar, variante = 'lista' }: Props) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors } = design
   const precoFinal = produto.preco_promocional ?? produto.preco
   const temPromo = !!produto.preco_promocional
 
@@ -41,21 +43,21 @@ export function ProdutoCard({ produto, aoTocar, variante = 'lista' }: Props) {
         activeOpacity={consumerDesign.opacity.pressedSoft}
         style={{
           backgroundColor: colors.surface,
-          borderRadius: radius.lg,
+          borderRadius: design.radius.lg,
           overflow: 'hidden',
         }}
       >
         <ImagemProduto url={produto.foto_url} altura={120} />
         <View style={{ padding: 12, gap: 4 }}>
           <Text
-            style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}
+            style={{ fontSize: 14, color: colors.ink, ...fontStyle(design.body, 700) }}
             numberOfLines={1}
           >
             {produto.nome}
           </Text>
           {produto.descricao && (
             <Text
-              style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '500' }}
+              style={{ fontSize: 12, color: colors.inkMuted, ...fontStyle(design.body, 500) }}
               numberOfLines={2}
             >
               {produto.descricao}
@@ -75,7 +77,7 @@ export function ProdutoCard({ produto, aoTocar, variante = 'lista' }: Props) {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
-        paddingVertical: 16,
+        paddingVertical: design.spacing.card,
         paddingHorizontal: 4,
         borderBottomWidth: 1,
         borderBottomColor: colors.line,
@@ -83,14 +85,14 @@ export function ProdutoCard({ produto, aoTocar, variante = 'lista' }: Props) {
     >
       <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
         <Text
-          style={{ fontSize: 16, fontWeight: '700', color: colors.ink }}
+          style={{ fontSize: 16, color: colors.ink, ...fontStyle(design.body, 700) }}
           numberOfLines={1}
         >
           {produto.nome}
         </Text>
         {produto.descricao && (
           <Text
-            style={{ fontSize: 13, color: colors.inkMuted, fontWeight: '500' }}
+            style={{ fontSize: 13, color: colors.inkMuted, ...fontStyle(design.body, 500) }}
             numberOfLines={2}
           >
             {produto.descricao}
@@ -115,7 +117,8 @@ function ImagemProduto({
   altura: number
   largura?: number | `${number}%`
 }) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors } = design
   if (url) {
     return (
       <Image
@@ -123,7 +126,7 @@ function ImagemProduto({
         style={{
           width: largura,
           height: altura,
-          borderRadius: radius.md,
+          borderRadius: design.radius.md,
           backgroundColor: colors.canvasAlt,
         }}
         resizeMode="cover"
@@ -136,7 +139,7 @@ function ImagemProduto({
       style={{
         width: largura,
         height: altura,
-        borderRadius: radius.md,
+        borderRadius: design.radius.md,
         backgroundColor: colors.canvasAlt,
         alignItems: 'center',
         justifyContent: 'center',
@@ -154,10 +157,11 @@ function PrecoLinha({
   preco: number
   precoOriginal?: number
 }) {
-  const colors = useStoreColors()
+  const design = useStoreDesign()
+  const { colors } = design
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-      <Text style={{ fontSize: 15, fontWeight: '800', color: colors.ink }}>
+      <Text style={{ fontSize: 15, color: colors.ink, ...fontStyle(design.body, 800) }}>
         {formatarReais(preco)}
       </Text>
       {precoOriginal !== undefined && (
@@ -166,6 +170,7 @@ function PrecoLinha({
             fontSize: 13,
             color: colors.inkSoft,
             textDecorationLine: 'line-through',
+            ...fontStyle(design.body, 400),
           }}
         >
           {formatarReais(precoOriginal)}

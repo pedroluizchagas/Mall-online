@@ -33,6 +33,13 @@ export {
 
 export { hasExplicitPreset, normalizeThemeConfig, resolveTheme } from './resolve'
 export { toCssVars, RADIUS_PX } from './to-css-vars'
+export {
+  DENSITY_SPACE_PX,
+  RADIUS_STEPS_PX,
+  TYPE_SCALE_FACTOR,
+} from './scales'
+export type { DensitySpace, RadiusSteps } from './scales'
+export { googleFontsHref } from './google-fonts'
 export { contrastRatio, ensureAccentInk, pickInkOn } from './contrast'
 
 export {

@@ -58,12 +58,32 @@ const config: Config = {
         info: '#5BB7FF',
       },
       borderRadius: {
-        // consumer-design.radius (px) → web
-        sm: '14px',
-        md: '20px',
-        lg: '28px',
-        xl: '34px',
-        pill: '999px',
+        // Dirigidos por StoreTheme (shape.radius → escala completa em
+        // RADIUS_STEPS_PX, @mallevo/lib). Fallback = consumer-design.radius
+        // (paleta Mallevo, fora de loja / loja sem preset v2). Círculos usam
+        // `rounded-full` e ficam fora do tema.
+        sm: 'var(--radius-sm, 14px)',
+        md: 'var(--radius-md, 20px)',
+        lg: 'var(--radius-lg, 28px)',
+        xl: 'var(--radius-xl, 34px)',
+        pill: 'var(--radius-pill, 999px)',
+      },
+      spacing: {
+        // Dirigidos por StoreTheme (shape.density → DENSITY_SPACE_PX).
+        // Uso semântico: px-screen-x (gutter), py-card (linhas/cards),
+        // mt-section (entre seções), p-sheet (modais).
+        'screen-x': 'var(--space-screen-x, 24px)',
+        card: 'var(--space-card, 16px)',
+        section: 'var(--space-section, 16px)',
+        sheet: 'var(--space-sheet, 20px)',
+      },
+      fontSize: {
+        // Títulos (display) escalam com o arquétipo (typography.scale →
+        // TYPE_SCALE_FACTOR): spacious amplia, compact condensa. Corpo não
+        // escala (acessibilidade — docs/store-theme/05 §5.5).
+        'display-lg': ['calc(26px * var(--type-factor, 1))', { lineHeight: '1.2' }],
+        'display-md': ['calc(20px * var(--type-factor, 1))', { lineHeight: '1.25' }],
+        'display-sm': ['calc(18px * var(--type-factor, 1))', { lineHeight: '1.3' }],
       },
       boxShadow: {
         // consumer-design.shadow (RN) → CSS box-shadow

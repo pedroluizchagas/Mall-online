@@ -38,7 +38,7 @@ export function ProductCard({
     <button
       type="button"
       onClick={() => onSelect?.(produto.id)}
-      className="flex w-full items-center gap-3 border-b border-line px-1 py-4 text-left transition-opacity hover:opacity-75"
+      className="flex w-full items-center gap-3 border-b border-line px-1 py-card text-left transition-opacity hover:opacity-75"
     >
       <div className="min-w-0 flex-1">
         <p className="truncate text-base font-bold text-ink">{produto.nome}</p>

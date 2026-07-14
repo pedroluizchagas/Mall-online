@@ -1,3 +1,4 @@
+import { DENSITY_SPACE_PX, RADIUS_STEPS_PX, TYPE_SCALE_FACTOR } from './scales'
 import type { RadiusScale, ThemeTokens } from './types'
 
 /** Raio base (px) por escala — consumido como `var(--radius)` no web. */
@@ -27,10 +28,15 @@ function hexToRgba(hex: string, alpha: number): string {
 /**
  * Converte `ThemeTokens` em CSS custom properties para o storefront (web).
  * Aplicar no nível da loja: `<div style={toCssVars(tokens)} data-theme={tokens.mode}>`.
- * O `tailwind.config.ts` aponta as cores para essas vars (ex.: `accent: 'var(--accent)'`).
+ * O `tailwind.config.ts` aponta cores, raios, espaçamentos e tamanhos de
+ * display para essas vars (ex.: `accent: 'var(--accent)'`,
+ * `borderRadius.md: 'var(--radius-md, 20px)'`) — assim TODAS as famílias de
+ * token (cor, forma, densidade, tipografia) têm efeito real na vitrine.
  */
 export function toCssVars(t: ThemeTokens): Record<string, string> {
   const c = t.color
+  const r = RADIUS_STEPS_PX[t.shape.radius]
+  const s = DENSITY_SPACE_PX[t.shape.density]
   return {
     '--bg': c.bg,
     '--surface': c.surface,
@@ -44,10 +50,21 @@ export function toCssVars(t: ThemeTokens): Record<string, string> {
     '--success': c.success,
     '--warning': c.warning,
     '--danger': c.danger,
+    // Forma — escala completa de raios do arquétipo.
     '--radius': RADIUS_PX[t.shape.radius],
+    '--radius-sm': `${r.sm}px`,
+    '--radius-md': `${r.md}px`,
+    '--radius-lg': `${r.lg}px`,
+    '--radius-xl': `${r.xl}px`,
+    '--radius-pill': `${r.pill}px`,
+    // Densidade — ritmo de paddings/gaps.
+    '--space-screen-x': `${s.screenX}px`,
+    '--space-card': `${s.card}px`,
+    '--space-section': `${s.section}px`,
+    '--space-sheet': `${s.sheet}px`,
+    // Tipografia — famílias + fator de escala dos títulos (display).
     '--font-display': t.typography.display.family,
     '--font-body': t.typography.body.family,
-    '--type-scale': t.typography.scale,
-    '--density': t.shape.density,
+    '--type-factor': String(TYPE_SCALE_FACTOR[t.typography.scale]),
   }
 }

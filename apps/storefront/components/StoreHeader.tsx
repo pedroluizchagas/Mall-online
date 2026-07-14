@@ -51,8 +51,8 @@ export function StoreHeader({ store }: { store: Store }) {
       </div>
 
       {/* Cabeçalho da loja */}
-      <div className="flex flex-col gap-3 bg-surface px-6 py-6">
-        <h1 className="font-display text-[26px] font-extrabold tracking-tight text-ink">
+      <div className="flex flex-col gap-3 bg-surface px-screen-x py-6">
+        <h1 className="font-display text-display-lg font-extrabold tracking-tight text-ink">
           {store.nome}
         </h1>
 

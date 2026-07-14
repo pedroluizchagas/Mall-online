@@ -49,7 +49,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Fraunces', weights: [400, 600, 700] },
-        body: { family: 'Inter', weights: [400, 500, 600] },
+        body: { family: 'Inter', weights: [400, 500, 600, 700] },
         scale: 'spacious',
       },
       shape: { radius: 'soft', density: 'comfortable' },
@@ -82,7 +82,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Archivo', weights: [600, 700, 800] },
-        body: { family: 'Inter', weights: [400, 500, 600] },
+        body: { family: 'Inter', weights: [400, 500, 600, 700] },
         scale: 'compact',
       },
       shape: { radius: 'sharp', density: 'compact' },
@@ -115,7 +115,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Inter', weights: [500, 600, 700] },
-        body: { family: 'Inter', weights: [400, 500] },
+        body: { family: 'Inter', weights: [400, 500, 700] },
         scale: 'regular',
       },
       shape: { radius: 'sharp', density: 'comfortable' },
@@ -148,7 +148,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Cormorant Garamond', weights: [500, 600, 700] },
-        body: { family: 'Inter', weights: [400, 500] },
+        body: { family: 'Inter', weights: [400, 500, 700] },
         scale: 'spacious',
       },
       shape: { radius: 'sharp', density: 'comfortable' },
@@ -180,7 +180,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Nunito', weights: [600, 700, 800] },
-        body: { family: 'Nunito', weights: [400, 500, 600] },
+        body: { family: 'Nunito', weights: [400, 500, 600, 700] },
         scale: 'regular',
       },
       shape: { radius: 'round', density: 'comfortable' },
@@ -209,7 +209,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Spectral', weights: [400, 500, 600] },
-        body: { family: 'Inter', weights: [400, 500] },
+        body: { family: 'Inter', weights: [400, 500, 700] },
         scale: 'spacious',
       },
       shape: { radius: 'soft', density: 'comfortable' },
@@ -238,7 +238,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Inter', weights: [600, 700] },
-        body: { family: 'Inter', weights: [400, 500, 600] },
+        body: { family: 'Inter', weights: [400, 500, 600, 700] },
         scale: 'regular',
       },
       shape: { radius: 'soft', density: 'compact' },
@@ -267,7 +267,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Space Grotesk', weights: [500, 600, 700] },
-        body: { family: 'Inter', weights: [400, 500] },
+        body: { family: 'Inter', weights: [400, 500, 700] },
         scale: 'regular',
       },
       shape: { radius: 'sharp', density: 'compact' },
@@ -296,7 +296,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Inter', weights: [600, 700, 800] },
-        body: { family: 'Inter', weights: [400, 500, 600] },
+        body: { family: 'Inter', weights: [400, 500, 600, 700] },
         scale: 'compact',
       },
       shape: { radius: 'soft', density: 'compact' },
@@ -325,7 +325,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Archivo', weights: [600, 700, 800] },
-        body: { family: 'Inter', weights: [400, 500, 600] },
+        body: { family: 'Inter', weights: [400, 500, 600, 700] },
         scale: 'compact',
       },
       shape: { radius: 'sharp', density: 'compact' },
@@ -354,7 +354,7 @@ export const ARQUETIPOS = {
       }),
       typography: {
         display: { family: 'Baloo 2', weights: [500, 600, 700] },
-        body: { family: 'Nunito', weights: [400, 500, 600] },
+        body: { family: 'Nunito', weights: [400, 500, 600, 700] },
         scale: 'regular',
       },
       shape: { radius: 'round', density: 'comfortable' },

@@ -41,7 +41,8 @@
           "locationAlwaysAndWhenInUsePermission": "Usamos sua localização para mostrar lojas próximas."
         }
       ],
-      "expo-video"
+      "expo-video",
+      "expo-font"
     ],
     "scheme": "mallevo-consumer",
     "extra": {

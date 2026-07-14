@@ -7,6 +7,7 @@ import { StoreHeader } from '@/components/StoreHeader'
 import { CartFab } from '@/components/cart/CartFab'
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { CatalogClient } from '@/components/store/CatalogClient'
+import { StoreThemeRoot } from '@/components/store/StoreThemeRoot'
 
 /**
  * /produto/[id] (Stage 3b) — rota mínima de deep-link, mapeada no
@@ -85,8 +86,10 @@ export default async function ProdutoPage({
   const produtoIds = secoes.flatMap((s) => s.produtos.map((p) => p.id))
   const detalhes = await carregarDetalhesCatalogo(produtoIds)
 
+  // Mesmo catálogo da home → mesma pele: sem o StoreThemeRoot, um deep-link
+  // de produto numa loja tematizada abriria com a paleta Mallevo default.
   return (
-    <main className="min-h-screen bg-canvas pb-24">
+    <StoreThemeRoot theme={store.theme} className="min-h-screen bg-canvas pb-24">
       <StoreHeader store={store} />
 
       <CatalogClient
@@ -102,6 +105,6 @@ export default async function ProdutoPage({
 
       <CartPersistence />
       <CartFab />
-    </main>
+    </StoreThemeRoot>
   )
 }

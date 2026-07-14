@@ -25,8 +25,8 @@ export function MenuSection({
   onSelect?: (id: string) => void
 }) {
   return (
-    <section className="mt-4 px-6">
-      <h2 className="mb-1 font-display text-lg font-extrabold tracking-tight text-ink">
+    <section className="mt-section px-screen-x">
+      <h2 className="mb-1 font-display text-display-sm font-extrabold tracking-tight text-ink">
         {titulo}
       </h2>
       {produtos.map((p) => (

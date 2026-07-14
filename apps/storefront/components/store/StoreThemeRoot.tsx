@@ -1,9 +1,9 @@
 import type { CSSProperties, ReactNode } from 'react'
 import {
+  googleFontsHref,
   hasExplicitPreset,
   resolveTheme,
   toCssVars,
-  type ThemeTokens,
 } from '@mallevo/lib'
 
 /**
@@ -60,25 +60,4 @@ export function StoreThemeRoot({
       {children}
     </main>
   )
-}
-
-/**
- * Monta a URL do Google Fonts css2 para as famílias display+body da loja,
- * deduplicando família e unindo os pesos. Retorna null se não houver família
- * a carregar.
- */
-function googleFontsHref(tokens: ThemeTokens): string | null {
-  const familias = new Map<string, Set<number>>()
-  for (const spec of [tokens.typography.display, tokens.typography.body]) {
-    const pesos = familias.get(spec.family) ?? new Set<number>()
-    spec.weights.forEach((w) => pesos.add(w))
-    familias.set(spec.family, pesos)
-  }
-  if (familias.size === 0) return null
-
-  const partes = [...familias.entries()].map(([familia, pesos]) => {
-    const wght = [...pesos].sort((a, b) => a - b).join(';')
-    return `family=${familia.replace(/ /g, '+')}:wght@${wght}`
-  })
-  return `https://fonts.googleapis.com/css2?${partes.join('&')}&display=swap`
 }
