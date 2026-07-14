@@ -10,6 +10,7 @@ import { normalizeThemeConfig, resolveTheme } from '../resolve'
 import { contrastRatio, ensureAccentInk } from '../contrast'
 import { toCssVars } from '../to-css-vars'
 import { googleFontsHref } from '../google-fonts'
+import { coresDominantes } from '../logo-palette'
 import {
   DENSITY_SPACE_PX,
   RADIUS_STEPS_PX,
@@ -152,6 +153,62 @@ describe('toCssVars — forma, densidade e tipografia viram vars consumíveis', 
       expect(DENSITY_SPACE_PX[arq.tokens.shape.density]).toBeDefined()
       expect(TYPE_SCALE_FACTOR[arq.tokens.typography.scale]).toBeDefined()
     }
+  })
+})
+
+describe('coresDominantes (paleta a partir da logo)', () => {
+  /** Monta um buffer RGBA com `n` pixels da cor dada. */
+  function pixels(cores: Array<[number, number, number, number, number]>): number[] {
+    // cada entrada: [r, g, b, a, quantidade]
+    const out: number[] = []
+    for (const [r, g, b, a, n] of cores) {
+      for (let i = 0; i < n; i++) out.push(r, g, b, a)
+    }
+    return out
+  }
+
+  it('logo colorida: devolve a cor de marca dominante', () => {
+    // 60% vermelho vivo, 40% fundo branco (neutro, deve ser ignorado).
+    const data = pixels([
+      [220, 30, 40, 255, 60],
+      [255, 255, 255, 255, 40],
+    ])
+    const cores = coresDominantes(data)
+    expect(cores).toHaveLength(1)
+    expect(cores[0]).toBe('#DC1E28')
+  })
+
+  it('ignora pixels transparentes (fundo de PNG)', () => {
+    const data = pixels([
+      [20, 120, 220, 255, 30], // azul de marca
+      [255, 0, 0, 0, 70], // vermelho 100% transparente — não conta
+    ])
+    const cores = coresDominantes(data)
+    expect(cores).toEqual(['#1478DC'])
+  })
+
+  it('logo neutra (preto/branco/cinza) → lista vazia (mantém default do arquétipo)', () => {
+    const data = pixels([
+      [255, 255, 255, 255, 40],
+      [17, 17, 17, 255, 40],
+      [128, 128, 128, 255, 20],
+    ])
+    expect(coresDominantes(data)).toEqual([])
+  })
+
+  it('deduplica tons próximos e limita ao máximo pedido', () => {
+    const data = pixels([
+      [220, 30, 40, 255, 50], // vermelho
+      [224, 34, 44, 255, 30], // quase o mesmo vermelho — deduplicado
+      [20, 120, 220, 255, 40], // azul
+      [30, 180, 90, 255, 30], // verde
+      [240, 180, 20, 255, 20], // âmbar
+    ])
+    const cores = coresDominantes(data, 3)
+    expect(cores).toHaveLength(3)
+    // vermelho aparece uma única vez (dedup) e é o primeiro (mais presente).
+    expect(cores[0]).toMatch(/^#D[CE]/i)
+    expect(new Set(cores).size).toBe(3)
   })
 })
 

@@ -40,6 +40,7 @@ export {
 } from './scales'
 export type { DensitySpace, RadiusSteps } from './scales'
 export { googleFontsHref } from './google-fonts'
+export { coresDominantes } from './logo-palette'
 export { contrastRatio, ensureAccentInk, pickInkOn } from './contrast'
 
 export {

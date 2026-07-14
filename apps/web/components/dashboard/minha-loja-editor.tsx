@@ -13,6 +13,7 @@ import {
   type ThemeTokens,
 } from '@mallevo/lib'
 import { publicarVitrine } from '@/lib/actions/loja-vitrine'
+import { extrairCoresDaLogo } from '@/lib/cor-da-logo'
 import { showToast } from '@/components/ui/toast'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { StoreStatusToggle } from '@/components/dashboard/store-status-toggle'
@@ -153,6 +154,23 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
       if (bannerPreviewRef.current) URL.revokeObjectURL(bannerPreviewRef.current)
     }
   }, [])
+
+  // Cores de marca extraídas da logo (docs/store-theme/06 §6.3) — viram
+  // sugestões de accent. Logo neutra/erro → [] (sem sugestões, sem bloquear).
+  const [coresLogo, setCoresLogo] = useState<string[]>([])
+  useEffect(() => {
+    if (!logoUrl) {
+      setCoresLogo([])
+      return
+    }
+    let cancelado = false
+    extrairCoresDaLogo(logoUrl).then((cores) => {
+      if (!cancelado) setCoresLogo(cores)
+    })
+    return () => {
+      cancelado = true
+    }
+  }, [logoUrl])
 
   // Tema do preview derivado da engine real (preset + override de accent).
   const tokens = resolveTheme({
@@ -434,6 +452,41 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
                 </button>
               )}
             </div>
+
+            {/* Sugestões extraídas da logo — só quando a logo tem cor de marca */}
+            {coresLogo.length > 0 && (
+              <div
+                className="mt-3 flex items-center gap-3 px-5 py-3.5 rounded-2xl"
+                style={{ border: '1px solid var(--line)', background: 'var(--bg)' }}
+              >
+                <p className="text-xs font-semibold text-ink-2 flex-shrink-0">
+                  Da sua logo:
+                </p>
+                <div className="flex items-center gap-2">
+                  {coresLogo.map((cor) => {
+                    const ativa = accent?.toUpperCase() === cor
+                    return (
+                      <button
+                        key={cor}
+                        onClick={() => setAccent(cor)}
+                        aria-label={`Usar ${cor} como cor de destaque`}
+                        title={cor}
+                        className="w-8 h-8 rounded-lg flex-shrink-0 transition-transform hover:scale-110"
+                        style={{
+                          background: cor,
+                          boxShadow: ativa
+                            ? '0 0 0 2px var(--bg), 0 0 0 4px var(--brick-dk)'
+                            : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
+                        }}
+                      />
+                    )
+                  })}
+                </div>
+                <p className="text-[11px] text-ink-3 min-w-0">
+                  Cores encontradas na sua logo — toque para aplicar.
+                </p>
+              </div>
+            )}
           </Secao>
 
           {/* ── TIPOGRAFIA ───────────────────────────────────── */}
