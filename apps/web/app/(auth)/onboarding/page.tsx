@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
 import { CheckCircle2, Sparkles } from 'lucide-react'
+import type { StoreThemeConfig } from '@mallevo/lib'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { FluxoOnboarding } from './fluxo'
 
@@ -15,6 +16,8 @@ export interface DadosOnboarding {
   senha?: string
   nome_loja: string
   categoria_id: string
+  /** Pele da loja (StoreThemeConfig v2) escolhida na etapa de estilo. */
+  theme?: StoreThemeConfig
   endereco: {
     rua: string
     numero: string

@@ -28,6 +28,29 @@ type DadosBancariosConta = {
 
 type DadosBancarios = DadosBancariosPix | DadosBancariosConta
 
+/**
+ * Presets válidos do StoreTheme v2 — espelha `ArquetipoCodigo` de
+ * packages/lib/src/store-theme/presets.ts (a function Deno não importa o
+ * workspace). Se um 12º arquétipo nascer, adicionar aqui também.
+ */
+const PRESETS_VALIDOS = new Set([
+  'heritage', 'raw', 'editorial', 'noir', 'soft', 'artisan',
+  'clinic', 'tech', 'market', 'utility', 'playful',
+])
+
+/**
+ * Normaliza o `theme` recebido do onboarding num StoreThemeConfig v2 enxuto
+ * (`{v:2, preset}`) ou null. Defensivo: payload é input de rede — só o preset
+ * whitelistado passa; overrides de cor/fonte NÃO são aceitos na criação
+ * (o lojista refina depois em /minha-loja).
+ */
+function themeValido(t: unknown): { v: 2; preset: string } | null {
+  if (!t || typeof t !== 'object') return null
+  const preset = (t as Record<string, unknown>).preset
+  if (typeof preset !== 'string' || !PRESETS_VALIDOS.has(preset)) return null
+  return { v: 2, preset }
+}
+
 function buildRecipientPayload(args: {
   nome_responsavel: string
   email: string
@@ -86,6 +109,7 @@ Deno.serve(async (req) => {
       endereco,
       plan_id,
       dados_bancarios,
+      theme,
     } = body as {
       nome_responsavel: string
       cpf_cnpj: string
@@ -97,6 +121,8 @@ Deno.serve(async (req) => {
       endereco: unknown
       plan_id: string
       dados_bancarios: DadosBancarios
+      /** StoreThemeConfig v2 escolhido no onboarding (opcional). */
+      theme?: unknown
     }
 
     if (!email || !senha) {
@@ -284,6 +310,9 @@ Deno.serve(async (req) => {
         slug: storeSlug,
         endereco,
         categoria_id: categoria_id ?? null,
+        // Pele escolhida no onboarding (StoreThemeConfig v2). Inválido/ausente
+        // → null (storefront/app renderizam a aparência Mallevo padrão).
+        theme: themeValido(theme),
       })
       .select('id')
       .single()

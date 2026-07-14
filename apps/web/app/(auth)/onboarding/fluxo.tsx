@@ -5,9 +5,13 @@ import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
 import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react'
 import {
+  ARQUETIPOS,
+  RADIUS_STEPS_PX,
   formatarReais,
+  getArquetipoSugestao,
   getPisosByCategoria,
   getTemplateBySlug,
+  type ArquetipoCodigo,
   type DashboardTemplate,
 } from '@mallevo/lib'
 import { createSupabaseClient } from '@/lib/supabase/client'
@@ -46,7 +50,7 @@ type EnderecoResolvido = {
   estado: string
 }
 
-const TOTAL_ETAPAS = 11
+const TOTAL_ETAPAS = 12
 
 const TRANSICAO = { duration: 0.55, ease: [0.22, 1, 0.36, 1] } as const
 
@@ -126,6 +130,8 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [categoriaId, setCategoriaId] = useState('')
+  // Pele da loja (arquétipo). Sugerida pela categoria ao confirmá-la (etapa 5).
+  const [preset, setPreset] = useState<ArquetipoCodigo | ''>('')
   const [nomeLoja, setNomeLoja] = useState('')
   const [cep, setCep] = useState('')
   const [numero, setNumero] = useState('')
@@ -223,6 +229,12 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
       }
       case 5: {
         if (!categoriaId) return setErro('Selecione uma categoria para continuar.')
+        // Categoria (re)definida → pré-seleciona a pele sugerida pelo nicho.
+        // Só re-semeia quando a categoria MUDOU, preservando escolha manual
+        // de quem apenas voltou e confirmou a mesma categoria.
+        if (dados.categoria_id !== categoriaId) {
+          setPreset(getArquetipoSugestao(categoriaSelecionada?.slug).default)
+        }
         setDados((p) => ({ ...p, categoria_id: categoriaId }))
         return avancar()
       }
@@ -231,12 +243,17 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
         return avancar()
       }
       case 7: {
+        if (!preset) return setErro('Escolha um estilo para a sua loja.')
+        setDados((p) => ({ ...p, theme: { v: 2, preset } }))
+        return avancar()
+      }
+      case 8: {
         const r = schemaDadosLoja.shape.nome_loja.safeParse(nomeLoja.trim())
         if (!r.success) return setErro(r.error.errors[0].message)
         setDados((p) => ({ ...p, nome_loja: nomeLoja.trim() }))
         return avancar()
       }
-      case 8: {
+      case 9: {
         const limpo = cep.replace(/\D/g, '')
         if (limpo.length !== 8) return setErro('Digite os 8 dígitos do CEP.')
         if (!dados.endereco?.rua) {
@@ -264,7 +281,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
         }
         return avancar()
       }
-      case 9: {
+      case 10: {
         if (!numero.trim()) return setErro('Informe o número do endereço.')
         const enderecoAtual = dados.endereco
         if (!enderecoAtual) return setErro('Endereço inválido. Volte e refaça o CEP.')
@@ -278,7 +295,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
         setDados((p) => ({ ...p, endereco: enderecoCompleto }))
         return avancar()
       }
-      case 10: {
+      case 11: {
         if (!planoId) return setErro('Selecione um plano para criar sua conta.')
         const final: Partial<DadosOnboarding> = { ...dados, plan_id: planoId }
         onFinalizar(final)
@@ -291,7 +308,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
   // pra mostrar a previa do endereço já na próxima tela.
   useEffect(() => {
     const limpo = cep.replace(/\D/g, '')
-    if (etapa !== 8 || limpo.length !== 8) return
+    if (etapa !== 9 || limpo.length !== 8) return
     if (dados.endereco?.cep === limpo) return
 
     let cancelado = false
@@ -343,12 +360,14 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
       case 6:
         return true
       case 7:
-        return nomeLoja.trim().length >= 2
+        return !!preset
       case 8:
-        return apenasDigitos(cep).length === 8 && !buscandoCep && !!dados.endereco?.rua
+        return nomeLoja.trim().length >= 2
       case 9:
-        return numero.trim().length > 0
+        return apenasDigitos(cep).length === 8 && !buscandoCep && !!dados.endereco?.rua
       case 10:
+        return numero.trim().length > 0
+      case 11:
         return !!planoId && !carregando
       default:
         return false
@@ -361,6 +380,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
     email,
     senha,
     categoriaId,
+    preset,
     nomeLoja,
     cep,
     buscandoCep,
@@ -535,8 +555,19 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
               )}
 
               {etapa === 7 && (
+                <EscolhaEstilo
+                  categoriaSlug={categoriaSelecionada?.slug ?? null}
+                  selecionado={preset}
+                  onSelecionar={(codigo) => {
+                    setPreset(codigo)
+                    setErro(null)
+                  }}
+                />
+              )}
+
+              {etapa === 8 && (
                 <PerguntaTexto
-                  eyebrow={`Passo 08 · ${TOTAL_ETAPAS}`}
+                  eyebrow={`Passo 09 · ${TOTAL_ETAPAS}`}
                   titulo="Qual o nome da sua loja?"
                   subtitulo="É como os clientes vão encontrar você no shopping digital. Pode mudar depois nas configurações."
                   placeholder="Ex.: Padaria do Bairro"
@@ -546,7 +577,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
                 />
               )}
 
-              {etapa === 8 && (
+              {etapa === 9 && (
                 <PerguntaCep
                   cep={cep}
                   onChange={setCep}
@@ -555,7 +586,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
                 />
               )}
 
-              {etapa === 9 && (
+              {etapa === 10 && (
                 <PerguntaNumero
                   numero={numero}
                   complemento={complemento}
@@ -565,7 +596,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
                 />
               )}
 
-              {etapa === 10 && (
+              {etapa === 11 && (
                 <EscolhaPlano
                   planos={planos}
                   selecionado={planoId}
@@ -708,7 +739,7 @@ interface PerguntaCepProps {
 function PerguntaCep({ cep, onChange, buscando, enderecoResolvido }: PerguntaCepProps) {
   return (
     <div>
-      <Eyebrow texto={`Passo 09 · ${TOTAL_ETAPAS}`} />
+      <Eyebrow texto={`Passo 10 · ${TOTAL_ETAPAS}`} />
       <Titulo>Onde a sua loja fica?</Titulo>
       <Subtitulo>
         Comece pelo CEP. A gente preenche o resto do endereço para você economizar tempo.
@@ -782,7 +813,7 @@ function PerguntaNumero({
 }: PerguntaNumeroProps) {
   return (
     <div>
-      <Eyebrow texto={`Passo 10 · ${TOTAL_ETAPAS}`} />
+      <Eyebrow texto={`Passo 11 · ${TOTAL_ETAPAS}`} />
       <Titulo>Qual o número e o complemento?</Titulo>
       <Subtitulo>Finalize o endereço para os entregadores e clientes encontrarem você.</Subtitulo>
 
@@ -978,6 +1009,190 @@ function ConfirmacaoCategoria({ categoria }: { categoria: Categoria }) {
   )
 }
 
+// ============================================================================
+// Etapa de estilo — a loja nasce vestida (StoreTheme). Sugestão por categoria
+// via getArquetipoSugestao; os 11 arquétipos ficam disponíveis. Mesma engine
+// (ARQUETIPOS/RADIUS_STEPS_PX) do editor /minha-loja e do storefront.
+// ============================================================================
+
+interface EscolhaEstiloProps {
+  categoriaSlug: string | null
+  selecionado: ArquetipoCodigo | ''
+  onSelecionar: (codigo: ArquetipoCodigo) => void
+}
+
+function EscolhaEstilo({ categoriaSlug, selecionado, onSelecionar }: EscolhaEstiloProps) {
+  const sugestao = getArquetipoSugestao(categoriaSlug)
+  const recomendados: ArquetipoCodigo[] = [sugestao.default, ...sugestao.alternativas]
+  const outros = (Object.keys(ARQUETIPOS) as ArquetipoCodigo[]).filter(
+    (c) => !recomendados.includes(c),
+  )
+
+  return (
+    <div>
+      <Eyebrow texto={`Passo 08 · ${TOTAL_ETAPAS}`} />
+      <Titulo>Escolha o estilo da sua loja.</Titulo>
+      <Subtitulo>
+        É a cara da sua vitrine: cores, formas e tipografia que os clientes verão no site e no
+        app. Sugerimos os que combinam com a sua categoria — e você pode refinar depois em
+        &ldquo;Minha Loja&rdquo;.
+      </Subtitulo>
+
+      <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {recomendados.map((codigo) => (
+          <CartaoEstilo
+            key={codigo}
+            codigo={codigo}
+            selecionado={selecionado === codigo}
+            recomendado={codigo === sugestao.default}
+            onSelecionar={() => onSelecionar(codigo)}
+          />
+        ))}
+      </div>
+
+      {outros.length > 0 && (
+        <>
+          <p className="mt-8 mb-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+            Outros estilos
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+            {outros.map((codigo) => (
+              <CartaoEstilo
+                key={codigo}
+                codigo={codigo}
+                selecionado={selecionado === codigo}
+                onSelecionar={() => onSelecionar(codigo)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function CartaoEstilo({
+  codigo,
+  selecionado,
+  recomendado,
+  onSelecionar,
+}: {
+  codigo: ArquetipoCodigo
+  selecionado: boolean
+  recomendado?: boolean
+  onSelecionar: () => void
+}) {
+  const arq = ARQUETIPOS[codigo]
+  const cor = arq.tokens.color
+  // Mini-preview em ~40% da escala real: raio proporcional para o DNA de
+  // forma (sharp/soft/round) aparecer já na seleção.
+  const raios = RADIUS_STEPS_PX[arq.tokens.shape.radius]
+  const raioMini = Math.max(1, Math.round(raios.md * 0.35))
+  const raioPillMini = raios.pill >= 999 ? 999 : Math.max(1, Math.round(raios.pill * 0.35))
+
+  return (
+    <button
+      type="button"
+      onClick={onSelecionar}
+      className={`group flex text-left rounded-2xl border overflow-hidden transition-all duration-300 ${
+        selecionado
+          ? 'border-[#C1F148] bg-[#C1F148]/[0.06] shadow-[0_0_30px_rgba(193,241,72,0.12)]'
+          : 'border-white/[0.06] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
+      }`}
+    >
+      {/* Mini vitrine com as cores/forma reais do arquétipo */}
+      <div
+        className="w-[104px] shrink-0 relative overflow-hidden"
+        style={{ background: cor.bg }}
+        aria-hidden
+      >
+        {/* Header strip */}
+        <div
+          className="flex items-center gap-1.5 px-2"
+          style={{ height: 20, background: cor.surface, borderBottom: `1px solid ${cor.line}` }}
+        >
+          <span style={{ width: 10, height: 10, borderRadius: raioMini, background: cor.accent }} />
+          <span style={{ flex: 1, height: 4, borderRadius: 2, background: cor.line }} />
+        </div>
+        {/* Conteúdo */}
+        <div className="px-2 pt-2 pb-2">
+          <div className="mb-1.5 flex items-end gap-1">
+            <span
+              style={{ width: 18, height: 18, borderRadius: raioMini, background: cor.accent }}
+            />
+            <span className="flex flex-col gap-1">
+              <span style={{ width: 34, height: 4, borderRadius: 2, background: cor.ink, opacity: 0.75 }} />
+              <span style={{ width: 22, height: 3, borderRadius: 2, background: cor.inkMuted, opacity: 0.6 }} />
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                style={{
+                  height: 18,
+                  borderRadius: raioMini,
+                  background: i === 0 ? cor.accent : cor.surface,
+                  border: `1px solid ${cor.line}`,
+                }}
+              />
+            ))}
+          </div>
+          {/* CTA pill — mostra o raio "stadium" (ou reto) do arquétipo */}
+          <span
+            className="mt-1.5 block"
+            style={{ height: 10, borderRadius: raioPillMini, background: cor.accent }}
+          />
+        </div>
+      </div>
+
+      {/* Nome + mood + indicador */}
+      <div className="flex-1 min-w-0 px-4 py-3 flex flex-col justify-between gap-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p
+                className={`text-sm font-semibold transition-colors ${
+                  selecionado ? 'text-white' : 'text-zinc-200 group-hover:text-white'
+                }`}
+              >
+                {arq.nome}
+              </p>
+              {recomendado && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#C1F148] text-[#09090B]">
+                  Recomendado
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[11px] leading-snug text-zinc-500 line-clamp-2">
+              {arq.descricao}
+            </p>
+          </div>
+          <span
+            className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+              selecionado
+                ? 'bg-[#C1F148]'
+                : 'border border-white/15 bg-white/[0.02] group-hover:border-white/25'
+            }`}
+          >
+            {selecionado && <Check className="w-3 h-3 text-[#09090B]" strokeWidth={3.5} />}
+          </span>
+        </div>
+        <div className="flex gap-1 flex-wrap">
+          {arq.mood.map((m) => (
+            <span
+              key={m}
+              className="text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-white/[0.05] text-zinc-400"
+            >
+              {m}
+            </span>
+          ))}
+        </div>
+      </div>
+    </button>
+  )
+}
+
 interface EscolhaPlanoProps {
   planos: Plano[]
   selecionado: string
@@ -987,7 +1202,7 @@ interface EscolhaPlanoProps {
 function EscolhaPlano({ planos, selecionado, onSelecionar }: EscolhaPlanoProps) {
   return (
     <div>
-      <Eyebrow texto={`Passo 11 · ${TOTAL_ETAPAS}`} />
+      <Eyebrow texto={`Passo 12 · ${TOTAL_ETAPAS}`} />
       <Titulo>Escolha o plano da sua loja.</Titulo>
       <Subtitulo>
         Comissão fixa de R$ 1,00 por pedido — sem porcentagem. Você troca de plano quando quiser.
