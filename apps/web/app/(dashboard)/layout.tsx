@@ -6,6 +6,8 @@ import { BannerRecebimentosPendente } from '@/components/dashboard/banner-recebi
 import { ToastBoasVindas } from '@/components/dashboard/toast-boas-vindas'
 import { SidebarDashboard } from '@/components/dashboard/sidebar'
 import { TutorialGate } from '@/components/dashboard/tutorial-gate'
+import { CommandPalette } from '@/components/dashboard/command-palette'
+import { construirComandos } from '@/components/dashboard/comandos'
 import { Toaster } from '@/components/ui/toast'
 
 type Tenant = Database['public']['Tables']['tenants']['Row']
@@ -141,6 +143,7 @@ export default async function LayoutDashboard({
         </div>
       </div>
 
+      <CommandPalette comandos={construirComandos(template)} />
       <ToastBoasVindas />
       <TutorialGate tutorialVisto={tenant.tutorial_template_visto ?? false} />
       <Toaster />

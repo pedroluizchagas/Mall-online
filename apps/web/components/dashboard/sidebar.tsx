@@ -21,6 +21,7 @@ import {
   Tag,
   Users,
   ChevronDown,
+  Search,
   type LucideIcon,
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
@@ -173,6 +174,8 @@ export function SidebarDashboard({ nomeLoja, template, pedidosNovosInicial, tena
           </div>
         </div>
       </div>
+
+      <BotaoBuscar />
 
       <nav
         aria-label="Navegação principal"
@@ -349,6 +352,31 @@ function NavExpansivel({ item, pathname }: { item: ItemMenu; pathname: string })
         </ul>
       )}
     </div>
+  )
+}
+
+function BotaoBuscar() {
+  const [atalho, setAtalho] = useState('Ctrl K')
+  useEffect(() => {
+    if (/Mac|iPhone|iPad/.test(navigator.platform)) setAtalho('⌘ K')
+  }, [])
+  return (
+    <button
+      type="button"
+      onClick={() => window.dispatchEvent(new CustomEvent('mallevo:cmdk'))}
+      className="flex items-center gap-2.5 px-3 py-2 mb-3 rounded-[10px] text-[13px] w-full transition-all"
+      style={{ background: 'var(--sidebar-2)', color: 'var(--sidebar-ink-2)' }}
+      {...hoverHandlers(false, 'var(--sidebar-ink-2)')}
+    >
+      <Search className="w-4 h-4" strokeWidth={1.75} />
+      <span className="flex-1 text-left">Buscar</span>
+      <kbd
+        className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+        style={{ background: 'var(--sidebar)', color: 'var(--sidebar-ink-3)' }}
+      >
+        {atalho}
+      </kbd>
+    </button>
   )
 }
 
