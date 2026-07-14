@@ -120,7 +120,13 @@ Deno.serve(async (req) => {
       categoria_id?: string
       endereco: unknown
       plan_id: string
-      dados_bancarios: DadosBancarios
+      /**
+       * Dados bancários são OPCIONAIS no onboarding: o wizard atual não os
+       * coleta. Ausentes → tenant nasce sem recipient Pagar.me
+       * (pagarme_recipient_id null, status 'pending') e configura
+       * recebimentos depois, no dashboard.
+       */
+      dados_bancarios?: DadosBancarios
       /** StoreThemeConfig v2 escolhido no onboarding (opcional). */
       theme?: unknown
     }
@@ -128,13 +134,6 @@ Deno.serve(async (req) => {
     if (!email || !senha) {
       return new Response(
         JSON.stringify({ error: 'Email e senha são obrigatórios' }),
-        { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
-      )
-    }
-
-    if (!dados_bancarios || !dados_bancarios.tipo) {
-      return new Response(
-        JSON.stringify({ error: 'Dados bancários são obrigatórios' }),
         { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
       )
     }
@@ -208,8 +207,8 @@ Deno.serve(async (req) => {
     }
 
     let stripeCustomerId: string
-    let pagarmeRecipientId: string
-    let pagarmeRecipientStatus: string
+    let pagarmeRecipientId: string | null = null
+    let pagarmeRecipientStatus = 'pending'
     let pagarmeKycLink: string | null = null
 
     try {
@@ -221,27 +220,33 @@ Deno.serve(async (req) => {
       })
       stripeCustomerId = stripeCustomer.id
 
-      const recipientPayload = buildRecipientPayload({
-        nome_responsavel,
-        email,
-        cpf_cnpj,
-        dados_bancarios,
-      })
+      // Recipient Pagar.me só quando o payload traz dados bancários. Sem
+      // eles, o tenant fica com recipient pendente; quando configurar
+      // recebimentos e o recipient ativar, o webhook
+      // recipient.status.changed dispara a create-subscription.
+      if (dados_bancarios && dados_bancarios.tipo) {
+        const recipientPayload = buildRecipientPayload({
+          nome_responsavel,
+          email,
+          cpf_cnpj,
+          dados_bancarios,
+        })
 
-      const pagarmeRes = await fetch(`${PAGARME_BASE_URL}/recipients`, {
-        method: 'POST',
-        headers: pagarmeHeaders(),
-        body: JSON.stringify(recipientPayload),
-      })
+        const pagarmeRes = await fetch(`${PAGARME_BASE_URL}/recipients`, {
+          method: 'POST',
+          headers: pagarmeHeaders(),
+          body: JSON.stringify(recipientPayload),
+        })
 
-      const pagarmeData = await pagarmeRes.json()
-      if (!pagarmeRes.ok) {
-        throw new Error(`Pagar.me recipient: ${JSON.stringify(pagarmeData)}`)
+        const pagarmeData = await pagarmeRes.json()
+        if (!pagarmeRes.ok) {
+          throw new Error(`Pagar.me recipient: ${JSON.stringify(pagarmeData)}`)
+        }
+
+        pagarmeRecipientId = pagarmeData.id
+        pagarmeRecipientStatus = pagarmeData.status ?? 'pending'
+        pagarmeKycLink = pagarmeData.kyc_link ?? null
       }
-
-      pagarmeRecipientId = pagarmeData.id
-      pagarmeRecipientStatus = pagarmeData.status ?? 'pending'
-      pagarmeKycLink = pagarmeData.kyc_link ?? null
     } catch (err) {
       if (isNewUser) await supabase.auth.admin.deleteUser(userId)
       throw err

@@ -176,6 +176,18 @@ function createHandler(deps: {
 
   const PAGARME_BASE_URL = 'https://api.pagar.me/core/v5'
 
+  // Espelha a whitelist/normalização de theme da function real.
+  const PRESETS_VALIDOS = new Set([
+    'heritage', 'raw', 'editorial', 'noir', 'soft', 'artisan',
+    'clinic', 'tech', 'market', 'utility', 'playful',
+  ])
+  function themeValido(t: unknown): { v: 2; preset: string } | null {
+    if (!t || typeof t !== 'object') return null
+    const preset = (t as Record<string, unknown>).preset
+    if (typeof preset !== 'string' || !PRESETS_VALIDOS.has(preset)) return null
+    return { v: 2, preset }
+  }
+
   // deno-lint-ignore no-explicit-any
   function buildRecipientPayload(args: any) {
     const { nome_responsavel, email, cpf_cnpj, dados_bancarios } = args
@@ -225,18 +237,12 @@ function createHandler(deps: {
         endereco,
         plan_id,
         dados_bancarios,
+        theme,
       } = body
 
       if (!email || !senha) {
         return new Response(
           JSON.stringify({ error: 'Email e senha são obrigatórios' }),
-          { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
-        )
-      }
-
-      if (!dados_bancarios || !dados_bancarios.tipo) {
-        return new Response(
-          JSON.stringify({ error: 'Dados bancários são obrigatórios' }),
           { status: 400, headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
         )
       }
@@ -269,22 +275,34 @@ function createHandler(deps: {
         metadata: { user_id: userId },
       })
 
-      const recipientPayload = buildRecipientPayload({
-        nome_responsavel,
-        email,
-        cpf_cnpj,
-        dados_bancarios,
-      })
+      // Recipient Pagar.me só quando o payload traz dados bancários (espelha
+      // a function real: dados_bancarios é opcional no onboarding).
+      let pagarmeRecipientId: string | null = null
+      let pagarmeRecipientStatus = 'pending'
+      let pagarmeKycLink: string | null = null
 
-      const pagarmeRes = await fetchFn(`${PAGARME_BASE_URL}/recipients`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(recipientPayload),
-      })
+      if (dados_bancarios && dados_bancarios.tipo) {
+        const recipientPayload = buildRecipientPayload({
+          nome_responsavel,
+          email,
+          cpf_cnpj,
+          dados_bancarios,
+        })
 
-      const pagarmeData = await pagarmeRes.json()
-      if (!pagarmeRes.ok) {
-        throw new Error(`Pagar.me recipient: ${JSON.stringify(pagarmeData)}`)
+        const pagarmeRes = await fetchFn(`${PAGARME_BASE_URL}/recipients`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recipientPayload),
+        })
+
+        const pagarmeData = await pagarmeRes.json()
+        if (!pagarmeRes.ok) {
+          throw new Error(`Pagar.me recipient: ${JSON.stringify(pagarmeData)}`)
+        }
+
+        pagarmeRecipientId = pagarmeData.id
+        pagarmeRecipientStatus = pagarmeData.status ?? 'pending'
+        pagarmeKycLink = pagarmeData.kyc_link ?? null
       }
 
       const baseSlug = nome_loja
@@ -304,8 +322,8 @@ function createHandler(deps: {
           email,
           slug: `${baseSlug}-${Date.now()}`,
           stripe_customer_id: stripeCustomer.id,
-          pagarme_recipient_id: pagarmeData.id,
-          pagarme_onboarding_status: pagarmeData.status ?? 'pending',
+          pagarme_recipient_id: pagarmeRecipientId,
+          pagarme_onboarding_status: pagarmeRecipientStatus,
         })
         .select('id')
         .single()
@@ -331,6 +349,7 @@ function createHandler(deps: {
           slug: baseSlug,
           endereco,
           categoria_id: categoria_id ?? null,
+          theme: themeValido(theme),
         })
         .select('id')
         .single()
@@ -338,7 +357,7 @@ function createHandler(deps: {
       if (storeError) throw storeError
 
       let createSubscriptionCalled = false
-      if (pagarmeData.status === 'active') {
+      if (pagarmeRecipientStatus === 'active') {
         await fetchFn('http://localhost/functions/v1/create-subscription', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -352,9 +371,9 @@ function createHandler(deps: {
           tenant_id: tenant.id,
           store_id: store.id,
           store_slug: baseSlug,
-          pagarme_recipient_id: pagarmeData.id,
-          pagarme_recipient_status: pagarmeData.status,
-          kyc_link: pagarmeData.kyc_link ?? null,
+          pagarme_recipient_id: pagarmeRecipientId,
+          pagarme_recipient_status: pagarmeRecipientStatus,
+          kyc_link: pagarmeKycLink,
           create_subscription_called: createSubscriptionCalled,
         }),
         { headers: { ...corsHeaders(), 'Content-Type': 'application/json' } }
@@ -418,17 +437,82 @@ describe('onboard-tenant Edge Function (Pagar.me + Stripe Billing)', () => {
       assertStringIncludes(json.error, 'Email e senha')
     })
 
-    it('retorna 400 quando dados_bancarios não fornecido', async () => {
+    it('sem dados_bancarios: onboarding SEGUE — recipient nulo, sem chamada Pagar.me', async () => {
+      // O wizard atual não coleta dados bancários: o tenant nasce com
+      // recipient pendente e configura recebimentos depois no dashboard.
+      // deno-lint-ignore no-explicit-any
+      const calls: Array<{ url: string; init: any }> = []
+      const mockClient = createMockSupabaseChain()
       const handler = createHandler({
         stripe: createMockStripe(),
-        supabaseClient: createMockSupabaseChain(),
+        supabaseClient: mockClient,
+        fetchFn: async (url, init) => {
+          calls.push({ url, init })
+          return { ok: true, json: async () => ({}) }
+        },
       })
 
       const { dados_bancarios: _omit, ...semDados } = VALID_BODY_PIX
       const res = await handler(buildRequest('POST', semDados))
-      assertEquals(res.status, 400)
+      assertEquals(res.status, 200)
+
       const json = await res.json()
-      assertStringIncludes(json.error, 'Dados bancários')
+      assertEquals(json.pagarme_recipient_id, null)
+      assertEquals(json.pagarme_recipient_status, 'pending')
+      assertEquals(json.create_subscription_called, false)
+
+      // Nenhuma chamada ao Pagar.me nem à create-subscription.
+      assertEquals(calls.length, 0)
+
+      const tenantInsert = mockClient._captured.inserts.find(
+        // deno-lint-ignore no-explicit-any
+        (i: any) => i.table === 'tenants'
+      )
+      assertExists(tenantInsert)
+      assertEquals(tenantInsert!.data.pagarme_recipient_id, null)
+      assertEquals(tenantInsert!.data.pagarme_onboarding_status, 'pending')
+    })
+  })
+
+  describe('theme (StoreTheme v2) no INSERT da loja', () => {
+    it('grava {v:2, preset} quando o preset é um dos 11 arquétipos', async () => {
+      const mockClient = createMockSupabaseChain()
+      const handler = createHandler({
+        stripe: createMockStripe(),
+        supabaseClient: mockClient,
+      })
+
+      await handler(buildRequest('POST', {
+        ...VALID_BODY_PIX,
+        theme: { v: 2, preset: 'heritage', color: { accent: '#FF0000' } },
+      }))
+
+      const storeInsert = mockClient._captured.inserts.find(
+        // deno-lint-ignore no-explicit-any
+        (i: any) => i.table === 'stores'
+      )
+      assertExists(storeInsert)
+      // Só {v, preset} passam — overrides não são aceitos na criação.
+      assertEquals(storeInsert!.data.theme, { v: 2, preset: 'heritage' })
+    })
+
+    it('preset inválido ou theme ausente → null (aparência Mallevo default)', async () => {
+      for (const theme of [{ v: 2, preset: 'xpto' }, 'hack', undefined]) {
+        const mockClient = createMockSupabaseChain()
+        const handler = createHandler({
+          stripe: createMockStripe(),
+          supabaseClient: mockClient,
+        })
+
+        await handler(buildRequest('POST', { ...VALID_BODY_PIX, theme }))
+
+        const storeInsert = mockClient._captured.inserts.find(
+          // deno-lint-ignore no-explicit-any
+          (i: any) => i.table === 'stores'
+        )
+        assertExists(storeInsert)
+        assertEquals(storeInsert!.data.theme, null)
+      }
     })
   })
 
