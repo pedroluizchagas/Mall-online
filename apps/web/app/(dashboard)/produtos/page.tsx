@@ -1,10 +1,12 @@
 import Link from 'next/link'
-import { Plus, Download } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { getProdutos } from '@/lib/actions/produtos'
 import { ListaProdutos } from '@/components/dashboard/lista-produtos'
 import { UsoPlanoBarra } from '@/components/dashboard/uso-plano-barra'
 import { PageHeader } from '@/components/dashboard/page-header'
+import { ExportarProdutosButton } from '@/components/dashboard/exportar-produtos-button'
+import { ImportarProdutosDialog } from '@/components/dashboard/importar-produtos-dialog'
 
 export default async function PaginaProdutos() {
   const supabase = createSupabaseServer()
@@ -39,11 +41,8 @@ export default async function PaginaProdutos() {
         subtitulo={subtitulo}
         acoes={
           <>
-            <button
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors"
-            >
-              <Download className="w-3.5 h-3.5" /> Importar CSV
-            </button>
+            <ExportarProdutosButton storeId={store.id} />
+            <ImportarProdutosDialog storeId={store.id} />
             <Link
               href="/produtos/novo"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-colors"

@@ -1,4 +1,3 @@
-import { Download } from 'lucide-react'
 import {
   getKpisFinanceiros,
   getFaturamentoDiario,
@@ -14,6 +13,7 @@ import { CardAntecipacao } from '@/components/dashboard/card-antecipacao'
 import { CardSaldoPagarme } from '@/components/dashboard/card-saldo-pagarme'
 import { TopProdutos } from '@/components/dashboard/top-produtos'
 import { PageHeader } from '@/components/dashboard/page-header'
+import { ExportarExtratoButton } from '@/components/dashboard/exportar-extrato-button'
 import { Card } from '@/components/ui/card'
 
 export default async function PaginaFinanceiro() {
@@ -40,13 +40,7 @@ export default async function PaginaFinanceiro() {
       <PageHeader
         titulo="Financeiro"
         subtitulo="KPIs, repasses e extrato da sua conta de recebimentos."
-        acoes={
-          <button
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" /> Extrato
-          </button>
-        }
+        acoes={<ExportarExtratoButton />}
       />
 
       <KpisFinanceiros kpisHoje={kpisHoje} kpisMes={kpisMes} />

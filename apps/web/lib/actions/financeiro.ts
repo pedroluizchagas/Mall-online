@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { gerarCsv } from '@/lib/csv'
 import { calcularTaxaAntecipacao } from '@mallevo/lib'
 
 async function chamarEdgeFunction<T>(nome: string): Promise<T | null> {
@@ -376,4 +377,101 @@ export async function solicitarAntecipacao() {
 
   revalidatePath('/dashboard/financeiro')
   return { sucesso: true, dados: resultado }
+}
+
+// ============================================================================
+// Exportar extrato (dashboard-redesign Fase 3 §3)
+// ============================================================================
+
+export type PeriodoExtrato = 'mes' | 'mes-anterior' | '30d' | '90d'
+
+const ROTULO_PERIODO: Record<PeriodoExtrato, string> = {
+  mes: 'este-mes',
+  'mes-anterior': 'mes-anterior',
+  '30d': 'ultimos-30-dias',
+  '90d': 'ultimos-90-dias',
+}
+
+function intervaloExtrato(periodo: PeriodoExtrato): { inicio: Date; fim: Date } {
+  const agora = new Date()
+  const fim = new Date(agora)
+  const inicio = new Date(agora)
+
+  switch (periodo) {
+    case 'mes':
+      inicio.setDate(1)
+      break
+    case 'mes-anterior':
+      inicio.setMonth(inicio.getMonth() - 1, 1)
+      fim.setDate(0) // último dia do mês anterior
+      break
+    case '30d':
+      inicio.setDate(inicio.getDate() - 30)
+      break
+    case '90d':
+      inicio.setDate(inicio.getDate() - 90)
+      break
+  }
+  inicio.setHours(0, 0, 0, 0)
+  fim.setHours(23, 59, 59, 999)
+  return { inicio, fim }
+}
+
+/**
+ * Exporta o extrato de repasses (payouts do lojista) do período em CSV.
+ * Valores em centavos (convenção dos exports do dashboard).
+ */
+export async function exportarExtratoCsv(
+  periodo: PeriodoExtrato,
+): Promise<{ csv: string; nomeArquivo: string } | { erro: string }> {
+  const supabase = createSupabaseServer()
+
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  if (!tenant) return { erro: 'Tenant não encontrado' }
+
+  const { inicio, fim } = intervaloExtrato(periodo)
+
+  const { data: payouts, error } = await supabase
+    .from('payouts')
+    .select(
+      'data_referencia, status, valor_bruto, taxa_antecipacao, valor_liquido, total_pedidos, antecipado, data_prevista, processado_em',
+    )
+    .eq('tenant_id', tenant.id)
+    .gte('data_referencia', inicio.toISOString().slice(0, 10))
+    .lte('data_referencia', fim.toISOString().slice(0, 10))
+    .order('data_referencia', { ascending: true })
+    .limit(1000)
+
+  if (error) return { erro: error.message }
+  if (!payouts || payouts.length === 0) {
+    return { erro: 'Nenhum repasse no período selecionado.' }
+  }
+
+  const csv = gerarCsv(
+    [
+      'data_referencia',
+      'status',
+      'valor_bruto_centavos',
+      'taxa_antecipacao_centavos',
+      'valor_liquido_centavos',
+      'total_pedidos',
+      'antecipado',
+      'data_prevista',
+      'processado_em',
+    ],
+    payouts.map((p) => [
+      p.data_referencia,
+      p.status,
+      p.valor_bruto,
+      p.taxa_antecipacao,
+      p.valor_liquido,
+      p.total_pedidos,
+      p.antecipado ? 'sim' : 'nao',
+      p.data_prevista,
+      p.processado_em ?? '',
+    ]),
+  )
+
+  const data = new Date().toISOString().slice(0, 10)
+  return { csv, nomeArquivo: `extrato-${ROTULO_PERIODO[periodo]}-${data}.csv` }
 }

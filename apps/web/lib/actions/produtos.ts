@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { gerarCsv } from '@/lib/csv'
 import { z } from 'zod'
 
 const schemaProduto = z.object({
@@ -924,4 +925,197 @@ export async function excluirProduto(produto_id: string) {
 
   revalidatePath('/dashboard/produtos')
   return { sucesso: true }
+}
+
+// ============================================================================
+// Import/Export CSV (dashboard-redesign Fase 3 §2)
+// ============================================================================
+
+/** Colunas do CSV de produtos — round-trip entre export e import. */
+const CSV_CABECALHO = [
+  'nome',
+  'descricao',
+  'preco',
+  'preco_promocional',
+  'categoria',
+  'disponivel',
+] as const
+
+const schemaLinhaImportacao = z.object({
+  nome: z.string().min(2, 'nome muito curto').max(120, 'nome muito longo'),
+  descricao: z.string().max(600).optional().nullable(),
+  /** Centavos (o client converte "12,90"/"12.90" antes de enviar). */
+  preco: z.number().int().min(1, 'preço inválido'),
+  preco_promocional: z.number().int().min(1).optional().nullable(),
+  categoria: z.string().max(80).optional().nullable(),
+  disponivel: z.boolean(),
+})
+
+export type LinhaImportacaoProduto = z.infer<typeof schemaLinhaImportacao>
+
+const LIMITE_LINHAS_IMPORT = 500
+
+/**
+ * Exporta o catálogo da loja em CSV (mesmo formato aceito pelo import).
+ * Preços em reais com ponto decimal ("12.90"); disponivel = sim/nao.
+ */
+export async function exportarProdutosCsv(
+  store_id: string,
+): Promise<{ csv: string; nomeArquivo: string } | { erro: string }> {
+  const supabase = createSupabaseServer()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { erro: 'Não autenticado' }
+
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  if (!tenant) return { erro: 'Tenant não encontrado' }
+
+  const { data: produtos, error } = await supabase
+    .from('products')
+    .select('nome, descricao, preco, preco_promocional, disponivel, categories (nome)')
+    .eq('store_id', store_id)
+    .eq('tenant_id', tenant.id)
+    .order('ordem', { ascending: true })
+    .order('nome', { ascending: true })
+
+  if (error) return { erro: error.message }
+
+  const linhas = (produtos ?? []).map((p) => {
+    const categoria = (p.categories as { nome?: string } | null)?.nome ?? ''
+    return [
+      p.nome,
+      p.descricao ?? '',
+      (p.preco / 100).toFixed(2),
+      p.preco_promocional ? (p.preco_promocional / 100).toFixed(2) : '',
+      categoria,
+      p.disponivel ? 'sim' : 'nao',
+    ]
+  })
+
+  const csv = gerarCsv(CSV_CABECALHO, linhas)
+  const data = new Date().toISOString().slice(0, 10)
+  return { csv, nomeArquivo: `catalogo-${data}.csv` }
+}
+
+/**
+ * Importa produtos a partir das linhas já parseadas no client.
+ * - Valida cada linha (zod) e respeita o limite de produtos do plano;
+ * - Resolve categorias por nome (case-insensitive), criando as que faltarem;
+ * - Insere em lote; erros por linha voltam com o número da linha do arquivo.
+ */
+export async function importarProdutosCsv(
+  store_id: string,
+  linhas: unknown[],
+): Promise<
+  | { criados: number; erros: { linha: number; motivo: string }[] }
+  | { erro: string }
+> {
+  const supabase = createSupabaseServer()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { erro: 'Não autenticado' }
+
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  if (!tenant) return { erro: 'Tenant não encontrado' }
+
+  const { data: store } = await supabase
+    .from('stores')
+    .select('id')
+    .eq('id', store_id)
+    .eq('tenant_id', tenant.id)
+    .single()
+  if (!store) return { erro: 'Loja não encontrada' }
+
+  if (!Array.isArray(linhas) || linhas.length === 0) {
+    return { erro: 'Nenhuma linha para importar' }
+  }
+  if (linhas.length > LIMITE_LINHAS_IMPORT) {
+    return { erro: `Máximo de ${LIMITE_LINHAS_IMPORT} produtos por importação` }
+  }
+
+  // Valida linha a linha — o índice +2 aponta a linha real do arquivo
+  // (1 do cabeçalho + base 1).
+  const validas: LinhaImportacaoProduto[] = []
+  const erros: { linha: number; motivo: string }[] = []
+  linhas.forEach((l, i) => {
+    const r = schemaLinhaImportacao.safeParse(l)
+    if (r.success) validas.push(r.data)
+    else erros.push({ linha: i + 2, motivo: r.error.errors[0].message })
+  })
+  if (validas.length === 0) {
+    return { erro: 'Nenhuma linha válida no arquivo' }
+  }
+
+  // Limite do plano (mesma fonte de getProdutos).
+  const [{ count: atuais }, { data: subscription }] = await Promise.all([
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('store_id', store_id),
+    supabase.from('tenant_subscriptions').select('plans(max_produtos)').single(),
+  ])
+  const maxProdutos = (subscription?.plans as { max_produtos?: number } | null)?.max_produtos ?? 30
+  if ((atuais ?? 0) + validas.length > maxProdutos) {
+    return {
+      erro: `O plano permite ${maxProdutos} produtos (você tem ${atuais ?? 0}); importar ${validas.length} estoura o limite.`,
+    }
+  }
+
+  // Categorias: resolve por nome (case/acentos-insensitive) e cria faltantes.
+  const normalizar = (s: string) =>
+    s.trim().normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+
+  const { data: catsExistentes } = await supabase
+    .from('categories')
+    .select('id, nome, ordem')
+    .eq('store_id', store_id)
+
+  const porNome = new Map<string, string>()
+  let maiorOrdem = -1
+  for (const c of catsExistentes ?? []) {
+    porNome.set(normalizar(c.nome), c.id)
+    if (c.ordem > maiorOrdem) maiorOrdem = c.ordem
+  }
+
+  const nomesNovos = [
+    ...new Set(
+      validas
+        .map((l) => l.categoria?.trim())
+        .filter((n): n is string => !!n && !porNome.has(normalizar(n))),
+    ),
+  ]
+  if (nomesNovos.length > 0) {
+    const { data: novas, error: erroCat } = await supabase
+      .from('categories')
+      .insert(
+        nomesNovos.map((nome, i) => ({
+          tenant_id: tenant.id,
+          store_id,
+          nome,
+          ordem: maiorOrdem + 1 + i,
+          ativa: true,
+        })),
+      )
+      .select('id, nome')
+    if (erroCat) return { erro: `Falha ao criar categorias: ${erroCat.message}` }
+    for (const c of novas ?? []) porNome.set(normalizar(c.nome), c.id)
+  }
+
+  const { error: erroInsert } = await supabase.from('products').insert(
+    validas.map((l, i) => ({
+      store_id,
+      tenant_id: tenant.id,
+      category_id: l.categoria?.trim() ? porNome.get(normalizar(l.categoria)) ?? null : null,
+      nome: l.nome,
+      descricao: l.descricao?.trim() || null,
+      preco: l.preco,
+      preco_promocional: l.preco_promocional ?? null,
+      disponivel: l.disponivel,
+      ordem: (atuais ?? 0) + i,
+    })),
+  )
+  if (erroInsert) return { erro: erroInsert.message }
+
+  revalidatePath('/produtos')
+  return { criados: validas.length, erros }
 }
