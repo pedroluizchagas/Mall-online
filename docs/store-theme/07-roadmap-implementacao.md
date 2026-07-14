@@ -35,7 +35,8 @@
 - [x] `loja-vitrine.ts`: grava `StoreThemeConfig v2` (`{v:2, preset, color?:{accent}}`); valida preset (enum dos 11) e accent (hex). `accentInk` é derivado no `resolveTheme` (contraste WCAG) na renderização.
 - [x] `minha-loja/page.tsx`: passa `categoriaSlug` (sugere o arquétipo). `packages/types/supabase.ts`: coluna `theme` relaxada para `Json | null` (aceita v1 e v2).
 - [x] Init resiliente: lê preset v2 salvo; senão sugere pela categoria. Build de produção web + `tsc` OK.
-- [ ] **(adiado p/ Fase 4)** Extração de cor da logo ([06 §6.3], precisa de lib de quantização) e etapa de tema embutida no fluxo de onboarding ([06 §6.1]) — o editor `/minha-loja` já é a superfície canônica, acessível a qualquer momento.
+- [x] **Etapa de tema no onboarding** ([06 §6.1]): passo "Escolha o estilo da sua loja" (etapa 8/12) entre a confirmação da categoria e o nome — cards com mini-preview real (cores+forma via `ARQUETIPOS`/`RADIUS_STEPS_PX`), default sugerido pela categoria com badge "Recomendado". `onboard-tenant` valida o preset (whitelist dos 11) e grava `stores.theme` no INSERT: **toda loja nova nasce vestida**. ⚠️ Deploy da function pendente (ver nota `dados_bancarios` no commit).
+- [ ] **(adiado p/ Fase 4)** Extração de cor da logo ([06 §6.3], precisa de lib de quantização) — o editor `/minha-loja` segue como superfície canônica de refino.
 - **Saída:** lojista escolhe um dos 11 estilos (sugeridos por nicho) + cor, vê o preview fiel e publica `StoreThemeConfig v2` que o storefront (Fase 1) e o app (Fase 2) renderizam.
 
 ## Tipos v1 (`packages/types/domain.ts`) ✅ REMOVIDOS (Fase 4)
