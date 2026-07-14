@@ -7,18 +7,21 @@ export interface ProdutoAgregado {
   receita: number
 }
 
-interface Props { produtos: ProdutoAgregado[] }
+interface Props {
+  produtos: ProdutoAgregado[]
+  titulo?: string
+}
 
 function formatarBRL(centavos: number): string {
   return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export function TopProdutos({ produtos }: Props) {
+export function TopProdutos({ produtos, titulo = 'Top 10 produtos' }: Props) {
   const totalReceita = produtos.reduce((s, p) => s + p.receita, 0)
 
   return (
     <Card>
-      <h2 className="font-bold text-base text-ink mb-4">Top 10 produtos</h2>
+      <h2 className="font-bold text-base text-ink mb-4">{titulo}</h2>
       {produtos.length === 0 ? (
         <p className="text-sm text-ink-3">Sem produtos vendidos no período.</p>
       ) : (
