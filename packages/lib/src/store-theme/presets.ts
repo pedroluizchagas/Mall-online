@@ -176,7 +176,8 @@ export const ARQUETIPOS = {
         inkMuted: '#7A7A7A',
         line: '#F0E6DE',
         accent: '#FF8A5B',
-        accentInk: '#FFFFFF',
+        // Coral é claro: tinta quente-escura (não branca) p/ AA real.
+        accentInk: '#2A2A2A',
       }),
       typography: {
         display: { family: 'Nunito', weights: [600, 700, 800] },
@@ -233,7 +234,9 @@ export const ARQUETIPOS = {
         ink: '#14302C',
         inkMuted: '#5A716D',
         line: '#DCEAE7',
-        accent: '#12A594',
+        // Teal aprofundado p/ sustentar tinta branca com AA real
+        // (o #12A594 original reprovava e era corrigido p/ preto no resolve).
+        accent: '#0D7A6E',
         accentInk: '#FFFFFF',
       }),
       typography: {
@@ -291,7 +294,9 @@ export const ARQUETIPOS = {
         ink: '#1B2519',
         inkMuted: '#5E6B59',
         line: '#E7EBE4',
-        accent: '#2EA043',
+        // Verde aprofundado p/ sustentar tinta branca com AA real
+        // (o #2EA043 original reprovava e era corrigido p/ preto no resolve).
+        accent: '#22863A',
         accentInk: '#FFFFFF',
       }),
       typography: {

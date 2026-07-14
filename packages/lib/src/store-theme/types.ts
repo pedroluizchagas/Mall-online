@@ -92,6 +92,12 @@ export interface Archetype {
 export interface StoreThemeConfig {
   v: 2
   preset: ArquetipoCodigo
+  /**
+   * Código de uma paleta curada do arquétipo (palettes.ts). Ausente ou
+   * desconhecido → paleta original do preset. Os hex vivem na lib
+   * (refináveis sem quebra); a loja guarda só a intenção.
+   */
+  palette?: string
   color?: Partial<ColorTokens>
   fonts?: { display?: string; body?: string }
   shape?: Partial<ShapeTokens>

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { ARQUETIPOS, type ArquetipoCodigo } from '@mallevo/lib'
+import { ARQUETIPOS, getPaleta, type ArquetipoCodigo } from '@mallevo/lib'
 
 const BUCKET = 'store-assets'
 const TAMANHO_MAX_BYTES = 5 * 1024 * 1024
@@ -22,6 +22,9 @@ type ResultadoAcao = { sucesso: true } | { erro: string }
 
 const schemaPublicar = z.object({
   preset: z.enum(PRESETS),
+  // Paleta curada do arquétipo (código em PALETAS, @mallevo/lib). Validada
+  // contra o preset abaixo — desconhecida → descartada (original).
+  palette: z.string().max(40).optional().nullable(),
   // Override opcional da cor de destaque (hex). accentInk é derivado no
   // resolveTheme (contraste WCAG garantido) na hora de renderizar.
   accent: z
@@ -90,21 +93,30 @@ export async function publicarVitrine(formData: FormData): Promise<ResultadoAcao
   if (!loja) return { erro: 'Loja não encontrada' }
 
   const accentRaw = formData.get('accent')
+  const paletteRaw = formData.get('palette')
   const taglineRaw = formData.get('tagline')
 
   const parsed = schemaPublicar.safeParse({
     preset: formData.get('preset'),
+    palette: paletteRaw === null || paletteRaw === '' ? null : paletteRaw,
     accent: accentRaw === null || accentRaw === '' ? null : accentRaw,
     nome: formData.get('nome'),
     tagline: taglineRaw && String(taglineRaw).length > 0 ? String(taglineRaw) : undefined,
   })
   if (!parsed.success) return { erro: parsed.error.errors[0].message }
 
-  // StoreThemeConfig v2: preset + override opcional de cor. JSON enxuto —
-  // o accentInk e o resto da paleta são derivados pelo resolveTheme.
+  // Paleta só persiste se existir no catálogo do preset (fonte: @mallevo/lib).
+  const paletteValida =
+    parsed.data.palette && getPaleta(parsed.data.preset, parsed.data.palette)
+      ? parsed.data.palette
+      : null
+
+  // StoreThemeConfig v2: preset + paleta + override opcional de cor. JSON
+  // enxuto — accentInk e o resto da pele são derivados pelo resolveTheme.
   const theme: Record<string, unknown> = {
     v: 2,
     preset: parsed.data.preset,
+    ...(paletteValida ? { palette: paletteValida } : {}),
     ...(parsed.data.accent ? { color: { accent: parsed.data.accent } } : {}),
   }
 

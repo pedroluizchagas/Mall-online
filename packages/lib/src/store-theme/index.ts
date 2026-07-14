@@ -23,6 +23,8 @@ export type {
 } from './types'
 
 export { ARQUETIPOS, ARQUETIPO_FALLBACK } from './presets'
+export { PALETAS, getPaleta } from './palettes'
+export type { Paleta, PaletaPele } from './palettes'
 
 export {
   CATEGORIA_SLUG_TO_ARQUETIPO,

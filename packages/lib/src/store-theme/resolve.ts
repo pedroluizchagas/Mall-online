@@ -1,4 +1,5 @@
 import { ensureAccentInk } from './contrast'
+import { getPaleta } from './palettes'
 import { ARQUETIPOS, ARQUETIPO_FALLBACK } from './presets'
 import type {
   ArquetipoCodigo,
@@ -53,6 +54,7 @@ export function normalizeThemeConfig(raw: unknown): StoreThemeConfig {
     return {
       v: 2,
       preset: obj.preset,
+      palette: typeof obj.palette === 'string' ? obj.palette : undefined,
       color: (obj.color as StoreThemeConfig['color']) ?? undefined,
       fonts: (obj.fonts as StoreThemeConfig['fonts']) ?? undefined,
       shape: (obj.shape as StoreThemeConfig['shape']) ?? undefined,
@@ -73,17 +75,19 @@ export function normalizeThemeConfig(raw: unknown): StoreThemeConfig {
 
 /**
  * Resolve o valor persistido em `stores.theme` para os `ThemeTokens` completos,
- * aplicando o default do arquétipo + overrides do lojista + correção de
- * contraste do `accentInk`. Esta é a ÚNICA porta de entrada usada pelo
- * storefront, pelo app e pelo preview do onboarding — garante "o que vejo é o
- * que publico".
+ * em camadas: default do arquétipo → paleta curada (se houver) → overrides do
+ * lojista → correção de contraste do `accentInk`. Esta é a ÚNICA porta de
+ * entrada usada pelo storefront, pelo app e pelo preview do onboarding —
+ * garante "o que vejo é o que publico".
  */
 export function resolveTheme(raw: unknown): ThemeTokens {
   const config = normalizeThemeConfig(raw)
   const base = ARQUETIPOS[config.preset] ?? ARQUETIPOS[ARQUETIPO_FALLBACK]
   const t = base.tokens
 
-  const color = { ...t.color, ...(config.color ?? {}) }
+  // Paleta curada do arquétipo — código desconhecido/ausente → original.
+  const paleta = getPaleta(config.preset, config.palette)
+  const color = { ...t.color, ...(paleta?.color ?? {}), ...(config.color ?? {}) }
   // accentInk sempre validado contra o accent final (preset ou override).
   color.accentInk = ensureAccentInk(color.accent, color.accentInk)
 

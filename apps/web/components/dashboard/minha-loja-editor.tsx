@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Check, Lock, Upload, Zap, ImagePlus } from 'lucide-react'
 import {
   ARQUETIPOS,
+  PALETAS,
   RADIUS_STEPS_PX,
   TYPE_SCALE_FACTOR,
   getArquetipoSugestao,
@@ -129,8 +130,12 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
       : getArquetipoSugestao(loja.categoriaSlug).default
   const accentInicial =
     (loja.theme?.color as { accent?: string } | undefined)?.accent ?? null
+  const paletaInicial =
+    typeof loja.theme?.palette === 'string' ? loja.theme.palette : null
 
   const [preset, setPreset] = useState<ArquetipoCodigo>(presetInicial)
+  // Paleta curada do arquétipo (null = original). Trocar de estilo reseta.
+  const [paleta, setPaleta] = useState<string | null>(paletaInicial)
   const [accent, setAccent] = useState<string | null>(accentInicial)
   const [nome, setNome] = useState(loja.nome)
   const [tagline, setTagline] = useState(loja.descricao ?? '')
@@ -172,10 +177,11 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
     }
   }, [logoUrl])
 
-  // Tema do preview derivado da engine real (preset + override de accent).
+  // Tema do preview derivado da engine real (preset + paleta + accent).
   const tokens = resolveTheme({
     v: 2,
     preset,
+    ...(paleta ? { palette: paleta } : {}),
     ...(accent ? { color: { accent } } : {}),
   })
   const temaAtivo: Tema = temaFromTokens(tokens)
@@ -225,6 +231,7 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
 
     const formData = new FormData()
     formData.set('preset', preset)
+    formData.set('palette', paleta ?? '')
     formData.set('accent', accent ?? '')
     formData.set('nome', nome)
     formData.set('tagline', tagline)
@@ -302,7 +309,10 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
                   code={code}
                   selected={preset === code}
                   recomendado={code === sugestao.default}
-                  onSelect={() => setPreset(code)}
+                  onSelect={() => {
+                    setPreset(code)
+                    setPaleta(null)
+                  }}
                 />
               ))}
             </div>
@@ -320,12 +330,44 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
                       key={code}
                       code={code}
                       selected={preset === code}
-                      onSelect={() => setPreset(code)}
+                      onSelect={() => {
+                        setPreset(code)
+                        setPaleta(null)
+                      }}
                     />
                   ))}
                 </div>
               </>
             )}
+          </Secao>
+
+          {/* ── PALETA DO ESTILO ─────────────────────────────── */}
+          <Secao titulo="PALETA DO ESTILO">
+            <p className="text-xs text-ink-3 -mt-2 mb-3">
+              Variações de cor curadas para o estilo {ARQUETIPOS[preset].nome} —
+              mesma forma e tipografia, outra temperatura.
+            </p>
+            <div className="flex flex-wrap gap-2.5">
+              <PaletaChip
+                nome="Original"
+                cores={[
+                  ARQUETIPOS[preset].tokens.color.bg,
+                  ARQUETIPOS[preset].tokens.color.accent,
+                  ARQUETIPOS[preset].tokens.color.ink,
+                ]}
+                selecionada={paleta === null}
+                onSelecionar={() => setPaleta(null)}
+              />
+              {PALETAS[preset].map((p) => (
+                <PaletaChip
+                  key={p.codigo}
+                  nome={p.nome}
+                  cores={[p.color.bg, p.color.accent, p.color.ink]}
+                  selecionada={paleta === p.codigo}
+                  onSelecionar={() => setPaleta(p.codigo)}
+                />
+              ))}
+            </div>
           </Secao>
 
           {/* ── IDENTIDADE ───────────────────────────────────── */}
@@ -642,6 +684,50 @@ function Secao({ titulo, children }: { titulo: string; children: React.ReactNode
       </p>
       {children}
     </div>
+  )
+}
+
+function PaletaChip({
+  nome,
+  cores,
+  selecionada,
+  onSelecionar,
+}: {
+  nome: string
+  /** [bg, accent, ink] — amostras exibidas no chip. */
+  cores: [string, string, string]
+  selecionada: boolean
+  onSelecionar: () => void
+}) {
+  return (
+    <button
+      onClick={onSelecionar}
+      className="flex items-center gap-2.5 pl-2.5 pr-3.5 py-2 rounded-full transition-all hover:opacity-90"
+      style={{
+        border: `2px solid ${selecionada ? 'var(--brick-dk)' : 'var(--line)'}`,
+        background: selecionada ? 'var(--brick-lt)' : 'var(--bg)',
+      }}
+    >
+      <span className="flex -space-x-1.5">
+        {cores.map((cor, i) => (
+          <span
+            key={i}
+            className="w-5 h-5 rounded-full"
+            style={{
+              background: cor,
+              boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.10), 0 0 0 2px var(--bg)',
+              zIndex: 3 - i,
+            }}
+          />
+        ))}
+      </span>
+      <span
+        className="text-xs font-bold"
+        style={{ color: selecionada ? 'var(--brick-dk)' : 'var(--ink-2)' }}
+      >
+        {nome}
+      </span>
+    </button>
   )
 }
 

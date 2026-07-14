@@ -97,7 +97,7 @@ shape: radius sharp, density comfortable, scale spacious
 ```
 mode: light
 color: bg #FBF6F2  surface #FFFFFF  ink #2A2A2A  inkMuted #7A7A7A
-       accent #FF8A5B  accentInk #FFFFFF  line #F0E6DE
+       accent #FF8A5B  accentInk #2A2A2A  line #F0E6DE
 type: display = sans arredondada (ex: "Nunito"/"Quicksand"), body = sans
 shape: radius round, density comfortable, scale regular
 ```
@@ -115,7 +115,7 @@ shape: radius soft, density comfortable, scale spacious
 ```
 mode: light
 color: bg #F4F9F8  surface #FFFFFF  surfaceAlt #E9F3F1  ink #14302C  inkMuted #5A716D
-       accent #12A594  accentInk #FFFFFF  line #DCEAE7
+       accent #0D7A6E  accentInk #FFFFFF  line #DCEAE7
 type: display = "Inter", body = "Inter"
 shape: radius soft, density compact, scale regular
 ```
@@ -133,7 +133,7 @@ shape: radius sharp, density compact, scale regular
 ```
 mode: light
 color: bg #FFFFFF  surface #FFFFFF  surfaceAlt #F4F6F3  ink #1B2519  inkMuted #5E6B59
-       accent #2EA043  accentInk #FFFFFF  line #E7EBE4
+       accent #22863A  accentInk #FFFFFF  line #E7EBE4
 type: display = "Inter", body = "Inter"
 shape: radius soft, density compact, scale compact
 ```
