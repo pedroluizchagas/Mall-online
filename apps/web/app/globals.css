@@ -39,6 +39,11 @@
   --ok: #4fb025;
   --warn: #e0a61a;
   --err: #e05a3b;
+  /* Fundos suaves de status (chips da "Saúde da loja") */
+  --ok-lt: #e9f5ee;
+  --warn-lt: #fbf3e0;
+  --err-lt: #fbeae6;
+  --sky-lt: #eaf2f9;
 
   /* Radii */
   --r-sm: 8px;
@@ -51,6 +56,36 @@
   --shadow-md: 0 4px 16px -4px rgba(15, 15, 13, 0.06), 0 2px 4px rgba(15, 15, 13, 0.03);
   --shadow-lg: 0 24px 60px -12px rgba(15, 15, 13, 0.18), 0 8px 16px rgba(15, 15, 13, 0.05);
 }
+
+/* ── Modo escuro (dashboard-redesign Fase 5) ──────────────────────────────
+   Só a SUPERFÍCIE DE CONTEÚDO inverte; a sidebar já é escura por design e
+   mantém suas vars. Como quase toda a UI usa var(--bg/--ink/--line/…), a
+   troca de data-theme reflete de imediato. Definido por preferência do SO
+   e sobrescrito pela escolha explícita (ThemeToggle → localStorage). */
+:root[data-theme='dark'] {
+  --bg: #1b1b19;
+  --bg-2: #242421;
+  --bg-3: #2f2f2b;
+  --ink: #f4f4ef;
+  --ink-2: #b4b4ad;
+  --ink-3: #82827b;
+  --line: #2c2c29;
+  --line-2: #3a3a35;
+
+  /* Lime "selecionado" vira translúcido para funcionar sobre superfície escura */
+  --brick-lt: rgba(193, 241, 72, 0.16);
+
+  --ok-lt: rgba(79, 176, 37, 0.18);
+  --warn-lt: rgba(224, 166, 26, 0.18);
+  --err-lt: rgba(224, 90, 59, 0.18);
+  --sky-lt: rgba(91, 138, 199, 0.18);
+
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+/* Scrollbar-thumb já usa vars; borda do thumb acompanha o --bg do tema. */
 
 html,
 body {

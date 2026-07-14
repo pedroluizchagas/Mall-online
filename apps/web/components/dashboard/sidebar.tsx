@@ -26,6 +26,7 @@ import {
 import { logout } from '@/lib/actions/auth'
 import type { DashboardTemplate } from '@mallevo/lib'
 import { useRealtimeCount } from './hooks/use-realtime-count'
+import { ThemeToggle } from './theme-toggle'
 
 type GrupoLabel = 'OPERAR' | 'ANALISAR' | 'MINHA LOJA' | 'CONTA'
 type SubItem = { href: string; label: string }
@@ -187,15 +188,18 @@ export function SidebarDashboard({ nomeLoja, template, pedidosNovosInicial, tena
         style={{ borderTop: '1px solid var(--sidebar-line)' }}
       >
         <span
-          className="text-[10px] truncate"
+          className="text-[10px] truncate min-w-0"
           style={{ color: 'var(--sidebar-ink-3)' }}
           title={nomeLoja}
         >
           {nomeLoja}
         </span>
-        <span className="text-[10px] font-mono" style={{ color: 'var(--sidebar-ink-3)' }}>
-          v{versao}
-        </span>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <span className="text-[10px] font-mono" style={{ color: 'var(--sidebar-ink-3)' }}>
+            v{versao}
+          </span>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   )

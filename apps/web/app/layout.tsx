@@ -20,13 +20,33 @@ export const metadata = {
   description: 'O shopping digital de Divinópolis',
 }
 
+/**
+ * Define o tema (claro/escuro) ANTES do primeiro paint, evitando flash:
+ * escolha explícita (localStorage) tem prioridade; senão segue o SO.
+ * Roda inline no <head> — precede a hidratação do React.
+ */
+const TEMA_INIT = `(function(){try{
+  var t = localStorage.getItem('tema-dashboard');
+  if (t !== 'dark' && t !== 'light') {
+    t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', t);
+}catch(e){}})();`
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt-BR" className={`${jakarta.variable} ${jetbrains.variable}`}>
+    <html
+      lang="pt-BR"
+      suppressHydrationWarning
+      className={`${jakarta.variable} ${jetbrains.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: TEMA_INIT }} />
+      </head>
       <body>{children}</body>
     </html>
   )
