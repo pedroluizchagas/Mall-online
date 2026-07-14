@@ -90,7 +90,8 @@ mode: dark
 color: bg #000000  surface #0C0C0C  ink #F5F5F5  inkMuted #8A8A8A
        accent #C9A24B  accentInk #000000  line #1C1C1C
 type: display = serif/sans alto contraste com tracking largo, body = sans
-shape: radius sharp, density comfortable, scale spacious
+shape: radius soft, density comfortable, scale spacious
+      (calibrado contra as refs: Aurum 20–24px, Esteem 40px — luxo arredondado suave)
 ```
 
 ### Soft Care (`soft`)

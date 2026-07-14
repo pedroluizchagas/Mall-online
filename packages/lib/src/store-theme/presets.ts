@@ -151,7 +151,10 @@ export const ARQUETIPOS = {
         body: { family: 'Inter', weights: [400, 500, 700] },
         scale: 'spacious',
       },
-      shape: { radius: 'sharp', density: 'comfortable' },
+      // Calibrado contra as refs (2026-07): Aurum usa 20–24px em peso e
+      // Esteem 40px — o luxo das referências é suavemente arredondado,
+      // não reto. `sharp` original não tinha respaldo em nenhuma delas.
+      shape: { radius: 'soft', density: 'comfortable' },
     },
   },
 
