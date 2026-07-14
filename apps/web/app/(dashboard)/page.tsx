@@ -8,6 +8,8 @@ import { MovimentoCard } from '@/components/dashboard/movimento-card'
 import { MaisVendidosCard, type ProdutoMaisVendido } from '@/components/dashboard/mais-vendidos-card'
 import { RepasseCard } from '@/components/dashboard/repasse-card'
 import { InsightBar } from '@/components/dashboard/insight-bar'
+import { SaudeLojaCard } from '@/components/dashboard/saude-loja-card'
+import { getAvaliacaoMedia, getInsightBairro, getSaudeLoja } from '@/lib/actions/home'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,7 +67,14 @@ export default async function PaginaInicio() {
   const inicioSemana = new Date(inicioDia)
   inicioSemana.setDate(inicioSemana.getDate() - 7)
 
-  const [{ data: pedidosHoje }, { data: pedidosAtivos }, { data: produtos }] = await Promise.all([
+  const [
+    { data: pedidosHoje },
+    { data: pedidosAtivos },
+    { data: produtos },
+    saude,
+    avaliacaoMedia,
+    insight,
+  ] = await Promise.all([
     supabase
       .from('orders')
       .select('id, status, total, criado_em')
@@ -85,6 +94,9 @@ export default async function PaginaInicio() {
       .eq('disponivel', true)
       .order('criado_em', { ascending: false })
       .limit(4),
+    getSaudeLoja(),
+    getAvaliacaoMedia(),
+    getInsightBairro(),
   ])
 
   type Order = {
@@ -168,7 +180,13 @@ export default async function PaginaInicio() {
           icon={BarChart3}
           color="var(--sky)"
         />
-        <KPI label="Avaliação" value="—" suffix="/ 5,0" icon={Star} color="var(--mustard)" />
+        <KPI
+          label="Avaliação"
+          value={avaliacaoMedia !== null ? avaliacaoMedia.toFixed(1).replace('.', ',') : '—'}
+          suffix="/ 5,0"
+          icon={Star}
+          color="var(--mustard)"
+        />
       </div>
 
       {/* Linha 1: fila + movimento */}
@@ -197,12 +215,12 @@ export default async function PaginaInicio() {
         />
       </div>
 
-      <InsightBar
-        destaque="Mercado"
-        bairro="Niterói"
-        delta={18}
-        sugestao="Sugestão: destaque seus 3 produtos mais vendidos nessa região."
-      />
+      {/* Saúde da loja — checklist permanente (memória do SetupWizard +
+          avisos operacionais acionáveis). */}
+      <SaudeLojaCard avisos={saude} />
+
+      {/* Insight real de bairro em alta — sem dados suficientes, não renderiza. */}
+      {insight && <InsightBar insight={insight} />}
     </div>
   )
 }

@@ -1,13 +1,14 @@
+import Link from 'next/link'
 import { TrendingUp } from 'lucide-react'
+import type { InsightBairro } from '@/lib/actions/home'
 
-interface Props {
-  destaque: string
-  bairro: string
-  delta: number
-  sugestao: string
-}
-
-export function InsightBar({ destaque, bairro, delta, sugestao }: Props) {
+/**
+ * Insight de bairro em alta — dados REAIS de getInsightBairro (últimos 7
+ * dias vs 7 anteriores). Sem dados suficientes, a home simplesmente não
+ * renderiza a barra (antes exibia "Niterói +18%" fixo no código, com um
+ * botão "Aplicar" sem ação).
+ */
+export function InsightBar({ insight }: { insight: InsightBairro }) {
   return (
     <div
       className="mt-4 rounded-lg flex items-center gap-3.5 p-4"
@@ -21,23 +22,27 @@ export function InsightBar({ destaque, bairro, delta, sugestao }: Props) {
       </div>
       <div className="flex-1">
         <div className="text-sm font-bold">
-          Seu piso{' '}
+          Pedidos em alta no bairro{' '}
           <em
             className="not-italic px-1.5 rounded"
             style={{ background: 'var(--brick)' }}
           >
-            {destaque}
+            {insight.bairro}
           </em>{' '}
-          está em alta — <span className="text-ink">+{delta}% no bairro {bairro}</span> esta semana.
+          — <span className="text-ink">+{insight.delta}% esta semana</span> (
+          {insight.pedidos} pedido{insight.pedidos === 1 ? '' : 's'}).
         </div>
-        <div className="text-xs text-ink-2 mt-1">{sugestao}</div>
+        <div className="text-xs text-ink-2 mt-1">
+          Sugestão: destaque seus produtos mais vendidos para essa região.
+        </div>
       </div>
-      <button
+      <Link
+        href="/relatorios"
         className="px-4 py-2 rounded-full font-semibold text-xs whitespace-nowrap"
         style={{ background: 'var(--ink)', color: 'var(--bg)' }}
       >
-        Aplicar
-      </button>
+        Ver relatórios
+      </Link>
     </div>
   )
 }
