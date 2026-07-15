@@ -5,8 +5,10 @@ import { getTemplateByStore, TemplateProvider } from '@mallevo/lib'
 import { BannerRecebimentosPendente } from '@/components/dashboard/banner-recebimentos-pendente'
 import { ToastBoasVindas } from '@/components/dashboard/toast-boas-vindas'
 import { SidebarDashboard } from '@/components/dashboard/sidebar'
+import { MobileTopbar } from '@/components/dashboard/mobile-topbar'
 import { TutorialGate } from '@/components/dashboard/tutorial-gate'
 import { CommandPalette } from '@/components/dashboard/command-palette'
+import { AtalhosTeclado } from '@/components/dashboard/atalhos-teclado'
 import { construirComandos } from '@/components/dashboard/comandos'
 import { Toaster } from '@/components/ui/toast'
 
@@ -72,8 +74,13 @@ export default async function LayoutDashboard({
   const statusAtivos = ['trial', 'ativa']
   const assinaturaAtiva = assinatura && statusAtivos.includes(assinatura.billing_status)
 
+  const comandos = construirComandos(template)
+
   return (
     <TemplateProvider value={template}>
+    <a href="#conteudo-principal" className="skip-link">
+      Pular para o conteúdo
+    </a>
     <div
       className="flex h-screen overflow-hidden"
       style={{ background: 'var(--sidebar)' }}
@@ -97,6 +104,8 @@ export default async function LayoutDashboard({
             height: 'calc(100vh - 24px)',
           }}
         >
+          <MobileTopbar nomeLoja={loja?.nome ?? 'Minha loja'} />
+
           {/* Banners no topo do conteúdo */}
           {assinatura?.billing_status === 'em_atraso' && (
             <div
@@ -117,7 +126,7 @@ export default async function LayoutDashboard({
 
           {tenant.pagarme_onboarding_status !== 'active' && <BannerRecebimentosPendente />}
 
-          <main className="flex-1 overflow-y-auto min-h-0">
+          <main id="conteudo-principal" tabIndex={-1} className="flex-1 overflow-y-auto min-h-0">
             {!assinaturaAtiva && assinatura?.billing_status === 'cancelada' ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center max-w-sm">
@@ -143,7 +152,8 @@ export default async function LayoutDashboard({
         </div>
       </div>
 
-      <CommandPalette comandos={construirComandos(template)} />
+      <CommandPalette comandos={comandos} />
+      <AtalhosTeclado comandos={comandos} />
       <ToastBoasVindas />
       <TutorialGate tutorialVisto={tenant.tutorial_template_visto ?? false} />
       <Toaster />

@@ -22,6 +22,7 @@ import {
   Users,
   ChevronDown,
   Search,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import { logout } from '@/lib/actions/auth'
@@ -141,6 +142,7 @@ interface Props {
 
 export function SidebarDashboard({ nomeLoja, template, pedidosNovosInicial, tenantId }: Props) {
   const pathname = usePathname()
+  const [aberto, setAberto] = useState(false)
   const pedidosNovosCount = useRealtimeCount({
     table: 'orders',
     filtroEq: { tenant_id: tenantId, status: 'novo' },
@@ -149,33 +151,89 @@ export function SidebarDashboard({ nomeLoja, template, pedidosNovosInicial, tena
   const grupos = buildGrupos(template, pedidosNovosCount)
   const versao = process.env.NEXT_PUBLIC_APP_VERSION ?? 'dev'
 
-  return (
-    <aside
-      className="flex flex-col flex-shrink-0 sticky top-0"
-      style={{
-        width: 236,
-        height: '100vh',
-        background: 'var(--sidebar)',
-        color: 'var(--sidebar-ink)',
-        padding: '20px 14px',
-      }}
-    >
-      <div className="flex items-center gap-2.5 px-2 pb-[18px] pt-1">
-        <div
-          className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center font-extrabold text-base tracking-tight"
-          style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
-        >
-          M
-        </div>
-        <div>
-          <div className="text-[15px] font-bold tracking-tight">Mallevo</div>
-          <div className="text-[10px]" style={{ color: 'var(--sidebar-ink-3)' }}>
-            shopping de Divinópolis
-          </div>
-        </div>
-      </div>
+  // Drawer mobile (dashboard-redesign Fase 5 §4): a top bar mobile dispara
+  // `mallevo:menu`; fecha ao navegar, no Esc e ao clicar no backdrop. Em
+  // `md+` a aside é fixa e o estado é irrelevante (sempre visível).
+  useEffect(() => {
+    function onAbrir() {
+      setAberto(true)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setAberto(false)
+    }
+    window.addEventListener('mallevo:menu', onAbrir)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mallevo:menu', onAbrir)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [])
 
-      <BotaoBuscar />
+  // Fecha o drawer sempre que a rota muda (clicou num link).
+  useEffect(() => {
+    setAberto(false)
+  }, [pathname])
+
+  // Trava o scroll do body enquanto o drawer estiver aberto no mobile.
+  useEffect(() => {
+    if (!aberto) return
+    const anterior = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = anterior
+    }
+  }, [aberto])
+
+  return (
+    <>
+      {/* Backdrop — só no mobile, quando aberto. */}
+      {aberto && (
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          style={{ background: 'rgba(15,15,13,0.5)' }}
+          onClick={() => setAberto(false)}
+          aria-hidden
+        />
+      )}
+
+      <aside
+        className={`flex flex-col flex-shrink-0 fixed inset-y-0 left-0 z-50 md:sticky md:top-0 md:z-auto transition-transform duration-300 ease-out ${
+          aberto ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0`}
+        style={{
+          width: 236,
+          height: '100vh',
+          background: 'var(--sidebar)',
+          color: 'var(--sidebar-ink)',
+          padding: '20px 14px',
+        }}
+      >
+        <div className="flex items-center gap-2.5 px-2 pb-[18px] pt-1">
+          <div
+            className="w-[34px] h-[34px] rounded-[10px] flex items-center justify-center font-extrabold text-base tracking-tight"
+            style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+          >
+            M
+          </div>
+          <div className="min-w-0">
+            <div className="text-[15px] font-bold tracking-tight">Mallevo</div>
+            <div className="text-[10px]" style={{ color: 'var(--sidebar-ink-3)' }}>
+              shopping de Divinópolis
+            </div>
+          </div>
+          {/* Fechar — só no mobile. */}
+          <button
+            type="button"
+            onClick={() => setAberto(false)}
+            aria-label="Fechar menu"
+            className="ml-auto md:hidden p-1.5 rounded-lg"
+            style={{ color: 'var(--sidebar-ink-2)' }}
+          >
+            <X className="w-5 h-5" strokeWidth={2} />
+          </button>
+        </div>
+
+        <BotaoBuscar />
 
       <nav
         aria-label="Navegação principal"
@@ -204,7 +262,8 @@ export function SidebarDashboard({ nomeLoja, template, pedidosNovosInicial, tena
           <ThemeToggle />
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }
 

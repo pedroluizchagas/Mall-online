@@ -94,6 +94,38 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ── Acessibilidade (dashboard-redesign Fase 5 §5) ────────────────────────
+   Foco visível por teclado em toda a UI. Como quase tudo usa estilos inline,
+   não havia indicador de foco — navegação por teclado ficava invisível. Só
+   aparece em :focus-visible (teclado), não em clique de mouse. */
+:focus-visible {
+  outline: 2px solid var(--brick);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Pular para o conteúdo — primeiro tab da página; fica oculto até focado. */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 100;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--brick);
+  color: var(--brick-ink);
+  font-size: 13px;
+  font-weight: 700;
+  transform: translateY(-150%);
+  transition: transform 0.2s ease;
+}
+.skip-link:focus {
+  transform: translateY(0);
+}
+
 .font-display {
   font-family: var(--font-jakarta), sans-serif;
   font-weight: 700;
@@ -149,4 +181,38 @@ body {
 }
 .slide-up {
   animation: slide-up 0.3s ease-out;
+}
+
+/* Skeleton shimmer (dashboard-redesign Fase 5 §6). Faixa clara varre o bloco;
+   a cor base vem de var(--bg-3), então acompanha claro/escuro. */
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+.skeleton {
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.06),
+    transparent
+  );
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+/* Respeita quem prefere menos movimento: sem shimmer, sem slide, sem pulse. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after,
+  .slide-up,
+  .pulse-dot {
+    animation: none;
+  }
 }
