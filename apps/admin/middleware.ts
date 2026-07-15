@@ -2,6 +2,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  // Rota de login é pública — libera antes de qualquer checagem para nunca
+  // cair em loop de redirecionamento (/entrar -> /entrar).
+  if (pathname.startsWith('/entrar')) {
+    return NextResponse.next({ request: { headers: request.headers } })
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -31,13 +39,6 @@ export async function middleware(request: NextRequest) {
       },
     }
   )
-
-  const pathname = request.nextUrl.pathname
-
-  // Rota de login é pública
-  if (pathname.startsWith('/entrar')) {
-    return response
-  }
 
   const { data: { user } } = await supabase.auth.getUser()
 
