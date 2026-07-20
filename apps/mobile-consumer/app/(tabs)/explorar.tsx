@@ -20,7 +20,9 @@ import {
   State,
 } from 'react-native-gesture-handler'
 import { useVideoPlayer, VideoView } from 'expo-video'
+import { Image, ActivityIndicator } from 'react-native'
 import { router } from 'expo-router'
+import { supabase } from '@/lib/supabase'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
 
@@ -28,90 +30,58 @@ const { colors, radius, shadow } = consumerDesign
 
 const { width: W, height: H } = Dimensions.get('window')
 
+// Contrato da view public_explore_feed (docs/partner-app/02 §6) — o feed
+// real publicado pelo Partner App. Fotos e vídeos no mesmo feed.
 interface Reel {
   id: string
+  tipo: 'video' | 'foto'
   loja_slug: string
   loja_nome: string
   loja_inicial: string
-  video_url: string
+  media_url: string
+  thumb_url: string | null
   descricao: string
   tags: string[]
   curtidas: number
   comentarios: number
-  produto?: { nome: string; preco: number }
+  duracao_seg: number | null
+  publicado_em: string
+  produto?: { id: string; nome: string; preco: number } | null
 }
 
-const REELS: Reel[] = [
-  {
-    id: '1',
-    loja_slug: 'sabor-mineiro',
-    loja_nome: 'Sabor Mineiro',
-    loja_inicial: 'S',
-    video_url:
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-    descricao:
-      'Feijão tropeiro fresquinho saindo do fogão! Comida mineira de verdade, do jeito que você ama.',
-    tags: ['#comidamineira', '#feijão', '#divinópolis'],
-    curtidas: 234,
-    comentarios: 18,
-    produto: { nome: 'Feijão Tropeiro Completo', preco: 28.9 },
-  },
-  {
-    id: '2',
-    loja_slug: 'burger-house',
-    loja_nome: 'Burger House DV',
-    loja_inicial: 'B',
-    video_url:
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
-    descricao:
-      'Nosso smash burger artesanal acabou de sair da chapa. Pediu? Chegou em 30 min.',
-    tags: ['#burger', '#artesanal', '#smash'],
-    curtidas: 891,
-    comentarios: 67,
-    produto: { nome: 'Smash Burger Clássico', preco: 34.9 },
-  },
-  {
-    id: '3',
-    loja_slug: 'mercado-central',
-    loja_nome: 'Mercado Central DV',
-    loja_inicial: 'M',
-    video_url:
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-    descricao:
-      'Frutas e verduras fresquinhas chegando hoje. Qualidade que você vê e sente na hora.',
-    tags: ['#mercado', '#hortifruti', '#fresco'],
-    curtidas: 156,
-    comentarios: 9,
-  },
-  {
-    id: '4',
-    loja_slug: 'vitrine-fashion',
-    loja_nome: 'Vitrine Fashion',
-    loja_inicial: 'V',
-    video_url:
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
-    descricao:
-      'Nova coleção chegando! Tendências que combinam com você. Retirada disponível no shopping.',
-    tags: ['#moda', '#fashion', '#tendência'],
-    curtidas: 423,
-    comentarios: 31,
-    produto: { nome: 'Vestido Floral Premium', preco: 189.9 },
-  },
-  {
-    id: '5',
-    loja_slug: 'adega-premium',
-    loja_nome: 'Adega Premium',
-    loja_inicial: 'A',
-    video_url:
-      'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4',
-    descricao:
-      'Vinhos selecionados para qualquer momento. Entregamos em até 35 minutos.',
-    tags: ['#vinho', '#adega', '#bebidas'],
-    curtidas: 312,
-    comentarios: 22,
-    produto: { nome: 'Vinho Tinto Seleção', preco: 89.9 },
-  },
-]
+const PAGINA = 20
+
+// Carga do feed real: keyset por publicado_em (scroll infinito).
+// anon lê SÓ a view — store_posts é bloqueada por RLS.
+async function carregarFeed(antesDe?: string): Promise<Reel[]> {
+  let query = supabase
+    .from('public_explore_feed')
+    .select('*')
+    .order('publicado_em', { ascending: false })
+    .limit(PAGINA)
+
+  if (antesDe) query = query.lt('publicado_em', antesDe)
+
+  const { data, error } = await query
+  if (error) throw new Error(error.message)
+
+  return (data ?? []).map((r) => ({
+    id: r.id as string,
+    tipo: (r.tipo as 'video' | 'foto') ?? 'video',
+    loja_slug: r.loja_slug ?? '',
+    loja_nome: r.loja_nome ?? '',
+    loja_inicial: r.loja_inicial ?? '',
+    media_url: r.media_url ?? '',
+    thumb_url: r.thumb_url,
+    descricao: r.descricao ?? '',
+    tags: (r.tags ?? []).map((t) => (t.startsWith('#') ? t : `#${t}`)),
+    curtidas: r.curtidas ?? 0,
+    comentarios: r.comentarios ?? 0,
+    duracao_seg: r.duracao_seg,
+    publicado_em: r.publicado_em ?? '',
+    produto: (r.produto as Reel['produto']) ?? null,
+  }))
+}
 
 // Gradiente preto inferior para dar contraste ao texto sobre vídeo.
 // Mantém rgba literal — overlay sobre vídeo é caso documentado em
@@ -171,14 +141,16 @@ function ReelItem({
   const heartScale = useRef(new Animated.Value(1)).current
   const muteScale = useRef(new Animated.Value(1)).current
 
-  const player = useVideoPlayer(reel.video_url, (p) => {
+  const ehVideo = reel.tipo === 'video'
+  // Foto não instancia player (source null) — mesmo hook, sem custo.
+  const player = useVideoPlayer(ehVideo ? reel.media_url : null, (p) => {
     p.loop = true
     p.muted = mutado
   })
 
   useEffect(() => {
     if (isActive) {
-      player.play()
+      if (ehVideo) player.play()
       contentY.setValue(32)
       contentOpacity.setValue(0)
       actionsX.setValue(40)
@@ -218,7 +190,7 @@ function ReelItem({
           ]),
         ]),
       ]).start()
-    } else {
+    } else if (ehVideo) {
       player.pause()
       player.currentTime = 0
     }
@@ -293,12 +265,20 @@ function ReelItem({
           bottom: 0,
         }}
       >
-        <VideoView
-          player={player}
-          style={{ width: W, height: H }}
-          contentFit="cover"
-          nativeControls={false}
-        />
+        {ehVideo ? (
+          <VideoView
+            player={player}
+            style={{ width: W, height: H }}
+            contentFit="cover"
+            nativeControls={false}
+          />
+        ) : (
+          <Image
+            source={{ uri: reel.media_url }}
+            style={{ width: W, height: H }}
+            resizeMode="cover"
+          />
+        )}
       </TouchableOpacity>
 
       <GradienteOverlay />
@@ -462,7 +442,8 @@ function ReelItem({
                   fontWeight: '800',
                 }}
               >
-                R$ {reel.produto.preco.toFixed(2).replace('.', ',')}
+                {/* preco em centavos (products.preco) */}
+                R$ {(reel.produto.preco / 100).toFixed(2).replace('.', ',')}
               </Text>
             </TouchableOpacity>
           )}
@@ -575,11 +556,13 @@ const CELL_W = (W - 3) / 3
 const CELL_H = CELL_W * 1.72
 
 function GaleriaGrid({
+  reels,
   ativo,
   onSelect,
   insets,
   visivel,
 }: {
+  reels: Reel[]
   ativo: number
   onSelect: (i: number) => void
   insets: { top: number; bottom: number }
@@ -599,7 +582,7 @@ function GaleriaGrid({
   }, [visivel])
 
   const reelsFiltrados = busca.trim()
-    ? REELS.filter((r) => {
+    ? reels.filter((r) => {
         const termo = busca.toLowerCase()
         return (
           r.loja_nome.toLowerCase().includes(termo) ||
@@ -607,7 +590,7 @@ function GaleriaGrid({
           r.descricao.toLowerCase().includes(termo)
         )
       })
-    : REELS
+    : reels
 
   return (
     <ScrollView
@@ -700,7 +683,7 @@ function GaleriaGrid({
           </View>
         ) : (
           reelsFiltrados.map((reel) => {
-            const originalIndex = REELS.indexOf(reel)
+            const originalIndex = reels.indexOf(reel)
             const isAtivo = originalIndex === ativo
             return (
               <TouchableOpacity
@@ -716,19 +699,28 @@ function GaleriaGrid({
                   borderColor: colors.accent,
                 }}
               >
-                <Text
-                  style={{
-                    position: 'absolute',
-                    bottom: -8,
-                    right: -4,
-                    fontSize: 80,
-                    fontWeight: '900',
-                    color: colors.accentSoft,
-                    lineHeight: 88,
-                  }}
-                >
-                  {reel.loja_inicial}
-                </Text>
+                {/* Thumb real do post (antes: inicial gigante placeholder) */}
+                {reel.thumb_url ? (
+                  <Image
+                    source={{ uri: reel.thumb_url }}
+                    style={StyleSheet.absoluteFillObject}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <Text
+                    style={{
+                      position: 'absolute',
+                      bottom: -8,
+                      right: -4,
+                      fontSize: 80,
+                      fontWeight: '900',
+                      color: colors.accentSoft,
+                      lineHeight: 88,
+                    }}
+                  >
+                    {reel.loja_inicial}
+                  </Text>
+                )}
 
                 <View
                   style={{
@@ -737,19 +729,39 @@ function GaleriaGrid({
                     justifyContent: 'center',
                   }}
                 >
+                  {reel.tipo === 'video' && (
+                    <View
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        backgroundColor: 'rgba(0,0,0,0.45)',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <ConsumerIcon name="play" size={16} color={colors.white} />
+                    </View>
+                  )}
+                </View>
+
+                {reel.tipo === 'video' && reel.duracao_seg ? (
                   <View
                     style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: 18,
-                      backgroundColor: 'rgba(0,0,0,0.45)',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      position: 'absolute',
+                      top: 6,
+                      left: 6,
+                      backgroundColor: 'rgba(0,0,0,0.55)',
+                      borderRadius: 4,
+                      paddingHorizontal: 5,
+                      paddingVertical: 2,
                     }}
                   >
-                    <ConsumerIcon name="play" size={16} color={colors.white} />
+                    <Text style={{ color: colors.white, fontSize: 9, fontWeight: '800' }}>
+                      {reel.duracao_seg}s
+                    </Text>
                   </View>
-                </View>
+                ) : null}
 
                 <View
                   style={{
@@ -821,8 +833,62 @@ export default function TelaExplorar() {
   const [mutado, setMutado] = useState(false)
   const [modoGaleria, setModoGaleria] = useState(false)
   const [overlayVisivel, setOverlayVisivel] = useState(true)
+  const [reels, setReels] = useState<Reel[]>([])
+  const [carregandoFeed, setCarregandoFeed] = useState(true)
+  const [erroFeed, setErroFeed] = useState<string | null>(null)
+  const [fimDoFeed, setFimDoFeed] = useState(false)
+  const carregandoMaisRef = useRef(false)
+  // Dedupe de views por sessão — não inflar o contador do lojista.
+  const vistosRef = useRef<Set<string>>(new Set())
   const insets = useSafeAreaInsets()
   const flatListRef = useRef<FlatList>(null)
+
+  const carregarInicial = useCallback(async () => {
+    setCarregandoFeed(true)
+    setErroFeed(null)
+    try {
+      const pagina = await carregarFeed()
+      setReels(pagina)
+      setFimDoFeed(pagina.length < PAGINA)
+    } catch (e) {
+      setErroFeed(e instanceof Error ? e.message : 'Falha ao carregar o feed')
+    } finally {
+      setCarregandoFeed(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    void carregarInicial()
+  }, [carregarInicial])
+
+  // Scroll infinito: keyset por publicado_em (docs/partner-app/11)
+  const carregarMais = useCallback(async () => {
+    if (carregandoMaisRef.current || fimDoFeed || reels.length === 0) return
+    carregandoMaisRef.current = true
+    try {
+      const ultima = reels[reels.length - 1].publicado_em
+      const pagina = await carregarFeed(ultima)
+      if (pagina.length < PAGINA) setFimDoFeed(true)
+      if (pagina.length > 0) {
+        setReels((prev) => {
+          const ids = new Set(prev.map((r) => r.id))
+          return [...prev, ...pagina.filter((r) => !ids.has(r.id))]
+        })
+      }
+    } catch {
+      // silencioso — próxima tentativa no próximo onEndReached
+    } finally {
+      carregandoMaisRef.current = false
+    }
+  }, [reels, fimDoFeed])
+
+  // View count: dispara quando um post fica ativo (dedupe por sessão)
+  useEffect(() => {
+    const reel = reels[ativo]
+    if (!reel || vistosRef.current.has(reel.id)) return
+    vistosRef.current.add(reel.id)
+    void supabase.rpc('increment_post_view', { post_id: reel.id })
+  }, [ativo, reels])
 
   const tabBarHeight = (insets.bottom || 16) + 52
 
@@ -973,34 +1039,70 @@ export default function TelaExplorar() {
               </TouchableOpacity>
             </Animated.View>
 
-            <FlatList
-              ref={flatListRef}
-              data={REELS}
-              keyExtractor={(item) => item.id}
-              pagingEnabled
-              showsVerticalScrollIndicator={false}
-              decelerationRate="fast"
-              snapToInterval={H}
-              snapToAlignment="start"
-              onViewableItemsChanged={onViewableItemsChanged}
-              viewabilityConfig={viewabilityConfig}
-              getItemLayout={(_, index) => ({
-                length: H,
-                offset: H * index,
-                index,
-              })}
-              renderItem={({ item, index }) => (
-                <ReelItem
-                  reel={item}
-                  isActive={index === ativo}
-                  mutado={mutado}
-                  onToggleMute={() => setMutado((m) => !m)}
-                  tabBarHeight={tabBarHeight}
-                  overlayVisivel={overlayVisivel}
-                  onToggleOverlay={() => setOverlayVisivel((v) => !v)}
-                />
-              )}
-            />
+            {carregandoFeed ? (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <ActivityIndicator color={colors.accent} size="large" />
+              </View>
+            ) : erroFeed ? (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 }}>
+                <ConsumerIcon name="reels" size={28} color={colors.inkSoft} strokeWidth={1.6} />
+                <Text style={{ color: colors.inkSoft, fontSize: 14, fontWeight: '500', textAlign: 'center' }}>
+                  Não foi possível carregar o Explorar.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => void carregarInicial()}
+                  activeOpacity={0.8}
+                  style={{
+                    paddingHorizontal: 18,
+                    paddingVertical: 10,
+                    borderRadius: radius.pill,
+                    backgroundColor: colors.accent,
+                  }}
+                >
+                  <Text style={{ color: colors.ink, fontWeight: '800', fontSize: 13 }}>
+                    Tentar de novo
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : reels.length === 0 ? (
+              <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <ConsumerIcon name="reels" size={28} color={colors.inkSoft} strokeWidth={1.6} />
+                <Text style={{ color: colors.inkSoft, fontSize: 14, fontWeight: '500' }}>
+                  Nenhum vídeo encontrado
+                </Text>
+              </View>
+            ) : (
+              <FlatList
+                ref={flatListRef}
+                data={reels}
+                keyExtractor={(item) => item.id}
+                pagingEnabled
+                showsVerticalScrollIndicator={false}
+                decelerationRate="fast"
+                snapToInterval={H}
+                snapToAlignment="start"
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
+                onEndReached={() => void carregarMais()}
+                onEndReachedThreshold={2}
+                getItemLayout={(_, index) => ({
+                  length: H,
+                  offset: H * index,
+                  index,
+                })}
+                renderItem={({ item, index }) => (
+                  <ReelItem
+                    reel={item}
+                    isActive={index === ativo}
+                    mutado={mutado}
+                    onToggleMute={() => setMutado((m) => !m)}
+                    tabBarHeight={tabBarHeight}
+                    overlayVisivel={overlayVisivel}
+                    onToggleOverlay={() => setOverlayVisivel((v) => !v)}
+                  />
+                )}
+              />
+            )}
 
             {/* Indicador de posição */}
             <View
@@ -1008,13 +1110,13 @@ export default function TelaExplorar() {
                 position: 'absolute',
                 right: 6,
                 top: '50%',
-                transform: [{ translateY: -(REELS.length * 10) / 2 }],
+                transform: [{ translateY: -(reels.length * 10) / 2 }],
                 gap: 5,
                 zIndex: 10,
               }}
               pointerEvents="none"
             >
-              {REELS.map((_, i) => (
+              {reels.map((_, i) => (
                 <View
                   key={i}
                   style={{
@@ -1042,6 +1144,7 @@ export default function TelaExplorar() {
             pointerEvents={modoGaleria ? 'auto' : 'none'}
           >
             <GaleriaGrid
+              reels={reels}
               ativo={ativo}
               onSelect={selecionarReel}
               insets={insets}

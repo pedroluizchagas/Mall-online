@@ -1674,6 +1674,7 @@ export type Database = {
         Returns: boolean
       }
       get_user_id_by_email: { Args: { p_email: string }; Returns: string }
+      increment_post_view: { Args: { post_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
       my_consumer_id: { Args: never; Returns: string }
       my_courier_id: { Args: never; Returns: string }
