@@ -145,9 +145,9 @@ que valida contra o doc do stage (`13`).
 
 | Stage | Pilar | Descrição | Status |
 |---|---|---|---|
-| 0 | Conteúdo | Backend: `store_posts`, RLS, bucket, view pública | ⬜ não iniciado |
-| 1 | — | Scaffold `apps/mobile-partner` | ⬜ não iniciado |
-| 2 | — | Auth lojista + gate | ⬜ não iniciado |
+| 0 | Conteúdo | Backend: `store_posts`, RLS, bucket, view pública | ✅ implementado (`f7ce09d`; validação `db reset` pendente de Docker) |
+| 1 | — | Scaffold `apps/mobile-partner` | ✅ implementado (`1d27e44`) |
+| 2 | — | Auth lojista + gate | ✅ implementado (`48b3c41`) |
 | 3 | Gestão | Pedidos em tempo real | ⬜ não iniciado |
 | 4 | Gestão | Catálogo: produtos, categorias, estoque | ⬜ não iniciado |
 | 5 | Gestão | Financeiro e relatórios | ⬜ não iniciado |
