@@ -2,6 +2,7 @@ import { BarChart3 } from 'lucide-react'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { agregarItens, calcularResumo, distribuirPor } from '@mallevo/lib'
 import { intervaloAnterior, intervaloPeriodo, periodoValido } from './_lib/periodo'
 import { abaValida, type AbaRelatorio } from './_lib/abas'
 import { FiltroPeriodo } from './_components/filtro-periodo'
@@ -51,8 +52,6 @@ interface ItemLinha {
   subtotal: number
 }
 
-const STATUS_CONCLUIDO = 'entregue'
-
 const ROTULOS_STATUS: Record<string, string> = {
   novo: 'Novo',
   confirmado: 'Confirmado',
@@ -88,51 +87,9 @@ function brl(centavos: number): string {
   return (centavos / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function calcularResumo(pedidos: PedidoLinha[]): ResumoMetricas {
-  const concluidos = pedidos.filter((p) => p.status === STATUS_CONCLUIDO && p.cancelado_em === null)
-  const bruto = concluidos.reduce((s, p) => s + (p.total ?? 0), 0)
-  const liquido = concluidos.reduce(
-    (s, p) => s + (p.total ?? 0) - (p.platform_fee_amount ?? 0) - (p.taxa_entrega ?? 0),
-    0,
-  )
-  const count = concluidos.length
-  return {
-    faturamentoBruto: bruto,
-    faturamentoLiquido: liquido,
-    pedidosConcluidos: count,
-    ticketMedio: count > 0 ? Math.round(bruto / count) : 0,
-  }
-}
-
-function distribuirPor<K extends string>(
-  pedidos: PedidoLinha[],
-  chave: (p: PedidoLinha) => K,
-  rotulador: (k: K) => string,
-): ItemDistribuicao[] {
-  const mapa = new Map<K, number>()
-  for (const p of pedidos) {
-    const k = chave(p)
-    mapa.set(k, (mapa.get(k) ?? 0) + 1)
-  }
-  return Array.from(mapa.entries()).map(([k, valor]) => ({ rotulo: rotulador(k), valor }))
-}
-
-function agregarItens(itens: ItemLinha[]): Map<string, ProdutoAgregado> {
-  const mapa = new Map<string, ProdutoAgregado>()
-  for (const item of itens) {
-    const chave = item.product_id ?? `nome:${item.nome}`
-    const atual = mapa.get(chave) ?? {
-      productId: item.product_id,
-      nome: item.nome,
-      quantidade: 0,
-      receita: 0,
-    }
-    atual.quantidade += item.quantidade ?? 0
-    atual.receita += item.subtotal ?? 0
-    mapa.set(chave, atual)
-  }
-  return mapa
-}
+// calcularResumo / distribuirPor / agregarItens vivem em @mallevo/lib
+// (src/relatorios/agregados.ts), compartilhados com o Partner App —
+// fonte única das agregações (docs/partner-app/07).
 
 export default async function PaginaRelatorios({ searchParams }: { searchParams: SearchParams }) {
   const periodo = periodoValido(searchParams.periodo)
