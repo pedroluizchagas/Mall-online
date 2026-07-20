@@ -2,8 +2,10 @@ import { Tabs, Redirect } from 'expo-router'
 import { View, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { assinaturaPermiteOperar } from '@mallevo/lib'
 import { useAuthStore } from '@/store/useAuthStore'
 import { PartnerIcon } from '@/components/PartnerIcon'
+import { TelaGate } from '@/components/TelaGate'
 import { partnerDesign } from '@/lib/partner-design'
 
 type TabIcon = 'home' | 'orders' | 'plus' | 'gallery' | 'menu'
@@ -86,7 +88,7 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {
 }
 
 export default function LayoutTabs() {
-  const { user, carregando } = useAuthStore()
+  const { user, tenant, lojas, billingStatus, carregando } = useAuthStore()
   const { colors } = partnerDesign
 
   if (carregando) {
@@ -99,7 +101,41 @@ export default function LayoutTabs() {
   }
 
   if (!user) return <Redirect href="/(auth)/entrar" />
-  // Stage 2: gates (tenant/loja/billing) entram aqui, espelhando o courier.
+
+  // Gates (docs/partner-app/04-stage-2-auth-gate.md) — predicados em
+  // @mallevo/lib, fluxos de resolução sempre no Dashboard web.
+  if (!tenant) {
+    return (
+      <TelaGate
+        titulo="Conta sem loja"
+        descricao="Este login não tem um cadastro de lojista. Finalize o cadastro da sua loja no Dashboard para usar o app."
+        ctaLabel="Finalizar cadastro"
+        ctaCaminho="/onboarding"
+      />
+    )
+  }
+
+  if (!assinaturaPermiteOperar(billingStatus)) {
+    return (
+      <TelaGate
+        titulo="Assinatura cancelada"
+        descricao="Sua assinatura foi cancelada e o acesso está suspenso. Reative no Dashboard para voltar a operar."
+        ctaLabel="Reativar assinatura"
+        ctaCaminho="/minha-conta?aba=assinatura"
+      />
+    )
+  }
+
+  if (lojas.length === 0) {
+    return (
+      <TelaGate
+        titulo="Crie sua loja"
+        descricao="Seu cadastro existe, mas ainda não há nenhuma loja ativa. Crie sua loja no Dashboard para começar."
+        ctaLabel="Abrir o Dashboard"
+        ctaCaminho="/"
+      />
+    )
+  }
 
   return (
     <>

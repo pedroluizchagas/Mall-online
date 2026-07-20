@@ -20,7 +20,8 @@ export default function LayoutAuth() {
   }
 
   if (user) {
-    // Lojista logado — Stage 2 adiciona os gates (tenant/loja/billing) aqui.
+    // Lojista logado — os gates (tenant/assinatura/loja) vivem no layout
+    // das tabs, que decide entre TelaGate e o app liberado.
     return <Redirect href="/(tabs)" />
   }
 

@@ -22,6 +22,9 @@ type IconName =
   | 'gear'
   | 'help'
   | 'box'
+  | 'eye'
+  | 'eye-off'
+  | 'logout'
 
 interface Props {
   name: IconName
@@ -186,6 +189,28 @@ function renderIcon(name: IconName, color: string, strokeWidth: number) {
           <Path {...common} d="M4 8l8-4.5L20 8v8l-8 4.5L4 16V8z" />
           <Path {...common} d="M4 8l8 4.5L20 8" />
           <Path {...common} d="M12 12.5v8" />
+        </>
+      )
+    case 'eye':
+      return (
+        <>
+          <Path {...common} d="M2 12s3.5-7.5 10-7.5S22 12 22 12s-3.5 7.5-10 7.5S2 12 2 12z" />
+          <Circle {...common} cx="12" cy="12" r="3" />
+        </>
+      )
+    case 'eye-off':
+      return (
+        <>
+          <Path {...common} d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+          <Path {...common} d="M1 1l22 22" />
+        </>
+      )
+    case 'logout':
+      return (
+        <>
+          <Path {...common} d="M9 20.5H5.5a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1H9" />
+          <Path {...common} d="M15.5 16l4-4-4-4" />
+          <Path {...common} d="M19.5 12H9.5" />
         </>
       )
   }

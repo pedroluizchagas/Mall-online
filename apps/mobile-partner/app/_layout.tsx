@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/store/useAuthStore'
+import { useAuthStore, lerLojaAtivaPersistida } from '@/store/useAuthStore'
 import { partnerDesign } from '@/lib/partner-design'
 
 SplashScreen.preventAutoHideAsync()
@@ -20,7 +20,8 @@ SplashScreen.preventAutoHideAsync()
 const MUDO = true
 
 export default function LayoutRaiz() {
-  const { setUser, setTenant, setCarregando } = useAuthStore()
+  const { setUser, setTenant, setLojas, setLojaAtiva, setBillingStatus, setCarregando, limpar } =
+    useAuthStore()
   const [splashVisivel, setSplashVisivel] = useState(true)
 
   useEffect(() => {
@@ -37,10 +38,11 @@ export default function LayoutRaiz() {
       async (_event, session) => {
         try {
           setUser(session?.user ?? null)
-          if (!session?.user) {
-            setTenant(null)
+          if (session?.user) {
+            await carregarTenant(session.user.id)
+          } else {
+            limpar()
           }
-          // Stage 2: carregarTenant(session.user.id) popula tenant + lojas.
         } catch (error) {
           console.error('Falha ao atualizar autenticacao do lojista:', error)
           setTenant(null)
@@ -52,6 +54,49 @@ export default function LayoutRaiz() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // docs/partner-app/04-stage-2-auth-gate.md — RLS (tenants_select_proprio /
+  // stores_select_proprio) já restringe todos os selects ao próprio tenant.
+  async function carregarTenant(userId: string) {
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('id, nome_responsavel, email, ativo, pagarme_onboarding_status')
+      .eq('user_id', userId)
+      .single()
+
+    if (!tenant) {
+      setTenant(null)
+      setLojas([])
+      setLojaAtiva(null)
+      setBillingStatus(null)
+      return
+    }
+
+    setTenant(tenant)
+
+    const [{ data: lojas }, { data: assinatura }, persistida] = await Promise.all([
+      supabase
+        .from('stores')
+        .select('id, nome, slug, logo_url')
+        .eq('tenant_id', tenant.id)
+        .eq('ativo', true)
+        .order('criado_em', { ascending: true }),
+      supabase
+        .from('tenant_subscriptions')
+        .select('billing_status')
+        .eq('tenant_id', tenant.id)
+        .single(),
+      lerLojaAtivaPersistida(),
+    ])
+
+    const listaLojas = lojas ?? []
+    setLojas(listaLojas)
+    setBillingStatus(assinatura?.billing_status ?? null)
+
+    // Loja ativa: persistida (se ainda existir) senão a primeira.
+    const aindaExiste = persistida && listaLojas.some((l) => l.id === persistida)
+    setLojaAtiva(aindaExiste ? persistida : listaLojas[0]?.id ?? null)
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

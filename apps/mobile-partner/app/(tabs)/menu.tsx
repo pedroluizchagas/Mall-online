@@ -2,6 +2,7 @@ import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { router, type Href } from 'expo-router'
 import { PartnerIcon } from '@/components/PartnerIcon'
+import { SeletorLoja } from '@/components/SeletorLoja'
 import { partnerDesign } from '@/lib/partner-design'
 
 // Hub dos módulos de gestão (rotas stack). No Stage 6 vira a versão
@@ -75,11 +76,15 @@ export default function TelaMenu() {
             fontSize: typography.h1.size,
             fontWeight: typography.h1.weight,
             letterSpacing: typography.h1.tracking,
-            marginBottom: spacing['2xl'],
+            marginBottom: spacing.lg,
           }}
         >
           Menu
         </Text>
+
+        <View style={{ marginBottom: spacing['2xl'] }}>
+          <SeletorLoja />
+        </View>
 
         {SECOES.map((secao) => (
           <View key={secao.legenda} style={{ marginBottom: spacing['2xl'] }}>
