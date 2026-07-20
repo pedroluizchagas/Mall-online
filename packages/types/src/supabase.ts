@@ -772,6 +772,7 @@ export type Database = {
           id: string
           max_entregadores: number
           max_lojas: number
+          max_posts: number | null
           max_produtos: number
           nome: string
           preco_mensal: number
@@ -789,6 +790,7 @@ export type Database = {
           id?: string
           max_entregadores?: number
           max_lojas?: number
+          max_posts?: number | null
           max_produtos?: number
           nome: string
           preco_mensal: number
@@ -806,6 +808,7 @@ export type Database = {
           id?: string
           max_entregadores?: number
           max_lojas?: number
+          max_posts?: number | null
           max_produtos?: number
           nome?: string
           preco_mensal?: number
@@ -997,6 +1000,106 @@ export type Database = {
           },
           {
             foreignKeyName: "stock_movements_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_posts: {
+        Row: {
+          altura: number | null
+          atualizado_em: string
+          bytes: number | null
+          comentarios: number
+          criado_em: string
+          curtidas: number
+          descricao: string | null
+          duracao_seg: number | null
+          id: string
+          largura: number | null
+          media_path: string
+          media_url: string
+          moderacao: string
+          product_id: string | null
+          publicado_em: string | null
+          status: string
+          store_id: string
+          tags: string[]
+          tenant_id: string
+          thumb_path: string | null
+          thumb_url: string | null
+          tipo: string
+          views: number
+        }
+        Insert: {
+          altura?: number | null
+          atualizado_em?: string
+          bytes?: number | null
+          comentarios?: number
+          criado_em?: string
+          curtidas?: number
+          descricao?: string | null
+          duracao_seg?: number | null
+          id?: string
+          largura?: number | null
+          media_path: string
+          media_url: string
+          moderacao?: string
+          product_id?: string | null
+          publicado_em?: string | null
+          status?: string
+          store_id: string
+          tags?: string[]
+          tenant_id: string
+          thumb_path?: string | null
+          thumb_url?: string | null
+          tipo?: string
+          views?: number
+        }
+        Update: {
+          altura?: number | null
+          atualizado_em?: string
+          bytes?: number | null
+          comentarios?: number
+          criado_em?: string
+          curtidas?: number
+          descricao?: string | null
+          duracao_seg?: number | null
+          id?: string
+          largura?: number | null
+          media_path?: string
+          media_url?: string
+          moderacao?: string
+          product_id?: string | null
+          publicado_em?: string | null
+          status?: string
+          store_id?: string
+          tags?: string[]
+          tenant_id?: string
+          thumb_path?: string | null
+          thumb_url?: string | null
+          tipo?: string
+          views?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_posts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_posts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_posts_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1363,7 +1466,26 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_explore_feed: {
+        Row: {
+          comentarios: number | null
+          curtidas: number | null
+          descricao: string | null
+          duracao_seg: number | null
+          id: string | null
+          loja_inicial: string | null
+          loja_nome: string | null
+          loja_slug: string | null
+          media_url: string | null
+          produto: Json | null
+          publicado_em: string | null
+          tags: string[] | null
+          thumb_url: string | null
+          tipo: string | null
+          views: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       consumer_has_order_with_tenant: {
