@@ -1006,6 +1006,112 @@ export type Database = {
           },
         ]
       }
+      service_blocks: {
+        Row: {
+          criado_em: string
+          fim_at: string
+          id: string
+          inicio_at: string
+          motivo: string | null
+          staff_id: string | null
+          store_id: string
+          tenant_id: string
+        }
+        Insert: {
+          criado_em?: string
+          fim_at: string
+          id?: string
+          inicio_at: string
+          motivo?: string | null
+          staff_id?: string | null
+          store_id: string
+          tenant_id: string
+        }
+        Update: {
+          criado_em?: string
+          fim_at?: string
+          id?: string
+          inicio_at?: string
+          motivo?: string | null
+          staff_id?: string | null
+          store_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_blocks_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "service_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_blocks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_blocks_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      service_staff: {
+        Row: {
+          ativo: boolean
+          cor: string | null
+          criado_em: string
+          foto_url: string | null
+          id: string
+          nome: string
+          ordem: number
+          store_id: string
+          tenant_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          cor?: string | null
+          criado_em?: string
+          foto_url?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          store_id: string
+          tenant_id: string
+        }
+        Update: {
+          ativo?: boolean
+          cor?: string | null
+          criado_em?: string
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          store_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_staff_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_staff_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_movements: {
         Row: {
           criado_em: string
