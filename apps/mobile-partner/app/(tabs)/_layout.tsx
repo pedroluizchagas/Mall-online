@@ -1,9 +1,11 @@
 import { Tabs, Redirect } from 'expo-router'
-import { View, TouchableOpacity, ActivityIndicator } from 'react-native'
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { assinaturaPermiteOperar } from '@mallevo/lib'
 import { useAuthStore } from '@/store/useAuthStore'
+import { usePedidosStore, contarNovos } from '@/store/usePedidosStore'
+import { usePedidosRealtime } from '@/lib/pedidos-realtime'
 import { PartnerIcon } from '@/components/PartnerIcon'
 import { TelaGate } from '@/components/TelaGate'
 import { partnerDesign } from '@/lib/partner-design'
@@ -23,6 +25,8 @@ const TABS: { name: string; icon: TabIcon; central?: boolean }[] = [
 function TabBar({ state, navigation }: { state: any; navigation: any }) {
   const { colors, radius } = partnerDesign
   const insets = useSafeAreaInsets()
+  // Badge de pedidos novos na tab Pedidos (docs/partner-app/05 §aba)
+  const novos = usePedidosStore((s) => contarNovos(s.pedidos))
 
   return (
     <View
@@ -73,12 +77,34 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {
                 <PartnerIcon name={tab.icon} size={24} color={colors.ink} strokeWidth={2.4} />
               </View>
             ) : (
-              <PartnerIcon
-                name={tab.icon}
-                size={22}
-                color={isFocused ? colors.accent : '#6B6E75'}
-                strokeWidth={isFocused ? 2.2 : 1.8}
-              />
+              <View>
+                <PartnerIcon
+                  name={tab.icon}
+                  size={22}
+                  color={isFocused ? colors.accent : '#6B6E75'}
+                  strokeWidth={isFocused ? 2.2 : 1.8}
+                />
+                {tab.name === 'pedidos' && novos > 0 && (
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: -6,
+                      right: -10,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: radius.pill,
+                      backgroundColor: colors.accent,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      paddingHorizontal: 4,
+                    }}
+                  >
+                    <Text style={{ color: colors.ink, fontSize: 10, fontWeight: '800' }}>
+                      {novos > 9 ? '9+' : novos}
+                    </Text>
+                  </View>
+                )}
+              </View>
             )}
           </TouchableOpacity>
         )
@@ -90,6 +116,10 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {
 export default function LayoutTabs() {
   const { user, tenant, lojas, billingStatus, carregando } = useAuthStore()
   const { colors } = partnerDesign
+
+  // Assinatura Realtime + som de pedido novo — montada uma única vez aqui;
+  // o hook é no-op enquanto não há tenant (gates abaixo).
+  usePedidosRealtime()
 
   if (carregando) {
     return (

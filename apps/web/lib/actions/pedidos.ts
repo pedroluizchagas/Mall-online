@@ -2,18 +2,12 @@
 
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { TRANSICOES_PEDIDO_LOJISTA } from '@mallevo/lib'
 import type { OrderStatus } from '@mallevo/types'
 
-// Transições de status permitidas pelo lojista
-const transicoesPermitidas: Record<OrderStatus, OrderStatus[]> = {
-  novo: ['confirmado', 'cancelado'],
-  confirmado: ['em_preparo', 'cancelado'],
-  em_preparo: ['aguardando_entregador', 'cancelado'],
-  aguardando_entregador: ['cancelado'],
-  saiu_para_entrega: [],
-  entregue: [],
-  cancelado: [],
-}
+// Transições de status permitidas pelo lojista — fonte única em
+// @mallevo/lib, compartilhada com o Partner App (mobile).
+const transicoesPermitidas = TRANSICOES_PEDIDO_LOJISTA
 
 export async function atualizarStatusPedido(
   pedido_id: string,

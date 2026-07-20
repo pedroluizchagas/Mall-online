@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore, lerLojaAtivaPersistida } from '@/store/useAuthStore'
+import { registrarPushToken, useNotificacaoListener } from '@/lib/notificacoes'
 import { partnerDesign } from '@/lib/partner-design'
 
 SplashScreen.preventAutoHideAsync()
@@ -23,6 +24,8 @@ export default function LayoutRaiz() {
   const { setUser, setTenant, setLojas, setLojaAtiva, setBillingStatus, setCarregando, limpar } =
     useAuthStore()
   const [splashVisivel, setSplashVisivel] = useState(true)
+
+  useNotificacaoListener()
 
   useEffect(() => {
     SplashScreen.hideAsync()
@@ -73,6 +76,8 @@ export default function LayoutRaiz() {
     }
 
     setTenant(tenant)
+    // Push de pedido novo (notify-order-update já envia por tenants.user_id)
+    void registrarPushToken(userId)
 
     const [{ data: lojas }, { data: assinatura }, persistida] = await Promise.all([
       supabase
