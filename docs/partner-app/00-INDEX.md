@@ -148,7 +148,7 @@ que valida contra o doc do stage (`13`).
 | 0 | Conteúdo | Backend: `store_posts`, RLS, bucket, view pública | ✅ implementado (`f7ce09d`; validação `db reset` pendente de Docker) |
 | 1 | — | Scaffold `apps/mobile-partner` | ✅ implementado (`1d27e44`) |
 | 2 | — | Auth lojista + gate | ✅ implementado (`48b3c41`) |
-| 3 | Gestão | Pedidos em tempo real | ⬜ não iniciado |
+| 3 | Gestão | Pedidos em tempo real | ✅ implementado (`6e1a4e8`; mini-mapa ficou como última posição + ligar — decisão registrada) |
 | 4 | Gestão | Catálogo: produtos, categorias, estoque | ⬜ não iniciado |
 | 5 | Gestão | Financeiro e relatórios | ⬜ não iniciado |
 | 6 | Gestão | Operação da loja | ⬜ não iniciado |
