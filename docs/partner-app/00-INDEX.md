@@ -151,7 +151,7 @@ que valida contra o doc do stage (`13`).
 | 3 | Gestão | Pedidos em tempo real | ✅ implementado (`6e1a4e8`; mini-mapa ficou como última posição + ligar — decisão registrada) |
 | 4 | Gestão | Catálogo: produtos, categorias, estoque | ✅ implementado (`e2c4209`) |
 | 5 | Gestão | Financeiro e relatórios | ✅ implementado (`af4a76e`; agregados extraídos p/ `@mallevo/lib` — fonte única web+app) |
-| 6 | Gestão | Operação da loja | ⬜ não iniciado |
+| 6 | Gestão | Operação da loja | ✅ implementado (`fc6c1b0`) — **pilar Gestão completo (marco M2)** |
 | 7 | Conteúdo | Captura + compressão + upload TUS | ⬜ não iniciado |
 | 8 | Conteúdo | Gestão de conteúdo + métricas | ⬜ não iniciado |
 | 9 | Conteúdo | Integração do feed real no consumer | ⬜ não iniciado |
