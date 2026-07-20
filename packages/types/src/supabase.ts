@@ -899,6 +899,69 @@ export type Database = {
           },
         ]
       }
+      product_variants: {
+        Row: {
+          created_at: string
+          disponivel: boolean
+          foto_url: string | null
+          id: string
+          ordem: number
+          preco: number
+          preco_promocional: number | null
+          product_id: string
+          sku: string | null
+          stock_minimo: number | null
+          stock_quantity: number | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          disponivel?: boolean
+          foto_url?: string | null
+          id?: string
+          ordem?: number
+          preco: number
+          preco_promocional?: number | null
+          product_id: string
+          sku?: string | null
+          stock_minimo?: number | null
+          stock_quantity?: number | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          disponivel?: boolean
+          foto_url?: string | null
+          id?: string
+          ordem?: number
+          preco?: number
+          preco_promocional?: number | null
+          product_id?: string
+          sku?: string | null
+          stock_minimo?: number | null
+          stock_quantity?: number | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_tokens: {
         Row: {
           app: string
