@@ -149,7 +149,7 @@ que valida contra o doc do stage (`13`).
 | 1 | — | Scaffold `apps/mobile-partner` | ✅ implementado (`1d27e44`) |
 | 2 | — | Auth lojista + gate | ✅ implementado (`48b3c41`) |
 | 3 | Gestão | Pedidos em tempo real | ✅ implementado (`6e1a4e8`; mini-mapa ficou como última posição + ligar — decisão registrada) |
-| 4 | Gestão | Catálogo: produtos, categorias, estoque | ⬜ não iniciado |
+| 4 | Gestão | Catálogo: produtos, categorias, estoque | ✅ implementado (`e2c4209`) |
 | 5 | Gestão | Financeiro e relatórios | ⬜ não iniciado |
 | 6 | Gestão | Operação da loja | ⬜ não iniciado |
 | 7 | Conteúdo | Captura + compressão + upload TUS | ⬜ não iniciado |
