@@ -152,7 +152,7 @@ que valida contra o doc do stage (`13`).
 | 4 | Gestão | Catálogo: produtos, categorias, estoque | ✅ implementado (`e2c4209`) |
 | 5 | Gestão | Financeiro e relatórios | ✅ implementado (`af4a76e`; agregados extraídos p/ `@mallevo/lib` — fonte única web+app) |
 | 6 | Gestão | Operação da loja | ✅ implementado (`fc6c1b0`) — **pilar Gestão completo (marco M2)** |
-| 7 | Conteúdo | Captura + compressão + upload TUS | ⬜ não iniciado |
+| 7 | Conteúdo | Captura + compressão + upload TUS | ✅ implementado (`a4d8723`; compressão real de vídeo exige development build — Expo Go envia original) |
 | 8 | Conteúdo | Gestão de conteúdo + métricas | ⬜ não iniciado |
 | 9 | Conteúdo | Integração do feed real no consumer | ⬜ não iniciado |
 
