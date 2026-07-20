@@ -150,7 +150,7 @@ que valida contra o doc do stage (`13`).
 | 2 | — | Auth lojista + gate | ✅ implementado (`48b3c41`) |
 | 3 | Gestão | Pedidos em tempo real | ✅ implementado (`6e1a4e8`; mini-mapa ficou como última posição + ligar — decisão registrada) |
 | 4 | Gestão | Catálogo: produtos, categorias, estoque | ✅ implementado (`e2c4209`) |
-| 5 | Gestão | Financeiro e relatórios | ⬜ não iniciado |
+| 5 | Gestão | Financeiro e relatórios | ✅ implementado (`af4a76e`; agregados extraídos p/ `@mallevo/lib` — fonte única web+app) |
 | 6 | Gestão | Operação da loja | ⬜ não iniciado |
 | 7 | Conteúdo | Captura + compressão + upload TUS | ⬜ não iniciado |
 | 8 | Conteúdo | Gestão de conteúdo + métricas | ⬜ não iniciado |
