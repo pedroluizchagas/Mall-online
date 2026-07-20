@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "Mallevo Parceiro",
+    "slug": "mallevo-partner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#D8FF3E"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.mallevo.partner",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Para fotografar e gravar vídeos da sua loja para o Explorar.",
+        "NSMicrophoneUsageDescription": "Para capturar o áudio dos seus vídeos.",
+        "NSPhotoLibraryUsageDescription": "Para escolher fotos e vídeos já salvos.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1B1B1B"
+      },
+      "package": "com.mallevo.partner",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "READ_MEDIA_VIDEO",
+        "READ_MEDIA_IMAGES"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Para fotografar e gravar vídeos da sua loja.",
+          "microphonePermission": "Para capturar o áudio dos seus vídeos."
+        }
+      ],
+      "react-native-compressor"
+    ],
+    "scheme": "mallevo-partner",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    "owner": "pedrochagas",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
+  }
+}

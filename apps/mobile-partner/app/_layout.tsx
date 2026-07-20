@@ -1,0 +1,119 @@
+import '../global.css'
+import { useEffect, useRef, useState } from 'react'
+import { StyleSheet } from 'react-native'
+import { Stack } from 'expo-router'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import * as SplashScreen from 'expo-splash-screen'
+import { useVideoPlayer, VideoView } from 'expo-video'
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/store/useAuthStore'
+import { partnerDesign } from '@/lib/partner-design'
+
+SplashScreen.preventAutoHideAsync()
+
+// Splash mudo por padrão: tocar áudio a cada abertura do app é intrusivo.
+const MUDO = true
+
+export default function LayoutRaiz() {
+  const { setUser, setTenant, setCarregando } = useAuthStore()
+  const [splashVisivel, setSplashVisivel] = useState(true)
+
+  useEffect(() => {
+    SplashScreen.hideAsync()
+  }, [])
+
+  useEffect(() => {
+    // Via única de resolução de sessão (mesma decisão do courier): no
+    // supabase-js v2, onAuthStateChange dispara INITIAL_SESSION com a sessão
+    // atual logo na inscrição, cobrindo o boot. Não usar getSession() em
+    // paralelo — duas vias liberariam `carregando` em momentos diferentes,
+    // causando redirect transitório.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        try {
+          setUser(session?.user ?? null)
+          if (!session?.user) {
+            setTenant(null)
+          }
+          // Stage 2: carregarTenant(session.user.id) popula tenant + lojas.
+        } catch (error) {
+          console.error('Falha ao atualizar autenticacao do lojista:', error)
+          setTenant(null)
+        } finally {
+          setCarregando(false)
+        }
+      }
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <Stack screenOptions={{ headerShown: false }} />
+      {splashVisivel && (
+        <SplashAnimacao onConcluido={() => setSplashVisivel(false)} />
+      )}
+    </GestureHandlerRootView>
+  )
+}
+
+function SplashAnimacao({ onConcluido }: { onConcluido: () => void }) {
+  const { colors } = partnerDesign
+  const opacidade = useSharedValue(1)
+  const fechado = useRef(false)
+
+  const estiloAnimado = useAnimatedStyle(() => ({
+    opacity: opacidade.value,
+  }))
+
+  const player = useVideoPlayer(
+    require('../assets/mallevo-copa.mp4'),
+    (p) => {
+      p.loop = false
+      p.muted = MUDO
+      p.play()
+    },
+  )
+
+  useEffect(() => {
+    function handleAnimacaoFim() {
+      if (fechado.current) return
+      fechado.current = true
+      opacidade.value = withTiming(0, { duration: 480 })
+      setTimeout(onConcluido, 480)
+    }
+
+    const sub = player.addListener('playToEnd', handleAnimacaoFim)
+    // Salvaguarda: se o evento de fim não disparar, não travar o app no splash.
+    const timeout = setTimeout(handleAnimacaoFim, 10000)
+    return () => {
+      sub.remove()
+      clearTimeout(timeout)
+    }
+  }, [])
+
+  return (
+    <Animated.View style={[styles.overlay, { backgroundColor: colors.splash }, estiloAnimado]}>
+      <VideoView
+        player={player}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        nativeControls={false}
+      />
+    </Animated.View>
+  )
+}
+
+const styles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})
