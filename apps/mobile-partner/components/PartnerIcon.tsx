@@ -25,6 +25,7 @@ type IconName =
   | 'eye'
   | 'eye-off'
   | 'logout'
+  | 'spark'
 
 interface Props {
   name: IconName
@@ -212,6 +213,10 @@ function renderIcon(name: IconName, color: string, strokeWidth: number) {
           <Path {...common} d="M15.5 16l4-4-4-4" />
           <Path {...common} d="M19.5 12H9.5" />
         </>
+      )
+    case 'spark':
+      return (
+        <Path {...common} d="M13 2.5L5 13.5h5.5L11 21.5l8-11h-5.5L13 2.5z" />
       )
   }
 }
