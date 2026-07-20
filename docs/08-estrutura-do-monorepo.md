@@ -8,10 +8,10 @@
 
 ## VISAO GERAL
 
-O projeto é um monorepo gerenciado com pnpm workspaces. Três aplicações
-independentes (web, mobile-consumer, mobile-courier) compartilham dois
-packages internos (types, lib). As Edge Functions do Supabase ficam na
-raiz do repositório, fora das aplicações.
+O projeto é um monorepo gerenciado com pnpm workspaces. As aplicações
+independentes (web, mobile-consumer, mobile-courier, mobile-partner,
+storefront, admin) compartilham dois packages internos (types, lib). As Edge
+Functions do Supabase ficam na raiz do repositório, fora das aplicações.
 
 Vantagens desta estrutura:
 
@@ -28,9 +28,12 @@ Vantagens desta estrutura:
 / (raiz do repositório)
 │
 ├── apps/
-│   ├── web/
-│   ├── mobile-consumer/
-│   └── mobile-courier/
+│   ├── web/                Dashboard do lojista (Next.js)
+│   ├── admin/              Painel super admin (Next.js)
+│   ├── storefront/         Vitrine web pública ({loja}.mallevo.com.br)
+│   ├── mobile-consumer/    App do consumidor (Expo)
+│   ├── mobile-courier/     App do entregador (Expo)
+│   └── mobile-partner/     App do lojista (Expo) — docs/partner-app/
 │
 ├── packages/
 │   ├── types/

@@ -8,27 +8,27 @@
 
 ## VISÃO GERAL DA ARQUITETURA
 
-A plataforma é composta por três aplicações frontend independentes que compartilham
+A plataforma é composta por aplicações frontend independentes que compartilham
 um único backend Supabase. Toda comunicação com serviços externos (Pagar.me,
 Stripe Billing, push notifications) passa obrigatoriamente pelo backend — nunca
 pelo cliente.
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          FRONTEND                                   │
-│                                                                     │
-│  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐  │
-│  │   apps/web       │  │ apps/mobile-     │  │ apps/mobile-     │  │
-│  │  Dashboard       │  │ consumer         │  │ courier          │  │
-│  │  Lojista         │  │ App Consumidor   │  │ App Entregador   │  │
-│  │  Next.js 14+     │  │ Expo SDK 51      │  │ Expo SDK 51      │  │
-│  │  (PWA)           │  │                  │  │                  │  │
-│  └────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘  │
-└───────────┼──────────────────────┼──────────────────────┼───────────┘
-            │                      │                      │
-            └──────────────────────┼──────────────────────┘
-                                   │
-┌──────────────────────────────────▼──────────────────────────────────┐
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                FRONTEND                                     │
+│                                                                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────────────┐  │
+│  │  apps/web   │  │ apps/mobile-│  │ apps/mobile-│  │ apps/mobile-      │  │
+│  │  Dashboard  │  │ consumer    │  │ courier     │  │ partner           │  │
+│  │  Lojista    │  │ App         │  │ App         │  │ App do Lojista    │  │
+│  │  Next.js 14+│  │ Consumidor  │  │ Entregador  │  │ (gestão + Reels)  │  │
+│  │  (PWA)      │  │ Expo SDK 54 │  │ Expo SDK 54 │  │ Expo SDK 54       │  │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └─────────┬─────────┘  │
+└─────────┼─────────────────┼─────────────────┼─────────────────────┼─────────┘
+          │                 │                 │                   │
+          └─────────────────┴────────┬────────┴───────────────────┘
+                                     │
+┌────────────────────────────────────▼────────────────────────────────┐
 │                         SUPABASE (Backend)                          │
 │                                                                     │
 │  PostgreSQL   Auth   Storage   Realtime   Edge Functions   Cron     │
@@ -103,9 +103,12 @@ para operações simples.
 
 ### Expo Router para os apps mobile
 
-Ambos os apps mobile (consumidor e entregador) usam Expo Router, que adota
+Os apps mobile (consumidor, entregador e lojista) usam Expo Router, que adota
 file-based routing similar ao Next.js. Isso mantém consistência de padrões
-entre as três aplicações e facilita a transição de desenvolvedores entre elas.
+entre as aplicações e facilita a transição de desenvolvedores entre elas.
+Os três compartilham a mesma DNA de design tokens
+(`consumer-design.ts` / `courier-design.ts` / `partner-design.ts` — ver
+`docs/system-design/consumer/01-tokens.md`).
 
 ### Monorepo com pnpm workspaces
 
@@ -162,6 +165,26 @@ em npm.
 |Expo Notifications|latest|Push notifications|
 |react-native-maps |latest|Mapa de rota      |
 |Zustand           |4.x   |Estado global     |
+
+### App do Lojista (apps/mobile-partner)
+
+Gêmeo estrutural do `mobile-courier` (mesmas versões-base do monorepo:
+Expo SDK 54, expo-router 6, RN 0.81, React 19, NativeWind 4, Zustand,
+Supabase JS, `@mallevo/lib`/`@mallevo/types`), acrescido do pipeline de
+captura de conteúdo. Dois pilares: **gestão** (paridade com o Dashboard —
+pedidos em tempo real, catálogo, financeiro, operação da loja) e
+**conteúdo** (fotos e vídeos estilo Reels para o Explorar do consumer).
+Documentação dedicada: `docs/partner-app/`.
+
+|Tecnologia               |Versão |Função                           |
+|-------------------------|-------|---------------------------------|
+|Expo Camera              |SDK 54 |Captura de foto e vídeo          |
+|Expo Image Picker        |SDK 54 |Foto/vídeo da galeria            |
+|Expo Video (+Thumbnails) |SDK 54 |Preview/playback + thumbnail     |
+|Expo Image Manipulator   |SDK 54 |Compressão de fotos              |
+|react-native-compressor  |latest |Compressão de vídeo client-side  |
+|Expo Notifications       |SDK 54 |Push de pedido novo              |
+|Supabase Storage (TUS)   |2.x    |Upload resumível de vídeo        |
 
 ### Backend (Supabase)
 
@@ -232,14 +255,28 @@ em npm.
 │   │   ├── lib/
 │   │   └── store/                  Zustand stores
 │   │
-│   └── mobile-courier/             App entregador (Expo)
+│   ├── mobile-courier/             App entregador (Expo)
+│   │   ├── app/
+│   │   │   ├── (auth)/
+│   │   │   └── (tabs)/
+│   │   │       ├── index.tsx       Entregas disponíveis
+│   │   │       ├── ativa.tsx       Entrega em andamento
+│   │   │       ├── ganhos.tsx
+│   │   │       └── perfil.tsx
+│   │   ├── components/
+│   │   ├── lib/
+│   │   └── store/
+│   │
+│   └── mobile-partner/             App do lojista (Expo) — docs/partner-app/
 │       ├── app/
 │       │   ├── (auth)/
-│       │   └── (tabs)/
-│       │       ├── index.tsx       Entregas disponíveis
-│       │       ├── ativa.tsx       Entrega em andamento
-│       │       ├── ganhos.tsx
-│       │       └── perfil.tsx
+│       │   ├── (tabs)/
+│       │   │   ├── index.tsx       Início (resumo do dia)
+│       │   │   ├── pedidos.tsx     Pedidos em tempo real
+│       │   │   ├── publicar.tsx    Captura foto/vídeo (Reels)
+│       │   │   ├── conteudo.tsx    Meus posts + métricas
+│       │   │   └── menu.tsx        Catálogo, financeiro, loja…
+│       │   └── (rotas stack)       produtos/, estoque/, financeiro…
 │       ├── components/
 │       ├── lib/
 │       └── store/
@@ -332,7 +369,7 @@ Supabase Auth usando metadados no JWT:
 
 |Ator      |Campo no JWT                     |Acesso            |
 |----------|---------------------------------|------------------|
-|Lojista   |`user_metadata.role = 'tenant'`  |Dashboard web     |
+|Lojista   |`user_metadata.role = 'tenant'`  |Dashboard web + app lojista (mobile-partner)|
 |Consumidor|`user_metadata.role = 'consumer'`|App consumidor    |
 |Entregador|`user_metadata.role = 'courier'` |App entregador    |
 |Admin     |`user_metadata.role = 'admin'`   |Painel super admin|

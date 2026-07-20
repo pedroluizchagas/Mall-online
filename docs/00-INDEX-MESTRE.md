@@ -40,13 +40,21 @@
      │      LOJISTA        │    │     ENTREGADOR       │
      │  Dashboard Web PWA  │    │   App Mobile Expo    │
      │     (Next.js)       │    │  (mobile-courier)    │
-     └──────────┬──────────┘    └──────────┬──────────┘
+     │  + App Mobile Expo  │    └──────────┬──────────┘
+     │  (mobile-partner)   │               │
+     └──────────┬──────────┘               │
                 │                          │
      ┌──────────▼──────────────────────────▼──────────┐
      │                  CONSUMIDOR                     │
      │           App Mobile Expo (mobile-consumer)     │
+     │        + Storefront Web (apps/storefront)       │
      └─────────────────────────────────────────────────┘
 ```
+
+> **App do Lojista (Partner App)** — `apps/mobile-partner`: paridade mobile
+> com o Dashboard (pedidos em tempo real, catálogo, financeiro, operação) +
+> publicação de fotos e vídeos estilo Reels no Explorar do consumer.
+> Documentação própria em [`docs/partner-app/00-INDEX.md`](partner-app/00-INDEX.md).
 
 -----
 
@@ -475,6 +483,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 |Tamanho médio por arquivo|~4.200 tokens                                                 |
 |Atores cobertos          |Plataforma · Lojista · Consumidor · Entregador                |
 |Apps cobertos            |web (Next.js) · mobile-consumer (Expo) · mobile-courier (Expo)|
+|Apps com doc própria     |storefront (`docs/storefront/`) · **mobile-partner — App do Lojista** (`docs/partner-app/`)|
 |Migrations cobertas      |6 (001 já aplicada + 002..005 pendentes + 006 cutover Pagar.me)|
 |Edge Functions cobertas  |8 (Pagar.me + Stripe Billing)                                 |
 
