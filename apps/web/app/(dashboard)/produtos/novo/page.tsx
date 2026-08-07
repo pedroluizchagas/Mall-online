@@ -10,7 +10,9 @@ export default async function PaginaNovoProduto() {
   const { data: tenant } = await supabase.from('tenants').select('id').single()
   const { data: storeResult } = await supabase
     .from('stores')
-    .select('id')
+    // carga_*: o form só exibe peso/volume por produto quando a loja está
+    // em modo 'produto' (docs/31 §1.1)
+    .select('id, carga_modo, carga_item_peso_g, carga_item_volume_ml')
     .eq('tenant_id', tenant?.id ?? '')
     .limit(1)
     .maybeSingle()
@@ -40,7 +42,7 @@ export default async function PaginaNovoProduto() {
         <h1 className="font-display text-[28px] leading-tight text-ink mt-2">Novo produto</h1>
       </div>
 
-      <ProdutoForm action={action} categorias={categorias} />
+      <ProdutoForm action={action} categorias={categorias} loja={store} />
     </div>
   )
 }

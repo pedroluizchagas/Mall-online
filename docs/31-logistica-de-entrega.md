@@ -304,7 +304,8 @@ dispatch_offers  id · route_id · courier_id · enviado_em · expira_em
 ```
 
 Migrations: `20260807120000` (carga e veículo) · `20260807120001` (rotas e
-despacho) · `20260807120002` (matching, score e agrupamento).
+despacho) · `20260807120002` (matching, score e agrupamento) ·
+`20260807120003` (feature flag por tenant e pg_cron).
 
 **RLS:** entregador vê apenas suas rotas/paradas/ofertas; lojista vê rotas que
 tocam pedidos do seu tenant; consumidor vê apenas o stop do próprio pedido;
@@ -363,13 +364,14 @@ admin vê tudo.
 - [x] Migration `20260807120002` — haversine, elegibilidade, score, agrupamento
 - [x] Migration `20260807120002` — `processar_fila_despacho()` para pg_cron
 - [x] Edge Function `dispatch-order`
-- [ ] `pg_cron` agendado a cada 30 s em produção (§3.2)
-- [ ] Dashboard: campos de carga no cadastro de loja/produto por segmento
-- [ ] Partner App: exibir porte + flags + campo `volumes` na separação
-- [ ] Courier App: tela de rota multi-parada (substitui `ativa.tsx` de 1 entrega)
-- [ ] Consumer App: ETA em faixa e rastreio por drop
-- [ ] Geocodificação de endereço no cadastro do consumidor
-- [ ] Feature flag por tenant + seleção dos lojistas-piloto
+- [x] Migration `20260807120003` — pg_cron a cada 30 s (aplicar com `db push`; se a extensão não estiver liberada, agendar manualmente §3.2)
+- [x] Dashboard: aba Carga nas configurações + campos por produto quando `carga_modo = 'produto'`
+- [x] Partner App: `CardSeparacao` — porte, flags e campo `volumes` na separação
+- [x] Courier App: tela de rota multi-parada (substitui `ativa.tsx` de 1 entrega)
+- [x] Consumer App: ETA em faixa e posição do drop na rota (`lib/eta.ts`)
+- [x] Geocodificação de endereço no cadastro do consumidor (`lib/geocode.ts`, Nominatim)
+- [x] Feature flag por tenant (`tenants.logistica_automatica`, default OFF)
+- [ ] Seleção dos lojistas-piloto e ativação da flag (operacional, pós-deploy)
 
 -----
 

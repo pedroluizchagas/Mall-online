@@ -31,6 +31,19 @@ const schemaPagamentos = z.object({
   aceita_cartao_online: z.boolean(),
 })
 
+// Perfil de carga do ITEM MEDIO da loja — base da cascata de logística
+// (docs/31 §1.1: produto -> categoria -> loja). Quem tem carga homogênea
+// (açaí, pizzaria) preenche isto uma vez e o cardápio inteiro herda.
+const schemaCarga = z.object({
+  carga_item_peso_g: z.number().int().min(1).max(300000),
+  carga_item_volume_ml: z.number().int().min(1).max(500000),
+  carga_refrigerada: z.boolean(),
+  carga_fragil: z.boolean(),
+  // 'loja' esconde os campos de carga no cadastro de produto; 'produto' os
+  // exibe. Deriva do segmento, mas fica editável para catálogos mistos.
+  carga_modo: z.enum(['loja', 'produto']),
+})
+
 // Buscar dados da loja
 export async function getDadosLoja() {
   const supabase = createSupabaseServer()
@@ -132,6 +145,53 @@ export async function atualizarConfigEntrega(
   if (error) return { erro: error.message }
 
   revalidatePath('/configuracoes')
+  return { sucesso: true }
+}
+
+// Atualizar o perfil de carga da loja (docs/31 §1.1)
+export async function atualizarPerfilCarga(
+  _prevState: unknown,
+  formData: FormData
+) {
+  const supabase = createSupabaseServer()
+
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  if (!tenant) return { erro: 'Tenant não encontrado' }
+
+  const { data: loja } = await supabase
+    .from('stores')
+    .select('id')
+    .eq('tenant_id', tenant.id)
+    .single()
+  if (!loja) return { erro: 'Loja não encontrada' }
+
+  // O formulário coleta em unidades humanas (gramas e litros); o banco
+  // guarda gramas e mililitros.
+  const peso_raw = formData.get('carga_item_peso_g')
+  const volume_raw = formData.get('carga_item_volume_l')
+
+  const dados = schemaCarga.safeParse({
+    carga_item_peso_g: peso_raw ? Math.round(parseFloat(String(peso_raw))) : 800,
+    carga_item_volume_ml: volume_raw
+      ? Math.round(parseFloat(String(volume_raw)) * 1000)
+      : 1500,
+    carga_refrigerada: formData.get('carga_refrigerada') === 'on',
+    carga_fragil: formData.get('carga_fragil') === 'on',
+    carga_modo: formData.get('carga_modo') === 'produto' ? 'produto' : 'loja',
+  })
+
+  if (!dados.success) return { erro: dados.error.errors[0].message }
+
+  const { error } = await supabase
+    .from('stores')
+    .update(dados.data)
+    .eq('id', loja.id)
+    .eq('tenant_id', tenant.id)
+
+  if (error) return { erro: error.message }
+
+  revalidatePath('/configuracoes')
+  revalidatePath('/produtos')
   return { sucesso: true }
 }
 

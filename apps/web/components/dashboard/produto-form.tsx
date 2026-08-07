@@ -54,6 +54,11 @@ interface Produto {
   category_id?: string | null
   ordem?: number
   metadata?: MetadataEditavel | null
+  // Override de carga (docs/31 §1.1). NULL = herda categoria, depois loja.
+  peso_g?: number | null
+  volume_ml?: number | null
+  refrigerado?: boolean | null
+  fragil?: boolean | null
 }
 
 interface VariantInicial extends Omit<VariantEditavel, 'optionRefs'> {
@@ -67,6 +72,17 @@ interface Props {
   grupos?: GrupoEditavel[]
   optionGroups?: OptionGroupEditavel[]
   variants?: VariantInicial[]
+  /**
+   * Perfil de carga da loja (docs/31 §1.1). Quando carga_modo === 'produto'
+   * o formulário exibe peso e volume por item; caso contrário o produto
+   * herda o perfil da loja e os campos ficam escondidos, que é o caso da
+   * maioria dos segmentos (alimentação, farmácia).
+   */
+  loja?: {
+    carga_modo?: string | null
+    carga_item_peso_g?: number | null
+    carga_item_volume_ml?: number | null
+  }
 }
 
 const inputClass =
@@ -279,6 +295,7 @@ export function ProdutoForm({
   grupos: gruposIniciais,
   optionGroups: optionGroupsIniciais,
   variants: variantsIniciais,
+  loja,
 }: Props) {
   const template = useTemplateOrGeneric()
   const ehServices = template.codigo === 'services'
@@ -639,6 +656,84 @@ export function ProdutoForm({
           </p>
         )}
       </div>
+
+      {/* Carga por produto — só para catálogo heterogêneo (docs/31 §1.1).
+          Em branco, o item herda o perfil da loja: não é campo obrigatório,
+          é exceção. */}
+      {loja?.carga_modo === 'produto' && (
+        <div
+          className="rounded-xl p-4"
+          style={{ border: '1px solid var(--line)', background: 'var(--bg-2, transparent)' }}
+        >
+          {/* Marcador: sem ele a action não consegue distinguir "checkbox
+              desmarcado" (override explícito para false) de "bloco não
+              renderizado" (herda a loja) — os dois enviam campo ausente. */}
+          <input type="hidden" name="carga_editavel" value="1" />
+
+          <p className="text-sm font-medium text-ink mb-1">Carga deste produto</p>
+          <p className="text-xs text-ink-3 mb-3">
+            Preencha só se for diferente do padrão da loja
+            {loja.carga_item_peso_g
+              ? ` (${loja.carga_item_peso_g} g · ${((loja.carga_item_volume_ml ?? 1500) / 1000).toFixed(1)} L)`
+              : ''}
+            . Em branco, herda o padrão.
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-ink-2 mb-1">Peso (g)</label>
+              <input
+                name="peso_g"
+                type="number"
+                step="50"
+                min="1"
+                max="300000"
+                placeholder={String(loja.carga_item_peso_g ?? 800)}
+                defaultValue={produto?.peso_g ?? ''}
+                className={inputClass}
+                style={{ borderColor: 'var(--line)' }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-ink-2 mb-1">Volume (L)</label>
+              <input
+                name="volume_l"
+                type="number"
+                step="0.5"
+                min="0.1"
+                max="500"
+                placeholder={((loja.carga_item_volume_ml ?? 1500) / 1000).toFixed(1)}
+                defaultValue={
+                  produto?.volume_ml ? (produto.volume_ml / 1000).toFixed(1) : ''
+                }
+                className={inputClass}
+                style={{ borderColor: 'var(--line)' }}
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 mt-3">
+            <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="refrigerado"
+                defaultChecked={!!produto?.refrigerado}
+                className="accent-brick"
+              />
+              Refrigerado
+            </label>
+            <label className="flex items-center gap-2 text-sm text-ink-2 cursor-pointer">
+              <input
+                type="checkbox"
+                name="fragil"
+                defaultChecked={!!produto?.fragil}
+                className="accent-brick"
+              />
+              Frágil
+            </label>
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="block text-sm font-medium text-ink-2 mb-1">Ordem de exibição</label>

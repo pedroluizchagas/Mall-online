@@ -41,6 +41,14 @@ export interface Pedido {
   tipo?: 'entrega' | 'agendamento' | null
   agendamento_inicio_at?: string | null
   agendamento_fim_at?: string | null
+  // Perfil de carga calculado no checkout (docs/31 §1.3). Orienta a
+  // separação física e decide qual veículo pode levar o pedido.
+  carga_porte?: 'P' | 'M' | 'G' | 'XG' | null
+  carga_peso_g?: number | null
+  carga_refrigerada?: boolean | null
+  carga_fragil?: boolean | null
+  carga_alto_valor?: boolean | null
+  volumes?: number | null
   consumers?: { id: string; nome: string; telefone: string } | null
   order_items?: ItemPedido[]
   delivery_assignments?: Array<{
@@ -58,6 +66,8 @@ export const SELECT_PEDIDO = `
   endereco_entrega, observacoes,
   cancelado_em, motivo_cancelamento,
   tipo, agendamento_inicio_at, agendamento_fim_at,
+  carga_porte, carga_peso_g, carga_refrigerada, carga_fragil,
+  carga_alto_valor, volumes,
   consumers (id, nome, telefone),
   order_items (
     id, nome, quantidade, preco_unit, subtotal, observacoes, modifiers,

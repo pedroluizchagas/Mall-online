@@ -28,7 +28,8 @@ export default async function PaginaEditarProduto({ params }: Props) {
     .select(`
       id, nome, descricao, preco, preco_promocional,
       foto_url, disponivel, track_stock, stock_quantity,
-      stock_minimo, category_id, ordem, metadata
+      stock_minimo, category_id, ordem, metadata,
+      peso_g, volume_ml, refrigerado, fragil
     `)
     .eq('id', params.id)
     .eq('tenant_id', tenant.id)
@@ -37,6 +38,14 @@ export default async function PaginaEditarProduto({ params }: Props) {
   const produto = produtoResult as any
 
   if (!produto) notFound()
+
+  // Perfil de carga da loja: decide se o form mostra peso/volume por produto
+  const { data: lojaResult } = await supabase
+    .from('stores')
+    .select('id, carga_modo, carga_item_peso_g, carga_item_volume_ml')
+    .eq('tenant_id', tenant.id)
+    .limit(1)
+    .maybeSingle()
 
   const { categorias } = await getCategorias()
   const { grupos } = await getModificadoresProduto(params.id)
@@ -66,6 +75,7 @@ export default async function PaginaEditarProduto({ params }: Props) {
         action={action}
         categorias={categorias}
         produto={produto}
+        loja={lojaResult as any}
         grupos={grupos as any}
         optionGroups={optionGroups}
         variants={variants.map((v) => ({

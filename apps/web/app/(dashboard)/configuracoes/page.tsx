@@ -6,6 +6,7 @@ import { AbaIdentificacao } from '@/components/dashboard/configuracoes/aba-ident
 import { AbaLocalizacao } from '@/components/dashboard/configuracoes/aba-localizacao'
 import { AbaHorarios } from '@/components/dashboard/configuracoes/aba-horarios'
 import { AbaEntrega } from '@/components/dashboard/configuracoes/aba-entrega'
+import { AbaCarga } from '@/components/dashboard/configuracoes/aba-carga'
 import { AbaPagamentos } from '@/components/dashboard/configuracoes/aba-pagamentos'
 import { AbaRecebimentos } from '@/components/dashboard/configuracoes/aba-recebimentos'
 
@@ -56,6 +57,11 @@ export default async function PaginaConfiguracoes() {
             id: 'entrega',
             label: 'Entrega',
             content: <AbaEntrega loja={loja} />,
+          },
+          {
+            id: 'carga',
+            label: 'Carga',
+            content: <AbaCarga loja={loja} />,
           },
           {
             id: 'pagamentos',

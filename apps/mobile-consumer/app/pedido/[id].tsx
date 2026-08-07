@@ -13,6 +13,7 @@ import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 import { formatarReais } from '@mallevo/lib'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
 import { metaDoStatus, timelineDoStatus, ehAtivo } from '@/lib/status-pedido'
+import { faixaDeEta, estimarFaixaPelaRota, rotuloPosicaoNaRota } from '@/lib/eta'
 
 const { colors, radius } = consumerDesign
 
@@ -49,8 +50,12 @@ export default function TelaAcompanhamento() {
             )
           ),
           delivery_assignments (
-            id, status, courier_id,
+            id, status, courier_id, route_id,
             couriers (id, nome, telefone)
+          ),
+          route_stops (
+            id, ordem, tipo, status, eta,
+            delivery_routes ( id, status, drops, duracao_estimada_s )
           ),
           stores (id, nome, telefone, slug)
         `
@@ -122,6 +127,25 @@ export default function TelaAcompanhamento() {
   const passos = timelineDoStatus(statusAtual)
   const courier = pedido?.delivery_assignments?.[0]?.couriers
   const enderecoEntrega = pedido?.endereco_entrega
+
+  // ETA da PRÓPRIA parada (docs/31 §5). Em rota agrupada o consumidor vê o
+  // seu drop, nunca a rota inteira — agrupar não pode piorar o que ele vê.
+  const paradaDoPedido = (pedido?.route_stops ?? []).find(
+    (s: any) => s.tipo === 'entrega',
+  )
+  const rotaDoPedido = paradaDoPedido?.delivery_routes
+  const faixaEta =
+    statusAtual === 'saiu_para_entrega' || statusAtual === 'aguardando_entregador'
+      ? (faixaDeEta(paradaDoPedido?.eta) ??
+        estimarFaixaPelaRota({
+          duracaoEstimadaS: rotaDoPedido?.duracao_estimada_s,
+          ordemDoDrop: paradaDoPedido?.ordem,
+        }))
+      : null
+  const posicaoNaRota = rotuloPosicaoNaRota(
+    paradaDoPedido?.ordem,
+    rotaDoPedido?.drops,
+  )
   const exibirMapa =
     statusAtual === 'saiu_para_entrega' && localizacao && enderecoEntrega
   const isCancelado = statusAtual === 'cancelado'
@@ -199,10 +223,28 @@ export default function TelaAcompanhamento() {
                     fontWeight: '500',
                   }}
                 >
-                  {meta.descricao}
+                  {faixaEta ? `Chega entre ${faixaEta.texto}` : meta.descricao}
                 </Text>
               </View>
             </View>
+
+            {/* Posição na rota: só aparece quando o pedido foi agrupado.
+                Transparência sem alarme — o cliente entende a ordem sem
+                que isso vire promessa de horário exato. */}
+            {posicaoNaRota && !isCancelado && (
+              <View
+                style={{
+                  marginTop: 12,
+                  paddingTop: 12,
+                  borderTopWidth: 1,
+                  borderTopColor: 'rgba(255,255,255,0.10)',
+                }}
+              >
+                <Text style={{ fontSize: 12, color: colors.inkSoft, fontWeight: '600' }}>
+                  {posicaoNaRota}
+                </Text>
+              </View>
+            )}
 
             {isCancelado && pedido?.motivo_cancelamento && (
               <View

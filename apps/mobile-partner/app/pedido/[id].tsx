@@ -25,6 +25,7 @@ import {
 } from '@/lib/pedidos'
 import { META_STATUS_LOJISTA, rotuloFormaPagamento } from '@/lib/status-pedido'
 import { PartnerIcon } from '@/components/PartnerIcon'
+import { CardSeparacao } from '@/components/CardSeparacao'
 import { partnerDesign, softColor, formatarMomentoCurto } from '@/lib/partner-design'
 
 // Detalhe do pedido — mesmas transições e efeitos do Dashboard
@@ -158,6 +159,25 @@ export default function TelaPedido() {
               {pedido.motivo_cancelamento}
             </Text>
           </Cartao>
+        )}
+
+        {/* Separação de carga (docs/31 §1.4) — some em pedidos anteriores
+            à logística, que não têm porte calculado */}
+        {pedido.carga_porte && (
+          <>
+            <Legenda>Separação</Legenda>
+            <CardSeparacao
+              pedidoId={pedido.id}
+              porte={pedido.carga_porte}
+              pesoG={pedido.carga_peso_g}
+              refrigerada={pedido.carga_refrigerada}
+              fragil={pedido.carga_fragil}
+              altoValor={pedido.carga_alto_valor}
+              volumes={pedido.volumes}
+              editavel={['novo', 'confirmado', 'em_preparo'].includes(pedido.status)}
+              onVolumesAtualizados={(v) => aplicarPedido({ ...pedido, volumes: v })}
+            />
+          </>
         )}
 
         {/* Itens */}

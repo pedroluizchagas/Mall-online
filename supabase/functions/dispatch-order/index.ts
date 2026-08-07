@@ -81,7 +81,13 @@ Deno.serve(async (req) => {
       .rpc('montar_rota', { p_order_id: order_id, p_agrupar: agrupar })
 
     if (rotaErr) throw new Error(`montar_rota: ${rotaErr.message}`)
-    if (!routeId) throw new Error('Não foi possível montar a rota')
+
+    // montar_rota devolve NULL quando o tenant não optou pelo despacho
+    // automático (feature flag, docs/31 §8). Não é erro: o lojista segue
+    // atribuindo entregador manualmente.
+    if (!routeId) {
+      return json({ despachado: false, motivo: 'logistica_desabilitada' }, 200)
+    }
 
     // ---- 2. Emitir a oferta ao melhor candidato ------------------------
     const { data: courierId, error: ofertaErr } = await supabase

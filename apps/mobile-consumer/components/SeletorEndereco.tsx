@@ -11,6 +11,7 @@ import {
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import type { Endereco, Json } from '@mallevo/types'
+import { geocodificarEndereco } from '@/lib/geocode'
 import { Botao } from '@/components/ui/Botao'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
@@ -73,6 +74,15 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
       cidade: novoEndereco.cidade ?? 'Divinópolis',
       estado: novoEndereco.estado ?? 'MG',
       cep: novoEndereco.cep ?? '',
+    }
+
+    // Geocodifica para habilitar agrupamento de entregas (docs/31 §10).
+    // Falha aqui não impede o cadastro: sem coordenada o pedido vira
+    // entrega individual, que é o comportamento correto de fallback.
+    const coords = await geocodificarEndereco(enderecoCompleto)
+    if (coords) {
+      enderecoCompleto.latitude = coords.latitude
+      enderecoCompleto.longitude = coords.longitude
     }
 
     const novosEnderecos = [...(enderecos ?? []), enderecoCompleto]

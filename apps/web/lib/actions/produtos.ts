@@ -18,6 +18,36 @@ const schemaProduto = z.object({
   ordem: z.number().int().default(0),
 })
 
+/**
+ * Override de carga do produto (docs/31 §1.1).
+ *
+ * Retorna `null` quando o formulário não renderizou o bloco de carga — a
+ * loja está em modo 'loja' e o produto deve herdar. Nesse caso as colunas
+ * não entram no update, preservando o que já estiver gravado.
+ *
+ * Campo numérico vazio vira NULL (herda), não 0: um produto sem peso
+ * declarado não é um produto sem peso.
+ */
+function parseCargaPayload(formData: FormData) {
+  if (formData.get('carga_editavel') !== '1') return null
+
+  const peso = formData.get('peso_g')
+  const volumeL = formData.get('volume_l')
+
+  const pesoNum = peso ? parseFloat(String(peso)) : NaN
+  const volumeNum = volumeL ? parseFloat(String(volumeL)) : NaN
+
+  return {
+    peso_g: Number.isFinite(pesoNum) && pesoNum > 0 ? Math.round(pesoNum) : null,
+    volume_ml:
+      Number.isFinite(volumeNum) && volumeNum > 0
+        ? Math.round(volumeNum * 1000)
+        : null,
+    refrigerado: formData.get('refrigerado') === 'on',
+    fragil: formData.get('fragil') === 'on',
+  }
+}
+
 const modifierSchema = z.object({
   id: z.string().uuid().optional(),
   nome: z.string().min(1, 'Nome da opção é obrigatório').max(80),
@@ -722,10 +752,13 @@ export async function criarProduto(store_id: string, formData: FormData) {
     ? { ...dados.data, track_stock: false, stock_quantity: null, stock_minimo: 0 }
     : dados.data
 
+  const carga = parseCargaPayload(formData)
+
   const { data: produtoCriado, error } = await supabase
     .from('products')
     .insert({
       ...dadosFinal,
+      ...(carga ?? {}),
       store_id,
       tenant_id: tenant.id,
       foto_url,
@@ -837,10 +870,15 @@ export async function atualizarProduto(
     ? { ...dados.data, track_stock: false, stock_quantity: null, stock_minimo: 0 }
     : dados.data
 
+  // carga null = loja em modo 'loja': as colunas ficam fora do update para
+  // preservar qualquer override já gravado (docs/31 §1.1).
+  const carga = parseCargaPayload(formData)
+
   const { error } = await supabase
     .from('products')
     .update({
       ...dadosFinal,
+      ...(carga ?? {}),
       ...(foto_url ? { foto_url } : {}),
       metadata,
     })
