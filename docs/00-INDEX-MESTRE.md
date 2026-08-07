@@ -83,7 +83,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 -----
 
-## LISTA COMPLETA — 31 ARQUIVOS (00 + 01..30)
+## LISTA COMPLETA — 32 ARQUIVOS (00 + 01..31)
 
 -----
 
@@ -473,19 +473,37 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 
 -----
 
+### GRUPO 13 — LOGÍSTICA DE ENTREGA (NOVO)
+
+**`31` — Logística de Entrega: Carga, Veículo, Despacho e Rotas**
+
+- Separação de carga com **cadastro em cascata**: perfil da loja (item médio, cadastrado uma vez) → default da categoria → override por produto — açaí/pizzaria preenchem uma vez; mercado/pet detalham por produto
+- Perfil de carga do pedido calculado no checkout: porte `P/M/G/XG` + flags (refrigerado, frágil, alto valor)
+- ENUM `vehicle_type` (`a_pe` · `bicicleta` · `moto` · `carro` · `utilitario`) com capacidade, raio e portes aceitos; matriz de elegibilidade entregador × carga
+- Motor de despacho automático: score ponderado (proximidade 40% · veículo 20% · aceitação 15% · avaliação 15% · ociosidade 10%), oferta em cascata com expiração de 45 s, prioridade para entregador próprio, override manual preservado
+- Agrupamento de entregas: mesmo endereço e endereços próximos (≤ 800 m ou desvio ≤ 15%), com limites por veículo e proteção de SLA para alimentação quente
+- Roteirização evolutiva: Haversine + vizinho-mais-próximo (Fase 1, sem API) → OSRM self-hosted (Fase 2) → Routes API (Fase 3)
+- Novas tabelas: `delivery_routes` · `route_stops` · `dispatch_offers`; `delivery_assignments` ganha `route_id` e permanece a unidade financeira (1 por pedido)
+- Precificação de frete por veículo + km + adicionais; remuneração da rota com adicional por drop — **split Pagar.me inalterado** (1 transfer por pedido)
+- Migrations `20260807120000` · `20260807120001` · `20260807120002` + Edge Function `dispatch-order`
+- Roadmap em 3 fases, KPIs e riscos
+- *Tokens est.: ~5.000*
+
+-----
+
 ## VISÃO GERAL
 
 |Item                     |Valor                                                         |
 |-------------------------|--------------------------------------------------------------|
-|Total de arquivos        |30 + este índice = **31**                                     |
-|Grupos temáticos         |12                                                            |
-|Tokens totais estimados  |~131.000                                                      |
+|Total de arquivos        |31 + este índice = **32**                                     |
+|Grupos temáticos         |13                                                            |
+|Tokens totais estimados  |~136.000                                                      |
 |Tamanho médio por arquivo|~4.200 tokens                                                 |
 |Atores cobertos          |Plataforma · Lojista · Consumidor · Entregador                |
 |Apps cobertos            |web (Next.js) · mobile-consumer (Expo) · mobile-courier (Expo)|
 |Apps com doc própria     |storefront (`docs/storefront/`) · **mobile-partner — App do Lojista** (`docs/partner-app/`)|
-|Migrations cobertas      |6 (001 já aplicada + 002..005 pendentes + 006 cutover Pagar.me)|
-|Edge Functions cobertas  |8 (Pagar.me + Stripe Billing)                                 |
+|Migrations cobertas      |6 (001 já aplicada + 002..005 pendentes + 006 cutover Pagar.me) + 3 de logística (`20260807120000..2`)|
+|Edge Functions cobertas  |9 (8 Pagar.me + Stripe Billing · `dispatch-order` logística)  |
 
 -----
 
@@ -510,6 +528,7 @@ Consumidor paga R$60 (R$50 produto + R$10 frete)
 11 → 12 → 13 → 14   Dashboard completo
 15 → 16 → 17 → 18   App do consumidor
 19 → 20 → 21 → 22   App do entregador
+31                   Logística: carga, veículo, despacho e rotas
 23 → 24              Notificações e estoque
 25                   Painel admin
 26 → 27              Testes e deploy
