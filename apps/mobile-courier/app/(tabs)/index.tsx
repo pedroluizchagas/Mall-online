@@ -16,7 +16,10 @@ import { formatarReais } from '@mallevo/lib'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useEntregaStore } from '@/store/useEntregaStore'
+import { useRotaStore } from '@/store/useRotaStore'
+import { aceitarOferta, carregarOfertas, carregarRotaAtiva, recusarOferta } from '@/lib/rota'
 import { EntregaDisponivelCard } from '@/components/EntregaDisponivelCard'
+import { OfertaRotaCard } from '@/components/OfertaRotaCard'
 import { HistoricoEntregasDia } from '@/components/HistoricoEntregasDia'
 import { CourierIcon } from '@/components/CourierIcon'
 import { RotaIlustrada } from '@/components/RotaIlustrada'
@@ -28,6 +31,8 @@ import {
 export default function TelaEntregas() {
   const { courier, setOnline } = useAuthStore()
   const { disponiveis, setDisponiveis, ativa } = useEntregaStore()
+  const { ofertas, setOfertas, removerOferta, setRota } = useRotaStore()
+  const [ofertaProcessando, setOfertaProcessando] = useState<string | null>(null)
   const [toggleCarregando, setToggleCarregando] = useState(false)
   const [atualizando, setAtualizando] = useState(false)
   const [avatarErro, setAvatarErro] = useState(false)
@@ -82,11 +87,107 @@ export default function TelaEntregas() {
     }
   }, [courier?.id, courier?.online, setDisponiveis])
 
+  // ---- Motor de despacho automático (docs/31 §3) ----
+  // Convive com o fluxo legado acima: aquele lê delivery_assignments criados
+  // pelo lojista; este lê dispatch_offers criadas pelo motor. O entregador vê
+  // as duas coisas na mesma tela e a diferença é invisível para ele.
+  useEffect(() => {
+    if (!courier?.id) return
+
+    if (!courier.online) {
+      setOfertas([])
+      return
+    }
+
+    // Rota já aceita tem precedência sobre qualquer oferta nova
+    carregarRotaAtiva(courier.id).then((r) => {
+      if (r) {
+        setRota(r)
+        router.replace('/rota')
+      }
+    })
+
+    carregarOfertas(courier.id).then(setOfertas)
+
+    const canal = supabase
+      .channel(`ofertas-${courier.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'dispatch_offers',
+          filter: `courier_id=eq.${courier.id}`,
+        },
+        () => {
+          // Recarrega a lista inteira: o payload do Realtime traz só a linha
+          // da oferta, sem a rota e as paradas que o card precisa exibir.
+          carregarOfertas(courier.id).then(setOfertas)
+        },
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'dispatch_offers',
+          filter: `courier_id=eq.${courier.id}`,
+        },
+        (payload) => {
+          // Expirou no servidor (pg_cron) ou outro entregador aceitou antes
+          if (payload.new.resposta) removerOferta(payload.new.id)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(canal)
+    }
+  }, [courier?.id, courier?.online, setOfertas, removerOferta, setRota])
+
+  async function handleAceitarOferta(ofertaId: string) {
+    if (!courier?.id) return
+    setOfertaProcessando(ofertaId)
+
+    const { ok, motivo } = await aceitarOferta(ofertaId)
+
+    if (!ok) {
+      removerOferta(ofertaId)
+      setOfertaProcessando(null)
+      // "rota_ja_atribuida" é corrida normal no broadcast, não falha do app
+      Alert.alert(
+        'Oferta indisponível',
+        motivo === 'rota_ja_atribuida'
+          ? 'Outro entregador aceitou primeiro.'
+          : motivo === 'oferta_expirada'
+            ? 'O tempo para aceitar expirou.'
+            : 'Não foi possível aceitar esta rota.',
+      )
+      return
+    }
+
+    const rota = await carregarRotaAtiva(courier.id)
+    setRota(rota)
+    removerOferta(ofertaId)
+    setOfertaProcessando(null)
+    router.replace('/rota')
+  }
+
+  async function handleRecusarOferta(ofertaId: string) {
+    setOfertaProcessando(ofertaId)
+    await recusarOferta(ofertaId)
+    removerOferta(ofertaId)
+    setOfertaProcessando(null)
+  }
+
   const onRefresh = useCallback(async () => {
     setAtualizando(true)
     await carregarEntregasDisponiveis()
+    if (courier?.id && courier.online) {
+      setOfertas(await carregarOfertas(courier.id))
+    }
     setAtualizando(false)
-  }, [courier?.id, courier?.online])
+  }, [courier?.id, courier?.online, setOfertas])
 
   async function carregarEntregasDisponiveis() {
     if (!courier?.id || !courier.online) {
@@ -446,6 +547,31 @@ export default function TelaEntregas() {
         </View>
 
         <HistoricoEntregasDia />
+
+        {/* Ofertas do despacho automático — prioridade visual sobre a lista
+            legada: têm contagem regressiva e expiram sozinhas (docs/31 §3.1) */}
+        {ofertas.length > 0 && (
+          <View style={{ marginBottom: 20 }}>
+            <View className="flex-row items-center justify-between mb-3 mt-1">
+              <Text className="text-base font-semibold" style={{ color: colors.ink }}>
+                {ofertas.length > 1 ? 'Ofertas para você' : 'Oferta para você'}
+              </Text>
+              <Text className="text-sm" style={{ color: colors.accentStrong }}>
+                responda rápido
+              </Text>
+            </View>
+
+            {ofertas.map((oferta) => (
+              <OfertaRotaCard
+                key={oferta.oferta_id}
+                oferta={oferta}
+                processando={ofertaProcessando === oferta.oferta_id}
+                onAceitar={() => handleAceitarOferta(oferta.oferta_id)}
+                onRecusar={() => handleRecusarOferta(oferta.oferta_id)}
+              />
+            ))}
+          </View>
+        )}
 
         <View className="flex-row items-center justify-between mb-4 mt-1">
           <Text className="text-base font-semibold" style={{ color: colors.ink }}>
