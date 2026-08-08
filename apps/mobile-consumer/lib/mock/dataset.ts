@@ -10,7 +10,13 @@
  */
 
 import { getArquetiposOferecidos } from '@mallevo/lib'
-import { LOGO_VITRINE_FASHION } from './logos'
+import {
+  LOGO_BELLA,
+  LOGO_CANTINA,
+  LOGO_CASA_CONFORTO,
+  LOGO_URBAN_WEAR,
+  LOGO_VITRINE_FASHION,
+} from './logos'
 
 const TENANT = 'mock-tenant-0001'
 
@@ -87,7 +93,7 @@ interface StoreRow {
   categoria: { slug: string }
   categories: { nome: string }
   // Tema visual (StoreThemeConfig v2) — faz a loja "vestir" seu design no app.
-  theme: { v: 2; preset: string }
+  theme: { v: 2; preset: string; palette?: string }
 }
 
 interface ProductRow {
@@ -101,8 +107,11 @@ interface ProductRow {
   disponivel: true
   category_id: string
   ordem: number
-  /** `galeria`: fotos extras do PDP imersivo (lojas-demo com foto real). */
-  metadata: { galeria: string[] } | null
+  /**
+   * `galeria`: fotos extras do PDP imersivo; `especificacoes`: ficha técnica
+   * (pares rótulo/valor) do PDP artesão (lojas-demo com conteúdo real).
+   */
+  metadata: { galeria?: string[]; especificacoes?: [string, string][] } | null
   // Embeds
   categories: { id: string; nome: string; ordem: number }
   stores: { slug: string; nome: string; ativo: true }
@@ -116,8 +125,8 @@ const foto = (seed: string, w = 600, h = 420) =>
 const fotoModa = (id: string, w = 600, h = 800) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&q=80&auto=format&fit=crop`
 
-/** [produto, precoCentavos, descricao, fotoUrl?] */
-type ItemCatalogo = [string, number, string, string?]
+/** [produto, precoCentavos, descricao, fotoUrl?, especificacoes?] */
+type ItemCatalogo = [string, number, string, string?, [string, string][]?]
 type Catalogo = [string, ItemCatalogo[]][]
 
 interface LojaSpec {
@@ -133,6 +142,10 @@ interface LojaSpec {
   banner?: string
   /** Logo próprio (senão usa foto de seed) — PNG transparente p/ o splash. */
   logo?: string
+  /** Arquétipo fixo (senão cicla entre os oferecidos da categoria). */
+  preset?: string
+  /** Paleta curada do arquétipo (palettes.ts) — lojas-demo com pele exata. */
+  palette?: string
 }
 
 interface PisoSpec {
@@ -170,12 +183,74 @@ const PISOS: PisoSpec[] = [
       ],
     ],
     lojas: [
-      { nome: 'Sabor Mineiro', slug: 'sabor-mineiro', descricao: 'Comida mineira de raiz, no fogão de lenha. Tradição de Divinópolis.', taxa: 0, tempo: 35, categoriaSlug: 'restaurante' },
-      { nome: 'Burger House DV', slug: 'burger-house', descricao: 'Smash burgers artesanais e batatas rústicas. Direto da chapa.', taxa: 590, tempo: 30, categoriaSlug: 'lanches' },
-      { nome: 'Cantina Bella Itália', slug: 'cantina-bella-italia', descricao: 'Massas frescas e pizzas em forno a lenha. Sapore italiano.', taxa: 690, tempo: 45, categoriaSlug: 'restaurante' },
-      { nome: 'Sushi Yamato', slug: 'sushi-yamato', descricao: 'Combinados frescos e temaki. Culinária japonesa premium.', taxa: 890, tempo: 50, categoriaSlug: 'japonesa' },
-      { nome: 'Café Aroma', slug: 'cafe-aroma', descricao: 'Cafés especiais, bolos caseiros e brunch o dia todo.', taxa: 0, tempo: 25, categoriaSlug: 'cafeteria' },
-      { nome: 'Açaí da Praça', slug: 'acai-da-praca', descricao: 'Açaí cremoso na tigela com toppings à vontade.', taxa: 390, tempo: 20, categoriaSlug: 'sobremesas' },
+      // Presets explícitos: o tom de cada casa manda na pele (a rotação
+      // automática criava dissonâncias — ex.: hamburgueria em fine-dining).
+      { nome: 'Sabor Mineiro', slug: 'sabor-mineiro', descricao: 'Comida mineira de raiz, no fogão de lenha. Tradição de Divinópolis.', taxa: 0, tempo: 35, categoriaSlug: 'restaurante', preset: 'heritage' },
+      { nome: 'Burger House DV', slug: 'burger-house', descricao: 'Smash burgers artesanais e batatas rústicas. Direto da chapa.', taxa: 590, tempo: 30, categoriaSlug: 'lanches', preset: 'heritage' },
+      {
+        nome: 'Cantina Bella Itália',
+        slug: 'cantina-bella-italia',
+        descricao: 'Onde a massa fresca encontra a arte silenciosa do forno a lenha.',
+        taxa: 690,
+        tempo: 45,
+        categoriaSlug: 'restaurante',
+        // Loja-demo da vitrine noir gastronômica (The Obscura): fine dining
+        // em preto, marfim e dourado (ver LojaNoir.tsx).
+        preset: 'noir',
+        logo: LOGO_CANTINA,
+        banner: fotoModa('1514933651103-005eec06c04b', 900, 1200),
+        catalogo: [
+          [
+            'Do forno',
+            [
+              ['Margherita di Bufala', 6890, 'San Marzano · muçarela de búfala · basílico', fotoModa('1574071318508-1cdbab80d002')],
+              ['Diavola Calabra', 7490, 'Calabresa artesanal · nduja · mel picante', fotoModa('1481931098730-318b6f776db0')],
+              ['Burrata della Casa', 5890, 'Burrata cremosa · tomate confit · pão de fermentação', fotoModa('1529042410759-befb1204b468')],
+            ],
+          ],
+          [
+            'Massas di casa',
+            [
+              ['Tagliatelle della Nonna', 9890, 'Massa fresca · ragù de 8 horas · grana padano', fotoModa('1473093295043-cdd812d0e601')],
+              ['Farfalle al Pesto', 7890, 'Pesto genovês · tomate-cereja · pinoli tostado', fotoModa('1414235077428-338989a2e8c0')],
+              ['Polpette al Ragù', 8490, 'Almôndegas de costela · rúcula · pecorino', fotoModa('1550966871-3ed3cdb5ed0c')],
+            ],
+          ],
+          [
+            'Dolci & Bar',
+            [
+              ['Tiramisù della Nonna', 3890, 'Mascarpone · café ristretto · cacau amargo', fotoModa('1571877227200-a0d98ea607e9')],
+              ['Panna Cotta ai Frutti', 3490, 'Baunilha de fava · morangos macerados', fotoModa('1488477181946-6428a0291777')],
+              ['Negroni Antico', 4290, 'Gin · vermute rosso · bitter de laranja', fotoModa('1470337458703-46ad1756a187')],
+            ],
+          ],
+        ],
+      },
+      {
+        nome: 'Sushi Yamato',
+        slug: 'sushi-yamato',
+        descricao: 'O balcão silencioso — peixe do dia, arroz no ponto e a calma do mestre.',
+        taxa: 890,
+        tempo: 50,
+        categoriaSlug: 'japonesa',
+        // Omakase premium: noir na paleta prata (preto + aço) + cardápio real.
+        preset: 'noir',
+        palette: 'prata',
+        banner: fotoModa('1552566626-52f8b828add9', 900, 1200),
+        catalogo: [
+          [
+            'Do balcão',
+            [
+              ['Omakase Nigiri', 12890, 'Seleção do mestre · 12 peças · peixe do dia', fotoModa('1617196034796-73dfa7b1fd56')],
+              ['Uramaki Salmão', 5890, 'Salmão maçaricado · cream cheese · teriyaki', fotoModa('1579871494447-9811cf80d66c')],
+              ['Barco Yamato', 18990, 'Combinado da casa · 42 peças · para dividir', fotoModa('1553621042-f6e147245754')],
+              ['Festival da Casa', 9890, 'Hossomaki · uramaki · niguiri variados', fotoModa('1611143669185-af224c5e3252')],
+            ],
+          ],
+        ],
+      },
+      { nome: 'Café Aroma', slug: 'cafe-aroma', descricao: 'Cafés especiais, bolos caseiros e brunch o dia todo.', taxa: 0, tempo: 25, categoriaSlug: 'cafeteria', preset: 'heritage' },
+      { nome: 'Açaí da Praça', slug: 'acai-da-praca', descricao: 'Açaí cremoso na tigela com toppings à vontade.', taxa: 390, tempo: 20, categoriaSlug: 'sobremesas', preset: 'market' },
     ],
   },
   {
@@ -201,12 +276,33 @@ const PISOS: PisoSpec[] = [
       ],
     ],
     lojas: [
-      { nome: 'Mercado Central DV', slug: 'mercado-central', descricao: 'Hortifruti, mercearia e açougue. Tudo num lugar só.', taxa: 0, tempo: 40, categoriaSlug: 'mercado' },
-      { nome: 'Farmácia Saúde+', slug: 'farmacia-saude-mais', descricao: 'Medicamentos, higiene e dermocosméticos. Entrega rápida.', taxa: 0, tempo: 25, categoriaSlug: 'farmacia' },
-      { nome: 'Adega Premium', slug: 'adega-premium', descricao: 'Vinhos, destilados e cervejas especiais selecionados.', taxa: 690, tempo: 35, categoriaSlug: 'bebidas' },
-      { nome: 'Hortifruti Viçoso', slug: 'hortifruti-vicoso', descricao: 'Frutas, legumes e verduras fresquinhos todo dia.', taxa: 390, tempo: 30, categoriaSlug: 'mercado' },
-      { nome: 'Padaria Pão Quente', slug: 'padaria-pao-quente', descricao: 'Pães, bolos e salgados saindo do forno a toda hora.', taxa: 0, tempo: 20, categoriaSlug: 'padaria' },
-      { nome: 'Empório Natural', slug: 'emporio-natural', descricao: 'Produtos naturais, granéis e orgânicos.', taxa: 590, tempo: 35, categoriaSlug: 'mercado' },
+      { nome: 'Mercado Central DV', slug: 'mercado-central', descricao: 'Hortifruti, mercearia e açougue. Tudo num lugar só.', taxa: 0, tempo: 40, categoriaSlug: 'mercado', preset: 'market' },
+      { nome: 'Farmácia Saúde+', slug: 'farmacia-saude-mais', descricao: 'Medicamentos, higiene e dermocosméticos. Entrega rápida.', taxa: 0, tempo: 25, categoriaSlug: 'farmacia', preset: 'clinic' },
+      {
+        nome: 'Adega Premium',
+        slug: 'adega-premium',
+        descricao: 'Rótulos guardados no escuro, à espera da ocasião certa.',
+        taxa: 690,
+        tempo: 35,
+        categoriaSlug: 'bebidas',
+        // Vinhos no escuro: noir na paleta rubi + carta real.
+        preset: 'noir',
+        palette: 'rubi',
+        banner: fotoModa('1528823872057-9c018a7a7553', 900, 1200),
+        catalogo: [
+          [
+            'Cave & taça',
+            [
+              ['Degustação Vertical', 18900, 'Quatro safras do mesmo rótulo · guiada', fotoModa('1568213816046-0ee1c42bd559')],
+              ['Tinto da Casa', 8900, 'Corte bordalês · taninos macios · 750ml', fotoModa('1506377247377-2a5b3b417ebb')],
+              ['Brinde Reserva', 12900, 'Seleção premiada para ocasiões · 750ml', fotoModa('1510812431401-41d2bd2722f3')],
+            ],
+          ],
+        ],
+      },
+      { nome: 'Hortifruti Viçoso', slug: 'hortifruti-vicoso', descricao: 'Frutas, legumes e verduras fresquinhos todo dia.', taxa: 390, tempo: 30, categoriaSlug: 'mercado', preset: 'market' },
+      { nome: 'Padaria Pão Quente', slug: 'padaria-pao-quente', descricao: 'Pães, bolos e salgados saindo do forno a toda hora.', taxa: 0, tempo: 20, categoriaSlug: 'padaria', preset: 'heritage' },
+      { nome: 'Empório Natural', slug: 'emporio-natural', descricao: 'Produtos naturais, granéis e orgânicos.', taxa: 590, tempo: 35, categoriaSlug: 'mercado', preset: 'artisan' },
     ],
   },
   {
@@ -268,11 +364,132 @@ const PISOS: PisoSpec[] = [
           ],
         ],
       },
-      { nome: 'Passo Certo Calçados', slug: 'passo-certo-calcados', descricao: 'Tênis, sapatos e sandálias das melhores marcas.', taxa: 690, tempo: 50, categoriaSlug: 'calcados' },
-      { nome: 'Bella Cosméticos', slug: 'bella-cosmeticos', descricao: 'Maquiagem, skincare e perfumaria importada.', taxa: 0, tempo: 35, categoriaSlug: 'beleza' },
-      { nome: 'Urban Wear', slug: 'urban-wear', descricao: 'Streetwear, sneakers e acessórios urbanos.', taxa: 790, tempo: 45, categoriaSlug: 'moda' },
-      { nome: 'Joalheria Lux', slug: 'joalheria-lux', descricao: 'Joias, relógios e semijoias com garantia.', taxa: 0, tempo: 60, categoriaSlug: 'acessorios' },
-      { nome: 'Ótica Visão Clara', slug: 'otica-visao-clara', descricao: 'Óculos de grau e solares das principais grifes.', taxa: 590, tempo: 55, categoriaSlug: 'acessorios' },
+      {
+        nome: 'Passo Certo Calçados',
+        slug: 'passo-certo-calcados',
+        descricao: 'Tênis de drop, clássicos de vitrine — o par certo pro seu corre.',
+        taxa: 690,
+        tempo: 50,
+        categoriaSlug: 'calcados',
+        // Sneaker shop: vitrine raw na paleta laranja 'sinal' + drops reais.
+        preset: 'raw',
+        palette: 'sinal',
+        banner: fotoModa('1460353581641-37baddab0fa2', 900, 1200),
+        catalogo: [
+          [
+            'drop TÊNIS',
+            [
+              ['Air Max Solar', 79990, 'Malha branca com explosão laranja', fotoModa('1600185365483-26d7a4cc7519')],
+              ['AF-1 Caramelo', 84990, 'Couro fosco tom terra, sola gum', fotoModa('1549298916-b41d501d3772')],
+              ['Runner Prisma', 69990, 'Chunky multicolor de cadarço duplo', fotoModa('1560769629-975ec94e6a86')],
+            ],
+          ],
+          [
+            'vitrine CLÁSSICA',
+            [
+              ['Night Runner', 59990, 'Preto total com detalhe volt', fotoModa('1491553895911-0055eca6402d')],
+              ['Scarpin Floral', 45990, 'Cetim estampado, salto agulha 9cm', fotoModa('1543163521-1bf539c55dd2')],
+            ],
+          ],
+        ],
+      },
+      {
+        nome: 'Bella Cosméticos',
+        slug: 'bella-cosmeticos',
+        descricao: 'Skincare e beleza com fórmulas limpas — o ritual delicado de todo dia.',
+        taxa: 0,
+        tempo: 35,
+        categoriaSlug: 'beleza',
+        // Loja-demo da vitrine serena (All Natural): pele ardósia delicada +
+        // catálogo de skincare com fotos reais (ver LojaSerena.tsx).
+        preset: 'serene',
+        logo: LOGO_BELLA,
+        banner: fotoModa('1620916566398-39f1143ab7be', 900, 1200),
+        catalogo: [
+          [
+            'Skincare',
+            [
+              ['Sérum Hidratante', 8990, 'Ácido hialurônico e vitamina B5', fotoModa('1620756236308-65c3ef5d25f3')],
+              ['Creme Corporal Nuvem', 6990, 'Manteiga de karité, toque seco', fotoModa('1625772452859-1c03d5bf1137')],
+              ['Óleo Facial Âmbar', 11990, 'Jojoba e rosa mosqueta prensadas a frio', fotoModa('1617897903246-719242758050')],
+              ['Kit Botânico', 15990, 'Tônico, sérum e máscara em edição especial', fotoModa('1612817288484-6f916006741a')],
+              ['Máscara Capilar Repair', 7990, 'Reconstrução com aminoácidos', fotoModa('1608248543803-ba4f8c70ae0b')],
+              ['Limpador Suave', 5990, 'Espuma cremosa para todos os tipos de pele', fotoModa('1556228720-195a672e8a03')],
+            ],
+          ],
+          [
+            'Maquiagem',
+            [
+              ['Kit Pincéis Rosé', 12990, 'Sete pincéis de cerdas macias', fotoModa('1596462502278-27bfdc403348')],
+              ['Paleta Nude', 9990, 'Doze tons matte e acetinados', fotoModa('1522335789203-aabd1fc54bc9')],
+              ['Rotina Glow', 13990, 'Base leve + iluminador + blush cremoso', fotoModa('1601049676869-702ea24cfd58')],
+              ['Duo Coral Vivo', 8490, 'Batom e blush líquido em tom coral', fotoModa('1615397349754-cfa2066a298e')],
+              ['Coleção Essencial', 10990, 'O necessário para o dia a dia', fotoModa('1598440947619-2c35fc9aa908')],
+              ['Kit Assinatura', 17990, 'A curadoria completa da casa', fotoModa('1571781926291-c477ebfd024b')],
+            ],
+          ],
+        ],
+      },
+      {
+        nome: 'Urban Wear',
+        slug: 'urban-wear',
+        descricao: 'Streetwear de rua raiz — drops limitados, sneakers e o inconformismo de uniforme.',
+        taxa: 790,
+        tempo: 45,
+        categoriaSlug: 'moda',
+        // Loja-demo da vitrine raw (Rawline): pele vermelhão 'brasa' +
+        // catálogo streetwear com fotos reais (ver LojaRaw.tsx).
+        preset: 'raw',
+        palette: 'brasa',
+        logo: LOGO_URBAN_WEAR,
+        banner: fotoModa('1523398002811-999ca8dec234', 900, 1200),
+        catalogo: [
+          [
+            'drop CONCRETO',
+            [
+              ['Tee Esqueleto Paz', 9990, 'Algodão pesado, estampa serigrafada', fotoModa('1503341504253-dff4815485f1')],
+              ['Jordan Cimento Laranja', 89990, 'Couro e camurça, sola de tração', fotoModa('1556906781-9a412961c28c')],
+              ['Runner Vermelho Fogo', 69990, 'Malha respirável, amortecimento integral', fotoModa('1542291026-7eec264c27ff')],
+              ['Perfecto Couro', 129990, 'Couro legítimo, zíperes gun metal', fotoModa('1520975954732-35dd22299614')],
+              ['Bomber Ferrugem', 45990, 'Nylon matte com forro acolchoado', fotoModa('1591047139829-d91aecb6caea')],
+              ['Jordan Bred Quadra', 99990, 'O clássico vermelho e preto', fotoModa('1552346154-21d32810aba3')],
+            ],
+          ],
+          [
+            'queima TOTAL',
+            [
+              ['Tee Branca Heavy', 7990, 'Fio 30.1 penteado, corte reto', fotoModa('1521572163474-6864f9cf17ab')],
+              ['Tee Preta 705', 8990, 'Estampa circular no peito', fotoModa('1618354691373-d851c5c3a990')],
+              ['Tee Off Minimal', 7490, 'Logo bordado tom sobre tom', fotoModa('1529374255404-311a2a4f1fd9')],
+              ['Look Motor City', 119990, 'Jaqueta de couro + calça slim', fotoModa('1520975661595-6453be3f7070')],
+              ['Look Cobble', 64990, 'Bomber vinho + jeans stone', fotoModa('1512353087810-25dfcd100962')],
+              ['College Caramelo', 84990, 'Couro texturizado, punhos canelados', fotoModa('1487222477894-8943e31ef7b2')],
+            ],
+          ],
+        ],
+      },
+      { nome: 'Joalheria Lux', slug: 'joalheria-lux', descricao: 'Joias, relógios e semijoias com garantia.', taxa: 0, tempo: 60, categoriaSlug: 'acessorios', preset: 'noir' },
+      {
+        nome: 'Ótica Visão Clara',
+        slug: 'otica-visao-clara',
+        descricao: 'Armações de grife e solares com lentes de proteção total.',
+        taxa: 590,
+        tempo: 55,
+        categoriaSlug: 'acessorios',
+        // Ótica minimal: vitrine editorial com curadoria real.
+        preset: 'editorial',
+        banner: fotoModa('1511499767150-a48a237f0083', 900, 1200),
+        catalogo: [
+          [
+            'Coleção',
+            [
+              ['Wayfarer Noir', 89990, 'Acetato preto polido, lente G15', fotoModa('1572635196237-14b3f281503f')],
+              ['Panorama Rosé', 74990, 'Translúcido com lente espelhada', fotoModa('1577803645773-f96470509666')],
+              ['Clubmaster Tartaruga', 64990, 'Meia-armação clássica para grau', fotoModa('1574258495973-f010dfbb5371')],
+            ],
+          ],
+        ],
+      },
     ],
   },
   {
@@ -298,12 +515,12 @@ const PISOS: PisoSpec[] = [
       ],
     ],
     lojas: [
-      { nome: 'TechPoint', slug: 'techpoint', descricao: 'Smartphones, tablets e gadgets com garantia oficial.', taxa: 0, tempo: 55, categoriaSlug: 'eletronicos' },
-      { nome: 'GameZone', slug: 'gamezone', descricao: 'Consoles, jogos e periféricos gamer.', taxa: 690, tempo: 50, categoriaSlug: 'games' },
-      { nome: 'InfoStore DV', slug: 'infostore-dv', descricao: 'Notebooks, PCs e componentes de informática.', taxa: 0, tempo: 60, categoriaSlug: 'informatica' },
-      { nome: 'Som & Imagem', slug: 'som-imagem', descricao: 'TVs, soundbars e áudio de alta fidelidade.', taxa: 990, tempo: 70, categoriaSlug: 'eletronicos' },
-      { nome: 'iFix Assistência', slug: 'ifix-assistencia', descricao: 'Conserto de celulares e venda de peças originais.', taxa: 0, tempo: 45, categoriaSlug: 'servicos' },
-      { nome: 'Mobile Acessórios', slug: 'mobile-acessorios', descricao: 'Capas, películas e carregadores para todo modelo.', taxa: 390, tempo: 35, categoriaSlug: 'acessorios' },
+      { nome: 'TechPoint', slug: 'techpoint', descricao: 'Smartphones, tablets e gadgets com garantia oficial.', taxa: 0, tempo: 55, categoriaSlug: 'eletronicos', preset: 'tech' },
+      { nome: 'GameZone', slug: 'gamezone', descricao: 'Consoles, jogos e periféricos gamer.', taxa: 690, tempo: 50, categoriaSlug: 'games', preset: 'raw' },
+      { nome: 'InfoStore DV', slug: 'infostore-dv', descricao: 'Notebooks, PCs e componentes de informática.', taxa: 0, tempo: 60, categoriaSlug: 'informatica', preset: 'tech' },
+      { nome: 'Som & Imagem', slug: 'som-imagem', descricao: 'TVs, soundbars e áudio de alta fidelidade.', taxa: 990, tempo: 70, categoriaSlug: 'eletronicos', preset: 'noir' },
+      { nome: 'iFix Assistência', slug: 'ifix-assistencia', descricao: 'Conserto de celulares e venda de peças originais.', taxa: 0, tempo: 45, categoriaSlug: 'servicos', preset: 'utility' },
+      { nome: 'Mobile Acessórios', slug: 'mobile-acessorios', descricao: 'Capas, películas e carregadores para todo modelo.', taxa: 390, tempo: 35, categoriaSlug: 'acessorios', preset: 'tech' },
     ],
   },
   {
@@ -329,12 +546,68 @@ const PISOS: PisoSpec[] = [
       ],
     ],
     lojas: [
-      { nome: 'Casa & Conforto', slug: 'casa-conforto', descricao: 'Cama, mesa, banho e decoração para o seu lar.', taxa: 0, tempo: 60, categoriaSlug: 'casa' },
-      { nome: 'Mundo Pet', slug: 'mundo-pet', descricao: 'Ração, acessórios e petiscos para cães e gatos.', taxa: 0, tempo: 40, categoriaSlug: 'petshop' },
-      { nome: 'Papelaria Criativa', slug: 'papelaria-criativa', descricao: 'Material escolar, escritório e papelaria fina.', taxa: 490, tempo: 35, categoriaSlug: 'papelaria' },
-      { nome: 'Jardim & Flor', slug: 'jardim-flor', descricao: 'Plantas, vasos e arranjos para todos os ambientes.', taxa: 690, tempo: 50, categoriaSlug: 'casa' },
-      { nome: 'Utilidades Lar', slug: 'utilidades-lar', descricao: 'Tudo para a cozinha e organização da casa.', taxa: 390, tempo: 45, categoriaSlug: 'casa' },
-      { nome: 'Livraria Saber', slug: 'livraria-saber', descricao: 'Livros, mangás e jogos de tabuleiro.', taxa: 0, tempo: 55, categoriaSlug: 'livraria' },
+      {
+        nome: 'Casa & Conforto',
+        slug: 'casa-conforto',
+        descricao: 'Não é só mobília. É arquitetura tátil para a sua casa.',
+        taxa: 0,
+        tempo: 60,
+        categoriaSlug: 'casa',
+        // Loja-demo da vitrine artesã (Graft): peças autorais com ficha
+        // técnica e fotos reais (ver LojaArtesa.tsx).
+        preset: 'artisan',
+        logo: LOGO_CASA_CONFORTO,
+        banner: fotoModa('1618220179428-22790b461013', 900, 1200),
+        catalogo: [
+          [
+            'Peças autorais',
+            [
+              ['Sofá Caramelo', 449900, 'Couro natural sobre madeira maciça', fotoModa('1540574163026-643ea20ade25'), [['Dimensões', 'L 220 × P 90 × A 78 cm'], ['Estrutura', 'Eucalipto maciço'], ['Acabamento', 'Couro caramelo natural']]],
+              ['Poltrona Mostarda', 189900, 'Veludo mostarda de linhas retas', fotoModa('1586023492125-27b2c045efd7'), [['Dimensões', 'L 74 × P 80 × A 86 cm'], ['Revestimento', 'Veludo algodão'], ['Pés', 'Madeira tauari']]],
+              ['Sofá Esmeralda', 389900, 'Veludo profundo de três lugares', fotoModa('1555041469-a586c61ea9bc'), [['Dimensões', 'L 210 × P 88 × A 80 cm'], ['Revestimento', 'Veludo esmeralda'], ['Espuma', 'D-33 soft']]],
+              ['Poltrona Ocre', 149900, 'Capitonê baixo de um lugar', fotoModa('1616627547584-bf28cee262db'), [['Dimensões', 'L 66 × P 74 × A 72 cm'], ['Revestimento', 'Linho ocre'], ['Acabamento', 'Capitonê artesanal']]],
+              ['Sala Terracota', 529900, 'Seccional de couro para a família', fotoModa('1616047006789-b7af5afb8c20'), [['Dimensões', 'L 260 × P 160 × A 76 cm'], ['Revestimento', 'Couro terracota'], ['Módulos', 'Chaise + 3 lugares']]],
+              ['Poltrona Nuvem', 129900, 'Curvas macias em bouclé claro', fotoModa('1567538096630-e0c55bd6374c'), [['Dimensões', 'L 68 × P 70 × A 75 cm'], ['Revestimento', 'Bouclé cru'], ['Pés', 'Torneados brancos']]],
+            ],
+          ],
+          [
+            'Para a casa',
+            [
+              ['Mesa Aro', 89900, 'Tampo redondo com luminária de arco', fotoModa('1519710164239-da123dc03ef4')],
+              ['Banco Nórdico', 39900, 'Madeira clara de traço escandinavo', fotoModa('1503602642458-232111445657')],
+              ['Luminária Fuso', 49900, 'Piso articulada em aço grafite', fotoModa('1507473885765-e6ed057f782c')],
+              ['Pendente Sino', 34900, 'Cúpula esmaltada suspensa', fotoModa('1513506003901-1e6a229e2d15')],
+              ['Sala Galeria', 259900, 'Composição com parede-galeria', fotoModa('1615873968403-89e068629265')],
+              ['Estar Clássico', 219900, 'Conjunto neutro atemporal', fotoModa('1616486338812-3dadae4b4ace')],
+            ],
+          ],
+        ],
+      },
+      { nome: 'Mundo Pet', slug: 'mundo-pet', descricao: 'Ração, acessórios e petiscos para cães e gatos.', taxa: 0, tempo: 40, categoriaSlug: 'petshop', preset: 'soft' },
+      { nome: 'Papelaria Criativa', slug: 'papelaria-criativa', descricao: 'Material escolar, escritório e papelaria fina.', taxa: 490, tempo: 35, categoriaSlug: 'papelaria', preset: 'playful' },
+      {
+        nome: 'Jardim & Flor',
+        slug: 'jardim-flor',
+        descricao: 'Não vendemos plantas. Cultivamos pequenos jardins para dentro de casa.',
+        taxa: 690,
+        tempo: 50,
+        categoriaSlug: 'flores',
+        // Floricultura: vitrine artesã com viveiro real e fichas de cultivo.
+        preset: 'artisan',
+        banner: fotoModa('1497250681960-ef046c08a56e', 900, 1200),
+        catalogo: [
+          [
+            'Viveiro da casa',
+            [
+              ['Suculenta Menta', 4990, 'Em vaso de cerâmica esmaltada', fotoModa('1485955900006-10f4d324d411'), [['Vaso', 'Cerâmica esmaltada 12 cm'], ['Luz', 'Sol pleno da manhã'], ['Rega', '1x por semana']]],
+              ['Kit Cultivo', 8990, 'Pá, substrato e adubo orgânico', fotoModa('1416879595882-3373a0480b5b'), [['Conteúdo', 'Pá · substrato 2L · adubo'], ['Uso', 'Vasos e canteiros'], ['Origem', 'Orgânico certificado']]],
+              ['Mudas da Estação', 3490, 'Bandeja com 12 mudas de temperos', fotoModa('1466692476868-aef1dfb1e735'), [['Bandeja', '12 células biodegradáveis'], ['Espécies', 'Manjericão · salsa · tomilho'], ['Transplante', 'Em 3 semanas']]],
+            ],
+          ],
+        ],
+      },
+      { nome: 'Utilidades Lar', slug: 'utilidades-lar', descricao: 'Tudo para a cozinha e organização da casa.', taxa: 390, tempo: 45, categoriaSlug: 'casa', preset: 'editorial' },
+      { nome: 'Livraria Saber', slug: 'livraria-saber', descricao: 'Livros, mangás e jogos de tabuleiro.', taxa: 0, tempo: 55, categoriaSlug: 'livraria', preset: 'editorial' },
     ],
   },
 ]
@@ -362,6 +635,7 @@ const CATEGORIA_CANON: Record<string, { slug: string; nome: string }> = {
   informatica: { slug: 'eletronicos-tecnologia', nome: 'Informática' },
   servicos: { slug: 'oficinas-manutencao', nome: 'Assistência' },
   casa: { slug: 'casa-decoracao', nome: 'Casa & Decoração' },
+  flores: { slug: 'floricultura-plantas', nome: 'Floricultura' },
   petshop: { slug: 'pet-shop', nome: 'Pet Shop' },
   papelaria: { slug: 'papelaria-livraria', nome: 'Papelaria' },
   livraria: { slug: 'papelaria-livraria', nome: 'Livraria' },
@@ -383,10 +657,11 @@ PISOS.forEach((piso, pisoIdx) => {
       nome: 'Loja',
     }
 
-    // Pele da loja: cicla entre os arquétipos oferecidos para a categoria
-    // (default + alternativas) → demo com variedade coerente por nicho.
+    // Pele da loja: preset fixo da loja-demo, senão cicla entre os arquétipos
+    // oferecidos para a categoria → demo com variedade coerente por nicho.
     const oferecidos = getArquetiposOferecidos(cat.slug).map((a) => a.codigo)
-    const preset = oferecidos[lojaIdx % oferecidos.length] ?? 'editorial'
+    const preset =
+      loja.preset ?? oferecidos[lojaIdx % oferecidos.length] ?? 'editorial'
 
     stores.push({
       id: storeId,
@@ -408,13 +683,15 @@ PISOS.forEach((piso, pisoIdx) => {
       piso: piso.piso,
       categoria: { slug: cat.slug },
       categories: { nome: cat.nome },
-      theme: { v: 2, preset },
+      theme: loja.palette
+        ? { v: 2, preset, palette: loja.palette }
+        : { v: 2, preset },
     })
 
     const catalogo = loja.catalogo ?? piso.catalogo
     catalogo.forEach(([catNome, itens], catIdx) => {
       const categoryId = `${storeId}-cat-${catIdx + 1}`
-      itens.forEach(([nome, preco, descricao, fotoUrl], prodIdx) => {
+      itens.forEach(([nome, preco, descricao, fotoUrl, especificacoes], prodIdx) => {
         // ~1 em cada 4 produtos entra em promoção (−18%)
         const ehPromo = (lojaIdx + prodIdx) % 4 === 0
         const ordem = catIdx * 100 + prodIdx
@@ -438,7 +715,13 @@ PISOS.forEach((piso, pisoIdx) => {
           disponivel: true,
           category_id: categoryId,
           ordem,
-          metadata: galeria ? { galeria } : null,
+          metadata:
+            galeria || especificacoes
+              ? {
+                  ...(galeria ? { galeria } : {}),
+                  ...(especificacoes ? { especificacoes } : {}),
+                }
+              : null,
           categories: { id: categoryId, nome: catNome, ordem: catIdx },
           stores: { slug: loja.slug, nome: loja.nome, ativo: true },
         })
