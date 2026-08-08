@@ -22,7 +22,9 @@ import {
 } from '@expo-google-fonts/inter'
 import {
   CormorantGaramond_500Medium,
+  CormorantGaramond_500Medium_Italic,
   CormorantGaramond_600SemiBold,
+  CormorantGaramond_600SemiBold_Italic,
   CormorantGaramond_700Bold,
 } from '@expo-google-fonts/cormorant-garamond'
 import {
@@ -129,6 +131,42 @@ function nomeFonte(family: string, weight: number): string {
 }
 
 /**
+ * Itálicos verdadeiros por família — carregados JUNTO com a família quando o
+ * tema a usa. iOS não sintetiza itálico de fonte custom; sem o asset real,
+ * `fontStyle: 'italic'` é silenciosamente ignorado. Hoje só o Cormorant
+ * (noir) precisa — os nomes de prato da vitrine gastronômica são em itálico.
+ */
+const FONTES_ITALICO: Record<string, Record<number, Font.FontSource>> = {
+  'Cormorant Garamond': {
+    500: CormorantGaramond_500Medium_Italic,
+    600: CormorantGaramond_600SemiBold_Italic,
+  },
+}
+
+/** Nome RN do asset itálico: 'CormorantGaramond_500Medium_Italic'. */
+function nomeFonteItalico(family: string, weight: number): string {
+  return `${nomeFonte(family, weight)}_Italic`
+}
+
+/**
+ * Estilo itálico verdadeiro de um Text tematizado. Com o spec carregado e a
+ * família tendo itálico registrado, usa o asset real; senão cai no itálico
+ * sintético de sistema (funciona porque aí a fontFamily também é de sistema).
+ */
+export function fontStyleItalico(
+  spec: FontSpec | null,
+  weight: 400 | 500 | 600 | 700,
+): TextStyle {
+  if (spec && FONTES_ITALICO[spec.family]) {
+    const disponiveis = Object.keys(FONTES_ITALICO[spec.family]).map(Number)
+    const ate = disponiveis.filter((w) => w <= weight).sort((a, b) => a - b)
+    const escolhido = ate.length > 0 ? ate[ate.length - 1] : disponiveis[0]
+    return { fontFamily: nomeFonteItalico(spec.family, escolhido) }
+  }
+  return { fontStyle: 'italic', fontWeight: String(weight) as TextStyle['fontWeight'] }
+}
+
+/**
  * Peso disponível mais próximo do desejado dentro do spec: o maior peso
  * declarado ≤ desejado; se nenhum, o menor declarado (ex.: 800 com
  * [400,600,700] → 700).
@@ -171,6 +209,13 @@ export function useThemeFonts(tokens: ThemeTokens | null): boolean {
       for (const w of spec.weights) {
         const asset = familia[w]
         if (asset) out[nomeFonte(spec.family, w)] = asset
+      }
+      // Itálicos verdadeiros da família (quando registrados) vêm junto.
+      const italicos = FONTES_ITALICO[spec.family]
+      if (italicos) {
+        for (const [w, asset] of Object.entries(italicos)) {
+          out[nomeFonteItalico(spec.family, Number(w))] = asset
+        }
       }
     }
     return Object.keys(out).length > 0 ? out : null

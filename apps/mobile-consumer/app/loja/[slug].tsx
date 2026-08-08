@@ -16,6 +16,14 @@ import { ModalProduto } from '@/components/ModalProduto'
 import { ProdutoCard } from '@/components/ProdutoCard'
 import { LojaEditorial } from '@/components/loja/LojaEditorial'
 import { ProdutoEditorial } from '@/components/loja/ProdutoEditorial'
+import { LojaRaw } from '@/components/loja/LojaRaw'
+import { ProdutoRaw } from '@/components/loja/ProdutoRaw'
+import { LojaSerena } from '@/components/loja/LojaSerena'
+import { ProdutoSereno } from '@/components/loja/ProdutoSereno'
+import { LojaArtesa } from '@/components/loja/LojaArtesa'
+import { ProdutoArtesao } from '@/components/loja/ProdutoArtesao'
+import { LojaNoir } from '@/components/loja/LojaNoir'
+import { ProdutoNoir } from '@/components/loja/ProdutoNoir'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -60,6 +68,19 @@ const CATEGORIAS_VITRINE_EDITORIAL = new Set([
   'vestuario-calcados',
   'beleza-cosmeticos',
   'acessorios-joias',
+])
+
+/** Categorias da vitrine serena (arquétipo `serene` — beleza/joias delicadas). */
+const CATEGORIAS_VITRINE_SERENA = new Set([
+  'beleza-cosmeticos',
+  'acessorios-joias',
+  'saloes-estetica',
+])
+
+/** Categorias da vitrine artesã (arquétipo `artisan` — casa/decoração/flores). */
+const CATEGORIAS_VITRINE_ARTESA = new Set([
+  'casa-decoracao',
+  'floricultura-plantas',
 ])
 
 export default function PaginaLoja() {
@@ -192,23 +213,61 @@ export default function PaginaLoja() {
 
   const espacoFinal = totalItens > 0 ? 120 : 40
 
-  // Vitrine editorial: layout próprio do arquétipo para moda/beleza.
+  // Vitrines por arquétipo: layout PRÓPRIO além da pele (docs/store-theme/05
+  // §5.6). Editorial cobre moda/beleza/acessórios; raw é streetwear puro;
+  // serene é beleza/joias delicadas.
   const vitrineEditorial =
     design.arquetipo === 'editorial' &&
     CATEGORIAS_VITRINE_EDITORIAL.has(loja?.categoria_slug)
+  const vitrineRaw =
+    design.arquetipo === 'raw' && loja?.categoria_slug === 'vestuario-calcados'
+  const vitrineSerena =
+    design.arquetipo === 'serene' &&
+    CATEGORIAS_VITRINE_SERENA.has(loja?.categoria_slug)
+  const vitrineArtesa =
+    design.arquetipo === 'artisan' &&
+    CATEGORIAS_VITRINE_ARTESA.has(loja?.categoria_slug)
+  // Noir gastronômico: fine dining (restaurantes refinados escolhem a pele
+  // noir e ganham o cardápio-livro).
+  const vitrineNoir =
+    design.arquetipo === 'noir' && loja?.categoria_slug === 'alimentos-bebidas'
 
-  if (vitrineEditorial) {
+  if (
+    vitrineEditorial ||
+    vitrineRaw ||
+    vitrineSerena ||
+    vitrineArtesa ||
+    vitrineNoir
+  ) {
+    const Vitrine = vitrineRaw
+      ? LojaRaw
+      : vitrineSerena
+        ? LojaSerena
+        : vitrineArtesa
+          ? LojaArtesa
+          : vitrineNoir
+            ? LojaNoir
+            : LojaEditorial
+    const Pdp = vitrineRaw
+      ? ProdutoRaw
+      : vitrineSerena
+        ? ProdutoSereno
+        : vitrineArtesa
+          ? ProdutoArtesao
+          : vitrineNoir
+            ? ProdutoNoir
+            : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
           <Stack.Screen options={{ headerShown: false }} />
 
           {/*
-           * Sem FAB de carrinho neste layout: a sacola do header (com
+           * Sem FAB de carrinho nestes layouts: a sacola do header (com
            * contador) é a porta do carrinho — a pill flutuante duplicaria a
-           * função e disputaria espaço com a barra de menu editorial.
+           * função e disputaria espaço com a barra de menu da vitrine.
            */}
-          <LojaEditorial
+          <Vitrine
             loja={loja}
             secoes={secoes}
             aoAbrirProduto={setProdutoSelecionado}
@@ -216,7 +275,7 @@ export default function PaginaLoja() {
           />
 
           {produtoSelecionado && loja && (
-            <ProdutoEditorial
+            <Pdp
               produto={produtoSelecionado}
               loja={loja}
               onFechar={() => setProdutoSelecionado(null)}

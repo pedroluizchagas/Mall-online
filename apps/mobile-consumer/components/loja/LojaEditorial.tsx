@@ -19,6 +19,7 @@ import { formatarReais } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
+import { GRADIENTE_HERO } from '@/components/loja/gradientes'
 import { consumerDesign } from '@/lib/consumer-design'
 import { useStoreDesign } from '@/lib/store-theme'
 import { fontStyle } from '@/lib/store-fonts'
@@ -45,13 +46,6 @@ const HERO_H = Math.round(SCREEN_H * 0.5)
 /** Altura útil da barra de menu inferior (sem o safe-area inset). */
 const ALTURA_BARRA_MENU = 58
 
-// Gradiente do overlay do hero (topo escurece p/ ícones, base p/ texto).
-// PNG 1x96 inline: evita dependência de gradiente nativo. Perfil de DUAS
-// bandas, específico do hero — para scrim de topo use uma rampa única
-// (ver SCRIM_TOPO em ProdutoEditorial), senão a segunda banda vira uma
-// linha de corte visível.
-const GRADIENTE_HERO =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAABgCAYAAADcvRh2AAAAs0lEQVR42rXQMQtBYRTG8SMiF4m4KZESEbldqVvqllKEKGVQBmUwKIPBYFAGg+EOBotvy/8t5xt46/2N55znERFZfr8sYAYTGMEQBuBDHzzoQRccaEMT6lCFCpShCAXIQxbSkAQLYhCBkPzhmaFh3RHVlXFIQEqvykAObD3cRChpLBOwBg1oQQdcLcfTwnwt0dQ5hinM5df9CtawgS3sYA8HOMIJznCBK9zgDg8I4AkveH8AulgR2ymJR9MAAAAASUVORK5CYII='
 
 export interface ProdutoVitrine {
   id: string

@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { BlurView } from 'expo-blur'
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -25,21 +24,17 @@ import { fontStyle } from '@/lib/store-fonts'
 import { SCRIM_TOPO } from '@/components/loja/gradientes'
 
 /**
- * PDP editorial de moda — a peça em tela cheia, o resto em segundo plano.
+ * PDP sereno — a peça em tela cheia com o acabamento delicado.
  *
- * DNA da referência: foto full-bleed (galeria deslizável quando o lojista
- * envia mais de uma imagem — look de corpo inteiro, detalhe, verso), ações
- * brancas flutuando sobre a foto e um cartão de vidro na base com thumb,
- * nome em caps, loja, descrição, preço e o "+" escuro de adicionar.
- *
- * Adição ao carrinho:
- * - produto simples → "+" adiciona direto (com guarda de troca de loja);
- * - produto com variações/modificadores (tamanho, cor...) → "+" abre o
- *   ModalProduto por cima, que já domina essa seleção.
+ * Mesmos ossos dos PDPs editorial/raw (galeria full-bleed via
+ * metadata.galeria, scrim de rampa única, adição direta vs. ModalProduto p/
+ * variações), pele serena: cartão BRANCO sólido de cantos generosos, título
+ * em peso leve (sentence case), chip de promo branco/vermelho, indicadores
+ * de linha e CTA fantasma de largura cheia — "Adicionar à sacola" — que se
+ * preenche na cor ardósia ao confirmar.
  */
 
 const { width: TELA_W } = Dimensions.get('window')
-
 
 interface ProdutoPdp {
   id: string
@@ -65,7 +60,7 @@ interface Props {
   onFechar: () => void
 }
 
-export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
+export function ProdutoSereno({ produto, loja, onFechar }: Props) {
   const design = useStoreDesign()
   const { colors } = design
   const insets = useSafeAreaInsets()
@@ -79,9 +74,8 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
   const [mostrarOpcoes, setMostrarOpcoes] = useState(false)
   const [trocandoLoja, setTrocandoLoja] = useState(false)
   const [adicionado, setAdicionado] = useState(false)
-  // null = ainda verificando se o produto tem variações/modificadores.
   const [temOpcoes, setTemOpcoes] = useState<boolean | null>(null)
-  const escalaMais = useRef(new Animated.Value(1)).current
+  const escalaCta = useRef(new Animated.Value(1)).current
 
   const galeria = Array.isArray((produto.metadata as any)?.galeria)
     ? ((produto.metadata as any).galeria as string[])
@@ -90,9 +84,10 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
 
   const precoFinal = produto.preco_promocional ?? produto.preco
   const temPromo = !!produto.preco_promocional
+  const desconto = temPromo
+    ? Math.round((1 - precoFinal / produto.preco) * 100)
+    : 0
 
-  // Produtos de moda costumam ter tamanho/cor: se houver grupos de variação
-  // ou modificadores, o "+" delega ao ModalProduto (dono dessa seleção).
   useEffect(() => {
     let cancelado = false
     Promise.all([
@@ -107,8 +102,7 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
     ])
       .then(([opts, mods]: any[]) => {
         if (cancelado) return
-        const total = (opts.data?.length ?? 0) + (mods.data?.length ?? 0)
-        setTemOpcoes(total > 0)
+        setTemOpcoes(((opts.data?.length ?? 0) + (mods.data?.length ?? 0)) > 0)
       })
       .catch(() => {
         if (!cancelado) setTemOpcoes(false)
@@ -133,21 +127,20 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
     )
     setTrocandoLoja(false)
     setAdicionado(true)
-    setTimeout(() => setAdicionado(false), 1100)
+    setTimeout(() => setAdicionado(false), 1300)
   }
 
-  function aoTocarMais() {
-    // Micro-feedback: anticipation + pouso (personalidade premium, sutil).
+  function aoTocarCta() {
     Animated.sequence([
-      Animated.timing(escalaMais, {
-        toValue: 0.9,
+      Animated.timing(escalaCta, {
+        toValue: 0.97,
         duration: 90,
         useNativeDriver: true,
       }),
-      Animated.spring(escalaMais, {
+      Animated.spring(escalaCta, {
         toValue: 1,
-        speed: 22,
-        bounciness: 6,
+        speed: 20,
+        bounciness: 4,
         useNativeDriver: true,
       }),
     ]).start()
@@ -166,10 +159,10 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
 
   return (
     <Modal visible animationType="fade" onRequestClose={onFechar}>
-      <View style={{ flex: 1, backgroundColor: colors.surfaceDark }}>
+      <View style={{ flex: 1, backgroundColor: colors.canvasAlt }}>
         <StatusBar style="light" />
 
-        {/* Galeria full-bleed — o lojista pode enviar o look inteiro */}
+        {/* Galeria full-bleed */}
         <ScrollView
           style={{ flex: 1 }}
           horizontal
@@ -201,7 +194,7 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
           )}
         </ScrollView>
 
-        {/* Scrim do topo p/ ações brancas — dissolve sem borda visível */}
+        {/* Scrim do topo */}
         <View
           pointerEvents="none"
           style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 170 }}
@@ -236,7 +229,12 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
               justifyContent: 'center',
             }}
           >
-            <ConsumerIcon name="back" size={23} color="#FFFFFF" strokeWidth={2.1} />
+            <ConsumerIcon
+              name="chevron-left"
+              size={24}
+              color="#FFFFFF"
+              strokeWidth={1.9}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -247,212 +245,200 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
             }}
             activeOpacity={0.7}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={{
-              width: 40,
-              height: 40,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
+            style={{ height: 40, justifyContent: 'center' }}
           >
-            <ConsumerIcon name="bag" size={22} color="#FFFFFF" strokeWidth={2.1} />
-            {totalItens > 0 && (
-              <View
-                style={{
-                  position: 'absolute',
-                  top: 3,
-                  right: 0,
-                  minWidth: 16,
-                  height: 16,
-                  borderRadius: 8,
-                  backgroundColor: colors.danger,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  paddingHorizontal: 4,
-                }}
-              >
-                <Text style={{ fontSize: 10, color: '#FFFFFF', fontWeight: '700' }}>
-                  {totalItens}
-                </Text>
-              </View>
-            )}
+            <Text
+              style={{
+                fontSize: 14,
+                color: '#FFFFFF',
+                ...fontStyle(design.body, 500),
+              }}
+            >
+              Sacola ({totalItens})
+            </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Dots da galeria + cartão de vidro (dots ancorados acima do cartão) */}
+        {/* Indicadores de linha + cartão branco */}
         <View
           style={{
             position: 'absolute',
-            left: 16,
-            right: 16,
-            bottom: insets.bottom + 16,
+            left: 14,
+            right: 14,
+            bottom: insets.bottom + 14,
           }}
         >
           {fotos.length > 1 && (
             <View
               style={{
                 flexDirection: 'row',
-                alignItems: 'center',
-                gap: 6,
-                alignSelf: 'flex-end',
-                marginBottom: 12,
-                marginRight: 6,
+                justifyContent: 'center',
+                gap: 8,
+                marginBottom: 14,
               }}
             >
-              {fotos.map((_, i) =>
-                i === fotoAtiva ? (
-                  <View
-                    key={i}
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: 4,
-                      borderWidth: 1.5,
-                      borderColor: '#FFFFFF',
-                    }}
-                  />
-                ) : (
-                  <View
-                    key={i}
-                    style={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: 'rgba(255,255,255,0.6)',
-                    }}
-                  />
-                ),
-              )}
+              {fotos.map((_, i) => (
+                <View
+                  key={i}
+                  style={{
+                    width: 30,
+                    height: 2,
+                    borderRadius: 1,
+                    backgroundColor:
+                      i === fotoAtiva ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
+                  }}
+                />
+              ))}
             </View>
           )}
 
-          <View style={{ borderRadius: 26, overflow: 'hidden' }}>
-          <BlurView
-            intensity={45}
-            tint="light"
-            experimentalBlurMethod="dimezisBlurView"
+          <View
+            style={[
+              {
+                backgroundColor: colors.surface,
+                borderRadius: design.radius.xl,
+                padding: 18,
+                gap: 12,
+              },
+              consumerDesign.shadow.soft,
+            ]}
           >
             <View
               style={{
-                backgroundColor: 'rgba(255,255,255,0.72)',
-                padding: 16,
-                gap: 14,
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                gap: 10,
               }}
             >
-              <View style={{ flexDirection: 'row', gap: 14 }}>
-                {produto.foto_url && (
-                  <Image
-                    source={{ uri: produto.foto_url }}
-                    style={{
-                      width: 92,
-                      height: 112,
-                      borderRadius: 18,
-                      backgroundColor: colors.canvasAlt,
-                    }}
-                    resizeMode="cover"
-                  />
-                )}
-                <View style={{ flex: 1, minWidth: 0 }}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  numberOfLines={2}
+                  style={{
+                    fontSize: Math.round(21 * design.typeFactor),
+                    lineHeight: Math.round(27 * design.typeFactor),
+                    color: colors.ink,
+                    ...fontStyle(design.display, 400),
+                  }}
+                >
+                  {produto.nome}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  style={{
+                    marginTop: 3,
+                    fontSize: 11,
+                    letterSpacing: 1.6,
+                    textTransform: 'uppercase',
+                    color: colors.inkMuted,
+                    ...fontStyle(design.body, 500),
+                  }}
+                >
+                  {loja.nome}
+                </Text>
+              </View>
+              {desconto > 0 && (
+                <View
+                  style={{
+                    backgroundColor: colors.surface,
+                    borderWidth: 1,
+                    borderColor: colors.line,
+                    paddingHorizontal: 10,
+                    paddingVertical: 4,
+                    borderRadius: 999,
+                  }}
+                >
                   <Text
-                    numberOfLines={1}
-                    adjustsFontSizeToFit
                     style={{
-                      fontSize: Math.round(23 * design.typeFactor),
-                      color: colors.ink,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.4,
-                      ...fontStyle(design.display, 800),
-                    }}
-                  >
-                    {produto.nome}
-                  </Text>
-                  <Text
-                    numberOfLines={1}
-                    style={{
-                      marginTop: 2,
-                      fontSize: 14,
-                      color: colors.inkMuted,
+                      fontSize: 12,
+                      color: colors.danger,
                       ...fontStyle(design.body, 500),
                     }}
                   >
-                    {loja.nome}
+                    -{desconto}%
                   </Text>
-                  {produto.descricao && (
-                    <Text
-                      numberOfLines={3}
-                      style={{
-                        marginTop: 8,
-                        fontSize: 12,
-                        lineHeight: 17,
-                        color: colors.inkMuted,
-                        ...fontStyle(design.body, 400),
-                      }}
-                    >
-                      {produto.descricao}
-                    </Text>
-                  )}
                 </View>
-              </View>
+              )}
+            </View>
 
-              <View
+            {produto.descricao && (
+              <Text
+                numberOfLines={2}
                 style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  fontSize: 13,
+                  lineHeight: 19,
+                  color: colors.inkMuted,
+                  ...fontStyle(design.body, 400),
                 }}
               >
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+                {produto.descricao}
+              </Text>
+            )}
+
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 14,
+              }}
+            >
+              <View>
+                <Text
+                  style={{
+                    fontSize: 20,
+                    color: colors.ink,
+                    ...fontStyle(design.display, 500),
+                  }}
+                >
+                  {formatarReais(precoFinal)}
+                </Text>
+                {temPromo && (
                   <Text
                     style={{
-                      fontSize: 24,
-                      color: colors.ink,
-                      letterSpacing: -0.4,
-                      ...fontStyle(design.display, 800),
+                      fontSize: 12,
+                      color: colors.inkSoft,
+                      textDecorationLine: 'line-through',
+                      ...fontStyle(design.body, 400),
                     }}
                   >
-                    {formatarReais(precoFinal)}
+                    {formatarReais(produto.preco)}
                   </Text>
-                  {temPromo && (
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        color: colors.inkSoft,
-                        textDecorationLine: 'line-through',
-                        ...fontStyle(design.body, 400),
-                      }}
-                    >
-                      {formatarReais(produto.preco)}
-                    </Text>
-                  )}
-                </View>
+                )}
+              </View>
 
-                <Animated.View style={{ transform: [{ scale: escalaMais }] }}>
-                  <TouchableOpacity
-                    onPress={aoTocarMais}
-                    activeOpacity={0.85}
+              {/* CTA fantasma que se preenche ao confirmar */}
+              <Animated.View
+                style={{ flex: 1, transform: [{ scale: escalaCta }] }}
+              >
+                <TouchableOpacity
+                  onPress={aoTocarCta}
+                  activeOpacity={0.8}
+                  style={{
+                    paddingVertical: 13,
+                    alignItems: 'center',
+                    borderRadius: design.radius.md,
+                    borderWidth: 1.2,
+                    borderColor: adicionado ? colors.accent : colors.ink,
+                    backgroundColor: adicionado ? colors.accent : 'transparent',
+                  }}
+                >
+                  <Text
                     style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 24,
-                      backgroundColor: colors.ink,
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      fontSize: 14,
+                      color: adicionado ? colors.accentInk : colors.ink,
+                      ...fontStyle(design.body, 500),
                     }}
                   >
-                    <ConsumerIcon
-                      name={adicionado ? 'check' : 'plus'}
-                      size={20}
-                      color={colors.canvas}
-                      strokeWidth={2.4}
-                    />
-                  </TouchableOpacity>
-                </Animated.View>
-              </View>
+                    {adicionado ? 'Adicionado ✓' : 'Adicionar à sacola'}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
             </View>
-          </BlurView>
           </View>
         </View>
 
-        {/* Seleção de variações/modificadores por cima, quando existirem */}
+        {/* Variações/modificadores por cima, quando existirem */}
         {mostrarOpcoes && (
           <ModalProduto
             produto={produto}
@@ -461,7 +447,7 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
           />
         )}
 
-        {/* Guarda de troca de loja (adição direta) */}
+        {/* Guarda de troca de loja */}
         {trocandoLoja && (
           <View
             style={{
@@ -470,27 +456,30 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'rgba(17, 18, 22, 0.5)',
+              backgroundColor: 'rgba(28, 36, 34, 0.45)',
               alignItems: 'center',
               justifyContent: 'center',
               padding: 24,
             }}
           >
             <View
-              style={{
-                width: '100%',
-                maxWidth: 360,
-                borderRadius: 24,
-                backgroundColor: colors.surface,
-                padding: 20,
-                gap: 12,
-              }}
+              style={[
+                {
+                  width: '100%',
+                  maxWidth: 360,
+                  backgroundColor: colors.surface,
+                  borderRadius: design.radius.xl,
+                  padding: 20,
+                  gap: 12,
+                },
+                consumerDesign.shadow.medium,
+              ]}
             >
               <Text
                 style={{
                   fontSize: 18,
                   color: colors.ink,
-                  ...fontStyle(design.display, 800),
+                  ...fontStyle(design.display, 500),
                 }}
               >
                 Trocar de loja?
@@ -500,11 +489,11 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
                   fontSize: 14,
                   color: colors.inkMuted,
                   lineHeight: 20,
-                  ...fontStyle(design.body, 500),
+                  ...fontStyle(design.body, 400),
                 }}
               >
-                Seu carrinho atual será esvaziado para adicionar itens de{' '}
-                <Text style={{ color: colors.ink, ...fontStyle(design.body, 700) }}>
+                Sua sacola atual será esvaziada para adicionar itens de{' '}
+                <Text style={{ color: colors.ink, ...fontStyle(design.body, 600) }}>
                   {loja.nome}
                 </Text>
                 .
