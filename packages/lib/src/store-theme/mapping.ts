@@ -12,12 +12,12 @@ import type { Archetype, ArquetipoCodigo, ArquetipoSugestao } from './types'
  * Record<CategoriaSlug, ...>` garante cobertura total (zero lacunas).
  */
 export const CATEGORIA_SLUG_TO_ARQUETIPO = {
-  'alimentos-bebidas': { default: 'heritage', alternativas: ['market', 'soft'] },
+  'alimentos-bebidas': { default: 'heritage', alternativas: ['noir', 'market', 'soft'] },
   'vestuario-calcados': { default: 'editorial', alternativas: ['raw', 'noir'] },
-  'acessorios-joias': { default: 'noir', alternativas: ['editorial'] },
+  'acessorios-joias': { default: 'noir', alternativas: ['serene', 'editorial'] },
   'farmacia-medicamentos': { default: 'clinic', alternativas: ['market'] },
-  'beleza-cosmeticos': { default: 'editorial', alternativas: ['noir', 'soft'] },
-  'saloes-estetica': { default: 'soft', alternativas: ['noir', 'editorial'] },
+  'beleza-cosmeticos': { default: 'serene', alternativas: ['editorial', 'noir', 'soft'] },
+  'saloes-estetica': { default: 'soft', alternativas: ['serene', 'noir', 'editorial'] },
   'saude-bem-estar': { default: 'clinic', alternativas: ['soft'] },
   'pet-shop': { default: 'soft', alternativas: ['playful'] },
   veterinaria: { default: 'clinic', alternativas: ['soft'] },

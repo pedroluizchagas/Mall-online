@@ -158,6 +158,38 @@ export const ARQUETIPOS = {
     },
   },
 
+  // ── Referências: beleza clean / skincare / joias delicadas ─────────────────
+  serene: {
+    codigo: 'serene',
+    nome: 'Serene',
+    descricao:
+      'Leve e delicado. Tipografia fina, cinza-névoa nos cards, botões de contorno, muito ar. Para beleza feminina, skincare e joias delicadas.',
+    mood: ['delicado', 'sereno', 'elegante'],
+    referencias: ['https://all-natural.framer.website/'],
+    tokens: {
+      mode: 'light',
+      color: pele({
+        bg: '#FFFFFF',
+        surface: '#FFFFFF',
+        // O cinza-névoa que serve de palco aos produtos na referência.
+        surfaceAlt: '#F1F2F0',
+        ink: '#1C2422',
+        inkMuted: '#7E8784',
+        line: '#E8EAE7',
+        // Ardósia serena — o fundo do hero da referência.
+        accent: '#3E5257',
+        accentInk: '#FFFFFF',
+      }),
+      typography: {
+        // A delicadeza vem do PESO: display leve (400/500), nunca bold pesado.
+        display: { family: 'Inter', weights: [400, 500, 600] },
+        body: { family: 'Inter', weights: [400, 500, 600] },
+        scale: 'spacious',
+      },
+      shape: { radius: 'soft', density: 'comfortable' },
+    },
+  },
+
   // ── Referências: petshop / salões / beleza-serviço ─────────────────────────
   soft: {
     codigo: 'soft',
@@ -212,7 +244,10 @@ export const ARQUETIPOS = {
         accentInk: '#FFFFFF',
       }),
       typography: {
-        display: { family: 'Spectral', weights: [400, 500, 600] },
+        // Calibrado contra a ref (2026-08): o display do Graft é uma sans
+        // ARREDONDADA suave (não serifa) — a maciez tátil vem das formas
+        // redondas + neutros de madeira, não de serifa. Serifa fica no heritage.
+        display: { family: 'Nunito', weights: [400, 500, 600, 700] },
         body: { family: 'Inter', weights: [400, 500, 700] },
         scale: 'spacious',
       },

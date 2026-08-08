@@ -52,6 +52,17 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
   ],
   raw: [
     {
+      // Destilada da referência-âncora Rawline (docs/store-theme/02 §B):
+      // vermelhão brutalista + creme quente sobre preto fuligem.
+      codigo: 'brasa',
+      nome: 'Brasa',
+      color: {
+        bg: '#0B0A09', surface: '#141311', surfaceAlt: '#1F1D1A',
+        ink: '#F2EAD9', inkMuted: '#9C9482', line: '#2A2723',
+        accent: '#E8442A', accentInk: '#0B0A09',
+      },
+    },
+    {
       codigo: 'sinal',
       nome: 'Sinal',
       color: {
@@ -107,6 +118,26 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
         bg: '#000000', surface: '#0C0C0C', surfaceAlt: '#161616',
         ink: '#F5F5F5', inkMuted: '#8A8A8A', line: '#1C1C1C',
         accent: '#B8434E', accentInk: '#FFFFFF',
+      },
+    },
+  ],
+  serene: [
+    {
+      codigo: 'salvia',
+      nome: 'Sálvia',
+      color: {
+        bg: '#FFFFFF', surface: '#FFFFFF', surfaceAlt: '#EFF2EB',
+        ink: '#1B211C', inkMuted: '#79837A', line: '#E5E9E2',
+        accent: '#5F6F52', accentInk: '#FFFFFF',
+      },
+    },
+    {
+      codigo: 'perola',
+      nome: 'Pérola',
+      color: {
+        bg: '#FFFFFF', surface: '#FFFFFF', surfaceAlt: '#F5F1EC',
+        ink: '#241F1C', inkMuted: '#8A817A', line: '#ECE6DF',
+        accent: '#8A6A57', accentInk: '#FFFFFF',
       },
     },
   ],
