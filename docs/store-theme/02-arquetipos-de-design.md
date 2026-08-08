@@ -28,6 +28,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Nichos:** moda elegante/unissex, cosméticos; **default neutro** de qualquer loja.
 - **DNA:** sans clean; paleta neutra; seções numeradas; whitespace generoso; foto editorial.
 - **Mood:** minimalista, curado, sofisticado.
+- **Layout próprio no consumer:** em categorias de moda/beleza este arquétipo veste a **vitrine editorial** (hero full-bleed com autoplay, cards 3:4 sem chrome, PDP imersivo com cartão de vidro) — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
 - **Refs:** [Veonn](https://veonn.framer.website/), [Zaro](https://zaro.framer.website/), [Marion](https://marionshop.framer.website/), [AXM](https://axm.framer.website/), [Axels](https://axels.framer.website/).
 
 #### D. Noir Luxe — `noir`
