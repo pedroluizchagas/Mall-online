@@ -1,6 +1,6 @@
 # 02 — Arquétipos de design
 
-> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **6 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **11 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
+> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **7 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **12 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
 >
 > **Implementação:** `packages/lib/src/store-theme/presets.ts` (catálogo `ARQUETIPOS`).
 
@@ -8,9 +8,9 @@
 
 Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "11 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
 
-## 2.2 Os 11 arquétipos
+## 2.2 Os 12 arquétipos
 
-### Derivados de referência (6)
+### Derivados de referência (7)
 
 #### A. Heritage — `heritage`
 - **Nichos:** restaurantes, churrascarias, cafeterias boutique.
@@ -32,10 +32,18 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Refs:** [Veonn](https://veonn.framer.website/), [Zaro](https://zaro.framer.website/), [Marion](https://marionshop.framer.website/), [AXM](https://axm.framer.website/), [Axels](https://axels.framer.website/).
 
 #### D. Noir Luxe — `noir`
-- **Nichos:** acessórios de luxo, joias, automóveis premium, beleza high-end.
-- **DNA:** fundo preto; acentos metálicos; imagem domina o texto; tipografia de alto contraste.
+- **Nichos:** acessórios de luxo, joias, automóveis premium, beleza high-end, **restaurantes refinados** (fine dining — 2026-08).
+- **DNA:** fundo preto; acentos metálicos; imagem domina o texto; tipografia de alto contraste; serifa ITÁLICA para nomes (itálicos verdadeiros do Cormorant carregados junto com o tema).
 - **Mood:** luxuoso, exclusivo, dramático.
+- **Layout próprio no consumer:** em alimentos & bebidas este arquétipo veste a **vitrine noir gastronômica** (cardápio-livro, carrossel central, preços em dourado) — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
 - **Refs:** [Caelora](https://caelora.framer.website/), [Aurum](https://aurum-frameship-template.framer.website/), [Esteem](https://esteem.framer.website/).
+
+#### D2. Serene — `serene`
+- **Nichos:** beleza feminina/skincare (**default**), joias delicadas, salões premium.
+- **DNA:** tipografia em peso LEVE (a delicadeza vem do peso, não da cor); cards em cinza-névoa; botões fantasma de contorno fino; ardósia serena de acento; muito ar.
+- **Mood:** delicado, sereno, elegante.
+- **Refs:** [All Natural](https://all-natural.framer.website/).
+- **Por que não é o Editorial:** o editorial constrói sofisticação com PESO (display 800, contraste agressivo); o serene constrói com LEVEZA (display 400, calma). São gramáticas opostas do mesmo minimalismo — 2026-08: adicionado como 12º arquétipo ao verificar que a referência não mapeava em nenhum dos 11.
 
 #### E. Soft Care — `soft`
 - **Nichos:** petshop, salões/estética, beleza-serviço.
@@ -45,9 +53,10 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 
 #### F. Artisan Warm — `artisan`
 - **Nichos:** móveis, decoração, floricultura.
-- **DNA:** neutros naturais e tons de madeira; matte; narrativa de materialidade; foto tátil.
+- **DNA:** neutros naturais e tons de madeira; matte; narrativa de materialidade; foto tátil. Display em sans ARREDONDADA suave (calibrado contra a ref em 2026-08 — o Graft não usa serifa; serifa é território do heritage).
 - **Mood:** refinado, calmo, artesanal.
 - **Refs:** [Graft](https://graft.framer.website/).
+- **Layout próprio no consumer:** em casa/decoração e flores este arquétipo veste a **vitrine artesã** (seções numeradas, carrossel de peças com setas, PDP com ficha técnica) — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
 
 ### Desenhados internamente (5) — fecham as lacunas
 
@@ -89,12 +98,12 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 
 | Categoria (slug) | Template funcional | Arquétipo default | Alternativas |
 |---|---|---|---|
-| `alimentos-bebidas` | food | **heritage** | market, soft |
+| `alimentos-bebidas` | food | **heritage** | noir, market, soft |
 | `vestuario-calcados` | fashion | **editorial** | raw, noir |
-| `acessorios-joias` | fashion | **noir** | editorial |
+| `acessorios-joias` | fashion | **noir** | serene, editorial |
 | `farmacia-medicamentos` | pharmacy | **clinic** | market |
-| `beleza-cosmeticos` | generic | **editorial** | noir, soft |
-| `saloes-estetica` | services | **soft** | noir, editorial |
+| `beleza-cosmeticos` | generic | **serene** | editorial, noir, soft |
+| `saloes-estetica` | services | **soft** | serene, noir, editorial |
 | `saude-bem-estar` | services | **clinic** | soft |
 | `pet-shop` | pet | **soft** | playful |
 | `veterinaria` | services | **clinic** | soft |
