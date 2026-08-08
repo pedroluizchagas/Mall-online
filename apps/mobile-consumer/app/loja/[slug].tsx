@@ -11,8 +11,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { formatarReais } from '@mallevo/lib'
 import { Skeleton } from '@/components/ui/Skeleton'
+import { SplashLoja } from '@/components/SplashLoja'
 import { ModalProduto } from '@/components/ModalProduto'
 import { ProdutoCard } from '@/components/ProdutoCard'
+import { LojaEditorial } from '@/components/loja/LojaEditorial'
+import { ProdutoEditorial } from '@/components/loja/ProdutoEditorial'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -48,6 +51,17 @@ interface MetodoPagamento {
   ativo: boolean
 }
 
+/**
+ * Categorias que ganham a vitrine editorial de moda quando a pele da loja é
+ * o arquétipo `editorial` (docs/store-theme/02 §C). As demais categorias — e
+ * os outros arquétipos — seguem no layout de catálogo padrão.
+ */
+const CATEGORIAS_VITRINE_EDITORIAL = new Set([
+  'vestuario-calcados',
+  'beleza-cosmeticos',
+  'acessorios-joias',
+])
+
 export default function PaginaLoja() {
   const { slug } = useLocalSearchParams<{ slug: string }>()
   const insets = useSafeAreaInsets()
@@ -55,9 +69,9 @@ export default function PaginaLoja() {
   const [secoes, setSecoes] = useState<SecaoCardapio[]>([])
   const [carregando, setCarregando] = useState(true)
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null)
+  const [splashVisivel, setSplashVisivel] = useState(true)
   const scrollY = useRef(new Animated.Value(0)).current
   const totalItens = useCartStore((s) => s.totalItens())
-  const total = useCartStore((s) => s.total())
 
   // Pele da loja: preset v2 explícito tematiza (cores + forma + densidade +
   // tipografia, fontes carregadas em background); sem tema / v1 → Mallevo.
@@ -143,6 +157,18 @@ export default function PaginaLoja() {
     extrapolate: 'clamp',
   })
 
+  // Transição para a pele do parceiro: o splash cobre a tela desde o primeiro
+  // frame (inclusive o skeleton) e só sai depois que a paleta assumiu.
+  const splash = splashVisivel ? (
+    <SplashLoja
+      nome={loja?.nome ?? ''}
+      logoUrl={loja?.logo_url ?? null}
+      design={design}
+      pronto={!carregando && !!loja}
+      onFim={() => setSplashVisivel(false)}
+    />
+  ) : null
+
   if (carregando) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.canvas }}>
@@ -153,6 +179,7 @@ export default function PaginaLoja() {
           <Skeleton largura="40%" altura={16} />
           <Skeleton largura="80%" altura={16} />
         </View>
+        {splash}
       </View>
     )
   }
@@ -164,6 +191,42 @@ export default function PaginaLoja() {
   ].filter((m) => m.ativo)
 
   const espacoFinal = totalItens > 0 ? 120 : 40
+
+  // Vitrine editorial: layout próprio do arquétipo para moda/beleza.
+  const vitrineEditorial =
+    design.arquetipo === 'editorial' &&
+    CATEGORIAS_VITRINE_EDITORIAL.has(loja?.categoria_slug)
+
+  if (vitrineEditorial) {
+    return (
+      <StoreDesignProvider value={design}>
+        <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+          <Stack.Screen options={{ headerShown: false }} />
+
+          {/*
+           * Sem FAB de carrinho neste layout: a sacola do header (com
+           * contador) é a porta do carrinho — a pill flutuante duplicaria a
+           * função e disputaria espaço com a barra de menu editorial.
+           */}
+          <LojaEditorial
+            loja={loja}
+            secoes={secoes}
+            aoAbrirProduto={setProdutoSelecionado}
+            espacoFinal={24}
+          />
+
+          {produtoSelecionado && loja && (
+            <ProdutoEditorial
+              produto={produtoSelecionado}
+              loja={loja}
+              onFechar={() => setProdutoSelecionado(null)}
+            />
+          )}
+          {splash}
+        </View>
+      </StoreDesignProvider>
+    )
+  }
 
   return (
     <StoreDesignProvider value={design}>
@@ -296,6 +359,19 @@ export default function PaginaLoja() {
             {loja?.nome}
           </Text>
 
+          {/* Assinatura do arquétipo: barra na cor da marca do lojista */}
+          {design.themed && (
+            <View
+              style={{
+                width: 44,
+                height: 4,
+                borderRadius: Math.min(design.radius.sm, 4),
+                backgroundColor: colors.accent,
+                marginTop: -4,
+              }}
+            />
+          )}
+
           {loja?.descricao && (
             <Text
               style={{
@@ -311,7 +387,7 @@ export default function PaginaLoja() {
           )}
 
           <View
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
           >
             {loja?.tempo_entrega !== null && loja?.tempo_entrega !== undefined && (
               <LinhaMeta
@@ -329,7 +405,17 @@ export default function PaginaLoja() {
               }
               cor={loja?.taxa_entrega === 0 ? colors.success : colors.inkMuted}
             />
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6,
+                backgroundColor: colors.surfaceMuted,
+                borderRadius: design.radius.pill,
+                paddingHorizontal: 10,
+                paddingVertical: 5,
+              }}
+            >
               <View
                 style={{
                   width: 8,
@@ -377,17 +463,35 @@ export default function PaginaLoja() {
             key={secao.titulo}
             style={{ marginTop: spacing.section, paddingHorizontal: spacing.screenX }}
           >
-            <Text
+            <View
               style={{
-                fontSize: Math.round(18 * typeFactor),
-                color: colors.ink,
-                letterSpacing: -0.2,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
                 marginBottom: 4,
-                ...fontStyle(design.display, 800),
               }}
             >
-              {secao.titulo}
-            </Text>
+              {design.themed && (
+                <View
+                  style={{
+                    width: 4,
+                    height: Math.round(16 * typeFactor),
+                    borderRadius: Math.min(design.radius.sm, 3),
+                    backgroundColor: colors.accent,
+                  }}
+                />
+              )}
+              <Text
+                style={{
+                  fontSize: Math.round(18 * typeFactor),
+                  color: colors.ink,
+                  letterSpacing: -0.2,
+                  ...fontStyle(design.display, 800),
+                }}
+              >
+                {secao.titulo}
+              </Text>
+            </View>
 
             {secao.produtos.map((produto) => (
               <ProdutoCard
@@ -401,42 +505,7 @@ export default function PaginaLoja() {
       </Animated.ScrollView>
 
       {/* FAB carrinho */}
-      {totalItens > 0 && (
-        <TouchableOpacity
-          onPress={() => router.push('/checkout')}
-          activeOpacity={consumerDesign.opacity.pressed}
-          style={[
-            {
-              position: 'absolute',
-              left: 16,
-              right: 16,
-              bottom: insets.bottom + 16,
-              height: 56,
-              borderRadius: design.radius.pill,
-              backgroundColor: colors.accent,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingHorizontal: 20,
-            },
-            shadow.floating,
-          ]}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <ConsumerIcon name="bag" size={20} color={colors.accentInk} strokeWidth={2.1} />
-            <Text
-              style={{ fontSize: 15, color: colors.accentInk, ...fontStyle(design.body, 800) }}
-            >
-              {totalItens} {totalItens === 1 ? 'item' : 'itens'}
-            </Text>
-          </View>
-          <Text
-            style={{ fontSize: 15, color: colors.accentInk, ...fontStyle(design.body, 800) }}
-          >
-            {formatarReais(total)}
-          </Text>
-        </TouchableOpacity>
-      )}
+      {totalItens > 0 && <FabCarrinho />}
 
       {/* Modal do produto */}
       {produtoSelecionado && loja && (
@@ -446,8 +515,54 @@ export default function PaginaLoja() {
           onFechar={() => setProdutoSelecionado(null)}
         />
       )}
+
+      {splash}
     </View>
     </StoreDesignProvider>
+  )
+}
+
+function FabCarrinho() {
+  const insets = useSafeAreaInsets()
+  const design = useStoreDesign()
+  const { colors } = design
+  const totalItens = useCartStore((s) => s.totalItens())
+  const total = useCartStore((s) => s.total())
+  return (
+    <TouchableOpacity
+      onPress={() => router.push('/checkout')}
+      activeOpacity={consumerDesign.opacity.pressed}
+      style={[
+        {
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: insets.bottom + 16,
+          height: 56,
+          borderRadius: design.radius.pill,
+          backgroundColor: colors.accent,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingHorizontal: 20,
+        },
+        shadow.floating,
+      ]}
+    >
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <ConsumerIcon name="bag" size={20} color={colors.accentInk} strokeWidth={2.1} />
+        <Text
+          style={{ fontSize: 15, color: colors.accentInk, ...fontStyle(design.body, 800) }}
+        >
+          {totalItens} {totalItens === 1 ? 'item' : 'itens'}
+        </Text>
+      </View>
+      <Text
+        style={{ fontSize: 15, color: colors.accentInk, ...fontStyle(design.body, 800) }}
+      >
+        {formatarReais(total)}
+      </Text>
+    </TouchableOpacity>
   )
 }
 
@@ -490,8 +605,19 @@ function LinhaMeta({
   cor: string
 }) {
   const design = useStoreDesign()
+  const { colors } = design
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        backgroundColor: colors.surfaceMuted,
+        borderRadius: design.radius.pill,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+      }}
+    >
       <ConsumerIcon name={icone} size={14} color={cor} />
       <Text style={{ fontSize: 13, color: cor, ...fontStyle(design.body, 600) }}>
         {rotulo}

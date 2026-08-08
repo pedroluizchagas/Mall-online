@@ -9,6 +9,9 @@
  * client mock (./client) responde às mesmas queries do Supabase.
  */
 
+import { getArquetiposOferecidos } from '@mallevo/lib'
+import { LOGO_VITRINE_FASHION } from './logos'
+
 const TENANT = 'mock-tenant-0001'
 
 export const MOCK_USER = {
@@ -83,6 +86,8 @@ interface StoreRow {
   // Embeds que algumas telas pedem (categoria:categories(slug) / categories(nome))
   categoria: { slug: string }
   categories: { nome: string }
+  // Tema visual (StoreThemeConfig v2) — faz a loja "vestir" seu design no app.
+  theme: { v: 2; preset: string }
 }
 
 interface ProductRow {
@@ -96,7 +101,8 @@ interface ProductRow {
   disponivel: true
   category_id: string
   ordem: number
-  metadata: null
+  /** `galeria`: fotos extras do PDP imersivo (lojas-demo com foto real). */
+  metadata: { galeria: string[] } | null
   // Embeds
   categories: { id: string; nome: string; ordem: number }
   stores: { slug: string; nome: string; ativo: true }
@@ -106,6 +112,14 @@ interface ProductRow {
 const foto = (seed: string, w = 600, h = 420) =>
   `https://picsum.photos/seed/${seed}/${w}/${h}`
 
+/** Foto real de moda (Unsplash, IDs fixos) em corte retrato 3:4. */
+const fotoModa = (id: string, w = 600, h = 800) =>
+  `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&q=80&auto=format&fit=crop`
+
+/** [produto, precoCentavos, descricao, fotoUrl?] */
+type ItemCatalogo = [string, number, string, string?]
+type Catalogo = [string, ItemCatalogo[]][]
+
 interface LojaSpec {
   nome: string
   slug: string
@@ -113,13 +127,18 @@ interface LojaSpec {
   taxa: number
   tempo: number
   categoriaSlug: string
+  /** Catálogo próprio (senão usa o do piso) — lojas-demo com conteúdo real. */
+  catalogo?: Catalogo
+  /** Banner próprio (senão usa foto de seed) — hero editorial das lojas-demo. */
+  banner?: string
+  /** Logo próprio (senão usa foto de seed) — PNG transparente p/ o splash. */
+  logo?: string
 }
 
 interface PisoSpec {
   piso: string
   secaoSlug: string
-  /** [nomeCategoria, [ [produto, precoCentavos, descricao], ... ] ] */
-  catalogo: [string, [string, number, string][]][]
+  catalogo: Catalogo
   lojas: LojaSpec[]
 }
 
@@ -213,7 +232,42 @@ const PISOS: PisoSpec[] = [
       ],
     ],
     lojas: [
-      { nome: 'Vitrine Fashion', slug: 'vitrine-fashion', descricao: 'Moda feminina e masculina com as tendências da temporada.', taxa: 0, tempo: 45, categoriaSlug: 'moda' },
+      {
+        nome: 'Vitrine Fashion',
+        slug: 'vitrine-fashion',
+        descricao: 'Moda feminina com curadoria editorial — vestidos, alfaiataria e acessórios da estação.',
+        taxa: 0,
+        tempo: 45,
+        categoriaSlug: 'moda',
+        // Loja-demo da vitrine editorial (arquétipo `editorial`, ver
+        // components/loja/LojaEditorial.tsx): catálogo feminino com fotos reais.
+        logo: LOGO_VITRINE_FASHION,
+        banner: fotoModa('1524504388940-b1c1722653e1', 900, 1200),
+        catalogo: [
+          [
+            'Coleção nova',
+            [
+              ['Vestido Brisa off-white', 18990, 'Ombro a ombro, tecido leve com babados', fotoModa('1515372039744-b8f02a3ae446')],
+              ['Vestido Maré azul-céu', 24990, 'Maxi fluido com fenda e decote V', fotoModa('1539008835657-9e8e9680c956')],
+              ['Macacão Esmeralda', 27990, 'Alfaiataria acetinada de gola halter', fotoModa('1495385794356-15371f348c31')],
+              ['Vestido Renda violeta', 32990, 'Renda com recortes, comprimento midi', fotoModa('1551803091-e20673f15770')],
+              ['Vestido Rosé Chapeau', 21990, 'Maxi de viscose com amarração na cintura', fotoModa('1596783074918-c84cb06531ca')],
+              ['Poncho Tricô cru', 15990, 'Tricô artesanal com franjas', fotoModa('1434389677669-e08b4cac3105')],
+            ],
+          ],
+          [
+            'Tendências',
+            [
+              ['Bolsa Coral estruturada', 19990, 'Couro com fecho metálico', fotoModa('1584917865442-de89df76afd3')],
+              ['Conjunto Navy cropped', 16990, 'Camisa de amarração + pantalona', fotoModa('1562572159-4efc207f5aff')],
+              ['Pantalona Riscas', 14990, 'Listras verticais, cintura alta', fotoModa('1509631179647-0177331693ae')],
+              ['Casaco Vinho de inverno', 29990, 'Lã batida com gola alta', fotoModa('1483985988355-763728e1935b')],
+              ['Jaqueta Street noir', 17990, 'Sobreposição oversized', fotoModa('1529139574466-a303027c1d8b')],
+              ['Top Verão esmeralda', 8990, 'Tricô texturizado de alças', fotoModa('1469334031218-e382a71b716b')],
+            ],
+          ],
+        ],
+      },
       { nome: 'Passo Certo Calçados', slug: 'passo-certo-calcados', descricao: 'Tênis, sapatos e sandálias das melhores marcas.', taxa: 690, tempo: 50, categoriaSlug: 'calcados' },
       { nome: 'Bella Cosméticos', slug: 'bella-cosmeticos', descricao: 'Maquiagem, skincare e perfumaria importada.', taxa: 0, tempo: 35, categoriaSlug: 'beleza' },
       { nome: 'Urban Wear', slug: 'urban-wear', descricao: 'Streetwear, sneakers e acessórios urbanos.', taxa: 790, tempo: 45, categoriaSlug: 'moda' },
@@ -329,13 +383,18 @@ PISOS.forEach((piso, pisoIdx) => {
       nome: 'Loja',
     }
 
+    // Pele da loja: cicla entre os arquétipos oferecidos para a categoria
+    // (default + alternativas) → demo com variedade coerente por nicho.
+    const oferecidos = getArquetiposOferecidos(cat.slug).map((a) => a.codigo)
+    const preset = oferecidos[lojaIdx % oferecidos.length] ?? 'editorial'
+
     stores.push({
       id: storeId,
       nome: loja.nome,
       slug: loja.slug,
       descricao: loja.descricao,
-      logo_url: foto(`${loja.slug}-logo`, 600, 400),
-      banner_url: foto(`${loja.slug}-banner`, 1000, 480),
+      logo_url: loja.logo ?? foto(`${loja.slug}-logo`, 600, 400),
+      banner_url: loja.banner ?? foto(`${loja.slug}-banner`, 1000, 480),
       taxa_entrega: loja.taxa,
       tempo_entrega: loja.tempo,
       telefone: `+55379${String(80000000 + pisoIdx * 1000 + lojaIdx)}`,
@@ -349,15 +408,25 @@ PISOS.forEach((piso, pisoIdx) => {
       piso: piso.piso,
       categoria: { slug: cat.slug },
       categories: { nome: cat.nome },
+      theme: { v: 2, preset },
     })
 
-    piso.catalogo.forEach(([catNome, itens], catIdx) => {
+    const catalogo = loja.catalogo ?? piso.catalogo
+    catalogo.forEach(([catNome, itens], catIdx) => {
       const categoryId = `${storeId}-cat-${catIdx + 1}`
-      itens.forEach(([nome, preco, descricao], prodIdx) => {
+      itens.forEach(([nome, preco, descricao, fotoUrl], prodIdx) => {
         // ~1 em cada 4 produtos entra em promoção (−18%)
         const ehPromo = (lojaIdx + prodIdx) % 4 === 0
         const ordem = catIdx * 100 + prodIdx
         const id = `${storeId}-p-${catIdx + 1}-${prodIdx + 1}`
+        // Fotos reais (Unsplash) ganham galeria p/ o PDP imersivo: o mesmo
+        // look em corte 9:16 de corpo inteiro + um segundo enquadramento.
+        const galeria = fotoUrl?.includes('images.unsplash.com')
+          ? [
+              fotoUrl.replace('h=800', 'h=1600'),
+              `${fotoUrl.replace('h=800', 'h=1600')}&crop=entropy`,
+            ]
+          : null
         products.push({
           id,
           store_id: storeId,
@@ -365,11 +434,11 @@ PISOS.forEach((piso, pisoIdx) => {
           descricao,
           preco,
           preco_promocional: ehPromo ? Math.round(preco * 0.82) : null,
-          foto_url: foto(`${loja.slug}-${catIdx}-${prodIdx}`, 400, 400),
+          foto_url: fotoUrl ?? foto(`${loja.slug}-${catIdx}-${prodIdx}`, 400, 400),
           disponivel: true,
           category_id: categoryId,
           ordem,
-          metadata: null,
+          metadata: galeria ? { galeria } : null,
           categories: { id: categoryId, nome: catNome, ordem: catIdx },
           stores: { slug: loja.slug, nome: loja.nome, ativo: true },
         })

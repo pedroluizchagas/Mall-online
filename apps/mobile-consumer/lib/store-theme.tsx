@@ -4,7 +4,9 @@ import {
   RADIUS_STEPS_PX,
   TYPE_SCALE_FACTOR,
   hasExplicitPreset,
+  normalizeThemeConfig,
   resolveTheme,
+  type ArquetipoCodigo,
   type DensitySpace,
   type FontSpec,
   type RadiusSteps,
@@ -46,6 +48,18 @@ export interface StoreDesign {
   /** Fontes do arquétipo já carregadas; null → tipografia de sistema. */
   display: FontSpec | null
   body: FontSpec | null
+  /**
+   * `true` quando a loja tem preset v2 explícito (pele do arquétipo ativa).
+   * Componentes usam para acentuações que só fazem sentido tematizadas —
+   * ex.: preço em `accent` (o neon Mallevo não presta como cor de texto).
+   */
+  themed: boolean
+  /**
+   * Código do arquétipo ativo (null fora de tema). Permite que uma tela
+   * escolha um LAYOUT próprio do arquétipo (ex.: vitrine editorial de moda),
+   * além da pele de tokens.
+   */
+  arquetipo: ArquetipoCodigo | null
 }
 
 /** Paleta Mallevo padrão. `accentInk` = ink (texto escuro sobre o accent neon). */
@@ -63,6 +77,8 @@ export const MALLEVO_DESIGN: StoreDesign = {
   typeFactor: 1,
   display: null,
   body: null,
+  themed: false,
+  arquetipo: null,
 }
 
 function hexToRgba(hex: string, alpha: number): string {
@@ -133,8 +149,10 @@ export function useStoreDesignFromTheme(rawTheme: unknown): StoreDesign {
       typeFactor: TYPE_SCALE_FACTOR[tokens.typography.scale],
       display: fontesProntas ? tokens.typography.display : null,
       body: fontesProntas ? tokens.typography.body : null,
+      themed: true,
+      arquetipo: normalizeThemeConfig(rawTheme).preset,
     }
-  }, [tokens, fontesProntas])
+  }, [tokens, fontesProntas, rawTheme])
 }
 
 const StoreDesignContext = createContext<StoreDesign>(MALLEVO_DESIGN)
