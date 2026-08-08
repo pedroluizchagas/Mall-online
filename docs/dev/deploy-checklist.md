@@ -12,7 +12,7 @@
 
 ## 1. Supabase (backend) — fonte da verdade
 
-- [ ] **Migrations aplicadas:** `supabase db push` (local e remoto em sync — conferir `supabase migration list --linked`).
+- [x] **Migrations aplicadas:** `supabase db push` ✅ 2026-08-07 — local e remoto em sync (55 migrations, inclui partner 01-06 e logística 01-04 + fix do Pix). `pg_cron` liberado: job `despacho-logistica` agendado a cada 30 s pela própria migration.
 - [ ] **Secrets das Edge Functions** (`supabase secrets set ... --project-ref rtesdjobtgqkiuywadnl`):
   - [ ] `PAGARME_API_KEY` (chave secreta — **produção**, não `ak_test_`)
   - [ ] `PAGARME_WEBHOOK_SECRET` (HMAC do webhook Pagar.me)
@@ -80,6 +80,10 @@
 - ✅ Índice trigram para busca (Fase 3.3).
 - ✅ Dashboard: crash de Configurações/Minha conta, queries de loja frágeis, estoque, coesão de IA — corrigidos.
 - ✅ `.env.example` completo (inclui `WEBHOOK_SECRET` e provisionamento).
+- ✅ (2026-08-07) `db push` completo: migrations partner 01-06 + logística 01-04 aplicadas; `despacho-logistica` no pg_cron a cada 30 s.
+- ✅ (2026-08-07) Edge Functions `dispatch-order` (nova) e `create-pagarme-order` (fix Pix) deployadas.
+- ✅ (2026-08-07) **Bug Pix corrigido:** as telas Pix liam `pagarme_qr_code_*` de `orders`, mas nada gravava lá e `pagarme_qr_code_expires_at` nem existia (select falhava com 42703). Migration `20260807150000` cria a coluna e `create-pagarme-order` agora persiste QR + expiração.
+- ✅ (2026-08-07) Types regenerados do banco de produção (`packages/types/src/supabase.ts`); typecheck limpo nos 6 apps.
 
 ---
 

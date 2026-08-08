@@ -66,9 +66,7 @@ export function CardSeparacao({
     setQtd(novo)
     setSalvando(true)
 
-    // Cast: `volumes` vem da migration de logística e ainda não está nos
-    // types gerados (`pnpm types:generate` depois de aplicar as migrations).
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('orders')
       .update({ volumes: novo })
       .eq('id', pedidoId)

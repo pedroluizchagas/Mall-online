@@ -681,7 +681,7 @@ Deno.serve(async (req) => {
       charges?: Array<{
         id: string
         status?: string
-        last_transaction?: { qr_code?: string; qr_code_url?: string }
+        last_transaction?: { qr_code?: string; qr_code_url?: string; expires_at?: string }
       }>
     }>('/orders', { method: 'POST', body: pagarmePayload })
 
@@ -696,11 +696,20 @@ Deno.serve(async (req) => {
     const pagarmeOrder = pagarmeRes.data
     const charge = pagarmeOrder.charges?.[0]
 
+    // Persistir o QR junto com os ids: as telas Pix (consumer e storefront)
+    // leem de `orders` — não do response — e ficam aguardando via Realtime.
     await supabase
       .from('orders')
       .update({
         pagarme_order_id: pagarmeOrder.id,
         pagarme_charge_id: charge?.id ?? null,
+        ...(payment_method === 'pix'
+          ? {
+              pagarme_qr_code: charge?.last_transaction?.qr_code ?? null,
+              pagarme_qr_code_url: charge?.last_transaction?.qr_code_url ?? null,
+              pagarme_qr_code_expires_at: charge?.last_transaction?.expires_at ?? null,
+            }
+          : {}),
       })
       .eq('id', order.id)
 

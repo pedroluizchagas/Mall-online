@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -45,38 +45,60 @@ export type Database = {
           atualizado_em: string
           criado_em: string
           descricao: string | null
+          fragil: boolean | null
           icone: string | null
           id: string
           nome: string
           ordem: number
+          peso_g: number | null
+          refrigerado: boolean | null
+          slug: string | null
           store_id: string | null
           tenant_id: string | null
+          volume_ml: number | null
         }
         Insert: {
           ativa?: boolean
           atualizado_em?: string
           criado_em?: string
           descricao?: string | null
+          fragil?: boolean | null
           icone?: string | null
           id?: string
           nome: string
           ordem?: number
+          peso_g?: number | null
+          refrigerado?: boolean | null
+          slug?: string | null
           store_id?: string | null
           tenant_id?: string | null
+          volume_ml?: number | null
         }
         Update: {
           ativa?: boolean
           atualizado_em?: string
           criado_em?: string
           descricao?: string | null
+          fragil?: boolean | null
           icone?: string | null
           id?: string
           nome?: string
           ordem?: number
+          peso_g?: number | null
+          refrigerado?: boolean | null
+          slug?: string | null
           store_id?: string | null
           tenant_id?: string | null
+          volume_ml?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "categories_store_id_fkey"
             columns: ["store_id"]
@@ -227,6 +249,10 @@ export type Database = {
           aprovado_em: string | null
           aprovado_por: string | null
           atualizado_em: string
+          avaliacao_media: number | null
+          bag_termica: boolean
+          capacidade_peso_g: number | null
+          capacidade_volume_ml: number | null
           cnh_foto_url: string | null
           cnh_numero: string | null
           cpf: string | null
@@ -237,11 +263,15 @@ export type Database = {
           online: boolean
           pagarme_onboarding_status: string
           pagarme_recipient_id: string | null
+          raio_max_km: number | null
           status: Database["public"]["Enums"]["courier_status"]
+          taxa_aceitacao: number
           telefone: string | null
           tenant_id: string | null
           tipo: Database["public"]["Enums"]["courier_type"]
+          ultima_entrega_em: string | null
           user_id: string
+          veiculo: Database["public"]["Enums"]["vehicle_type"] | null
           veiculo_placa: string | null
           veiculo_tipo: string | null
         }
@@ -249,6 +279,10 @@ export type Database = {
           aprovado_em?: string | null
           aprovado_por?: string | null
           atualizado_em?: string
+          avaliacao_media?: number | null
+          bag_termica?: boolean
+          capacidade_peso_g?: number | null
+          capacidade_volume_ml?: number | null
           cnh_foto_url?: string | null
           cnh_numero?: string | null
           cpf?: string | null
@@ -259,11 +293,15 @@ export type Database = {
           online?: boolean
           pagarme_onboarding_status?: string
           pagarme_recipient_id?: string | null
+          raio_max_km?: number | null
           status?: Database["public"]["Enums"]["courier_status"]
+          taxa_aceitacao?: number
           telefone?: string | null
           tenant_id?: string | null
           tipo?: Database["public"]["Enums"]["courier_type"]
+          ultima_entrega_em?: string | null
           user_id: string
+          veiculo?: Database["public"]["Enums"]["vehicle_type"] | null
           veiculo_placa?: string | null
           veiculo_tipo?: string | null
         }
@@ -271,6 +309,10 @@ export type Database = {
           aprovado_em?: string | null
           aprovado_por?: string | null
           atualizado_em?: string
+          avaliacao_media?: number | null
+          bag_termica?: boolean
+          capacidade_peso_g?: number | null
+          capacidade_volume_ml?: number | null
           cnh_foto_url?: string | null
           cnh_numero?: string | null
           cpf?: string | null
@@ -281,11 +323,15 @@ export type Database = {
           online?: boolean
           pagarme_onboarding_status?: string
           pagarme_recipient_id?: string | null
+          raio_max_km?: number | null
           status?: Database["public"]["Enums"]["courier_status"]
+          taxa_aceitacao?: number
           telefone?: string | null
           tenant_id?: string | null
           tipo?: Database["public"]["Enums"]["courier_type"]
+          ultima_entrega_em?: string | null
           user_id?: string
+          veiculo?: Database["public"]["Enums"]["vehicle_type"] | null
           veiculo_placa?: string | null
           veiculo_tipo?: string | null
         }
@@ -313,6 +359,7 @@ export type Database = {
           id: string
           order_id: string
           pagarme_transfer_id: string | null
+          route_id: string | null
           status: Database["public"]["Enums"]["delivery_status"]
           tenant_id: string
           valor_entrega: number
@@ -330,6 +377,7 @@ export type Database = {
           id?: string
           order_id: string
           pagarme_transfer_id?: string | null
+          route_id?: string | null
           status?: Database["public"]["Enums"]["delivery_status"]
           tenant_id: string
           valor_entrega?: number
@@ -347,6 +395,7 @@ export type Database = {
           id?: string
           order_id?: string
           pagarme_transfer_id?: string | null
+          route_id?: string | null
           status?: Database["public"]["Enums"]["delivery_status"]
           tenant_id?: string
           valor_entrega?: number
@@ -367,6 +416,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "delivery_assignments_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_routes"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "delivery_assignments_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
@@ -374,6 +430,159 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      delivery_routes: {
+        Row: {
+          aceita_em: string | null
+          atualizado_em: string
+          carga_fragil: boolean
+          carga_peso_g: number
+          carga_porte: Database["public"]["Enums"]["cargo_size"] | null
+          carga_refrigerada: boolean
+          carga_volume_ml: number
+          ciclos_oferta: number
+          coletas: number
+          concluida_em: string | null
+          courier_id: string | null
+          criado_em: string
+          distancia_total_m: number | null
+          drops: number
+          duracao_estimada_s: number | null
+          ganho_total: number
+          id: string
+          status: Database["public"]["Enums"]["route_status"]
+          tenant_id: string
+        }
+        Insert: {
+          aceita_em?: string | null
+          atualizado_em?: string
+          carga_fragil?: boolean
+          carga_peso_g?: number
+          carga_porte?: Database["public"]["Enums"]["cargo_size"] | null
+          carga_refrigerada?: boolean
+          carga_volume_ml?: number
+          ciclos_oferta?: number
+          coletas?: number
+          concluida_em?: string | null
+          courier_id?: string | null
+          criado_em?: string
+          distancia_total_m?: number | null
+          drops?: number
+          duracao_estimada_s?: number | null
+          ganho_total?: number
+          id?: string
+          status?: Database["public"]["Enums"]["route_status"]
+          tenant_id: string
+        }
+        Update: {
+          aceita_em?: string | null
+          atualizado_em?: string
+          carga_fragil?: boolean
+          carga_peso_g?: number
+          carga_porte?: Database["public"]["Enums"]["cargo_size"] | null
+          carga_refrigerada?: boolean
+          carga_volume_ml?: number
+          ciclos_oferta?: number
+          coletas?: number
+          concluida_em?: string | null
+          courier_id?: string | null
+          criado_em?: string
+          distancia_total_m?: number | null
+          drops?: number
+          duracao_estimada_s?: number | null
+          ganho_total?: number
+          id?: string
+          status?: Database["public"]["Enums"]["route_status"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_routes_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "couriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_routes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_offers: {
+        Row: {
+          ciclo: number
+          courier_id: string
+          enviado_em: string
+          expira_em: string
+          id: string
+          respondido_em: string | null
+          resposta: Database["public"]["Enums"]["offer_response"] | null
+          route_id: string
+          score: number | null
+        }
+        Insert: {
+          ciclo?: number
+          courier_id: string
+          enviado_em?: string
+          expira_em: string
+          id?: string
+          respondido_em?: string | null
+          resposta?: Database["public"]["Enums"]["offer_response"] | null
+          route_id: string
+          score?: number | null
+        }
+        Update: {
+          ciclo?: number
+          courier_id?: string
+          enviado_em?: string
+          expira_em?: string
+          id?: string
+          respondido_em?: string | null
+          resposta?: Database["public"]["Enums"]["offer_response"] | null
+          route_id?: string
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_offers_courier_id_fkey"
+            columns: ["courier_id"]
+            isOneToOne: false
+            referencedRelation: "couriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispatch_offers_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_routes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logistica_config: {
+        Row: {
+          atualizado_em: string
+          chave: string
+          descricao: string | null
+          valor: number
+        }
+        Insert: {
+          atualizado_em?: string
+          chave: string
+          descricao?: string | null
+          valor: number
+        }
+        Update: {
+          atualizado_em?: string
+          chave?: string
+          descricao?: string | null
+          valor?: number
+        }
+        Relationships: []
       }
       message_threads: {
         Row: {
@@ -478,6 +687,7 @@ export type Database = {
         Row: {
           criado_em: string
           id: string
+          modifiers: Json | null
           nome: string
           observacoes: string | null
           order_id: string
@@ -485,10 +695,12 @@ export type Database = {
           product_id: string | null
           quantidade: number
           subtotal: number
+          variant_id: string | null
         }
         Insert: {
           criado_em?: string
           id?: string
+          modifiers?: Json | null
           nome: string
           observacoes?: string | null
           order_id: string
@@ -496,10 +708,12 @@ export type Database = {
           product_id?: string | null
           quantidade?: number
           subtotal: number
+          variant_id?: string | null
         }
         Update: {
           criado_em?: string
           id?: string
+          modifiers?: Json | null
           nome?: string
           observacoes?: string | null
           order_id?: string
@@ -507,6 +721,7 @@ export type Database = {
           product_id?: string | null
           quantidade?: number
           subtotal?: number
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -523,19 +738,52 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_variants"
+            referencedColumns: ["id"]
+          },
         ]
       }
       orders: {
         Row: {
+          agendamento_fim_at: string | null
+          agendamento_inicio_at: string | null
           atualizado_em: string
           cancelado_em: string | null
+          carga_alto_valor: boolean
+          carga_fragil: boolean
+          carga_peso_g: number | null
+          carga_porte: Database["public"]["Enums"]["cargo_size"] | null
+          carga_refrigerada: boolean
+          carga_volume_ml: number | null
           consumer_id: string
           criado_em: string
           endereco_entrega: Json
+          entrega_geohash7: string | null
+          entrega_lat: number | null
+          entrega_lng: number | null
           forma_pagamento: string
           id: string
           motivo_cancelamento: string | null
           observacoes: string | null
+          origem: string
           pagarme_charge_id: string | null
           pagarme_order_id: string | null
           pagarme_qr_code: string | null
@@ -543,25 +791,40 @@ export type Database = {
           pagarme_qr_code_url: string | null
           payment_status: string
           platform_fee_amount: number
+          staff_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
           subtotal: number
           taxa_entrega: number
           tenant_id: string
+          tipo: string
           total: number
           troco_para: number | null
           valor_estornado: number
+          volumes: number
         }
         Insert: {
+          agendamento_fim_at?: string | null
+          agendamento_inicio_at?: string | null
           atualizado_em?: string
           cancelado_em?: string | null
+          carga_alto_valor?: boolean
+          carga_fragil?: boolean
+          carga_peso_g?: number | null
+          carga_porte?: Database["public"]["Enums"]["cargo_size"] | null
+          carga_refrigerada?: boolean
+          carga_volume_ml?: number | null
           consumer_id: string
           criado_em?: string
           endereco_entrega: Json
+          entrega_geohash7?: string | null
+          entrega_lat?: number | null
+          entrega_lng?: number | null
           forma_pagamento: string
           id?: string
           motivo_cancelamento?: string | null
           observacoes?: string | null
+          origem?: string
           pagarme_charge_id?: string | null
           pagarme_order_id?: string | null
           pagarme_qr_code?: string | null
@@ -569,25 +832,40 @@ export type Database = {
           pagarme_qr_code_url?: string | null
           payment_status?: string
           platform_fee_amount?: number
+          staff_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
           subtotal: number
           taxa_entrega?: number
           tenant_id: string
+          tipo?: string
           total: number
           troco_para?: number | null
           valor_estornado?: number
+          volumes?: number
         }
         Update: {
+          agendamento_fim_at?: string | null
+          agendamento_inicio_at?: string | null
           atualizado_em?: string
           cancelado_em?: string | null
+          carga_alto_valor?: boolean
+          carga_fragil?: boolean
+          carga_peso_g?: number | null
+          carga_porte?: Database["public"]["Enums"]["cargo_size"] | null
+          carga_refrigerada?: boolean
+          carga_volume_ml?: number | null
           consumer_id?: string
           criado_em?: string
           endereco_entrega?: Json
+          entrega_geohash7?: string | null
+          entrega_lat?: number | null
+          entrega_lng?: number | null
           forma_pagamento?: string
           id?: string
           motivo_cancelamento?: string | null
           observacoes?: string | null
+          origem?: string
           pagarme_charge_id?: string | null
           pagarme_order_id?: string | null
           pagarme_qr_code?: string | null
@@ -595,14 +873,17 @@ export type Database = {
           pagarme_qr_code_url?: string | null
           payment_status?: string
           platform_fee_amount?: number
+          staff_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
           subtotal?: number
           taxa_entrega?: number
           tenant_id?: string
+          tipo?: string
           total?: number
           troco_para?: number | null
           valor_estornado?: number
+          volumes?: number
         }
         Relationships: [
           {
@@ -610,6 +891,20 @@ export type Database = {
             columns: ["consumer_id"]
             isOneToOne: false
             referencedRelation: "consumers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "service_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
             referencedColumns: ["id"]
           },
           {
@@ -820,81 +1115,240 @@ export type Database = {
         }
         Relationships: []
       }
-      products: {
+      product_modifier_groups: {
         Row: {
-          atualizado_em: string
-          category_id: string | null
-          criado_em: string
-          descricao: string | null
-          disponivel: boolean
-          foto_url: string | null
+          created_at: string
           id: string
+          max_select: number
+          min_select: number
           nome: string
+          obrigatorio: boolean | null
           ordem: number
-          preco: number
-          preco_promocional: number | null
-          stock_minimo: number | null
-          stock_quantity: number | null
-          store_id: string
+          product_id: string
           tenant_id: string
-          track_stock: boolean
         }
         Insert: {
-          atualizado_em?: string
-          category_id?: string | null
-          criado_em?: string
-          descricao?: string | null
-          disponivel?: boolean
-          foto_url?: string | null
+          created_at?: string
           id?: string
+          max_select?: number
+          min_select?: number
           nome: string
+          obrigatorio?: boolean | null
           ordem?: number
-          preco: number
-          preco_promocional?: number | null
-          stock_minimo?: number | null
-          stock_quantity?: number | null
-          store_id: string
+          product_id: string
           tenant_id: string
-          track_stock?: boolean
         }
         Update: {
-          atualizado_em?: string
-          category_id?: string | null
-          criado_em?: string
-          descricao?: string | null
-          disponivel?: boolean
-          foto_url?: string | null
+          created_at?: string
           id?: string
+          max_select?: number
+          min_select?: number
           nome?: string
+          obrigatorio?: boolean | null
           ordem?: number
-          preco?: number
-          preco_promocional?: number | null
-          stock_minimo?: number | null
-          stock_quantity?: number | null
-          store_id?: string
+          product_id?: string
           tenant_id?: string
-          track_stock?: boolean
         }
         Relationships: [
           {
-            foreignKeyName: "products_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: "product_modifier_groups_product_id_fkey"
+            columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "categories"
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "products_store_id_fkey"
-            columns: ["store_id"]
+            foreignKeyName: "product_modifier_groups_product_id_fkey"
+            columns: ["product_id"]
             isOneToOne: false
-            referencedRelation: "stores"
+            referencedRelation: "public_catalog_products"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "products_tenant_id_fkey"
+            foreignKeyName: "product_modifier_groups_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_modifiers: {
+        Row: {
+          created_at: string
+          disponivel: boolean
+          group_id: string
+          id: string
+          nome: string
+          ordem: number
+          preco_extra: number
+        }
+        Insert: {
+          created_at?: string
+          disponivel?: boolean
+          group_id: string
+          id?: string
+          nome: string
+          ordem?: number
+          preco_extra?: number
+        }
+        Update: {
+          created_at?: string
+          disponivel?: boolean
+          group_id?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          preco_extra?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_modifiers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "product_modifier_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_modifiers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_modifier_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_option_groups: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          ordem: number
+          product_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          ordem?: number
+          product_id: string
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          product_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_option_groups_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_options: {
+        Row: {
+          created_at: string
+          group_id: string
+          hex_color: string | null
+          id: string
+          ordem: number
+          valor: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          hex_color?: string | null
+          id?: string
+          ordem?: number
+          valor: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          hex_color?: string | null
+          id?: string
+          ordem?: number
+          valor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "product_option_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_option_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_variant_options: {
+        Row: {
+          option_id: string
+          variant_id: string
+        }
+        Insert: {
+          option_id: string
+          variant_id: string
+        }
+        Update: {
+          option_id?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variant_options_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -954,7 +1408,122 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "product_variants_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          atualizado_em: string
+          category_id: string | null
+          criado_em: string
+          descricao: string | null
+          disponivel: boolean
+          foto_url: string | null
+          fragil: boolean | null
+          id: string
+          metadata: Json
+          nome: string
+          ordem: number
+          peso_g: number | null
+          preco: number
+          preco_promocional: number | null
+          refrigerado: boolean | null
+          stock_minimo: number | null
+          stock_quantity: number | null
+          store_id: string
+          tenant_id: string
+          track_stock: boolean
+          volume_ml: number | null
+        }
+        Insert: {
+          atualizado_em?: string
+          category_id?: string | null
+          criado_em?: string
+          descricao?: string | null
+          disponivel?: boolean
+          foto_url?: string | null
+          fragil?: boolean | null
+          id?: string
+          metadata?: Json
+          nome: string
+          ordem?: number
+          peso_g?: number | null
+          preco: number
+          preco_promocional?: number | null
+          refrigerado?: boolean | null
+          stock_minimo?: number | null
+          stock_quantity?: number | null
+          store_id: string
+          tenant_id: string
+          track_stock?: boolean
+          volume_ml?: number | null
+        }
+        Update: {
+          atualizado_em?: string
+          category_id?: string | null
+          criado_em?: string
+          descricao?: string | null
+          disponivel?: boolean
+          foto_url?: string | null
+          fragil?: boolean | null
+          id?: string
+          metadata?: Json
+          nome?: string
+          ordem?: number
+          peso_g?: number | null
+          preco?: number
+          preco_promocional?: number | null
+          refrigerado?: boolean | null
+          stock_minimo?: number | null
+          stock_quantity?: number | null
+          store_id?: string
+          tenant_id?: string
+          track_stock?: boolean
+          volume_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1006,6 +1575,83 @@ export type Database = {
           },
         ]
       }
+      route_stops: {
+        Row: {
+          concluida_em: string | null
+          criado_em: string
+          endereco: string | null
+          eta: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          ordem: number
+          order_id: string
+          route_id: string
+          status: Database["public"]["Enums"]["stop_status"]
+          store_id: string
+          tipo: Database["public"]["Enums"]["stop_type"]
+        }
+        Insert: {
+          concluida_em?: string | null
+          criado_em?: string
+          endereco?: string | null
+          eta?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          ordem: number
+          order_id: string
+          route_id: string
+          status?: Database["public"]["Enums"]["stop_status"]
+          store_id: string
+          tipo: Database["public"]["Enums"]["stop_type"]
+        }
+        Update: {
+          concluida_em?: string | null
+          criado_em?: string
+          endereco?: string | null
+          eta?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          ordem?: number
+          order_id?: string
+          route_id?: string
+          status?: Database["public"]["Enums"]["stop_status"]
+          store_id?: string
+          tipo?: Database["public"]["Enums"]["stop_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "route_stops_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_stops_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "delivery_routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_stops_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "route_stops_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_blocks: {
         Row: {
           criado_em: string
@@ -1043,6 +1689,13 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "service_staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_blocks_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
             referencedColumns: ["id"]
           },
           {
@@ -1100,6 +1753,13 @@ export type Database = {
             foreignKeyName: "service_staff_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
+            referencedRelation: "public_catalog_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_staff_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
             referencedRelation: "stores"
             referencedColumns: ["id"]
           },
@@ -1125,6 +1785,7 @@ export type Database = {
           quantidade_posterior: number
           tenant_id: string
           tipo: Database["public"]["Enums"]["stock_movement_type"]
+          variant_id: string | null
         }
         Insert: {
           criado_em?: string
@@ -1138,6 +1799,7 @@ export type Database = {
           quantidade_posterior: number
           tenant_id: string
           tipo: Database["public"]["Enums"]["stock_movement_type"]
+          variant_id?: string | null
         }
         Update: {
           criado_em?: string
@@ -1151,6 +1813,7 @@ export type Database = {
           quantidade_posterior?: number
           tenant_id?: string
           tipo?: Database["public"]["Enums"]["stock_movement_type"]
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -1168,10 +1831,104 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "stock_movements_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_movements_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_categoria_changes: {
+        Row: {
+          categoria_anterior: string | null
+          categoria_nova: string
+          changed_at: string
+          changed_by: string
+          id: string
+          motivo: string
+          store_id: string
+        }
+        Insert: {
+          categoria_anterior?: string | null
+          categoria_nova: string
+          changed_at?: string
+          changed_by: string
+          id?: string
+          motivo: string
+          store_id: string
+        }
+        Update: {
+          categoria_anterior?: string | null
+          categoria_nova?: string
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          motivo?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_categoria_changes_categoria_anterior_fkey"
+            columns: ["categoria_anterior"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_categoria_changes_categoria_anterior_fkey"
+            columns: ["categoria_anterior"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_categoria_changes_categoria_nova_fkey"
+            columns: ["categoria_nova"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_categoria_changes_categoria_nova_fkey"
+            columns: ["categoria_nova"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_categoria_changes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_categoria_changes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -1261,6 +2018,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "store_posts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_posts_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "store_posts_store_id_fkey"
             columns: ["store_id"]
             isOneToOne: false
@@ -1343,6 +2114,127 @@ export type Database = {
           },
         ]
       }
+      stores: {
+        Row: {
+          aceita_cartao_maquininha: boolean
+          aceita_cartao_online: boolean
+          aceita_dinheiro: boolean
+          aceita_pix: boolean
+          ativo: boolean
+          atualizado_em: string
+          banner_url: string | null
+          carga_fragil: boolean
+          carga_item_peso_g: number | null
+          carga_item_volume_ml: number | null
+          carga_modo: string
+          carga_refrigerada: boolean
+          categoria_id: string | null
+          cf_dns_record_id: string | null
+          criado_em: string
+          descricao: string | null
+          domain: string | null
+          endereco: Json | null
+          horarios: Json | null
+          id: string
+          logo_url: string | null
+          nome: string
+          raio_entrega_km: number | null
+          slug: string | null
+          taxa_entrega: number
+          telefone: string | null
+          tempo_entrega: number | null
+          tenant_id: string
+          theme: Json | null
+          usa_entregadores_proprios: boolean
+        }
+        Insert: {
+          aceita_cartao_maquininha?: boolean
+          aceita_cartao_online?: boolean
+          aceita_dinheiro?: boolean
+          aceita_pix?: boolean
+          ativo?: boolean
+          atualizado_em?: string
+          banner_url?: string | null
+          carga_fragil?: boolean
+          carga_item_peso_g?: number | null
+          carga_item_volume_ml?: number | null
+          carga_modo?: string
+          carga_refrigerada?: boolean
+          categoria_id?: string | null
+          cf_dns_record_id?: string | null
+          criado_em?: string
+          descricao?: string | null
+          domain?: string | null
+          endereco?: Json | null
+          horarios?: Json | null
+          id?: string
+          logo_url?: string | null
+          nome: string
+          raio_entrega_km?: number | null
+          slug?: string | null
+          taxa_entrega?: number
+          telefone?: string | null
+          tempo_entrega?: number | null
+          tenant_id: string
+          theme?: Json | null
+          usa_entregadores_proprios?: boolean
+        }
+        Update: {
+          aceita_cartao_maquininha?: boolean
+          aceita_cartao_online?: boolean
+          aceita_dinheiro?: boolean
+          aceita_pix?: boolean
+          ativo?: boolean
+          atualizado_em?: string
+          banner_url?: string | null
+          carga_fragil?: boolean
+          carga_item_peso_g?: number | null
+          carga_item_volume_ml?: number | null
+          carga_modo?: string
+          carga_refrigerada?: boolean
+          categoria_id?: string | null
+          cf_dns_record_id?: string | null
+          criado_em?: string
+          descricao?: string | null
+          domain?: string | null
+          endereco?: Json | null
+          horarios?: Json | null
+          id?: string
+          logo_url?: string | null
+          nome?: string
+          raio_entrega_km?: number | null
+          slug?: string | null
+          taxa_entrega?: number
+          telefone?: string | null
+          tempo_entrega?: number | null
+          tenant_id?: string
+          theme?: Json | null
+          usa_entregadores_proprios?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stores_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stores_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       support_tickets: {
         Row: {
           assunto: string
@@ -1380,105 +2272,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "support_tickets_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stores: {
-        Row: {
-          aceita_cartao_maquininha: boolean
-          aceita_cartao_online: boolean
-          aceita_dinheiro: boolean
-          aceita_pix: boolean
-          ativo: boolean
-          atualizado_em: string
-          banner_url: string | null
-          categoria_id: string | null
-          cf_dns_record_id: string | null
-          criado_em: string
-          descricao: string | null
-          domain: string | null
-          endereco: Json | null
-          horarios: Json | null
-          id: string
-          logo_url: string | null
-          nome: string
-          raio_entrega_km: number | null
-          slug: string | null
-          taxa_entrega: number
-          telefone: string | null
-          tempo_entrega: number | null
-          tenant_id: string
-          theme: Json | null
-          usa_entregadores_proprios: boolean
-        }
-        Insert: {
-          aceita_cartao_maquininha?: boolean
-          aceita_cartao_online?: boolean
-          aceita_dinheiro?: boolean
-          aceita_pix?: boolean
-          ativo?: boolean
-          atualizado_em?: string
-          banner_url?: string | null
-          categoria_id?: string | null
-          cf_dns_record_id?: string | null
-          criado_em?: string
-          descricao?: string | null
-          domain?: string | null
-          endereco?: Json | null
-          horarios?: Json | null
-          id?: string
-          logo_url?: string | null
-          nome: string
-          raio_entrega_km?: number | null
-          slug?: string | null
-          taxa_entrega?: number
-          telefone?: string | null
-          tempo_entrega?: number | null
-          tenant_id: string
-          theme?: Json | null
-          usa_entregadores_proprios?: boolean
-        }
-        Update: {
-          aceita_cartao_maquininha?: boolean
-          aceita_cartao_online?: boolean
-          aceita_dinheiro?: boolean
-          aceita_pix?: boolean
-          ativo?: boolean
-          atualizado_em?: string
-          banner_url?: string | null
-          categoria_id?: string | null
-          cf_dns_record_id?: string | null
-          criado_em?: string
-          descricao?: string | null
-          domain?: string | null
-          endereco?: Json | null
-          horarios?: Json | null
-          id?: string
-          logo_url?: string | null
-          nome?: string
-          raio_entrega_km?: number | null
-          slug?: string | null
-          taxa_entrega?: number
-          telefone?: string | null
-          tempo_entrega?: number | null
-          tenant_id?: string
-          theme?: Json | null
-          usa_entregadores_proprios?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stores_categoria_id_fkey"
-            columns: ["categoria_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stores_tenant_id_fkey"
             columns: ["tenant_id"]
             isOneToOne: false
             referencedRelation: "tenants"
@@ -1554,6 +2347,8 @@ export type Database = {
           criado_em: string
           email: string
           id: string
+          logistica_agrupamento: boolean
+          logistica_automatica: boolean
           nome_responsavel: string
           pagarme_kyc_link: string | null
           pagarme_onboarding_status: string
@@ -1561,6 +2356,7 @@ export type Database = {
           slug: string | null
           stripe_customer_id: string | null
           telefone: string | null
+          tutorial_template_visto: boolean
           user_id: string
         }
         Insert: {
@@ -1570,6 +2366,8 @@ export type Database = {
           criado_em?: string
           email: string
           id?: string
+          logistica_agrupamento?: boolean
+          logistica_automatica?: boolean
           nome_responsavel: string
           pagarme_kyc_link?: string | null
           pagarme_onboarding_status?: string
@@ -1577,6 +2375,7 @@ export type Database = {
           slug?: string | null
           stripe_customer_id?: string | null
           telefone?: string | null
+          tutorial_template_visto?: boolean
           user_id: string
         }
         Update: {
@@ -1586,6 +2385,8 @@ export type Database = {
           criado_em?: string
           email?: string
           id?: string
+          logistica_agrupamento?: boolean
+          logistica_automatica?: boolean
           nome_responsavel?: string
           pagarme_kyc_link?: string | null
           pagarme_onboarding_status?: string
@@ -1593,6 +2394,7 @@ export type Database = {
           slug?: string | null
           stripe_customer_id?: string | null
           telefone?: string | null
+          tutorial_template_visto?: boolean
           user_id?: string
         }
         Relationships: []
@@ -1635,6 +2437,277 @@ export type Database = {
       }
     }
     Views: {
+      public_catalog_categories: {
+        Row: {
+          id: string | null
+          nome: string | null
+          ordem: number | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_catalog_product_modifier_groups: {
+        Row: {
+          id: string | null
+          max_select: number | null
+          min_select: number | null
+          nome: string | null
+          obrigatorio: boolean | null
+          ordem: number | null
+          product_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_modifier_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_modifier_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_catalog_product_modifiers: {
+        Row: {
+          disponivel: boolean | null
+          group_id: string | null
+          id: string | null
+          nome: string | null
+          ordem: number | null
+          preco_extra: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_modifiers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "product_modifier_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_modifiers_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_modifier_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_catalog_product_option_groups: {
+        Row: {
+          id: string | null
+          nome: string | null
+          ordem: number | null
+          product_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_option_groups_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_catalog_product_options: {
+        Row: {
+          group_id: string | null
+          hex_color: string | null
+          id: string | null
+          ordem: number | null
+          valor: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "product_option_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_options_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_option_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_catalog_product_variant_options: {
+        Row: {
+          option_id: string | null
+          variant_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variant_options_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "product_variants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variant_options_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_product_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_catalog_product_variants: {
+        Row: {
+          disponivel: boolean | null
+          foto_url: string | null
+          id: string | null
+          ordem: number | null
+          preco: number | null
+          preco_promocional: number | null
+          product_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_variants_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_catalog_products: {
+        Row: {
+          category_id: string | null
+          descricao: string | null
+          disponivel: boolean | null
+          foto_url: string | null
+          id: string | null
+          metadata: Json | null
+          nome: string | null
+          ordem: number | null
+          preco: number | null
+          preco_promocional: number | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_stores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_catalog_stores: {
+        Row: {
+          aceita_cartao_maquininha: boolean | null
+          aceita_cartao_online: boolean | null
+          aceita_dinheiro: boolean | null
+          aceita_pix: boolean | null
+          banner_url: string | null
+          categoria_id: string | null
+          categoria_slug: string | null
+          descricao: string | null
+          horarios: Json | null
+          id: string | null
+          logo_url: string | null
+          nome: string | null
+          slug: string | null
+          taxa_entrega: number | null
+          telefone: string | null
+          tempo_entrega: number | null
+          theme: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stores_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "public_catalog_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_explore_feed: {
         Row: {
           comentarios: number | null
@@ -1657,6 +2730,52 @@ export type Database = {
       }
     }
     Functions: {
+      aceitar_oferta_despacho: {
+        Args: { p_offer_id: string }
+        Returns: {
+          motivo: string
+          ok: boolean
+          rota_id: string
+        }[]
+      }
+      calcular_frete: {
+        Args: {
+          p_distancia_m: number
+          p_porte: Database["public"]["Enums"]["cargo_size"]
+          p_refrigerada: boolean
+          p_veiculo: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Returns: number
+      }
+      calcular_ganho_rota: {
+        Args: {
+          p_distancia_m: number
+          p_drops: number
+          p_veiculo: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Returns: number
+      }
+      calcular_perfil_carga_pedido: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
+      candidatos_agrupamento: {
+        Args: { p_order_id: string }
+        Returns: {
+          distancia_drop_m: number
+          order_id: string
+        }[]
+      }
+      capacidade_do_veiculo: {
+        Args: { v: Database["public"]["Enums"]["vehicle_type"] }
+        Returns: {
+          max_paradas: number
+          peso_g: number
+          raio_km: number
+          volume_ml: number
+        }[]
+      }
+      cfg: { Args: { p_chave: string }; Returns: number }
       consumer_has_order_with_tenant: {
         Args: { p_consumer_id: string }
         Returns: boolean
@@ -1669,16 +2788,45 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: boolean
       }
+      courier_elegivel: {
+        Args: {
+          p_courier_id: string
+          p_distancia_total_m: number
+          p_paradas: number
+          p_peso_g: number
+          p_porte: Database["public"]["Enums"]["cargo_size"]
+          p_refrigerada: boolean
+          p_volume_ml: number
+        }
+        Returns: boolean
+      }
       courier_has_active_delivery: {
         Args: { p_courier_id: string; p_statuses: string[] }
         Returns: boolean
       }
+      distancia_m: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
+      distancia_viaria_m: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
+      }
+      geohash_encode: {
+        Args: { p_lat: number; p_lng: number; p_precisao?: number }
+        Returns: string
+      }
       get_user_id_by_email: { Args: { p_email: string }; Returns: string }
       increment_post_view: { Args: { post_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      montar_rota: {
+        Args: { p_agrupar?: boolean; p_order_id: string }
+        Returns: string
+      }
       my_consumer_id: { Args: never; Returns: string }
       my_courier_id: { Args: never; Returns: string }
       my_tenant_id: { Args: never; Returns: string }
+      ofertar_rota: { Args: { p_route_id: string }; Returns: string }
       order_belongs_to_consumer: {
         Args: { p_order_id: string }
         Returns: boolean
@@ -1687,12 +2835,70 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: boolean
       }
+      processar_fila_despacho: {
+        Args: never
+        Returns: {
+          ofertas_expiradas: number
+          rotas_processadas: number
+        }[]
+      }
+      ranquear_couriers: {
+        Args: { p_limite?: number; p_route_id: string }
+        Returns: {
+          courier_id: string
+          proprio: boolean
+          score: number
+        }[]
+      }
+      recusar_oferta_despacho: {
+        Args: { p_offer_id: string }
+        Returns: boolean
+      }
+      resolver_carga_item: {
+        Args: { p_product_id: string; p_store_id: string }
+        Returns: {
+          fragil: boolean
+          peso_g: number
+          refrigerado: boolean
+          volume_ml: number
+        }[]
+      }
+      score_courier: {
+        Args: {
+          p_courier_id: string
+          p_distancia_ate_coleta_m: number
+          p_porte: Database["public"]["Enums"]["cargo_size"]
+        }
+        Returns: number
+      }
+      sequenciar_drops: {
+        Args: {
+          p_order_ids: string[]
+          p_origem_lat: number
+          p_origem_lng: number
+        }
+        Returns: {
+          distancia_perna_m: number
+          ordem: number
+          order_id: string
+        }[]
+      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       tenant_tracking_courier: {
         Args: { p_courier_id: string }
         Returns: boolean
       }
+      veiculo_aceita_porte: {
+        Args: {
+          p: Database["public"]["Enums"]["cargo_size"]
+          v: Database["public"]["Enums"]["vehicle_type"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      cargo_size: "P" | "M" | "G" | "XG"
       courier_status: "pendente" | "aprovado" | "reprovado" | "suspenso"
       courier_type: "proprio" | "autonomo"
       delivery_status:
@@ -1701,6 +2907,7 @@ export type Database = {
         | "coletada"
         | "entregue"
         | "cancelada"
+      offer_response: "aceita" | "recusada" | "expirada"
       order_status:
         | "novo"
         | "confirmado"
@@ -1710,11 +2917,21 @@ export type Database = {
         | "entregue"
         | "cancelado"
       payout_status: "agendado" | "processando" | "concluido" | "falhou"
+      route_status:
+        | "planejada"
+        | "oferecida"
+        | "aceita"
+        | "em_andamento"
+        | "concluida"
+        | "cancelada"
       stock_movement_type:
         | "entrada"
         | "saida_pedido"
         | "ajuste_positivo"
         | "ajuste_negativo"
+      stop_status: "pendente" | "no_local" | "concluida" | "falhou"
+      stop_type: "coleta" | "entrega"
+      vehicle_type: "a_pe" | "bicicleta" | "moto" | "carro" | "utilitario"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1845,6 +3062,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      cargo_size: ["P", "M", "G", "XG"],
       courier_status: ["pendente", "aprovado", "reprovado", "suspenso"],
       courier_type: ["proprio", "autonomo"],
       delivery_status: [
@@ -1854,6 +3072,7 @@ export const Constants = {
         "entregue",
         "cancelada",
       ],
+      offer_response: ["aceita", "recusada", "expirada"],
       order_status: [
         "novo",
         "confirmado",
@@ -1864,12 +3083,23 @@ export const Constants = {
         "cancelado",
       ],
       payout_status: ["agendado", "processando", "concluido", "falhou"],
+      route_status: [
+        "planejada",
+        "oferecida",
+        "aceita",
+        "em_andamento",
+        "concluida",
+        "cancelada",
+      ],
       stock_movement_type: [
         "entrada",
         "saida_pedido",
         "ajuste_positivo",
         "ajuste_negativo",
       ],
+      stop_status: ["pendente", "no_local", "concluida", "falhou"],
+      stop_type: ["coleta", "entrega"],
+      vehicle_type: ["a_pe", "bicicleta", "moto", "carro", "utilitario"],
     },
   },
 } as const
