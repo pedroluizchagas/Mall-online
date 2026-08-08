@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { supabase } from '@/lib/supabase'
 import { registrarPushToken, useNotificacaoListener } from '@/lib/notificacoes'
 import { SplashAnimado } from '@/components/SplashAnimado'
+import { TransicaoMallevo } from '@/components/TransicaoMallevo'
 import { consumerDesign } from '@/lib/consumer-design'
 
 export default function LayoutRaiz() {
@@ -61,6 +62,8 @@ export default function LayoutRaiz() {
         />
       </Stack>
       <StatusBar style="dark" />
+      {/* Véu de saída de loja (acima do navigator, abaixo do splash de boot) */}
+      <TransicaoMallevo />
       {splashVisivel && (
         <SplashAnimado onFim={() => setSplashVisivel(false)} />
       )}
