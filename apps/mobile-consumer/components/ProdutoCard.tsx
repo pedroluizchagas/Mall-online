@@ -159,9 +159,12 @@ function PrecoLinha({
 }) {
   const design = useStoreDesign()
   const { colors } = design
+  // Pele ativa → preço no accent do arquétipo (uma das marcas mais visíveis
+  // da identidade da loja). Fora de tema, ink — o neon Mallevo não é texto.
+  const corPreco = design.themed ? colors.accent : colors.ink
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-      <Text style={{ fontSize: 15, color: colors.ink, ...fontStyle(design.body, 800) }}>
+      <Text style={{ fontSize: 15, color: corPreco, ...fontStyle(design.body, 800) }}>
         {formatarReais(preco)}
       </Text>
       {precoOriginal !== undefined && (
