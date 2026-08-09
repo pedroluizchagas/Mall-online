@@ -24,6 +24,14 @@ import { LojaArtesa } from '@/components/loja/LojaArtesa'
 import { ProdutoArtesao } from '@/components/loja/ProdutoArtesao'
 import { LojaNoir } from '@/components/loja/LojaNoir'
 import { ProdutoNoir } from '@/components/loja/ProdutoNoir'
+import { LojaVolt } from '@/components/loja/LojaVolt'
+import { ProdutoVolt } from '@/components/loja/ProdutoVolt'
+import { LojaClinica } from '@/components/loja/LojaClinica'
+import { ProdutoClinico } from '@/components/loja/ProdutoClinico'
+import { LojaTorra } from '@/components/loja/LojaTorra'
+import { ProdutoTorra } from '@/components/loja/ProdutoTorra'
+import { LojaMagazine } from '@/components/loja/LojaMagazine'
+import { ProdutoMagazine } from '@/components/loja/ProdutoMagazine'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -231,14 +239,36 @@ export default function PaginaLoja() {
   // noir e ganham o cardápio-livro).
   const vitrineNoir =
     design.arquetipo === 'noir' && loja?.categoria_slug === 'alimentos-bebidas'
+  // Volt: fitness/esporte (vestuário esportivo e suplementos).
+  const vitrineVolt =
+    design.arquetipo === 'volt' &&
+    ['vestuario-calcados', 'saude-bem-estar'].includes(loja?.categoria_slug)
+  // Clínica: farmácia/saúde/vet — layout de utilidade (busca + lista densa).
+  const vitrineClinica =
+    design.arquetipo === 'clinic' &&
+    ['farmacia-medicamentos', 'saude-bem-estar', 'veterinaria'].includes(
+      loja?.categoria_slug,
+    )
+  // Torra: cafeterias/confeitarias (pôster retrô + cardápio âmbar).
+  const vitrineTorra =
+    design.arquetipo === 'roast' && loja?.categoria_slug === 'alimentos-bebidas'
+  // Magazine: lojas de departamento/vende-tudo (categoria guarda-chuva).
+  const vitrineMagazine =
+    design.arquetipo === 'magazine' && loja?.categoria_slug === 'outros'
 
   if (
     vitrineEditorial ||
     vitrineRaw ||
     vitrineSerena ||
     vitrineArtesa ||
-    vitrineNoir
+    vitrineNoir ||
+    vitrineVolt ||
+    vitrineClinica ||
+    vitrineTorra ||
+    vitrineMagazine
   ) {
+    // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
+    // do JSX sobre componentes genéricos) — renderizada num ramo próprio.
     const Vitrine = vitrineRaw
       ? LojaRaw
       : vitrineSerena
@@ -247,7 +277,11 @@ export default function PaginaLoja() {
           ? LojaArtesa
           : vitrineNoir
             ? LojaNoir
-            : LojaEditorial
+            : vitrineVolt
+              ? LojaVolt
+              : vitrineTorra
+                ? LojaTorra
+                : LojaEditorial
     const Pdp = vitrineRaw
       ? ProdutoRaw
       : vitrineSerena
@@ -256,7 +290,15 @@ export default function PaginaLoja() {
           ? ProdutoArtesao
           : vitrineNoir
             ? ProdutoNoir
-            : ProdutoEditorial
+            : vitrineVolt
+              ? ProdutoVolt
+              : vitrineClinica
+                ? ProdutoClinico
+                : vitrineTorra
+                  ? ProdutoTorra
+                  : vitrineMagazine
+                    ? ProdutoMagazine
+                    : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
@@ -267,12 +309,28 @@ export default function PaginaLoja() {
            * contador) é a porta do carrinho — a pill flutuante duplicaria a
            * função e disputaria espaço com a barra de menu da vitrine.
            */}
-          <Vitrine
-            loja={loja}
-            secoes={secoes}
-            aoAbrirProduto={setProdutoSelecionado}
-            espacoFinal={24}
-          />
+          {vitrineClinica ? (
+            <LojaClinica
+              loja={loja}
+              secoes={secoes}
+              aoAbrirProduto={setProdutoSelecionado}
+              espacoFinal={24}
+            />
+          ) : vitrineMagazine ? (
+            <LojaMagazine
+              loja={loja}
+              secoes={secoes}
+              aoAbrirProduto={setProdutoSelecionado}
+              espacoFinal={24}
+            />
+          ) : (
+            <Vitrine
+              loja={loja}
+              secoes={secoes}
+              aoAbrirProduto={setProdutoSelecionado}
+              espacoFinal={24}
+            />
+          )}
 
           {produtoSelecionado && loja && (
             <Pdp
