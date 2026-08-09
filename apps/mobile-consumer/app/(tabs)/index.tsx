@@ -35,22 +35,50 @@ interface Loja {
   logo_url: string | null
   taxa_entrega: number
   tempo_entrega: number | null
+  categoria_slug: string | null
 }
 
 /**
- * Seções temáticas do home. Stores são chunked sequencialmente em
- * grupos do tamanho de SECAO_SIZE; cada grupo é exibido com o
- * título/subtítulo abaixo (na ordem da array).
+ * Seções temáticas do home — cada loja entra na seção da SUA categoria
+ * (SECAO_POR_CATEGORIA). Nada de fatiar por posição: com o catálogo
+ * crescendo, o chunk antigo desalinhava títulos e repetia seções.
+ *
+ * Progressão de pisos sem repetição: Térreo (conveniência na entrada) → 1 →
+ * 2 → 3 → 4 (praça de alimentação no topo, como nos shoppings brasileiros).
+ * A ORDEM das seções segue relevância de delivery (comida primeiro), não o
+ * andar físico.
  */
 const SECOES = [
-  { titulo: 'Praça de Alimentação', subtitulo: 'Piso Térreo · Restaurantes e cafés' },
+  { titulo: 'Praça de Alimentação', subtitulo: 'Piso 4 · Restaurantes e cafés' },
   { titulo: 'Essenciais do Dia a Dia', subtitulo: 'Piso Térreo · Mercado, farmácia e bebidas' },
   { titulo: 'Moda & Beleza', subtitulo: 'Piso 1 · Roupas, calçados e cosméticos' },
   { titulo: 'Tecnologia & Eletrônicos', subtitulo: 'Piso 2 · Celulares, informática e games' },
   { titulo: 'Casa & Vida', subtitulo: 'Piso 3 · Decoração, pet shop e papelaria' },
 ] as const
 
-const SECAO_SIZE = 6
+/** Categoria (slug global) → índice da seção em SECOES. Desconhecida → Casa & Vida. */
+const SECAO_POR_CATEGORIA: Record<string, number> = {
+  'alimentos-bebidas': 0,
+  'mercado-conveniencia': 1,
+  'farmacia-medicamentos': 1,
+  'saude-bem-estar': 1,
+  'vestuario-calcados': 2,
+  'beleza-cosmeticos': 2,
+  'acessorios-joias': 2,
+  'saloes-estetica': 2,
+  'eletronicos-tecnologia': 3,
+  'oficinas-manutencao': 3,
+  'aulas-cursos': 3,
+  'casa-decoracao': 4,
+  'pet-shop': 4,
+  'veterinaria': 4,
+  'papelaria-livraria': 4,
+  'brinquedos-presentes': 4,
+  'floricultura-plantas': 4,
+  'construcao-ferramentas': 4,
+  'automotivo': 4,
+  'outros': 4,
+}
 
 // ─────────────────────────────────────────────────────────
 // Sub-componentes locais
@@ -276,11 +304,18 @@ export default function TelaHome() {
   async function carregarDados() {
     const { data } = await supabase
       .from('stores')
-      .select('id, nome, slug, logo_url, taxa_entrega, tempo_entrega')
+      .select(
+        'id, nome, slug, logo_url, taxa_entrega, tempo_entrega, categoria:categories(slug)',
+      )
       .eq('ativo', true)
       .limit(40)
 
-    setLojas(data ?? [])
+    setLojas(
+      (data ?? []).map((r: any) => ({
+        ...r,
+        categoria_slug: r.categoria?.slug ?? null,
+      })),
+    )
     setCarregando(false)
   }
 
@@ -294,13 +329,12 @@ export default function TelaHome() {
     setAtualizando(false)
   }, [])
 
-  // Divide lojas em seções de SECAO_SIZE
-  const grupos = lojas.reduce<Loja[][]>((acc, loja, i) => {
-    const indice = Math.floor(i / SECAO_SIZE)
-    if (!acc[indice]) acc[indice] = []
-    acc[indice].push(loja)
-    return acc
-  }, [])
+  // Cada loja entra na seção da sua categoria (nunca duplica nem desalinha).
+  const grupos = SECOES.map(() => [] as Loja[])
+  lojas.forEach((loja) => {
+    const indice = SECAO_POR_CATEGORIA[loja.categoria_slug ?? ''] ?? 4
+    grupos[indice].push(loja)
+  })
 
   const mostraPedidoAtivo = pedidoAtivoId && statusAtual && ehAtivo(statusAtual)
   const espacoFinal =
@@ -343,10 +377,11 @@ export default function TelaHome() {
         {carregando
           ? Array.from({ length: 2 }).map((_, i) => <SkeletonSecao key={i} />)
           : grupos.map((lojasDaSecao, i) => {
-              const meta = SECOES[i % SECOES.length]
+              if (lojasDaSecao.length === 0) return null
+              const meta = SECOES[i]
               return (
                 <SecaoLojas
-                  key={i}
+                  key={meta.titulo}
                   titulo={meta.titulo}
                   subtitulo={meta.subtitulo}
                   lojas={lojasDaSecao}
