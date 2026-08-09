@@ -11,9 +11,14 @@
 
 import { getArquetiposOferecidos } from '@mallevo/lib'
 import {
+  LOGO_ACAI,
+  LOGO_ARENA_FIT,
+  LOGO_LOJAO,
   LOGO_BELLA,
+  LOGO_CAFE_AROMA,
   LOGO_CANTINA,
   LOGO_CASA_CONFORTO,
+  LOGO_FARMACIA,
   LOGO_URBAN_WEAR,
   LOGO_VITRINE_FASHION,
 } from './logos'
@@ -109,9 +114,14 @@ interface ProductRow {
   ordem: number
   /**
    * `galeria`: fotos extras do PDP imersivo; `especificacoes`: ficha técnica
-   * (pares rótulo/valor) do PDP artesão (lojas-demo com conteúdo real).
+   * do PDP artesão; `exige_receita`: selo/aviso da vitrine clínica (mesmo
+   * contrato lido pelo ModalProduto).
    */
-  metadata: { galeria?: string[]; especificacoes?: [string, string][] } | null
+  metadata: {
+    galeria?: string[]
+    especificacoes?: [string, string][]
+    exige_receita?: boolean
+  } | null
   // Embeds
   categories: { id: string; nome: string; ordem: number }
   stores: { slug: string; nome: string; ativo: true }
@@ -125,8 +135,8 @@ const foto = (seed: string, w = 600, h = 420) =>
 const fotoModa = (id: string, w = 600, h = 800) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&q=80&auto=format&fit=crop`
 
-/** [produto, precoCentavos, descricao, fotoUrl?, especificacoes?] */
-type ItemCatalogo = [string, number, string, string?, [string, string][]?]
+/** [produto, precoCentavos, descricao, fotoUrl?, especificacoes?, exigeReceita?] */
+type ItemCatalogo = [string, number, string, string?, [string, string][]?, boolean?]
 type Catalogo = [string, ItemCatalogo[]][]
 
 interface LojaSpec {
@@ -159,9 +169,11 @@ interface PisoSpec {
 // Pisos do shopping — a ordem casa com SECOES em (tabs)/index.tsx
 // ─────────────────────────────────────────────────────────────
 
+// Pisos sem duplicidade: Térreo = essenciais (conveniência na entrada);
+// Piso 4 = praça de alimentação no topo, à moda dos shoppings brasileiros.
 const PISOS: PisoSpec[] = [
   {
-    piso: 'Piso Térreo',
+    piso: 'Piso 4',
     secaoSlug: 'alimentacao',
     catalogo: [
       [
@@ -249,8 +261,72 @@ const PISOS: PisoSpec[] = [
           ],
         ],
       },
-      { nome: 'Café Aroma', slug: 'cafe-aroma', descricao: 'Cafés especiais, bolos caseiros e brunch o dia todo.', taxa: 0, tempo: 25, categoriaSlug: 'cafeteria', preset: 'heritage' },
-      { nome: 'Açaí da Praça', slug: 'acai-da-praca', descricao: 'Açaí cremoso na tigela com toppings à vontade.', taxa: 390, tempo: 20, categoriaSlug: 'sobremesas', preset: 'market' },
+      {
+        nome: 'Café Aroma',
+        slug: 'cafe-aroma',
+        descricao: 'Sempre fresco, sempre na hora — grãos de especialidade torrados na casa.',
+        taxa: 0,
+        tempo: 25,
+        categoriaSlug: 'cafeteria',
+        // Loja-demo da vitrine torra (Kafoska): pôster verde + âmbar.
+        preset: 'roast',
+        logo: LOGO_CAFE_AROMA,
+        banner: fotoModa('1501339847302-ac426a4a7cbb', 900, 1200),
+        catalogo: [
+          [
+            'Cafés',
+            [
+              ['Cold Brew Tônica', 1690, 'Extração a frio · tônica · laranja bruleé', fotoModa('1517701550927-30cf4ba1dba5')],
+              ['Latte da Casa', 1490, 'Espresso duplo · leite vaporizado · arte', fotoModa('1541167760496-1628856ab772')],
+              ['Cappuccino Trio', 1590, 'Espresso · leite cremoso · toque de cacau', fotoModa('1509042239860-f550ce710b93')],
+              ['Coado da Torra', 990, 'Método V60 · grãos da semana', fotoModa('1514432324607-a09d9b4aefdd')],
+              ['Café Gelado Clássico', 1290, 'Espresso · gelo · calda da casa', fotoModa('1461023058943-07fcbe16d735')],
+            ],
+          ],
+          [
+            'Doces & fatias',
+            [
+              ['Croissant Amanteigado', 1190, 'Folhado na manteiga francesa', fotoModa('1555507036-ab1f4038808a')],
+              ['Bolo Trufado', 1490, 'Fatia generosa · ganache 70%', fotoModa('1578985545062-69928b1d9587')],
+              ['Cookie Tostado', 890, 'Gotas de chocolate · flor de sal', fotoModa('1499636136210-6f4ee915583e')],
+            ],
+          ],
+        ],
+      },
+      {
+        nome: 'Açaí da Praça',
+        slug: 'acai-da-praca',
+        descricao: 'Batido na pedra, cremoso de verdade — o açaí da praça com toppings à vontade.',
+        taxa: 390,
+        tempo: 20,
+        categoriaSlug: 'sobremesas',
+        // Açaíteria = vitrine torra com a paleta AÇAÍ (mesmo layout do
+        // Kafoska, pele roxo + orquídea): a tese das paletas em ação.
+        preset: 'roast',
+        palette: 'acai',
+        logo: LOGO_ACAI,
+        banner: fotoModa('1615478503562-ec2d8aa0e24e', 900, 1200),
+        catalogo: [
+          [
+            'Tigelas & copos',
+            [
+              ['Copo da Praça 500', 1890, 'Açaí batido na pedra · frutas por cima', fotoModa('1615478503562-ec2d8aa0e24e')],
+              ['Tigela Clássica 300', 1490, 'Granola crocante · banana · mel', fotoModa('1494597564530-871f2b93ac55')],
+              ['Duo Berry 400', 1690, 'Açaí com morango · blueberry · hortelã', fotoModa('1553530666-ba11a7da3888')],
+              ['Vitamina Morango', 1190, 'Morango batido · leite gelado · chia', fotoModa('1502741224143-90386d7f8c82')],
+            ],
+          ],
+          [
+            'Sucos & extras',
+            [
+              ['Trio Vitaminas', 1390, 'Banana · maçã · granola artesanal', fotoModa('1505252585461-04db1eb84625')],
+              ['Suco Verde Detox', 990, 'Couve · kiwi · maçã verde · gengibre', fotoModa('1610970881699-44a5587cabec')],
+              ['Salada de Frutas', 1090, 'Frutas da estação · calda cítrica', fotoModa('1490474418585-ba9bad8fd0ea')],
+              ['Banana Extra', 390, 'Porção de complemento pra turbinar', fotoModa('1571771894821-ce9b6c11b08e')],
+            ],
+          ],
+        ],
+      },
     ],
   },
   {
@@ -277,7 +353,37 @@ const PISOS: PisoSpec[] = [
     ],
     lojas: [
       { nome: 'Mercado Central DV', slug: 'mercado-central', descricao: 'Hortifruti, mercearia e açougue. Tudo num lugar só.', taxa: 0, tempo: 40, categoriaSlug: 'mercado', preset: 'market' },
-      { nome: 'Farmácia Saúde+', slug: 'farmacia-saude-mais', descricao: 'Medicamentos, higiene e dermocosméticos. Entrega rápida.', taxa: 0, tempo: 25, categoriaSlug: 'farmacia', preset: 'clinic' },
+      {
+        nome: 'Farmácia Saúde+',
+        slug: 'farmacia-saude-mais',
+        descricao: 'Sua farmácia de confiança — medicamentos com procedência e farmacêutico de plantão.',
+        taxa: 0,
+        tempo: 25,
+        categoriaSlug: 'farmacia',
+        // Loja-demo da vitrine clínica: busca, lista densa e selo de receita.
+        preset: 'clinic',
+        logo: LOGO_FARMACIA,
+        banner: fotoModa('1576602976047-174e57a47881', 900, 1200),
+        catalogo: [
+          [
+            'Medicamentos',
+            [
+              ['Analgésico 500mg · 20cp', 1290, 'Paracetamol · dor e febre', fotoModa('1584308666744-24d5c474f2ae')],
+              ['Antibiótico 500mg · 21cp', 4590, 'Amoxicilina · uso sob prescrição', fotoModa('1550572017-edd951b55104'), undefined, true],
+              ['Antigripal Dia & Noite', 2190, 'Alívio completo dos sintomas gripais', fotoModa('1628771065518-0d82f1938462')],
+            ],
+          ],
+          [
+            'Vitaminas & bem-estar',
+            [
+              ['Vitamina C 1g · 30 efervescentes', 2490, 'Imunidade diária · sabor laranja', fotoModa('1587854692152-cbe660dbde88')],
+              ['Ômega 3 + Vitamina D', 5990, '60 cápsulas · EPA e DHA concentrados', fotoModa('1512069772995-ec65ed45afd6')],
+              ['Multivitamínico A-Z', 3990, '90 comprimidos · rotina completa', fotoModa('1607619056574-7b8d3ee536b2')],
+              ['Imunidade Zinco + Própolis', 3490, '30 cápsulas · defesa natural', fotoModa('1471864190281-a93a3070b6de')],
+            ],
+          ],
+        ],
+      },
       {
         nome: 'Adega Premium',
         slug: 'adega-premium',
@@ -470,6 +576,38 @@ const PISOS: PisoSpec[] = [
       },
       { nome: 'Joalheria Lux', slug: 'joalheria-lux', descricao: 'Joias, relógios e semijoias com garantia.', taxa: 0, tempo: 60, categoriaSlug: 'acessorios', preset: 'noir' },
       {
+        nome: 'Arena Fit',
+        slug: 'arena-fit',
+        descricao: 'Performance em cada treino. Roupas, suplementos e atitude no repeat.',
+        taxa: 590,
+        tempo: 40,
+        categoriaSlug: 'moda',
+        // Loja-demo da vitrine volt (Nivest): fitness com energia elétrica.
+        preset: 'volt',
+        logo: LOGO_ARENA_FIT,
+        banner: fotoModa('1517836357463-d25dfeac3438', 900, 1200),
+        catalogo: [
+          [
+            'Performance',
+            [
+              ['Legging Alta Resistência', 18990, 'Compressão média, cós alto, bolso lateral', fotoModa('1546483875-ad9014c88eba')],
+              ['Conjunto Treino Red', 22990, 'Top + short com tecido respirável', fotoModa('1518611012118-696072aa579a')],
+              ['Jogger Flex Cinza', 15990, 'Moletom leve de secagem rápida', fotoModa('1506629082955-511b1aa562c8')],
+              ['Top Impacto Laranja', 9990, 'Sustentação alta para corrida', fotoModa('1571019613454-1cb2f99b2d8b')],
+            ],
+          ],
+          [
+            'Suplementos & gear',
+            [
+              ['Whey Isolado Baunilha', 16990, '900g · 27g de proteína por dose', fotoModa('1593095948071-474c5cc2989d')],
+              ['Shaker Rotina Pro', 4990, '700ml com mola misturadora', fotoModa('1579722820308-d74e571900a9')],
+              ['Barra Proteica Choco', 890, '45g · 15g de proteína · sem açúcar', fotoModa('1622484212850-eb596d769edc')],
+              ['Luva Cross Grip', 7990, 'Couro reforçado para barra e corda', fotoModa('1517344884509-a0c97ec11bcc')],
+            ],
+          ],
+        ],
+      },
+      {
         nome: 'Ótica Visão Clara',
         slug: 'otica-visao-clara',
         descricao: 'Armações de grife e solares com lentes de proteção total.',
@@ -608,6 +746,43 @@ const PISOS: PisoSpec[] = [
       },
       { nome: 'Utilidades Lar', slug: 'utilidades-lar', descricao: 'Tudo para a cozinha e organização da casa.', taxa: 390, tempo: 45, categoriaSlug: 'casa', preset: 'editorial' },
       { nome: 'Livraria Saber', slug: 'livraria-saber', descricao: 'Livros, mangás e jogos de tabuleiro.', taxa: 0, tempo: 55, categoriaSlug: 'livraria', preset: 'editorial' },
+      {
+        nome: 'Lojão Central',
+        slug: 'lojao-central',
+        descricao: 'Do carrinho de bebê à furadeira — tudo para a casa em um só lugar, com oferta toda semana.',
+        taxa: 890,
+        tempo: 75,
+        categoriaSlug: 'departamento',
+        // Loja-demo da vitrine magazine (Revive): varejo clássico vende-tudo.
+        preset: 'magazine',
+        logo: LOGO_LOJAO,
+        banner: fotoModa('1556911220-bff31c812dba', 900, 1200),
+        catalogo: [
+          [
+            'Eletro & casa',
+            [
+              ['Geladeira Retrô Menta 260L', 289900, 'Degelo automático · classe A', fotoModa('1571175443880-49e1d25b2bc5')],
+              ['Smart TV 50" 4K', 219900, 'HDR · apps integrados · voz', fotoModa('1593359677879-a4bb92f829d1')],
+            ],
+          ],
+          [
+            'Infantil',
+            [
+              ['Boia Divertida Baby', 4990, 'Com assento e protetor solar UV', fotoModa('1519689680058-324335c77eba')],
+              ['Macacão Ursinho Plush', 7990, 'Tamanhos RN a 12 meses', fotoModa('1522771930-78848d9293e8')],
+              ['Trem de Madeira 24pç', 12990, 'Trilhos e estação — 3+ anos', fotoModa('1596461404969-9ae70f2830c1')],
+              ['Kit Primeiros Brinquedos', 8990, 'Pelúcias e livro de banho', fotoModa('1515488042361-ee00e0ddd4e4')],
+            ],
+          ],
+          [
+            'Ferramentas',
+            [
+              ['Furadeira de Impacto 20V', 39900, 'Bateria dupla · maleta inclusa', fotoModa('1504148455328-c376907d081c')],
+              ['Kit Alicates Pro 6pç', 15990, 'Aço cromo-vanádio · cabo isolado', fotoModa('1530124566582-a618bc2615dc')],
+            ],
+          ],
+        ],
+      },
     ],
   },
 ]
@@ -639,6 +814,7 @@ const CATEGORIA_CANON: Record<string, { slug: string; nome: string }> = {
   petshop: { slug: 'pet-shop', nome: 'Pet Shop' },
   papelaria: { slug: 'papelaria-livraria', nome: 'Papelaria' },
   livraria: { slug: 'papelaria-livraria', nome: 'Livraria' },
+  departamento: { slug: 'outros', nome: 'Departamento' },
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -691,7 +867,7 @@ PISOS.forEach((piso, pisoIdx) => {
     const catalogo = loja.catalogo ?? piso.catalogo
     catalogo.forEach(([catNome, itens], catIdx) => {
       const categoryId = `${storeId}-cat-${catIdx + 1}`
-      itens.forEach(([nome, preco, descricao, fotoUrl, especificacoes], prodIdx) => {
+      itens.forEach(([nome, preco, descricao, fotoUrl, especificacoes, exigeReceita], prodIdx) => {
         // ~1 em cada 4 produtos entra em promoção (−18%)
         const ehPromo = (lojaIdx + prodIdx) % 4 === 0
         const ordem = catIdx * 100 + prodIdx
@@ -716,10 +892,11 @@ PISOS.forEach((piso, pisoIdx) => {
           category_id: categoryId,
           ordem,
           metadata:
-            galeria || especificacoes
+            galeria || especificacoes || exigeReceita
               ? {
                   ...(galeria ? { galeria } : {}),
                   ...(especificacoes ? { especificacoes } : {}),
+                  ...(exigeReceita ? { exige_receita: true } : {}),
                 }
               : null,
           categories: { id: categoryId, nome: catNome, ordem: catIdx },
