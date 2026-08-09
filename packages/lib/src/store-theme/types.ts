@@ -12,13 +12,16 @@
  * a PELE (arquétipo/cores/tipografia) vive aqui.
  */
 
-/** Os 12 arquétipos que cobrem 100% das 20 categorias do Mallevo. */
+/** Os 15 arquétipos que cobrem 100% das 20 categorias do Mallevo. */
 export type ArquetipoCodigo =
   | 'heritage' // restaurantes/alimentação premium — serifa, neutros quentes
+  | 'roast' // cafeterias/confeitarias boutique — pôster retrô, verde + âmbar
+  | 'magazine' // lojas de departamento/vende-tudo — varejo claro, serifa clássica
   | 'raw' // streetwear/moda sport — dark, sans pesada, alto contraste
   | 'editorial' // moda elegante/cosméticos/neutro default — clean, whitespace
   | 'noir' // luxo (joias, auto premium) — preto, acentos metálicos
   | 'serene' // beleza feminina/skincare/joias delicadas — leve, tipo fina, sereno
+  | 'volt' // fitness/esporte/suplementos — claro, caps pesadas, volt elétrico
   | 'soft' // pet/salões/beleza-serviço — arredondado, acolhedor
   | 'artisan' // móveis/decoração/flores — neutros naturais, tátil
   | 'clinic' // farmácia/saúde/veterinária — clínico, confiança, legível

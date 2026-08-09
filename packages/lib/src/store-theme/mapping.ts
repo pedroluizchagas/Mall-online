@@ -12,13 +12,13 @@ import type { Archetype, ArquetipoCodigo, ArquetipoSugestao } from './types'
  * Record<CategoriaSlug, ...>` garante cobertura total (zero lacunas).
  */
 export const CATEGORIA_SLUG_TO_ARQUETIPO = {
-  'alimentos-bebidas': { default: 'heritage', alternativas: ['noir', 'market', 'soft'] },
-  'vestuario-calcados': { default: 'editorial', alternativas: ['raw', 'noir'] },
+  'alimentos-bebidas': { default: 'heritage', alternativas: ['noir', 'roast', 'market', 'soft'] },
+  'vestuario-calcados': { default: 'editorial', alternativas: ['raw', 'noir', 'volt'] },
   'acessorios-joias': { default: 'noir', alternativas: ['serene', 'editorial'] },
   'farmacia-medicamentos': { default: 'clinic', alternativas: ['market'] },
   'beleza-cosmeticos': { default: 'serene', alternativas: ['editorial', 'noir', 'soft'] },
   'saloes-estetica': { default: 'soft', alternativas: ['serene', 'noir', 'editorial'] },
-  'saude-bem-estar': { default: 'clinic', alternativas: ['soft'] },
+  'saude-bem-estar': { default: 'clinic', alternativas: ['soft', 'volt'] },
   'pet-shop': { default: 'soft', alternativas: ['playful'] },
   veterinaria: { default: 'clinic', alternativas: ['soft'] },
   'eletronicos-tecnologia': { default: 'tech', alternativas: ['editorial'] },
@@ -31,7 +31,7 @@ export const CATEGORIA_SLUG_TO_ARQUETIPO = {
   'mercado-conveniencia': { default: 'market', alternativas: ['utility'] },
   'oficinas-manutencao': { default: 'utility', alternativas: ['market'] },
   'aulas-cursos': { default: 'editorial', alternativas: ['playful', 'soft'] },
-  outros: { default: 'editorial', alternativas: ['market', 'soft'] },
+  outros: { default: 'magazine', alternativas: ['editorial', 'market', 'soft'] },
 } as const satisfies Record<CategoriaSlug, ArquetipoSugestao>
 
 /**

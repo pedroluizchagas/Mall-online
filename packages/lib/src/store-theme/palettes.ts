@@ -50,6 +50,60 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
       },
     },
   ],
+  roast: [
+    {
+      // Torra escura: marrom-café profundo com terracota quente.
+      codigo: 'barro',
+      nome: 'Barro',
+      color: {
+        bg: '#241A14', surface: '#2C221A', surfaceAlt: '#372B21',
+        ink: '#F4EBDD', inkMuted: '#A99882', line: '#413428',
+        accent: '#E0703A', accentInk: '#211006',
+      },
+    },
+    {
+      // Verde-hortelã noturno para cafés de vibe fresca.
+      codigo: 'hortela',
+      nome: 'Hortelã',
+      color: {
+        bg: '#16241E', surface: '#1D2E26', surfaceAlt: '#263A30',
+        ink: '#EDF5EC', inkMuted: '#93A89A', line: '#31473B',
+        accent: '#8FD9A8', accentInk: '#0E1F16',
+      },
+    },
+    {
+      // Roxo-açaí profundo + orquídea vibrante — a pele das açaíterias.
+      codigo: 'acai',
+      nome: 'Açaí',
+      color: {
+        bg: '#24102E', surface: '#2E1839', surfaceAlt: '#392046',
+        ink: '#F6EFF9', inkMuted: '#B5A3C4', line: '#432952',
+        accent: '#C97BEA', accentInk: '#240F2B',
+      },
+    },
+  ],
+  magazine: [
+    {
+      // O rosa-varejo da referência Revive.
+      codigo: 'framboesa',
+      nome: 'Framboesa',
+      color: {
+        bg: '#FFFFFF', surface: '#FFFFFF', surfaceAlt: '#FBF2F5',
+        ink: '#221419', inkMuted: '#7C6870', line: '#F0E2E7',
+        accent: '#C2185B', accentInk: '#FFFFFF',
+      },
+    },
+    {
+      // Azul-magazine dos grandes varejos brasileiros.
+      codigo: 'azul-magazine',
+      nome: 'Azul magazine',
+      color: {
+        bg: '#FFFFFF', surface: '#FFFFFF', surfaceAlt: '#F0F4FB',
+        ink: '#131A26', inkMuted: '#63707F', line: '#E2E9F2',
+        accent: '#1D4ED8', accentInk: '#FFFFFF',
+      },
+    },
+  ],
   raw: [
     {
       // Destilada da referência-âncora Rawline (docs/store-theme/02 §B):
@@ -138,6 +192,28 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
         bg: '#FFFFFF', surface: '#FFFFFF', surfaceAlt: '#F5F1EC',
         ink: '#241F1C', inkMuted: '#8A817A', line: '#ECE6DF',
         accent: '#8A6A57', accentInk: '#FFFFFF',
+      },
+    },
+  ],
+  volt: [
+    {
+      // O azul-violeta elétrico da faixa de anúncio da referência Nivest.
+      codigo: 'eletrico',
+      nome: 'Elétrico',
+      color: {
+        bg: '#FFFFFF', surface: '#FFFFFF', surfaceAlt: '#EFF0FA',
+        ink: '#0B0A14', inkMuted: '#6A6980', line: '#E5E6F2',
+        accent: '#4633FF', accentInk: '#FFFFFF',
+      },
+    },
+    {
+      codigo: 'laranja-pista',
+      nome: 'Laranja pista',
+      color: {
+        bg: '#FFFFFF', surface: '#FFFFFF', surfaceAlt: '#F5F0EA',
+        ink: '#140D07', inkMuted: '#79695C', line: '#EDE4DA',
+        // Aprofundado p/ sustentar tinta branca com AA real (≥ 4.5).
+        accent: '#C2430A', accentInk: '#FFFFFF',
       },
     },
   ],

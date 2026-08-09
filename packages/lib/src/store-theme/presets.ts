@@ -56,6 +56,65 @@ export const ARQUETIPOS = {
     },
   },
 
+  // ── Referências: cafeterias / confeitarias boutique ────────────────────────
+  roast: {
+    codigo: 'roast',
+    nome: 'Roast',
+    descricao:
+      'Pôster retrô de cafeteria. Verde-floresta profundo, âmbar vibrante, tipografia gigante e cardápio em cartões chapados. Para cafés e confeitarias com espírito.',
+    mood: ['quente', 'retrô', 'espirituoso'],
+    referencias: ['https://multiple-influence-475025.framer.app/'],
+    tokens: {
+      mode: 'dark',
+      color: pele({
+        bg: '#1C2617',
+        surface: '#243020',
+        surfaceAlt: '#2E3B28',
+        ink: '#F4EFE2',
+        inkMuted: '#A9AE97',
+        line: '#37432F',
+        accent: '#F2A33C',
+        accentInk: '#221503',
+      }),
+      typography: {
+        display: { family: 'Archivo', weights: [600, 700, 800] },
+        body: { family: 'Inter', weights: [400, 500, 600, 700] },
+        scale: 'regular',
+      },
+      shape: { radius: 'round', density: 'comfortable' },
+    },
+  },
+
+  // ── Referências: lojas de departamento / vende-tudo ────────────────────────
+  magazine: {
+    codigo: 'magazine',
+    nome: 'Magazine',
+    descricao:
+      'Varejo clássico e confiável. Branco quente, serifa de display nos títulos, pills pretas, chips verdes de oferta. Para lojas de departamento que vendem de tudo.',
+    mood: ['varejista', 'clássico', 'confiável'],
+    referencias: ['https://revivebeauty.framer.website/'],
+    tokens: {
+      mode: 'light',
+      color: pele({
+        bg: '#FFFFFF',
+        surface: '#FFFFFF',
+        surfaceAlt: '#F6F4F1',
+        ink: '#191817',
+        inkMuted: '#6E6A66',
+        line: '#EAE7E3',
+        accent: '#191817',
+        accentInk: '#FFFFFF',
+      }),
+      typography: {
+        // Serifa clássica nos títulos — a assinatura de magazine da referência.
+        display: { family: 'Spectral', weights: [400, 500, 600] },
+        body: { family: 'Inter', weights: [400, 500, 600, 700] },
+        scale: 'regular',
+      },
+      shape: { radius: 'soft', density: 'comfortable' },
+    },
+  },
+
   // ── Referências: streetwear / moda masculina e sport ───────────────────────
   raw: {
     codigo: 'raw',
@@ -185,6 +244,36 @@ export const ARQUETIPOS = {
         display: { family: 'Inter', weights: [400, 500, 600] },
         body: { family: 'Inter', weights: [400, 500, 600] },
         scale: 'spacious',
+      },
+      shape: { radius: 'soft', density: 'comfortable' },
+    },
+  },
+
+  // ── Referências: fitness / esporte / suplementos ───────────────────────────
+  volt: {
+    codigo: 'volt',
+    nome: 'Volt',
+    descricao:
+      'Energético e atlético. Caps pesadas, palco cinza-claro para o produto, acento volt elétrico, ritmo de performance. Para fitness, esporte e suplementos.',
+    mood: ['energético', 'atlético', 'vivo'],
+    referencias: ['https://nivest-framlix.framer.website/'],
+    tokens: {
+      mode: 'light',
+      color: pele({
+        bg: '#FFFFFF',
+        surface: '#FFFFFF',
+        // Palco cinza-claro dos produtos (cutouts) na referência.
+        surfaceAlt: '#F1F3EC',
+        ink: '#0C0E08',
+        inkMuted: '#666B5E',
+        line: '#E6E9E0',
+        accent: '#C6F42D',
+        accentInk: '#0C0E08',
+      }),
+      typography: {
+        display: { family: 'Archivo', weights: [600, 700, 800] },
+        body: { family: 'Inter', weights: [400, 500, 600, 700] },
+        scale: 'regular',
       },
       shape: { radius: 'soft', density: 'comfortable' },
     },
