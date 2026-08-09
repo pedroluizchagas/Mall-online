@@ -1,6 +1,6 @@
 # 02 — Arquétipos de design
 
-> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **7 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **12 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
+> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **10 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **15 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
 >
 > **Implementação:** `packages/lib/src/store-theme/presets.ts` (catálogo `ARQUETIPOS`).
 
@@ -8,15 +8,31 @@
 
 Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "11 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
 
-## 2.2 Os 12 arquétipos
+## 2.2 Os 15 arquétipos
 
-### Derivados de referência (7)
+### Derivados de referência (10)
 
 #### A. Heritage — `heritage`
 - **Nichos:** restaurantes, churrascarias, cafeterias boutique.
 - **DNA:** serifa de display; neutros quentes/creme; foto de comida full-bleed; selos de tradição; muito respiro.
 - **Mood:** sofisticado, atemporal, acolhedor.
 - **Refs:** [Veloria](https://veloriarestaurant.framer.website/), [Savoria](https://savoriarestro.framer.website/), [Bistora](https://bistora.framer.website/), [La Paloma](https://lapaloma.framer.website/), [Multiple Influence](https://multiple-influence-475025.framer.app/).
+
+#### A2. Roast — `roast`
+- **Nichos:** cafeterias, confeitarias boutique e **açaíterias** (alternativa de `alimentos-bebidas`).
+- **DNA:** pôster retrô — verde-floresta profundo + âmbar vibrante; tipografia gigante REPETIDA em degradê com o produto flutuando por cima; cardápio em CARTÕES ÂMBAR chapados com marca d'água do título; "MENU" gigante na vertical; cantos bem redondos.
+- **Mood:** quente, retrô, espirituoso.
+- **Refs:** [Kafoska](https://multiple-influence-475025.framer.app/).
+- **Paletas:** verde+âmbar (default), Barro (café/terracota), Hortelã (verde-menta noturno), **Açaí (roxo profundo + orquídea — a pele das açaíterias)**. O degradê do pôster deriva do accent da paleta, então a vitrine serve todas sem código novo — a tese do §2.1 em ação.
+- **Por que não é o Heritage:** heritage é serifa/creme/aconchego clássico; roast é cartaz — cor saturada, sans pesadíssima e humor gráfico. 2026-08: 14º arquétipo, com **vitrine própria** — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
+
+#### A3. Magazine — `magazine`
+- **Nichos:** lojas de departamento / vende-tudo (Havan, Casas Bahia) — **default da categoria `outros`**.
+- **DNA:** varejo clássico e confiável — branco quente, SERIFA de display (Spectral) nos títulos e wordmark, pills escuras, chips VERDES de oferta, hero com caixa emoldurada translúcida, tiles de categoria em foto cheia, "Adicionar" no próprio cartão.
+- **Mood:** varejista, clássico, confiável.
+- **Refs:** [Revive](https://revivebeauty.framer.website/).
+- **Paletas:** preto (default), Framboesa (rosa-varejo), Azul magazine.
+- **Layout próprio no consumer:** vitrine magazine — ver [05 §5.6](05-aplicacao-storefront-consumer.md). 2026-08: 15º arquétipo (market é supermercado denso; editorial é moda minimal — nenhum tinha a gramática de magazine).
 
 #### B. Raw / Street — `raw`
 - **Nichos:** moda masculina/sport, streetwear.
@@ -44,6 +60,14 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Mood:** delicado, sereno, elegante.
 - **Refs:** [All Natural](https://all-natural.framer.website/).
 - **Por que não é o Editorial:** o editorial constrói sofisticação com PESO (display 800, contraste agressivo); o serene constrói com LEVEZA (display 400, calma). São gramáticas opostas do mesmo minimalismo — 2026-08: adicionado como 12º arquétipo ao verificar que a referência não mapeava em nenhum dos 11.
+
+#### D3. Volt — `volt`
+- **Nichos:** fitness, esporte, suplementos (vestuário esportivo e saúde/performance).
+- **DNA:** claro e enérgico — caps pesadíssimas (Archivo), palco cinza-claro para o produto, acento VOLT elétrico em micro-momentos (badges, ticker), pills por toda parte, faixa-anúncio e marquee de benefícios.
+- **Mood:** energético, atlético, vivo.
+- **Refs:** [Nivest](https://nivest-framlix.framer.website/).
+- **Paletas:** volt (default), elétrico (azul-violeta), laranja-pista.
+- **Layout próprio no consumer:** vestuário esportivo e saúde/bem-estar vestem a **vitrine volt** (faixa-anúncio, ticker marquee, grid de chips) — ver [05 §5.6](05-aplicacao-storefront-consumer.md). 2026-08: 13º arquétipo, criado ao verificar que fitness não mapeava em nenhum dos 12 (raw é dark, tech é clínico, playful é infantil).
 
 #### E. Soft Care — `soft`
 - **Nichos:** petshop, salões/estética, beleza-serviço.
@@ -98,13 +122,13 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 
 | Categoria (slug) | Template funcional | Arquétipo default | Alternativas |
 |---|---|---|---|
-| `alimentos-bebidas` | food | **heritage** | noir, market, soft |
-| `vestuario-calcados` | fashion | **editorial** | raw, noir |
+| `alimentos-bebidas` | food | **heritage** | noir, roast, market, soft |
+| `vestuario-calcados` | fashion | **editorial** | raw, noir, volt |
 | `acessorios-joias` | fashion | **noir** | serene, editorial |
 | `farmacia-medicamentos` | pharmacy | **clinic** | market |
 | `beleza-cosmeticos` | generic | **serene** | editorial, noir, soft |
 | `saloes-estetica` | services | **soft** | serene, noir, editorial |
-| `saude-bem-estar` | services | **clinic** | soft |
+| `saude-bem-estar` | services | **clinic** | soft, volt |
 | `pet-shop` | pet | **soft** | playful |
 | `veterinaria` | services | **clinic** | soft |
 | `eletronicos-tecnologia` | generic | **tech** | editorial |
@@ -117,7 +141,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 | `mercado-conveniencia` | generic | **market** | utility |
 | `oficinas-manutencao` | services | **utility** | market |
 | `aulas-cursos` | services | **editorial** | playful, soft |
-| `outros` | generic | **editorial** | market, soft |
+| `outros` | generic | **magazine** | editorial, market, soft |
 
 **Garantias (testadas em `__tests__/store-theme.test.ts`):**
 - Toda categoria do seed tem sugestão (zero lacunas) — `satisfies Record<CategoriaSlug, …>`.

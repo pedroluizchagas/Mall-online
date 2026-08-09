@@ -57,13 +57,14 @@ A **listagem do catálogo** também pode variar de estrutura por nicho (lista de
 - `mode: dark` não pode reduzir contraste de status (success/warning/danger fixos).
 - Movimento decorativo (autoplay, parallax, transições de ambiente) desliga quando o sistema pede "reduzir movimento" (`AccessibilityInfo.isReduceMotionEnabled`).
 
-## 5.6 Layouts por arquétipo — vitrines editorial, raw, serena, artesã e noir
+## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt e clínica
 
 Além da **pele** (tokens), um arquétipo pode carregar um **layout próprio** no
 consumer. `StoreDesign.arquetipo` (mobile, [04 §4.4]) expõe o código do preset
 exatamente para isso. Implementados: **editorial** (moda/beleza), **raw**
 (streetwear), **serene** (beleza/joias delicadas), **artisan**
-(casa/decoração) e **noir** (fine dining).
+(casa/decoração), **noir** (fine dining), **volt** (fitness) e **clinic**
+(farmácia/saúde).
 
 **Gates** (em `app/loja/[slug].tsx`) — loja real que satisfaça os critérios
 veste o layout automaticamente; o resto segue no catálogo padrão:
@@ -75,7 +76,34 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
 - `artisan` + categoria ∈ {`casa-decoracao`, `floricultura-plantas`}
   (`CATEGORIAS_VITRINE_ARTESA`);
 - `noir` + categoria `alimentos-bebidas` (fine dining; joias noir seguem no
-  catálogo padrão até ganharem layout próprio).
+  catálogo padrão até ganharem layout próprio);
+- `volt` + categoria ∈ {`vestuario-calcados`, `saude-bem-estar`} (fitness);
+- `clinic` + categoria ∈ {`farmacia-medicamentos`, `saude-bem-estar`,
+  `veterinaria`};
+- `roast` + categoria `alimentos-bebidas` (cafeterias/confeitarias);
+- `magazine` + categoria `outros` (lojas de departamento).
+
+**Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
+faixa-anúncio no topo, header claro com WORDMARK EM SERIFA, hero com CAIXA
+EMOLDURADA translúcida centrada (eyebrow + título serif caps + parágrafo +
+pill escura "Ver ofertas ›"), "Compre por categoria" em TILES de foto cheia
+que rolam até a seção, grids com chip NOVO, coração, CHIP VERDE de oferta e
+"Adicionar" em pill contornada no próprio cartão (adição rápida; carrinho de
+outra loja abre o detalhe), "Ver tudo ›" em pill escura. PDP varejista:
+galeria contida, título serif, linhas Entrega/Vendido/Troca e barra de
+compra fixa. Componentes: `components/loja/LojaMagazine.tsx` +
+`ProdutoMagazine.tsx`.
+
+**Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
+casa repetida em degradê âmbar com o produto flutuando por cima, trocando
+por CROSSFADE morno (700ms/4,5s). O efeito verdadeiro do pôster usa
+`products.metadata.recorte` (PNG de fundo TRANSPARENTE enviado pelo lojista
+→ renderizado `contain`, sem máscara); sem recorte, a foto ganha MÁSCARA DE
+CÁPSULA (arco vertical) que lê como objeto. "MENU" em LETRAS EMPILHADAS de
+pé acompanhando a coluna; cardápio em CARTÕES ÂMBAR com a marca d'água do
+título repetida ao fundo, itens em caps escuras e preço forte. Componentes:
+`components/loja/LojaTorra.tsx` + `ProdutoTorra.tsx` (painel verde-floresta
+com pill âmbar).
 
 | Peça | Componente | DNA |
 |---|---|---|
@@ -117,11 +145,14 @@ fantasma de largura cheia que se preenche ao confirmar. Componentes:
 hero com o NOME gigante em sans arredondada e CTA de contorno em pill com
 seta; header que vira BARRA ESPRESSO (accent) ao rolar; SEÇÕES NUMERADAS
 (fio + "0N" + rótulo); statement da loja em DOIS TONS (1ª frase ink, resto
-accent); nuvem "criamos para você" com chips de foto inline no texto; peças
-autorais em carrossel de UM cartão com setas finas; grids com chip-etiqueta
-branco do tipo da peça. PDP com FICHA TÉCNICA (`metadata.especificacoes`:
-pares rótulo/valor — Dimensões/Material/Acabamento — separados por fios; sem
-specs cai na descrição) e CTA pill sólida com seta. Componentes:
+accent); "O que fazemos" em BANDAS DE FOTO empilhadas de borda a borda
+(título claro sobre a imagem escurecida, linha de apoio e seta circulada
+que abre a peça — uma banda por tipo, derivada do catálogo); peças autorais
+em carrossel de UM cartão RETRATO (1,5×) com setas finas e contador
+"01 / 06"; grids com chip-etiqueta branco do tipo da peça. PDP com FICHA
+TÉCNICA (`metadata.especificacoes`: pares rótulo/valor —
+Dimensões/Material/Acabamento — separados por fios; sem specs cai na
+descrição) e CTA pill sólida com seta. Componentes:
 `components/loja/LojaArtesa.tsx` + `ProdutoArtesao.tsx`.
 
 **Vitrine noir gastronômica** (referência The Obscura, [02 §D]): fine dining
@@ -136,13 +167,47 @@ junto com o tema (`FONTES_ITALICO` em `lib/store-fonts.ts` +
 `fontStyleItalico`). Componentes: `components/loja/LojaNoir.tsx` +
 `ProdutoNoir.tsx` (painel preto com fio dourado).
 
+**Vitrine volt** (referência Nivest, [02 §D3]): fitness — FAIXA-ANÚNCIO fixa
+no topo (oferta agregada) + header branco com wordmark pesado + TICKER
+MARQUEE no accent rolando benefícios em loop contínuo (Animated.loop com
+cópias duplicadas; estático com "reduzir movimento"); hero de caps
+pesadíssimas com CTA em PILL BRANCA e o carrossel mais RÁPIDO do sistema
+(glide 300ms, dwell 3,8s); grid 2-col no palco cinza com chip "Popular"
+preto / "-N%" vermelho, coração em círculo, preço promocional em vermelho e
+links "↳ Ver tudo". PDP com pill preta de largura cheia que pisca no accent
+ao confirmar. Componentes: `components/loja/LojaVolt.tsx` + `ProdutoVolt.tsx`.
+
+**Vitrine clínica** ([02 §G]): função com o padrão visual das irmãs — hero
+de FOTOS com carrossel calmo (glide 550ms/5s), saudação "Como podemos cuidar
+de você hoje?" na campanha, CTA fantasma e indicadores de linha; BUSCA
+FLUTUANTE sobreposta à borda do hero, filtrando em tempo real
+(nome/princípio ativo, resultados em grade); faixa de confiança elevada
+(discos verde-suave), cartão de oferta com a FOTO do item em promoção;
+categorias como ABAS escritas no topo e produtos em CARTÕES QUADRADOS
+roláveis na horizontal com o cartão "VER TODOS (N)" no fim do trilho →
+expande em grade ("Ver menos" recolhe). ADIÇÃO RÁPIDA no próprio cartão
+("+" com pouso elástico) — item com `metadata.exige_receita` ganha selo
+"RECEITA" e abre o detalhe em vez de adicionar às cegas (mesmo contrato do
+ModalProduto). PDP informacional: foto em palco contido, aviso de receita,
+linhas de entrega/procedência e barra de compra fixa. Componentes:
+`components/loja/LojaClinica.tsx` + `ProdutoClinico.tsx`.
+
 **Demo**: no mock do consumer, `vitrine-fashion` materializa o editorial
 (catálogo feminino, banner e logo monograma "V" didone), `urban-wear` o raw
 (preset+paleta fixos via LojaSpec, catálogo streetwear e logo estêncil "UW"),
 `bella-cosmeticos` o serene (catálogo de skincare/maquiagem e logo
 pérola-no-anel), `casa-conforto` o artisan (peças autorais com ficha técnica
-e logo arco/portal) e `cantina-bella-italia` o noir (cardápio italiano
-refinado e logo taça dourada — `lib/mock/logos.ts`).
+e logo arco/portal), `cantina-bella-italia` o noir (cardápio italiano
+refinado e logo taça dourada), `arena-fit` o volt (performance + suplementos
+e logo raio), `farmacia-saude-mais` o clinic (medicamentos com selo de
+receita e logo cruz), `cafe-aroma` o roast (pôster verde+âmbar, logo xícara)
+`acai-da-praca` o roast na paleta Açaí (pôster roxo+orquídea, logo tigela —
+MESMA vitrine, outra pele: a tese das paletas) e `lojao-central` o magazine
+(do carrinho de bebê à furadeira, logo etiqueta de preço) —
+`lib/mock/logos.ts`. Da auditoria de tom (2026-08), também têm conteúdo
+real dentro de vitrines: `passo-certo-calcados` (raw sinal),
+`sushi-yamato` (noir prata), `adega-premium` (noir rubi), `jardim-flor`
+(artesã, categoria floricultura) e `otica-visao-clara` (editorial).
 
 Próximos candidatos a layout próprio: `noir` (joias/luxo — mesma gramática em
 fundo preto) e `heritage` (alimentação premium).
