@@ -82,6 +82,52 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
       },
     },
   ],
+  ritual: [
+    {
+      // O verde-matcha da referência OCHA — a pele literal, sem o desvio açaí.
+      codigo: 'matcha',
+      nome: 'Matcha',
+      color: {
+        bg: '#F6B8D3', surface: '#FBF3DC', surfaceAlt: '#F9D3E3',
+        // inkMuted aprofundado: a ficha do PDP ritual escreve o texto de apoio
+        // DIRETO no rosa, sem surface por baixo — o verde claro dava 2,7:1.
+        ink: '#16382A', inkMuted: '#43594E', line: '#EBA0C4',
+        accent: '#1C4A34', accentInk: '#FBF3DC',
+      },
+    },
+    {
+      // Vinho-pitaya: rosa sobre rosa, o tropical mais intenso da família.
+      codigo: 'pitaya',
+      nome: 'Pitaya',
+      color: {
+        bg: '#F6B8D3', surface: '#FBF3DC', surfaceAlt: '#F9D3E3',
+        ink: '#4A0E2B', inkMuted: '#7E405C', line: '#EBA0C4',
+        accent: '#831441', accentInk: '#FBF3DC',
+      },
+    },
+  ],
+  smash: [
+    {
+      // Marrom-espresso + mostarda: o burger clássico de chapa.
+      codigo: 'mostarda',
+      nome: 'Mostarda',
+      color: {
+        bg: '#2B1A0E', surface: '#342112', surfaceAlt: '#3E2917',
+        ink: '#FCF3E2', inkMuted: '#C4A88B', line: '#4A311C',
+        accent: '#F2B33D', accentInk: '#2B1503',
+      },
+    },
+    {
+      // Fuligem quente + vermelho-pimenta: a lanchonete de fim de noite.
+      codigo: 'pimenta',
+      nome: 'Pimenta',
+      color: {
+        bg: '#1C1013', surface: '#261519', surfaceAlt: '#301B20',
+        ink: '#FBF0E7', inkMuted: '#BA9C94', line: '#3C2329',
+        accent: '#FF5A3C', accentInk: '#240905',
+      },
+    },
+  ],
   magazine: [
     {
       // O rosa-varejo da referência Revive.

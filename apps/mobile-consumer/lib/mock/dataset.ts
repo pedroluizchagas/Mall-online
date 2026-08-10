@@ -15,10 +15,12 @@ import {
   LOGO_ARENA_FIT,
   LOGO_LOJAO,
   LOGO_BELLA,
+  LOGO_BURGER_HOUSE,
   LOGO_CAFE_AROMA,
   LOGO_CANTINA,
   LOGO_CASA_CONFORTO,
   LOGO_FARMACIA,
+  LOGO_ROXA,
   LOGO_URBAN_WEAR,
   LOGO_VITRINE_FASHION,
 } from './logos'
@@ -198,7 +200,58 @@ const PISOS: PisoSpec[] = [
       // Presets explícitos: o tom de cada casa manda na pele (a rotação
       // automática criava dissonâncias — ex.: hamburgueria em fine-dining).
       { nome: 'Sabor Mineiro', slug: 'sabor-mineiro', descricao: 'Comida mineira de raiz, no fogão de lenha. Tradição de Divinópolis.', taxa: 0, tempo: 35, categoriaSlug: 'restaurante', preset: 'heritage' },
-      { nome: 'Burger House DV', slug: 'burger-house', descricao: 'Smash burgers artesanais e batatas rústicas. Direto da chapa.', taxa: 590, tempo: 30, categoriaSlug: 'lanches', preset: 'heritage' },
+      {
+        nome: 'Burger House DV',
+        slug: 'burger-house',
+        descricao: 'Smash burgers artesanais e batatas rústicas. Direto da chapa.',
+        taxa: 590,
+        tempo: 30,
+        categoriaSlug: 'lanches',
+        // Loja-demo da vitrine smash (Stack N Snack): bordô + laranja, folha
+        // creme de cardápio — o arquétipo desenhado pra hamburgueria.
+        preset: 'smash',
+        logo: LOGO_BURGER_HOUSE,
+        banner: fotoModa('1571091718767-18b5b1457add', 900, 1200),
+        catalogo: [
+          [
+            'Burgers',
+            [
+              ['Duplo Smash da Casa', 3290, 'Dois smash na chapa, cheddar derretido, picles e molho da casa no brioche', fotoModa('1568901346375-23c9450c58cd')],
+              ['Crispy Chicken', 2990, 'Frango empanado no buttermilk, coleslaw crocante e maionese de chipotle', fotoModa('1606755962773-d324e0a13086')],
+              ['Cheddar Bacon', 3490, 'Burger 160g, muito cheddar, bacon caramelizado e cebola crispy', fotoModa('1553979459-d2229ba7433b')],
+              ['Clássico da Chapa', 2690, 'Burger 160g, queijo prato, alface americana, tomate e maionese verde', fotoModa('1550547660-d9450f859349')],
+              ['Veggie da Praça', 2890, 'Burger de grão-de-bico crocante, queijo vegetal e maionese defumada', fotoModa('1551782450-a2132b4ba21d')],
+            ],
+          ],
+          [
+            'Combos',
+            [
+              // Descrições em "item + item" viram a lista em bullets dos
+              // cards de oferta da vitrine smash (LojaSmash.tsx).
+              ['Combo Smash Solo', 4290, 'Duplo Smash da Casa + fritas médias + refri lata', fotoModa('1610614819513-58e34989848b')],
+              ['Combo Crispy', 4190, 'Crispy Chicken + fritas médias + refri lata', fotoModa('1607013251379-e6eecfffe234')],
+              ['Combo Casal', 6990, 'Dois burgers da casa + fritas grandes + dois refris', fotoModa('1561758033-d89a9ad46330')],
+              ['Combo Festa da Casa', 8990, 'Duplo Smash + Crispy Chicken + fritas grandes + nuggets 10un + dois refris', fotoModa('1571091718767-18b5b1457add')],
+            ],
+          ],
+          [
+            'Acompanhamentos',
+            [
+              ['Fritas Rústicas', 1490, 'Batatas na casca com alecrim e maionese da casa', fotoModa('1573080496219-bb080dd4f877')],
+              ['Fritas Cheddar & Bacon', 1890, 'Cheddar cremoso por cima e bacon em cubos', fotoModa('1585109649139-366815a0d713')],
+              ['Nuggets da Casa 10un', 1690, 'Frango crocante com dois molhos pra mergulhar', fotoModa('1541592106381-b31e9677c0e5')],
+            ],
+          ],
+          [
+            'Bebidas',
+            [
+              ['Milkshake de Chocolate', 1790, 'Cremoso, com calda 70% e chantilly', fotoModa('1572490122747-3968b75cc699')],
+              ['Milkshake de Morango', 1790, 'Morangos batidos na hora com chantilly', fotoModa('1576107232684-1279f390859f')],
+              ['Refri no Copo 400ml', 690, 'Gelado, com muito gelo — clássico do balcão', fotoModa('1547584370-2cc98b8b8dc8')],
+            ],
+          ],
+        ],
+      },
       {
         nome: 'Cantina Bella Itália',
         slug: 'cantina-bella-italia',
@@ -323,6 +376,60 @@ const PISOS: PisoSpec[] = [
               ['Suco Verde Detox', 990, 'Couve · kiwi · maçã verde · gengibre', fotoModa('1610970881699-44a5587cabec')],
               ['Salada de Frutas', 1090, 'Frutas da estação · calda cítrica', fotoModa('1490474418585-ba9bad8fd0ea')],
               ['Banana Extra', 390, 'Porção de complemento pra turbinar', fotoModa('1571771894821-ce9b6c11b08e')],
+            ],
+          ],
+        ],
+      },
+      {
+        nome: 'Roxa Açaí',
+        slug: 'roxa-acai',
+        descricao: 'Um ritual pra quem romantiza a vida — uma tigela de cada vez.',
+        taxa: 490,
+        tempo: 25,
+        categoriaSlug: 'sobremesas',
+        // Loja-demo da vitrine ritual (OCHA): rosa chiclete + roxo-açaí +
+        // creme, com os cartões flutuando na página. Banner de ambiente (não
+        // de produto) porque o hero da ritual é lifestyle, não vitrine.
+        preset: 'ritual',
+        logo: LOGO_ROXA,
+        banner: fotoModa('1554118811-1e0d58224f24', 900, 1200),
+        catalogo: [
+          [
+            // Os 4 primeiros itens com foto alimentam o carrossel de especiais
+            // (palavra gigante atrás) e as miniaturas do hero — por isso cada
+            // um traz uma foto DIFERENTE do banner: o dedupe do hero descarta
+            // repetidas e deixaria a fileira curta.
+            'Especiais da casa',
+            [
+              ['Tigela Nascer do Sol 400', 2290, 'Açaí cremoso · manga · maracujá · coco em lascas', fotoModa('1519996529931-28324d5a630e')],
+              ['Granola da Casa 400', 2390, 'Granola tostada no mel · banana caramelada · morango', fotoModa('1494597564530-871f2b93ac55')],
+              ['Roxa Assinatura 500', 2790, 'A tigela que batiza a casa · pasta de amendoim · cacau nibs', fotoModa('1615478503562-ec2d8aa0e24e')],
+              ['Bowl Frutas do Verão 500', 2590, 'Melancia · uva-verde · amora · hortelã fresca', fotoModa('1490474418585-ba9bad8fd0ea')],
+            ],
+          ],
+          [
+            'Tigelas',
+            [
+              ['Tigela 300', 1590, 'O tamanho de todo dia · um complemento à escolha', fotoModa('1502741224143-90386d7f8c82')],
+              ['Tigela 500', 2090, 'Açaí puro batido na pedra · dois complementos à escolha', fotoModa('1553530666-ba11a7da3888')],
+              ['Tigela Compartilha 700', 2990, 'Pra dividir a dois · três complementos · frutas da estação', fotoModa('1622597467836-f3285f2131b8')],
+              ['Tigela Zero Açúcar 400', 2190, 'Adoçada só com tâmara · granola sem glúten · frutas vermelhas', fotoModa('1596591606975-97ee5cef3a1e')],
+            ],
+          ],
+          [
+            'Batidos & sucos',
+            [
+              ['Batido de Açaí com Banana 500ml', 1790, 'Açaí · banana · leite gelado · o copo de sempre', fotoModa('1505252585461-04db1eb84625')],
+              ['Suco Verde da Manhã 500ml', 1390, 'Couve · abacaxi · gengibre · limão-siciliano', fotoModa('1610970881699-44a5587cabec')],
+              ['Batido Proteico de Cacau 500ml', 1990, 'Cacau 70% · pasta de amendoim · banana · whey', fotoModa('1638176066666-ffb2f013c7dd')],
+            ],
+          ],
+          [
+            'Extras',
+            [
+              ['Frutas Extras', 490, 'Porção de banana, morango ou kiwi pra completar', fotoModa('1571771894821-ce9b6c11b08e')],
+              ['Picolé de Açaí', 890, 'Açaí puro no palito · amora · coco ralado', fotoModa('1488900128323-21503983a07e')],
+              ['Combo de Complementos', 990, 'Granola · leite condensado · paçoca · cacau nibs', fotoModa('1495214783159-3503fd1b572d')],
             ],
           ],
         ],
@@ -960,7 +1067,8 @@ const subHist1 = itensHist1.reduce(
   0
 )
 
-const lojaHist2 = stores[12] // Vitrine Fashion
+// Por slug, não por índice: qualquer loja nova nos pisos acima desloca stores[].
+const lojaHist2 = stores.find((s) => s.slug === 'vitrine-fashion')! // Vitrine Fashion
 const itensHist2 = products.filter((p) => p.store_id === lojaHist2.id).slice(0, 1)
 const subHist2 = itensHist2.reduce(
   (s, p) => s + (p.preco_promocional ?? p.preco),

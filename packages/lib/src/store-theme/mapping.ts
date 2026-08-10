@@ -12,7 +12,7 @@ import type { Archetype, ArquetipoCodigo, ArquetipoSugestao } from './types'
  * Record<CategoriaSlug, ...>` garante cobertura total (zero lacunas).
  */
 export const CATEGORIA_SLUG_TO_ARQUETIPO = {
-  'alimentos-bebidas': { default: 'heritage', alternativas: ['noir', 'roast', 'market', 'soft'] },
+  'alimentos-bebidas': { default: 'heritage', alternativas: ['noir', 'roast', 'ritual', 'smash', 'market', 'soft'] },
   'vestuario-calcados': { default: 'editorial', alternativas: ['raw', 'noir', 'volt'] },
   'acessorios-joias': { default: 'noir', alternativas: ['serene', 'editorial'] },
   'farmacia-medicamentos': { default: 'clinic', alternativas: ['market'] },

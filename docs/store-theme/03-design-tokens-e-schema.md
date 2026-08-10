@@ -55,7 +55,7 @@ interface FontSpec { family: string; weights: number[] }
 
 > **Implementado:** `packages/lib/src/store-theme/presets.ts` (`ARQUETIPOS`). Os hex abaixo são os valores reais em código — refináveis sem quebra, pois lojas guardam só overrides.
 
-Os **11 arquétipos** ([02](02-arquetipos-de-design.md)). Cada um tem **uma paleta default**; o eixo de paleta troca `bg/surface/ink/accent`. Os 6 primeiros vêm de referência; os 5 últimos (clinic/tech/market/utility/playful) foram desenhados internamente.
+Os **17 arquétipos** ([02](02-arquetipos-de-design.md)). Cada um tem **uma paleta default**; o eixo de paleta troca `bg/surface/ink/accent`. Doze vêm de referência; os cinco desenhados internamente são clinic/tech/market/utility/playful.
 
 ### Heritage (`heritage`)
 ```

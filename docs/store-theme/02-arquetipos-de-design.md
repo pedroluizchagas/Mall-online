@@ -1,16 +1,16 @@
 # 02 — Arquétipos de design
 
-> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **10 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **15 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
+> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **12 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **17 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
 >
 > **Implementação:** `packages/lib/src/store-theme/presets.ts` (catálogo `ARQUETIPOS`).
 
 ## 2.1 Por que arquétipos (e não um design por loja)
 
-Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "11 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
+Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "17 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
 
-## 2.2 Os 15 arquétipos
+## 2.2 Os 17 arquétipos
 
-### Derivados de referência (10)
+### Derivados de referência (12)
 
 #### A. Heritage — `heritage`
 - **Nichos:** restaurantes, churrascarias, cafeterias boutique.
@@ -26,6 +26,15 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Paletas:** verde+âmbar (default), Barro (café/terracota), Hortelã (verde-menta noturno), **Açaí (roxo profundo + orquídea — a pele das açaíterias)**. O degradê do pôster deriva do accent da paleta, então a vitrine serve todas sem código novo — a tese do §2.1 em ação.
 - **Por que não é o Heritage:** heritage é serifa/creme/aconchego clássico; roast é cartaz — cor saturada, sans pesadíssima e humor gráfico. 2026-08: 14º arquétipo, com **vitrine própria** — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
 
+#### A5. Ritual — `ritual`
+- **Nichos:** açaíterias, casas de matcha/smoothies e alimentação lifestyle (alternativa de `alimentos-bebidas`).
+- **DNA:** rosa chiclete de página + roxo-açaí profundo + creme; toda seção é um CARTÃO de canto bem redondo FLUTUANDO no rosa (o gutter rosa aparece ao redor de tudo); caps condensadas (Anton) em quase todo texto — corpo quase inexistente — e wordmark GROOVY (Shrikhand) gigante sobre a foto; chrome reduzido a um único pill flutuante centrado; palavra da seção GIGANTE fixa atrás dos produtos recortados, com os nomes dos vizinhos rotacionados sangrando nos cantos; cardápio em cartão CREME puramente tipográfico (nome + preço, sem foto nem descrição).
+- **Mood:** groovy, espirituoso, vibrante.
+- **Refs:** [OCHA](https://ocha.framer.website/).
+- **Paletas:** rosa+roxo-açaí (default), Matcha (o verde-profundo literal da referência), Pitaya (vinho-magenta tropical). A palavra gigante e o wordmark são pintados com `bg` sobre `accent`, então trocar de paleta repinta a vitrine inteira sem código novo — a tese do §2.1 outra vez.
+- **Layout próprio no consumer:** vitrine ritual — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
+- **Por que não é o Roast:** os dois atendem açaíteria, e é exatamente aí que a regra do §2.5 decide — não basta a mesma comida, tem que ser a mesma gramática. Roast é pôster retrô DARK (verde-floresta + âmbar, título repetido em degradê, marca d'água no cartão, cardápio-cartaz). Ritual é LIGHT rosa e lifestyle: cartões flutuando na página, menu tipográfico creme, palavra-atrás-do-produto e humor groovy de "romantize sua rotina". Estrutura de layout e contexto de uso genuinamente diferentes — paleta nova não resolveria (o roast já tem a sua, **Açaí**, e continua sendo outro design). 2026-08: 17º arquétipo, 12º derivado de referência.
+
 #### A3. Magazine — `magazine`
 - **Nichos:** lojas de departamento / vende-tudo (Havan, Casas Bahia) — **default da categoria `outros`**.
 - **DNA:** varejo clássico e confiável — branco quente, SERIFA de display (Spectral) nos títulos e wordmark, pills escuras, chips VERDES de oferta, hero com caixa emoldurada translúcida, tiles de categoria em foto cheia, "Adicionar" no próprio cartão.
@@ -33,6 +42,14 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Refs:** [Revive](https://revivebeauty.framer.website/).
 - **Paletas:** preto (default), Framboesa (rosa-varejo), Azul magazine.
 - **Layout próprio no consumer:** vitrine magazine — ver [05 §5.6](05-aplicacao-storefront-consumer.md). 2026-08: 15º arquétipo (market é supermercado denso; editorial é moda minimal — nenhum tinha a gramática de magazine).
+
+#### A4. Smash — `smash`
+- **Nichos:** hamburguerias, fast-food, lanchonetes de apetite (alternativa de `alimentos-bebidas`).
+- **DNA:** bordô profundo + laranja vivo + folha CREME; manchete de apetite em caps pesadíssimas (Archivo); pills por toda parte (CTA, chips, header e barra de menu em PÍLULA FLUTUANTE); chips de categoria com ativa em OURO; cards de item em pager de um cartão com dots; faixa marquee dourada; ofertas em cards laranja com selo "ECONOMIZE" e itens em bullets; molduras coloridas (laranja/rosa/céu) nas fotos do hero.
+- **Mood:** apetitoso, ousado, divertido.
+- **Refs:** [Stack N Snack](https://stack-n-snack.framer.website/).
+- **Paletas:** bordô+laranja (default), Mostarda (marrom-espresso + mostarda), Pimenta (fuligem quente + vermelho-pimenta).
+- **Por que não é o Roast nem o Market:** roast é pôster retrô de cafeteria (contemplativo, marca d'água, cardápio-cartaz); market é utilidade de supermercado. Smash é APETITE — ritmo de lanchonete, cor de fome (bordô/laranja/ouro), humor de fast-food premium. 2026-08: 16º arquétipo, com **vitrine própria** — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
 
 #### B. Raw / Street — `raw`
 - **Nichos:** moda masculina/sport, streetwear.
@@ -122,7 +139,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 
 | Categoria (slug) | Template funcional | Arquétipo default | Alternativas |
 |---|---|---|---|
-| `alimentos-bebidas` | food | **heritage** | noir, roast, market, soft |
+| `alimentos-bebidas` | food | **heritage** | noir, roast, ritual, smash, market, soft |
 | `vestuario-calcados` | fashion | **editorial** | raw, noir, volt |
 | `acessorios-joias` | fashion | **noir** | serene, editorial |
 | `farmacia-medicamentos` | pharmacy | **clinic** | market |
@@ -154,11 +171,13 @@ Cada arquétipo tem **paleta default** (hex em [03](03-design-tokens-e-schema.md
 
 ## 2.5 Como evoluir esta lista
 
-Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 12º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
+Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 18º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
 
 ## 2.6 Referências completas (fonte: design-lojas.md)
 
 - **Praça de alimentação** → Heritage: Veloria, Savoria, Bistora, La Paloma, Multiple Influence.
+- **Hamburgueria / fast-food** → Smash: Stack N Snack.
+- **Açaíterias / matcha & lifestyle** → Ritual: OCHA.
 - **Vestuário masculino / sport** → Raw: Wearix, Rawline, Wearvo.
 - **Vestuário feminino / unissex** → Editorial: Veonn, Zaro, Marion, AXM.
 - **Acessórios** → Editorial (Axels) / Noir (Caelora, Aurum).

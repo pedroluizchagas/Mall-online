@@ -177,6 +177,29 @@ describe('qualidade de autoria dos ARQUETIPOS', () => {
       ).toBeGreaterThanOrEqual(4.5)
     }
   })
+
+  /**
+   * `inkMuted` normalmente é escrito sobre `surface` (cartão), e é assim que a
+   * maioria das vitrines o usa — por isso não há regra global aqui: peles
+   * anteriores a esta checagem (serene, soft, editorial) ficariam em falta.
+   *
+   * A pele `ritual` é a exceção que precisa de guarda: a ficha do seu PDP
+   * escreve o texto de apoio DIRETO no `bg` rosa, sem cartão por baixo. Sem
+   * este teste, um refino de cor devolve silenciosamente a descrição do
+   * produto para ~2,7:1 (era o caso antes de 2026-08).
+   */
+  it('ritual: inkMuted legível sobre bg — a ficha do PDP escreve sem surface', () => {
+    const peles = [
+      ['preset', ARQUETIPOS.ritual.tokens.color],
+      ...PALETAS.ritual.map((p) => [`paleta ${p.codigo}`, p.color] as const),
+    ] as const
+    for (const [nome, cor] of peles) {
+      expect(
+        contrastRatio(cor.bg, cor.inkMuted),
+        `ritual/${nome}: inkMuted ilegível sobre bg`,
+      ).toBeGreaterThanOrEqual(4.5)
+    }
+  })
 })
 
 describe('PALETAS curadas por arquétipo', () => {

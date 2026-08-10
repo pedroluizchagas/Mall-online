@@ -1,7 +1,7 @@
 import type { Archetype, ArquetipoCodigo, ColorTokens } from './types'
 
 /**
- * Catálogo dos 11 arquétipos com seus tokens default.
+ * Catálogo dos 17 arquétipos com seus tokens default.
  *
  * Valores iniciais destilados das referências (docs/store-theme/02) e
  * desenhados internamente para os nichos sem referência (clinic, tech, market,
@@ -79,6 +79,75 @@ export const ARQUETIPOS = {
       typography: {
         display: { family: 'Archivo', weights: [600, 700, 800] },
         body: { family: 'Inter', weights: [400, 500, 600, 700] },
+        scale: 'regular',
+      },
+      shape: { radius: 'round', density: 'comfortable' },
+    },
+  },
+
+  // ── Referências: açaíterias / matcha / alimentação lifestyle ───────────────
+  ritual: {
+    codigo: 'ritual',
+    nome: 'Ritual',
+    descricao:
+      'Groovy e espirituoso. Rosa chiclete, roxo profundo, caps condensadas e cartões flutuando na página. Para açaíterias e casas que romantizam o dia a dia.',
+    mood: ['groovy', 'espirituoso', 'vibrante'],
+    referencias: ['https://ocha.framer.website/'],
+    tokens: {
+      mode: 'light',
+      color: pele({
+        bg: '#F6B8D3',
+        // Creme do cartão de cardápio — na referência é ele que segura o
+        // menu puramente tipográfico, por isso vira `surface`, não `bg`.
+        surface: '#FBF3DC',
+        surfaceAlt: '#F9D3E3',
+        ink: '#39103B',
+        // Uva aprofundada: o texto de apoio desta pele é escrito DIRETO sobre
+        // o rosa (a ficha do PDP não tem surface por baixo), então o inkMuted
+        // precisa sustentar AA contra `bg`, não contra um cartão claro.
+        inkMuted: '#7A4263',
+        line: '#EBA0C4',
+        // Roxo-açaí no lugar do verde-matcha da referência: é ele que pinta
+        // os cartões flutuantes e recebe a palavra gigante em `bg`.
+        accent: '#3F1244',
+        accentInk: '#FBF3DC',
+      }),
+      typography: {
+        // Anton tem peso único — o motor resolve pelo mais próximo; a vitrine
+        // inteira fala em caps condensadas, quase sem texto de corpo.
+        display: { family: 'Anton', weights: [400] },
+        body: { family: 'Nunito', weights: [400, 500, 600, 700] },
+        scale: 'regular',
+      },
+      shape: { radius: 'round', density: 'comfortable' },
+    },
+  },
+
+  // ── Referências: hamburgueria / fast-food de apetite ───────────────────────
+  smash: {
+    codigo: 'smash',
+    nome: 'Smash',
+    descricao:
+      'Apetite em caps pesadas. Bordô profundo, laranja vivo, pills por toda parte e cardápio em folha creme. Para hamburguerias e fast-food com fome de verdade.',
+    mood: ['apetitoso', 'ousado', 'divertido'],
+    referencias: ['https://stack-n-snack.framer.website/'],
+    tokens: {
+      mode: 'dark',
+      color: pele({
+        bg: '#470A10',
+        surface: '#551218',
+        surfaceAlt: '#641820',
+        ink: '#FFF6E8',
+        inkMuted: '#D3A79D',
+        line: '#5D161E',
+        // Laranja levemente aprofundado vs. a ref p/ AA real: sustenta a
+        // tinta bordô sobre o accent E segue legível como preço no creme.
+        accent: '#EF6A1F',
+        accentInk: '#470A10',
+      }),
+      typography: {
+        display: { family: 'Archivo', weights: [600, 700, 800] },
+        body: { family: 'Nunito', weights: [400, 500, 600, 700] },
         scale: 'regular',
       },
       shape: { radius: 'round', density: 'comfortable' },

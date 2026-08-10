@@ -85,6 +85,9 @@ importers:
 
   apps/mobile-consumer:
     dependencies:
+      '@expo-google-fonts/anton':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@expo-google-fonts/archivo':
         specifier: ^0.4.2
         version: 0.4.2
@@ -103,6 +106,9 @@ importers:
       '@expo-google-fonts/nunito':
         specifier: ^0.4.2
         version: 0.4.2
+      '@expo-google-fonts/shrikhand':
+        specifier: ^0.4.1
+        version: 0.4.1
       '@expo-google-fonts/space-grotesk':
         specifier: ^0.4.1
         version: 0.4.1
@@ -1287,6 +1293,9 @@ packages:
     resolution: {integrity: sha512-d9zaMRSTIKDLhctzH12MtXvJKSSUhaHcjV+2Z+GK+EEY7XKpP5yR4x+N3TAcHTcu963nIr+TMcCb4DBCYX1z6Q==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
 
+  '@expo-google-fonts/anton@0.4.2':
+    resolution: {integrity: sha512-VXxS6ZppH1W/0ch06c52iVpZhVwHX9sXEctyFy/NiF/gb3i697R4va+qpiDQHB71NI8pLyecdBjNrc5FA9qKrw==}
+
   '@expo-google-fonts/archivo@0.4.2':
     resolution: {integrity: sha512-FLhI4/ZVIFSHHxx15Z7Rr4QX/4ZrJozEebBEFSdHSRRwULGCuSIpbb3dz56Hslux6LZEnJ1mVpZ6CyVpUzLwIg==}
 
@@ -1304,6 +1313,9 @@ packages:
 
   '@expo-google-fonts/nunito@0.4.2':
     resolution: {integrity: sha512-1KCWphw/I2ugqfs9iRHUCkPTnomNgGPtF4AvqVquoEKxr0EL+mcLNLgeixsslbaSFevRR6/KJAE3sc8g0VaY0Q==}
+
+  '@expo-google-fonts/shrikhand@0.4.1':
+    resolution: {integrity: sha512-kuSZq8qX7ScL8G88e+31CHOs4g7NJl3lhY3mm+JGapLyT41pRnGuNXYfyTfwo6nyhEaMnrShbxdcmhg94Y+Qsw==}
 
   '@expo-google-fonts/space-grotesk@0.4.1':
     resolution: {integrity: sha512-ZVQYw4Ok/pgcSJiufP8oRZE3AVxS9xtmKEUfsurbHkHNdMc/GA1gDXP9G4Cr7KL4KqSc0haexR2TuMigotCn4Q==}
@@ -7256,6 +7268,8 @@ snapshots:
 
   '@eslint/js@8.57.1': {}
 
+  '@expo-google-fonts/anton@0.4.2': {}
+
   '@expo-google-fonts/archivo@0.4.2': {}
 
   '@expo-google-fonts/baloo-2@0.4.2': {}
@@ -7267,6 +7281,8 @@ snapshots:
   '@expo-google-fonts/inter@0.4.2': {}
 
   '@expo-google-fonts/nunito@0.4.2': {}
+
+  '@expo-google-fonts/shrikhand@0.4.1': {}
 
   '@expo-google-fonts/space-grotesk@0.4.1': {}
 

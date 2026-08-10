@@ -57,14 +57,16 @@ A **listagem do catálogo** também pode variar de estrutura por nicho (lista de
 - `mode: dark` não pode reduzir contraste de status (success/warning/danger fixos).
 - Movimento decorativo (autoplay, parallax, transições de ambiente) desliga quando o sistema pede "reduzir movimento" (`AccessibilityInfo.isReduceMotionEnabled`).
 
-## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt e clínica
+## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash e ritual
 
 Além da **pele** (tokens), um arquétipo pode carregar um **layout próprio** no
 consumer. `StoreDesign.arquetipo` (mobile, [04 §4.4]) expõe o código do preset
 exatamente para isso. Implementados: **editorial** (moda/beleza), **raw**
 (streetwear), **serene** (beleza/joias delicadas), **artisan**
-(casa/decoração), **noir** (fine dining), **volt** (fitness) e **clinic**
-(farmácia/saúde).
+(casa/decoração), **noir** (fine dining), **volt** (fitness), **clinic**
+(farmácia/saúde), **roast** (cafeterias), **magazine** (departamento),
+**smash** (hamburgueria/fast-food) e **ritual** (açaíterias/alimentação
+lifestyle).
 
 **Gates** (em `app/loja/[slug].tsx`) — loja real que satisfaça os critérios
 veste o layout automaticamente; o resto segue no catálogo padrão:
@@ -81,6 +83,8 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
 - `clinic` + categoria ∈ {`farmacia-medicamentos`, `saude-bem-estar`,
   `veterinaria`};
 - `roast` + categoria `alimentos-bebidas` (cafeterias/confeitarias);
+- `smash` + categoria `alimentos-bebidas` (hamburguerias/fast-food);
+- `ritual` + categoria `alimentos-bebidas` (açaíterias/alimentação lifestyle);
 - `magazine` + categoria `outros` (lojas de departamento).
 
 **Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
@@ -93,6 +97,49 @@ outra loja abre o detalhe), "Ver tudo ›" em pill escura. PDP varejista:
 galeria contida, título serif, linhas Entrega/Vendido/Troca e barra de
 compra fixa. Componentes: `components/loja/LojaMagazine.tsx` +
 `ProdutoMagazine.tsx`.
+
+**Vitrine smash** (referência Stack N Snack, [02 §A4]): hamburgueria — hero
+bordô com pill de entrega de contorno laranja, MANCHETE DE APETITE em caps
+pesadíssimas ("DEU FOME? / PEDE. CHEGOU."), CTAs em pill (sólida laranja +
+fantasma creme que rolam até cardápio/ofertas) e MOLDURAS COLORIDAS
+(laranja/rosa/céu) emoldurando fotos dos destaques; FOLHA CREME do cardápio
+com chips de categoria (ativa em OURO) e itens em PAGER de um cartão por vez
+— palco de foto (`metadata.recorte` → cutout "solto" em `contain`), nome em
+caps bordô, preço laranja e CTA "PEDIR AGORA" em pílula bordô — com dots;
+FAIXA MARQUEE dourada rolando as categorias (estática com "reduzir
+movimento"); bloco de ofertas com banner "CHUVA DE OFERTAS" (fotos espiando
+pelas bordas em molduras creme) e cards de combo LARANJA com selo
+"ECONOMIZE R$X" em ouro, itens em bullets (descrição "item + item + item" é
+quebrada no `+`), preço grande e CTA "PEGAR OFERTA"; header e barra de menu
+em PÍLULA FLUTUANTE bordô (a pílula do header só aparece ao rolar sobre o
+creme). Componentes: `components/loja/LojaSmash.tsx` + `ProdutoSmash.tsx`
+(folha creme, palco branco de galeria, CTA bordô que pisca OURO "NA SACOLA ✓"
+ao confirmar).
+
+**Vitrine ritual** (referência OCHA, [02 §A5]): açaíteria lifestyle — a página
+inteira é ROSA e cada seção é um cartão de canto bem redondo FLUTUANDO nela (o
+gutter rosa fica visível ao redor de tudo); o chrome se resume a um PILL
+FLUTUANTE centrado no topo (voltar · "• Aberto para pedidos" · disco rosa da
+sacola) que não sai da tela o scroll inteiro — **sem barra de menu inferior**
+nesta vitrine, a saída da loja é só o chevron. Hero é cartão-foto de altura
+quase cheia com o WORDMARK GROOVY (Shrikhand, DNA do layout e não token) em
+rosa gigante sobre a imagem, statement da casa em caps condensadas creme e, na
+base, uma fileira de MINIATURAS que troca a foto do hero por crossfade (só no
+toque — sem autoplay) acima da linha "ABERTO · N MIN · HH:MM" com RELÓGIO VIVO;
+o manifesto vem logo abaixo sem cartão nenhum, direto no rosa nu em caps no
+accent. ESPECIAIS é o cartão-assinatura: a palavra "ESPECIAIS" GIGANTE fica
+FIXA no cartão accent, sangrando pelas bordas, e os produtos passam POR CIMA
+dela em pager (`metadata.recorte` → cutout "solto" em `contain`), enquanto os
+nomes dos itens VIZINHOS aparecem ROTACIONADOS (±20°) e cortados nos cantos
+inferiores, deslizando junto com o scroll — é esse o affordance do carrossel,
+no lugar dos dots. O cardápio é um cartão CREME por seção, puramente
+tipográfico (nome em caps + preço em rosa, respiro generoso, sem foto nem
+descrição), e o fecho repete a foto da casa com a wordmark em miniatura. A
+palavra gigante e o wordmark usam `bg` sobre `accent`, então as paletas
+`matcha`/`pitaya` repintam tudo sem código novo. Componentes:
+`components/loja/LojaRitual.tsx` + `ProdutoRitual.tsx` (PDP com o NOME DO
+PRODUTO gigante fixo ATRÁS da galeria — eco direto do especiais — ficha sobre
+o rosa e barra de compra em pill roxa que pisca "NA SACOLA ✓" ao confirmar).
 
 **Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
 casa repetida em degradê âmbar com o produto flutuando por cima, trocando
@@ -202,9 +249,15 @@ refinado e logo taça dourada), `arena-fit` o volt (performance + suplementos
 e logo raio), `farmacia-saude-mais` o clinic (medicamentos com selo de
 receita e logo cruz), `cafe-aroma` o roast (pôster verde+âmbar, logo xícara)
 `acai-da-praca` o roast na paleta Açaí (pôster roxo+orquídea, logo tigela —
-MESMA vitrine, outra pele: a tese das paletas) e `lojao-central` o magazine
-(do carrinho de bebê à furadeira, logo etiqueta de preço) —
-`lib/mock/logos.ts`. Da auditoria de tom (2026-08), também têm conteúdo
+MESMA vitrine, outra pele: a tese das paletas), `burger-house` o smash
+(smash burgers, combos com bullets e logo glifo de hambúrguer), `roxa-acai`
+o ritual (tigelas e batidos em rosa chiclete + roxo-açaí, logo tigela em
+glifo geométrico chapado) e `lojao-central` o magazine (do carrinho de bebê
+à furadeira, logo etiqueta de preço) — `lib/mock/logos.ts`. As duas
+açaíterias convivem **de propósito**: `acai-da-praca` continua sendo a demo
+da tese das paletas do roast (mesma vitrine-pôster, pele Açaí) e `roxa-acai`
+mostra o mesmo nicho vestindo OUTRO arquétipo — nicho sugere a pele, não a
+determina. Da auditoria de tom (2026-08), também têm conteúdo
 real dentro de vitrines: `passo-certo-calcados` (raw sinal),
 `sushi-yamato` (noir prata), `adega-premium` (noir rubi), `jardim-flor`
 (artesã, categoria floricultura) e `otica-visao-clara` (editorial).

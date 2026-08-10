@@ -49,9 +49,10 @@ import {
   Baloo2_600SemiBold,
   Baloo2_700Bold,
 } from '@expo-google-fonts/baloo-2'
+import { Anton_400Regular } from '@expo-google-fonts/anton'
 
 /**
- * Fontes dos 11 arquétipos (StoreTheme) para o mobile-consumer.
+ * Fontes dos 17 arquétipos (StoreTheme) para o mobile-consumer.
  *
  * RN não herda fontFamily nem sintetiza pesos: cada peso é um arquivo próprio
  * com nome `Familia_600SemiBold`. Este módulo mapeia as famílias/pesos
@@ -64,6 +65,10 @@ import {
  * - `fontStyle(spec, weight)`: estilo de Text pronto — `fontFamily` do peso
  *   disponível mais próximo quando o spec está carregado, senão `fontWeight`
  *   de sistema.
+ *
+ * Só entram aqui as famílias que são TOKEN de arquétipo. Fonte que é DNA de uma
+ * vitrine só (o mono/serif da raw, o Shrikhand do wordmark da ritual) fica de
+ * fora e é carregada localmente pelo componente que a desenha.
  *
  * Fora de loja (home/abas) nada disso roda — tipografia Mallevo intacta.
  */
@@ -122,6 +127,11 @@ const FONTES: Record<string, Record<number, Font.FontSource>> = {
     500: Baloo2_500Medium,
     600: Baloo2_600SemiBold,
     700: Baloo2_700Bold,
+  },
+  // Peso único de fábrica — as caps condensadas da ritual já nascem pesadas.
+  // `pesoMaisProximo` derruba qualquer `fontStyle(display, 800)` neste 400.
+  Anton: {
+    400: Anton_400Regular,
   },
 }
 
