@@ -42,6 +42,8 @@ import { LojaForno } from '@/components/loja/LojaForno'
 import { ProdutoForno } from '@/components/loja/ProdutoForno'
 import { LojaPassarela } from '@/components/loja/LojaPassarela'
 import { ProdutoPassarela } from '@/components/loja/ProdutoPassarela'
+import { LojaFeira } from '@/components/loja/LojaFeira'
+import { ProdutoFeira } from '@/components/loja/ProdutoFeira'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -99,6 +101,12 @@ const CATEGORIAS_VITRINE_SERENA = new Set([
 const CATEGORIAS_VITRINE_ARTESA = new Set([
   'casa-decoracao',
   'floricultura-plantas',
+])
+
+/** Categorias da vitrine feira (arquétipo `fresh` — hortifruti/mercado fresco). */
+const CATEGORIAS_VITRINE_FEIRA = new Set([
+  'mercado-conveniencia',
+  'alimentos-bebidas',
 ])
 
 /** Categorias da vitrine horta (arquétipo `garden` — comida saudável). */
@@ -292,6 +300,11 @@ export default function PaginaLoja() {
   // gate é por arquétipo: os dois nunca disputam a mesma loja).
   const vitrinePassarela =
     design.arquetipo === 'mono' && loja?.categoria_slug === 'vestuario-calcados'
+  // Feira: hortifruti/mercado fresco — hero-cartão verde-mata, chips de foto
+  // por categoria, ofertas com cronômetro e preço por unidade.
+  const vitrineFeira =
+    design.arquetipo === 'fresh' &&
+    CATEGORIAS_VITRINE_FEIRA.has(loja?.categoria_slug)
 
   if (
     vitrineEditorial ||
@@ -307,7 +320,8 @@ export default function PaginaLoja() {
     vitrineMagazine ||
     vitrineHorta ||
     vitrineForno ||
-    vitrinePassarela
+    vitrinePassarela ||
+    vitrineFeira
   ) {
     // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
     // do JSX sobre componentes genéricos) — renderizada num ramo próprio.
@@ -333,7 +347,9 @@ export default function PaginaLoja() {
                         ? LojaForno
                         : vitrinePassarela
                           ? LojaPassarela
-                          : LojaEditorial
+                          : vitrineFeira
+                            ? LojaFeira
+                            : LojaEditorial
     const Pdp = vitrineRaw
       ? ProdutoRaw
       : vitrineSerena
@@ -360,7 +376,9 @@ export default function PaginaLoja() {
                             ? ProdutoForno
                             : vitrinePassarela
                               ? ProdutoPassarela
-                              : ProdutoEditorial
+                              : vitrineFeira
+                                ? ProdutoFeira
+                                : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
