@@ -22,6 +22,8 @@ import {
   LOGO_CASA_CONFORTO,
   LOGO_FARMACIA,
   LOGO_FORNO_REAL,
+  LOGO_MONARCA,
+  LOGO_SELENE,
   LOGO_ROXA,
   LOGO_URBAN_WEAR,
   LOGO_VITRINE_FASHION,
@@ -139,8 +141,27 @@ const foto = (seed: string, w = 600, h = 420) =>
 const fotoModa = (id: string, w = 600, h = 800) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&h=${h}&q=80&auto=format&fit=crop`
 
-/** [produto, precoCentavos, descricao, fotoUrl?, especificacoes?, exigeReceita?] */
-type ItemCatalogo = [string, number, string, string?, [string, string][]?, boolean?]
+/**
+ * Foto em PRETO E BRANCO — a identidade da vitrine passarela (arquétipo
+ * `mono`). O `sat=-100` é transformação do CDN da Unsplash: o React Native não
+ * aplica grayscale sem dependência nova, então quem dessatura é a ORIGEM. Vale
+ * para as lojas-demo; a foto do lojista real entra como ele a enviou.
+ */
+const fotoPB = (id: string, w = 600, h = 800) =>
+  `${fotoModa(id, w, h)}&sat=-100`
+
+/** [produto, precoCentavos, descricao, fotoUrl?, especificacoes?, exigeReceita?, estoque?] */
+type ItemCatalogo = [
+  string,
+  number,
+  string,
+  string?,
+  [string, string][]?,
+  boolean?,
+  // Peças restantes. Só as lojas que vivem de escassez informam (a vitrine
+  // passarela acende o chip laranja abaixo de 40); ausente → nada muda.
+  number?,
+]
 type Catalogo = [string, ItemCatalogo[]][]
 
 interface LojaSpec {
@@ -822,6 +843,92 @@ const PISOS: PisoSpec[] = [
         ],
       },
       {
+        nome: 'Monarca',
+        slug: 'monarca',
+        descricao:
+          'O essencial masculino em preto e branco — alfaiataria limpa, caimento exato e nada supérfluo.',
+        taxa: 990,
+        tempo: 60,
+        categoriaSlug: 'moda',
+        // Loja-demo da vitrine passarela (Homelander): página branca,
+        // fotografia P&B, compra na própria grade e o chip laranja de escassez
+        // como única cor. Fotos por `fotoPB` — a dessaturação é do CDN.
+        preset: 'mono',
+        logo: LOGO_MONARCA,
+        banner: fotoPB('1593032465175-481ac7f401a0', 900, 1200),
+        catalogo: [
+          [
+            // O rótulo casa com o regex que elege a coluna de destaques
+            // (LojaPassarela.tsx); com 3 itens, a coluna mostra a seção
+            // inteira e ela sai da grade — nada se repete nem se perde.
+            'Essenciais',
+            [
+              ['Terno Carbon Edge', 189900, 'Lã fria italiana · corte slim de três peças', fotoPB('1594938298603-c8148c4dae35'), undefined, undefined, 12],
+              ['Blazer Meia-Noite', 129900, 'Ombro estruturado · forro em cupro · botão fosco', fotoPB('1617127365659-c47fa864d8bc')],
+              ['Camisa de Popeline Branca', 34900, 'Algodão de fio 120 · colarinho italiano', fotoPB('1621072156002-e2fccdc0b176')],
+            ],
+          ],
+          [
+            'Alfaiataria',
+            [
+              ['Calça de Alfaiataria Reta', 59900, 'Caimento fluido · pregas frontais · cós forrado', fotoPB('1473966968600-fa801b869a1a')],
+              ['Camisaria de Algodão Egípcio', 39900, 'Três lavagens · toque acetinado · gola dupla', fotoPB('1602810318383-e386cc2a3ccf')],
+              ['Jaqueta Jeans Estruturada', 44900, 'Denim rígido de 13oz · lavagem escura uniforme', fotoPB('1611312449408-fcece27cdbb7')],
+              ['Jaqueta de Couro Ares', 219900, 'Couro de cordeiro · zíperes maciços · forro leve', fotoPB('1487222477894-8943e31ef7b2'), undefined, undefined, 8],
+            ],
+          ],
+          [
+            'Básicos',
+            [
+              ['Moletom Sem Costura', 27900, 'Algodão penteado · gola canelada · sem etiqueta', fotoPB('1516826957135-700dedea698c')],
+              ['Camisa Social Slim', 32900, 'Tricoline de toque seco · punho simples', fotoPB('1620012253295-c15cc3e65df4')],
+              ['Moletom Oversized', 29900, 'Modelagem ampla · felpa média · punho largo', fotoPB('1578681994506-b8f463449011')],
+            ],
+          ],
+        ],
+      },
+      {
+        nome: 'Selene',
+        slug: 'selene',
+        descricao:
+          'Peças femininas que não gritam — linhas puras, tons neutros e movimento.',
+        taxa: 990,
+        tempo: 60,
+        categoriaSlug: 'moda',
+        // A MESMA vitrine passarela na pele 'porcelana': a tese das paletas em
+        // ação — a temperatura do branco muda, a gramática mono fica.
+        preset: 'mono',
+        palette: 'porcelana',
+        logo: LOGO_SELENE,
+        banner: fotoPB('1483985988355-763728e1935b', 900, 1200),
+        catalogo: [
+          [
+            'Novidades',
+            [
+              ['Vestido Longo Fluido', 89900, 'Crepe de seda · caimento em viés · fenda lateral', fotoPB('1595777457583-95e059d581b8'), undefined, undefined, 9],
+              ['Vestido Ombro a Ombro', 74900, 'Malha canelada · decote reto · comprimento midi', fotoPB('1566174053879-31528523f8ae')],
+              ['Trench Coat Milano', 149900, 'Gabardine encerada · cinto de amarrar · forro xadrez', fotoPB('1539109136881-3be0616acf4b')],
+            ],
+          ],
+          [
+            'Conjuntos & vestidos',
+            [
+              ['Vestido de Poás', 52900, 'Viscose leve · manga bufante · saia rodada', fotoPB('1502716119720-b23a93e5fe1b')],
+              ['Poncho de Tricô com Franjas', 39900, 'Lã merino · ponto aberto · franja torcida à mão', fotoPB('1434389677669-e08b4cac3105')],
+              ['Conjunto de Moletom', 44900, 'Cropped + calça · felpa penteada · cós elástico', fotoPB('1515886657613-9f3515b0c78f')],
+            ],
+          ],
+          [
+            'Básicos',
+            [
+              ['Top de Malha Preto', 21900, 'Canelado fino · segunda pele · gola alta', fotoPB('1524638431109-93d95c968f03')],
+              ['Jeans Reto Vintage', 42900, 'Denim rígido · cintura alta · barra desfiada', fotoPB('1541099649105-f69ad21f3246')],
+              ['Cachecol de Lã Batida', 24900, 'Lã batida · dois metros · acabamento cru', fotoPB('1487412720507-e7ab37603c6f'), undefined, undefined, 22],
+            ],
+          ],
+        ],
+      },
+      {
         nome: 'Ótica Visão Clara',
         slug: 'otica-visao-clara',
         descricao: 'Armações de grife e solares com lentes de proteção total.',
@@ -1083,7 +1190,7 @@ PISOS.forEach((piso, pisoIdx) => {
     const catalogo = loja.catalogo ?? piso.catalogo
     catalogo.forEach(([catNome, itens], catIdx) => {
       const categoryId = `${storeId}-cat-${catIdx + 1}`
-      itens.forEach(([nome, preco, descricao, fotoUrl, especificacoes, exigeReceita], prodIdx) => {
+      itens.forEach(([nome, preco, descricao, fotoUrl, especificacoes, exigeReceita, estoque], prodIdx) => {
         // ~1 em cada 4 produtos entra em promoção (−18%)
         const ehPromo = (lojaIdx + prodIdx) % 4 === 0
         const ordem = catIdx * 100 + prodIdx
@@ -1108,11 +1215,12 @@ PISOS.forEach((piso, pisoIdx) => {
           category_id: categoryId,
           ordem,
           metadata:
-            galeria || especificacoes || exigeReceita
+            galeria || especificacoes || exigeReceita || estoque != null
               ? {
                   ...(galeria ? { galeria } : {}),
                   ...(especificacoes ? { especificacoes } : {}),
                   ...(exigeReceita ? { exige_receita: true } : {}),
+                  ...(estoque != null ? { estoque } : {}),
                 }
               : null,
           categories: { id: categoryId, nome: catNome, ordem: catIdx },
