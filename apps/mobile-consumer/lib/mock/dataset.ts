@@ -21,6 +21,7 @@ import {
   LOGO_CANTINA,
   LOGO_CASA_CONFORTO,
   LOGO_FARMACIA,
+  LOGO_FORNO_REAL,
   LOGO_ROXA,
   LOGO_URBAN_WEAR,
   LOGO_VITRINE_FASHION,
@@ -484,6 +485,58 @@ const PISOS: PisoSpec[] = [
             [
               ['Rabanada Integral de Frutas', 1690, 'Pão integral · frutas vermelhas · iogurte natural', fotoModa('1484723091739-30a097e8f929')],
               ['Bowl Zero Açúcar', 2190, 'Adoçado com tâmara · granola sem glúten · frutas vermelhas', fotoModa('1596591606975-97ee5cef3a1e')],
+            ],
+          ],
+        ],
+      },
+      {
+        nome: 'Forno Real',
+        slug: 'forno-real',
+        descricao:
+          'Uma experiência de pizza inesquecível — massa de fermentação longa, forno a lenha e coroa na borda.',
+        taxa: 590,
+        tempo: 40,
+        categoriaSlug: 'pizzaria',
+        // Loja-demo da vitrine forno (Restaurin / "Pizza Lounge"): creme
+        // fatiado em blocos preto/ouro/vermelho, pizzas em recorte redondo e
+        // coroa real. As fotos são TOP-DOWN de propósito — o disco redondo da
+        // vitrine recorta a foto em círculo.
+        preset: 'slice',
+        logo: LOGO_FORNO_REAL,
+        banner: fotoModa('1593560708920-61dd98c46a4e', 900, 900),
+        catalogo: [
+          [
+            // O rótulo casa com o regex que elege a seção do cardápio-pôster
+            // (LojaForno.tsx) — sem ele a vitrine cai nos primeiros itens com
+            // foto.
+            'Pizzas da casa',
+            [
+              ['Margherita Reale', 5490, 'San Marzano · fior di latte · manjericão fresco · azeite', fotoModa('1595854341625-f33ee10dbf94')],
+              ['Pepperoni Coroada', 6290, 'Pepperoni artesanal · muçarela · orégano da serra', fotoModa('1604382354936-07c5d9983bd3')],
+              ['Quatro Queijos do Reino', 6490, 'Muçarela · gorgonzola · parmesão · provolone defumado', fotoModa('1574071318508-1cdbab80d002')],
+              ['Capricciosa', 6190, 'Presunto cotto · cogumelos · alcachofra · azeitona preta', fotoModa('1590947132387-155cc02f3212')],
+            ],
+          ],
+          [
+            'Clássicas',
+            [
+              ['Calabresa da Corte', 5290, 'Calabresa fatiada · cebola roxa · azeitonas', fotoModa('1565299624946-b28f40a0ae38')],
+              ['Portuguesa', 5690, 'Presunto · ovo caipira · ervilha · cebola', fotoModa('1571407970349-bc81e7e96d47')],
+              ['Napolitana', 5490, 'Tomate em rodelas · muçarela · parmesão · manjericão', fotoModa('1598023696416-0193a0bcd302')],
+            ],
+          ],
+          [
+            'Massas da casa',
+            [
+              ['Fusilli ao Pomodoro Rústico', 4290, 'Pomodoro da casa · manjericão · azeite extravirgem', fotoModa('1608897013039-887f21d8c804')],
+              ['Penne à Bolonhesa', 4590, 'Ragu de carne cozido lento · parmesão ralado na hora', fotoModa('1621996346565-e3dbc646d9a9')],
+            ],
+          ],
+          [
+            'Bebidas & doces',
+            [
+              ['Limonada Siciliana 500ml', 1290, 'Limão-siciliano · hortelã · gelo de água de coco', fotoModa('1621263764928-df1444c5e859')],
+              ['Tiramisù da Casa', 2490, 'Mascarpone · café coado · cacau amargo', fotoModa('1571877227200-a0d98ea607e9')],
             ],
           ],
         ],
@@ -959,6 +1012,7 @@ const CATEGORIA_CANON: Record<string, { slug: string; nome: string }> = {
   cafeteria: { slug: 'alimentos-bebidas', nome: 'Cafeteria' },
   sobremesas: { slug: 'alimentos-bebidas', nome: 'Sobremesas' },
   saudavel: { slug: 'alimentos-bebidas', nome: 'Saudável' },
+  pizzaria: { slug: 'alimentos-bebidas', nome: 'Pizzaria' },
   mercado: { slug: 'mercado-conveniencia', nome: 'Mercado' },
   farmacia: { slug: 'farmacia-medicamentos', nome: 'Farmácia' },
   bebidas: { slug: 'alimentos-bebidas', nome: 'Bebidas' },
