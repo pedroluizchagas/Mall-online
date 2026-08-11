@@ -1,16 +1,16 @@
 # 02 — Arquétipos de design
 
-> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **12 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **17 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
+> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **13 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **18 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
 >
 > **Implementação:** `packages/lib/src/store-theme/presets.ts` (catálogo `ARQUETIPOS`).
 
 ## 2.1 Por que arquétipos (e não um design por loja)
 
-Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "17 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
+Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "18 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
 
-## 2.2 Os 17 arquétipos
+## 2.2 Os 18 arquétipos
 
-### Derivados de referência (12)
+### Derivados de referência (13)
 
 #### A. Heritage — `heritage`
 - **Nichos:** restaurantes, churrascarias, cafeterias boutique.
@@ -50,6 +50,15 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Refs:** [Stack N Snack](https://stack-n-snack.framer.website/).
 - **Paletas:** bordô+laranja (default), Mostarda (marrom-espresso + mostarda), Pimenta (fuligem quente + vermelho-pimenta).
 - **Por que não é o Roast nem o Market:** roast é pôster retrô de cafeteria (contemplativo, marca d'água, cardápio-cartaz); market é utilidade de supermercado. Smash é APETITE — ritmo de lanchonete, cor de fome (bordô/laranja/ouro), humor de fast-food premium. 2026-08: 16º arquétipo, com **vitrine própria** — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
+
+#### A6. Garden — `garden`
+- **Nichos:** comida saudável — saladerias, casas de bowls, cafés naturais e empórios fit (alternativa de `alimentos-bebidas` e de `saude-bem-estar`).
+- **DNA:** página CREME com seções FULL-BLEED empilhadas (nada flutua em cartão); verde-floresta de âncora no hero e no rodapé; wordmark GIGANTE em caps gordas ROSA-PASTEL empilhado em duas linhas com um SELO RECORTADO (escalopado, de feira) carimbado entre elas carregando o "&"; FOTOS-ADESIVO (moldura branca de cantos assimétricos, levemente giradas) penduradas na virada de uma faixa para a outra; cartões de produto em PASTEL alternado (rosa/caramelo) com a foto escapando por cima da borda e selo girado no canto; ficha do item escrita direto no creme (rótulo tan em caps + nome em serifa macia + linha de ingredientes); pills rosa de ação; marquee de manifesto separado por ✦; rabiscos de arco a mão livre; assinatura MANUSCRITA no bloco "sobre".
+- **Mood:** fresco, orgânico, acolhedor.
+- **Refs:** [Sonder & Sprout](https://caring-simplicity-482902.framer.app/).
+- **Paletas:** verde+creme (default), Beterraba (vermelho-terroso), Cacau (grão tostado). Os pastéis rosa/caramelo são DNA do layout e não trocam com a paleta — o que troca é o verde do hero e a tinta do creme, então as três peles repintam a vitrine sem código novo.
+- **Layout próprio no consumer:** vitrine horta — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
+- **Por que não é o Roast, o Heritage, o Ritual nem o Soft:** roast é o outro verde-floresta, mas é pôster retrô DARK — a página É verde, com âmbar, título repetido em degradê e cardápio-cartaz com marca d'água; garden é página CLARA em que o verde é âncora, não fundo. Heritage é o clássico contido (serifa + neutros + foto full-bleed), sem adesivo, selo ou rabisco. Ritual é rosa-página com cartões flutuando e caps condensadas — a gramática oposta das seções full-bleed em serifa. Soft é serviço acolhedor genérico, sem a linguagem farm-to-table nem vitrine de alimentação. 2026-08: 18º arquétipo, 13º derivado de referência, com **vitrine própria**.
 
 #### B. Raw / Street — `raw`
 - **Nichos:** moda masculina/sport, streetwear.
@@ -139,13 +148,13 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 
 | Categoria (slug) | Template funcional | Arquétipo default | Alternativas |
 |---|---|---|---|
-| `alimentos-bebidas` | food | **heritage** | noir, roast, ritual, smash, market, soft |
+| `alimentos-bebidas` | food | **heritage** | noir, roast, ritual, smash, garden, market, soft |
 | `vestuario-calcados` | fashion | **editorial** | raw, noir, volt |
 | `acessorios-joias` | fashion | **noir** | serene, editorial |
 | `farmacia-medicamentos` | pharmacy | **clinic** | market |
 | `beleza-cosmeticos` | generic | **serene** | editorial, noir, soft |
 | `saloes-estetica` | services | **soft** | serene, noir, editorial |
-| `saude-bem-estar` | services | **clinic** | soft, volt |
+| `saude-bem-estar` | services | **clinic** | soft, volt, garden |
 | `pet-shop` | pet | **soft** | playful |
 | `veterinaria` | services | **clinic** | soft |
 | `eletronicos-tecnologia` | generic | **tech** | editorial |
@@ -178,6 +187,7 @@ Nova referência deve ser **classificada num arquétipo existente** antes de cog
 - **Praça de alimentação** → Heritage: Veloria, Savoria, Bistora, La Paloma, Multiple Influence.
 - **Hamburgueria / fast-food** → Smash: Stack N Snack.
 - **Açaíterias / matcha & lifestyle** → Ritual: OCHA.
+- **Comida saudável / saladerias & cafés naturais** → Garden: Sonder & Sprout.
 - **Vestuário masculino / sport** → Raw: Wearix, Rawline, Wearvo.
 - **Vestuário feminino / unissex** → Editorial: Veonn, Zaro, Marion, AXM.
 - **Acessórios** → Editorial (Axels) / Noir (Caelora, Aurum).

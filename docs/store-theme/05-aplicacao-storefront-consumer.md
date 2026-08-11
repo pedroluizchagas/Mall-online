@@ -57,7 +57,7 @@ A **listagem do catálogo** também pode variar de estrutura por nicho (lista de
 - `mode: dark` não pode reduzir contraste de status (success/warning/danger fixos).
 - Movimento decorativo (autoplay, parallax, transições de ambiente) desliga quando o sistema pede "reduzir movimento" (`AccessibilityInfo.isReduceMotionEnabled`).
 
-## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash e ritual
+## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual e horta
 
 Além da **pele** (tokens), um arquétipo pode carregar um **layout próprio** no
 consumer. `StoreDesign.arquetipo` (mobile, [04 §4.4]) expõe o código do preset
@@ -65,8 +65,8 @@ exatamente para isso. Implementados: **editorial** (moda/beleza), **raw**
 (streetwear), **serene** (beleza/joias delicadas), **artisan**
 (casa/decoração), **noir** (fine dining), **volt** (fitness), **clinic**
 (farmácia/saúde), **roast** (cafeterias), **magazine** (departamento),
-**smash** (hamburgueria/fast-food) e **ritual** (açaíterias/alimentação
-lifestyle).
+**smash** (hamburgueria/fast-food), **ritual** (açaíterias/alimentação
+lifestyle) e **garden** (comida saudável).
 
 **Gates** (em `app/loja/[slug].tsx`) — loja real que satisfaça os critérios
 veste o layout automaticamente; o resto segue no catálogo padrão:
@@ -85,6 +85,8 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
 - `roast` + categoria `alimentos-bebidas` (cafeterias/confeitarias);
 - `smash` + categoria `alimentos-bebidas` (hamburguerias/fast-food);
 - `ritual` + categoria `alimentos-bebidas` (açaíterias/alimentação lifestyle);
+- `garden` + categoria ∈ {`alimentos-bebidas`, `saude-bem-estar`}
+  (`CATEGORIAS_VITRINE_HORTA` — comida saudável);
 - `magazine` + categoria `outros` (lojas de departamento).
 
 **Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
@@ -140,6 +142,35 @@ palavra gigante e o wordmark usam `bg` sobre `accent`, então as paletas
 `components/loja/LojaRitual.tsx` + `ProdutoRitual.tsx` (PDP com o NOME DO
 PRODUTO gigante fixo ATRÁS da galeria — eco direto do especiais — ficha sobre
 o rosa e barra de compra em pill roxa que pisca "NA SACOLA ✓" ao confirmar).
+
+**Vitrine horta** (referência Sonder & Sprout, [02 §A6]): comida saudável — a
+página é CREME e as seções são FULL-BLEED empilhadas, o oposto dos cartões
+flutuantes da ritual. O chrome se resume a DOIS BOTÕES-ADESIVO circulares
+creme (voltar e sacola com contador), fixos, com fio e sombra para lerem tanto
+sobre o verde quanto sobre o creme — **sem barra de menu inferior e sem FAB**.
+Hero verde-floresta com o WORDMARK GIGANTE em caps gordas ROSA quebrado em
+duas linhas e um SELO RECORTADO (escalopado, SVG polar `r = R(0,9 + 0,1·cos
+12θ)`) carimbado ENTRE elas carregando o "&" do nome — sem conector no nome, o
+selo leva a inicial; blobs tom-sobre-tom no fundo, rabisco de arco a mão livre
+e uma FOTO-ADESIVO (moldura branca de cantos assimétricos, girada −2,5°) que
+se pendura na virada do verde para o creme. Faixa MARQUEE verde com o
+manifesto separado por ✦ (estática com "reduzir movimento"). FAVORITOS é o
+carrossel-assinatura: cartões PASTEL alternados (rosa/caramelo) com a foto
+escapando por cima da borda (`metadata.recorte` → cutout `contain`) e selo
+verde girado no canto (OFERTA/DA CASA), com a ficha escrita DIRETO no creme
+— rótulo tan em caps, nome em serifa macia, linha de ingredientes e preço. O
+bloco SOBRE traz o texto da casa, a assinatura MANUSCRITA e uma pill rosa que
+rola até o cardápio (que é uma lista serifada sóbria, thumb + nome + linha de
+ingredientes + preço). VISITE é faixa CARAMELO com o horário de HOJE derivado
+de `stores.horarios`, tempo e taxa, pill rosa e outra foto-adesivo; o fecho é
+faixa verde com selo, nome e o relógio vivo "ABERTO · N MIN · HH:MM". Texto
+sobre pastel usa uma tinta verde FIXA (as paletas trocam a tinta do tema e a
+levariam abaixo de AA). Componentes: `components/loja/LojaHorta.tsx` +
+`ProdutoHorta.tsx` (palco pastel escolhido de forma estável pelo id, selo no
+canto e CTA rosa que vira verde "NA SACOLA ✓"), com o vocabulário gráfico
+compartilhado em `components/loja/horta-ui.tsx` (selo, rabisco, foto-adesivo,
+botão-adesivo). A Baloo 2 do wordmark e a Caveat da assinatura são DNA do
+layout, não token — carregadas localmente, como o Shrikhand da ritual.
 
 **Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
 casa repetida em degradê âmbar com o produto flutuando por cima, trocando
