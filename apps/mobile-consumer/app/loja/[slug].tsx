@@ -38,6 +38,8 @@ import { LojaMagazine } from '@/components/loja/LojaMagazine'
 import { ProdutoMagazine } from '@/components/loja/ProdutoMagazine'
 import { LojaHorta } from '@/components/loja/LojaHorta'
 import { ProdutoHorta } from '@/components/loja/ProdutoHorta'
+import { LojaForno } from '@/components/loja/LojaForno'
+import { ProdutoForno } from '@/components/loja/ProdutoForno'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -279,6 +281,10 @@ export default function PaginaLoja() {
   const vitrineHorta =
     design.arquetipo === 'garden' &&
     CATEGORIAS_VITRINE_HORTA.has(loja?.categoria_slug)
+  // Forno: pizzarias/cantinas — creme fatiado em blocos preto/ouro/vermelho,
+  // pizzas em recorte redondo e coroa real.
+  const vitrineForno =
+    design.arquetipo === 'slice' && loja?.categoria_slug === 'alimentos-bebidas'
 
   if (
     vitrineEditorial ||
@@ -292,7 +298,8 @@ export default function PaginaLoja() {
     vitrineSmash ||
     vitrineRitual ||
     vitrineMagazine ||
-    vitrineHorta
+    vitrineHorta ||
+    vitrineForno
   ) {
     // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
     // do JSX sobre componentes genéricos) — renderizada num ramo próprio.
@@ -314,7 +321,9 @@ export default function PaginaLoja() {
                     ? LojaRitual
                     : vitrineHorta
                       ? LojaHorta
-                      : LojaEditorial
+                      : vitrineForno
+                        ? LojaForno
+                        : LojaEditorial
     const Pdp = vitrineRaw
       ? ProdutoRaw
       : vitrineSerena
@@ -337,7 +346,9 @@ export default function PaginaLoja() {
                         ? ProdutoMagazine
                         : vitrineHorta
                           ? ProdutoHorta
-                          : ProdutoEditorial
+                          : vitrineForno
+                            ? ProdutoForno
+                            : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
