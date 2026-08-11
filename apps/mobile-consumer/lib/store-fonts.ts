@@ -9,6 +9,8 @@ import {
   Fraunces_700Bold,
 } from '@expo-google-fonts/fraunces'
 import {
+  Archivo_400Regular,
+  Archivo_500Medium,
   Archivo_600SemiBold,
   Archivo_700Bold,
   Archivo_800ExtraBold,
@@ -58,7 +60,7 @@ import {
 import { Anton_400Regular } from '@expo-google-fonts/anton'
 
 /**
- * Fontes dos 18 arquétipos (StoreTheme) para o mobile-consumer.
+ * Fontes dos 19 arquétipos (StoreTheme) para o mobile-consumer.
  *
  * RN não herda fontFamily nem sintetiza pesos: cada peso é um arquivo próprio
  * com nome `Familia_600SemiBold`. Este módulo mapeia as famílias/pesos
@@ -95,7 +97,12 @@ const FONTES: Record<string, Record<number, Font.FontSource>> = {
     600: Fraunces_600SemiBold,
     700: Fraunces_700Bold,
   },
+  // 400/500 entram pela slice, que fala UMA família só (display E corpo em
+  // Archivo). Os irmãos de caps pesadas (roast/smash/raw/volt/utility)
+  // declaram só 600+ e seguem carregando o mesmo de sempre.
   Archivo: {
+    400: Archivo_400Regular,
+    500: Archivo_500Medium,
     600: Archivo_600SemiBold,
     700: Archivo_700Bold,
     800: Archivo_800ExtraBold,

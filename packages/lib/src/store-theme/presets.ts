@@ -1,7 +1,7 @@
 import type { Archetype, ArquetipoCodigo, ColorTokens } from './types'
 
 /**
- * Catálogo dos 18 arquétipos com seus tokens default.
+ * Catálogo dos 19 arquétipos com seus tokens default.
  *
  * Valores iniciais destilados das referências (docs/store-theme/02) e
  * desenhados internamente para os nichos sem referência (clinic, tech, market,
@@ -187,6 +187,45 @@ export const ARQUETIPOS = {
         display: { family: 'Fraunces', weights: [600, 700] },
         // Sans arredondada da referência: ingredientes, horários e pills.
         body: { family: 'Quicksand', weights: [400, 500, 600, 700] },
+        scale: 'regular',
+      },
+      shape: { radius: 'round', density: 'comfortable' },
+    },
+  },
+
+  // ── Referências: pizzarias / cantinas italianas ────────────────────────────
+  slice: {
+    codigo: 'slice',
+    nome: 'Slice',
+    descricao:
+      'Cartaz de pizzaria. Creme fatiado em blocos preto, ouro e vermelho, uma grotesca esmagada em caps trocando de cor por seção, pizzas em recorte redondo e coroa real. Para pizzarias e cantinas com fome de cena.',
+    mood: ['apetitoso', 'majestoso', 'intenso'],
+    referencias: ['https://restaurin.framer.website/'],
+    tokens: {
+      mode: 'light',
+      color: pele({
+        bg: '#F6EFDE',
+        surface: '#FFFCF1',
+        surfaceAlt: '#EFE4CB',
+        ink: '#1A150F',
+        // Castanho-oliva aprofundado: as descrições de item desta pele são
+        // escritas DIRETO no creme da página (sem surface por baixo), então o
+        // inkMuted precisa sustentar AA contra `bg` — mesma exigência da
+        // garden/ritual, garantida em __tests__.
+        inkMuted: '#6B6049',
+        line: '#E8DEC5',
+        // Vermelho aprofundado vs. a referência p/ AA real: além de CTA, é a
+        // TINTA de todo o display sobre o creme (statements, nomes, preços) e
+        // precisa sustentar AA large sobre o ouro do cardápio-pôster.
+        accent: '#B3231B',
+        accentInk: '#F6EFDE',
+      }),
+      typography: {
+        // A referência fala UMA grotesca pesada em caps, trocando de cor por
+        // seção. A Archivo também serve roast/smash/raw — aqui a voz muda pelo
+        // color-block e pelo peso 900 de DNA da vitrine, não pela família.
+        display: { family: 'Archivo', weights: [700, 800] },
+        body: { family: 'Archivo', weights: [400, 500, 600, 700] },
         scale: 'regular',
       },
       shape: { radius: 'round', density: 'comfortable' },

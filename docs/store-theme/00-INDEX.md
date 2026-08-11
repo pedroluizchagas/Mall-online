@@ -27,7 +27,7 @@ Ver detalhes em [01-conceito-e-relacao-templates.md](01-conceito-e-relacao-templ
 | Doc | Conteúdo |
 |---|---|
 | [01 — Conceito e relação com templates](01-conceito-e-relacao-templates.md) | StoreTheme × DashboardTemplate, modelo híbrido, contrato conceitual |
-| [02 — Arquétipos de design](02-arquetipos-de-design.md) | Os 18 arquétipos (13 de referência + 5 internos), DNA visual, mapa nicho→arquétipo, links de referência |
+| [02 — Arquétipos de design](02-arquetipos-de-design.md) | Os 19 arquétipos (14 de referência + 5 internos), DNA visual, mapa nicho→arquétipo, links de referência |
 | [03 — Design tokens e schema](03-design-tokens-e-schema.md) | Tokens (cores, tipografia, raios, densidade) e a evolução de `stores.theme` |
 | [04 — Theme engine](04-theme-engine.md) | Provider compartilhado web (CSS vars) + mobile (RN context); fim das cópias duplicadas de `consumer-design.ts` |
 | [05 — Aplicação storefront e consumer](05-aplicacao-storefront-consumer.md) | Onde cada token é consumido: header, cards, PDP, navegação |

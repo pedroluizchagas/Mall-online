@@ -153,6 +153,32 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
       },
     },
   ],
+  slice: [
+    {
+      // A cantina verde-oliva: o mesmo cartaz com o basílico no lugar do
+      // vermelho — os blocos preto e ouro continuam servindo a pele.
+      codigo: 'basilico',
+      nome: 'Basílico',
+      color: {
+        bg: '#F4F1E2', surface: '#FDFBEF', surfaceAlt: '#EAE6CF',
+        // inkMuted aprofundado pelo mesmo motivo do preset: as descrições de
+        // item desta vitrine escrevem direto no creme.
+        ink: '#171B10', inkMuted: '#616550', line: '#E3DFC6',
+        accent: '#2C5E34', accentInk: '#F4F1E2',
+      },
+    },
+    {
+      // Vinho da casa: a cantina de massas ao tinto, mais grave que o
+      // vermelho-cartaz do preset.
+      codigo: 'vinho',
+      nome: 'Vinho',
+      color: {
+        bg: '#F7F0E2', surface: '#FFFBF0', surfaceAlt: '#EFE3CF',
+        ink: '#241318', inkMuted: '#6E5B54', line: '#EADFCA',
+        accent: '#7A1F33', accentInk: '#F7F0E2',
+      },
+    },
+  ],
   magazine: [
     {
       // O rosa-varejo da referência Revive.

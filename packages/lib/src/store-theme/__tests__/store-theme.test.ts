@@ -219,6 +219,46 @@ describe('qualidade de autoria dos ARQUETIPOS', () => {
       ).toBeGreaterThanOrEqual(4.5)
     }
   })
+
+  /** Peles da slice: o preset e as paletas curadas, checadas juntas. */
+  const PELES_SLICE = [
+    ['preset', ARQUETIPOS.slice.tokens.color],
+    ...PALETAS.slice.map((p) => [`paleta ${p.codigo}`, p.color] as const),
+  ] as const
+
+  /**
+   * Na vitrine forno a página é creme e NADA nela tem cartão por baixo: a
+   * descrição do item é `inkMuted` no creme e o nome/preço são o próprio
+   * `accent` — que aqui não é só CTA, é a tinta de display do arquétipo.
+   */
+  it('slice: inkMuted e accent legíveis sobre bg — a ficha escreve direto no creme', () => {
+    for (const [nome, cor] of PELES_SLICE) {
+      expect(
+        contrastRatio(cor.bg, cor.inkMuted),
+        `slice/${nome}: inkMuted ilegível sobre bg`,
+      ).toBeGreaterThanOrEqual(4.5)
+      expect(
+        contrastRatio(cor.bg, cor.accent),
+        `slice/${nome}: accent ilegível como texto sobre bg`,
+      ).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  /**
+   * O cardápio-pôster escreve os nomes das pizzas em `accent` sobre o bloco
+   * OURO — display grande (≥ 24px bold), então a régua é AA large (≥ 3). Se o
+   * ouro mudar em `forno-ui.tsx`, muda aqui: a constante é espelhada de
+   * propósito para o teste falhar quando as duas pontas divergirem.
+   */
+  it('slice: accent sustenta display large sobre o bloco OURO do cardápio-pôster', () => {
+    const OURO = '#F2A31B'
+    for (const [nome, cor] of PELES_SLICE) {
+      expect(
+        contrastRatio(OURO, cor.accent),
+        `slice/${nome}: accent ilegível como display sobre o ouro (mín. AA large)`,
+      ).toBeGreaterThanOrEqual(3)
+    }
+  })
 })
 
 describe('PALETAS curadas por arquétipo', () => {

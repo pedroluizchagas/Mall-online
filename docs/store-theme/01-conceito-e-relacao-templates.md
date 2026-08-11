@@ -52,7 +52,7 @@ Cada **categoria** tem um arquétipo visual **default sugerido**, mas o lojista 
 | `services` | Soft / **Clinic** / **Utility** | beleza→Soft, saúde/vet→Clinic, oficina→Utility |
 | `generic` | varia por categoria | tech→Tech, mercado→Market, construção→Utility, brinquedos→Playful, decoração→Artisan |
 
-São **18 arquétipos** no total (13 de referência + 5 desenhados internamente para fechar lacunas de saúde, tech, mercado, utilidade e lúdico). Detalhe em [02-arquetipos-de-design.md](02-arquetipos-de-design.md).
+São **19 arquétipos** no total (14 de referência + 5 desenhados internamente para fechar lacunas de saúde, tech, mercado, utilidade e lúdico). Detalhe em [02-arquetipos-de-design.md](02-arquetipos-de-design.md).
 
 ## 1.5 Contrato conceitual (resumo)
 
