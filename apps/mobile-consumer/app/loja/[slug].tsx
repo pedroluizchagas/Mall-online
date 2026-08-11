@@ -9,7 +9,7 @@ import {
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, getTemplateBySlug } from '@mallevo/lib'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { SplashLoja } from '@/components/SplashLoja'
 import { ModalProduto } from '@/components/ModalProduto'
@@ -225,6 +225,12 @@ export default function PaginaLoja() {
 
   const espacoFinal = totalItens > 0 ? 120 : 40
 
+  // Loja de serviço (template `services`): o produto é agendado, não entregue.
+  // Mesma checagem que o ModalProduto faz para montar o layout `agendamento`.
+  const ehAgendamento =
+    getTemplateBySlug(loja?.categoria_slug ?? null).consumer.layoutPdp ===
+    'agendamento'
+
   // Vitrines por arquétipo: layout PRÓPRIO além da pele (docs/store-theme/05
   // §5.6). Editorial cobre moda/beleza/acessórios; raw é streetwear puro;
   // serene é beleza/joias delicadas.
@@ -299,7 +305,18 @@ export default function PaginaLoja() {
                   : vitrineRitual
                     ? LojaRitual
                     : LojaEditorial
-    const Pdp = vitrineRaw
+    /*
+     * Serviço agendável nunca usa o PDP da vitrine. A vitrine é a FACHADA
+     * (LojaClinica, LojaSerena, LojaVolt continuam vestindo a loja), mas os
+     * PDPs dela são de sacola: não têm calendário, horário nem profissional,
+     * e ignoram `metadata.duracao_min`. Um item de serviço que entra no
+     * carrinho sem `agendamento` faz o checkout tratá-lo como ENTREGA e pedir
+     * endereço — pedido de entrega para uma consulta. Só o ModalProduto
+     * implementa o layout `agendamento`, então ele assume o PDP dessas lojas.
+     */
+    const Pdp = ehAgendamento
+      ? ModalProduto
+      : vitrineRaw
       ? ProdutoRaw
       : vitrineSerena
         ? ProdutoSereno

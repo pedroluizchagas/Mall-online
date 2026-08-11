@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { useCartStore } from '@/store/useCartStore'
 import { supabase } from '@/lib/supabase'
+import { slotsMock } from '@/lib/mock/agenda'
 import { formatarReais, getTemplateBySlug } from '@mallevo/lib'
 import { Botao } from '@/components/ui/Botao'
 import { Card } from '@/components/ui/Card'
@@ -73,6 +74,21 @@ interface Props {
   produto: Produto
   loja: Loja
   onFechar: () => void
+}
+
+/**
+ * Duração do serviço em minutos (`metadata.duracao_min`). Aceita number ou
+ * string, igual à edge function agenda-disponibilidade; `null` quando o
+ * produto não declara duração.
+ */
+function lerDuracaoMin(produto: Produto): number | null {
+  const bruto = produto.metadata?.duracao_min
+  if (typeof bruto === 'number') return bruto > 0 ? bruto : null
+  if (typeof bruto === 'string') {
+    const n = parseInt(bruto, 10)
+    return Number.isFinite(n) && n > 0 ? n : null
+  }
+  return null
 }
 
 interface ModifierRow {
@@ -267,12 +283,31 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
       setCarregandoSlots(true)
       setErroSlots(null)
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session) throw new Error('Sessão expirada')
         // date_to = dia seguinte (intervalo [from, to))
         const proxima = new Date(data + 'T00:00:00')
         proxima.setDate(proxima.getDate() + 1)
         const date_to = proxima.toISOString().slice(0, 10)
+
+        // Modo demonstração (mesma chave de lib/supabase.ts): a sessão do
+        // mock não carrega access_token válido, então a edge function
+        // agenda-disponibilidade recusaria a chamada e todo PDP de serviço
+        // ficaria em "Erro ao buscar horários". Gera a grade em memória, no
+        // mesmo contrato. Nada abaixo muda para produção.
+        if (process.env.EXPO_PUBLIC_USE_MOCK === 'true') {
+          const resp = slotsMock({
+            store_id: loja.id,
+            product_id: produto.id,
+            date_from: data,
+            date_to,
+            duracao_min: lerDuracaoMin(produto),
+          })
+          if (cancelado) return
+          setSlotsResp(resp)
+          return
+        }
+
+        const { data: { session } } = await supabase.auth.getSession()
+        if (!session) throw new Error('Sessão expirada')
         const r = await fetch(
           `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/agenda-disponibilidade`,
           {
@@ -380,6 +415,11 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
     if (!ehAgendamento) return null
     if (!dataSelecionada) return 'Escolha uma data'
     if (!slotSelecionado) return 'Escolha um horário'
+    // Agenda cheia neste horário — a grade devolve o slot para que ele
+    // apareça riscado, mas ele nunca pode virar pedido.
+    if (slotSelecionado.staff_ids_livres.length === 0) {
+      return 'Horário indisponível'
+    }
     if (
       staffSelecionado &&
       !slotSelecionado.staff_ids_livres.includes(staffSelecionado)
@@ -500,6 +540,12 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
       onFechar()
       return
     }
+
+    // Mesma limpeza do ramo de agendamento: com outra loja ativa a store não
+    // adiciona — ela guarda o item em `pendingTrocaLoja`, estado que só o
+    // storefront web consome. No app o item se perderia em silêncio (caso
+    // clássico: carrinho com um agendamento e o usuário troca para outra loja).
+    if (storeAtual && storeAtual !== loja.id) limparCarrinho()
 
     let variant: ItemCarrinhoVariant | undefined
     if (variantAtivo) {
@@ -753,11 +799,7 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
 
               {ehAgendamento ? (
                 <SecaoAgendamento
-                  duracaoMin={
-                    typeof produto.metadata?.duracao_min === 'number'
-                      ? (produto.metadata.duracao_min as number)
-                      : null
-                  }
+                  duracaoMin={lerDuracaoMin(produto)}
                   dataSelecionada={dataSelecionada}
                   aoSelecionarData={setDataSelecionada}
                   slotsResp={slotsResp}
@@ -881,7 +923,14 @@ export function ModalProduto({ produto, loja, onFechar }: Props) {
             <Botao
               label={
                 ehAgendamento
-                  ? `Confirmar agendamento — ${formatarReais(precoBase)}`
+                  ? // "Confirmar agendamento" é o CTA do checkout; aqui o
+                    // serviço só entra no carrinho. Enquanto falta escolha, o
+                    // rótulo guia — mesmo padrão dos grupos de variação.
+                    !dataSelecionada
+                    ? 'Escolha uma data'
+                    : !slotSelecionado
+                      ? 'Escolha um horário'
+                      : `Agendar — ${formatarReais(precoBase)}`
                   : temVariants && !selecaoVariantCompleta
                     ? optionGroups.length > 1
                       ? `Selecione ${optionGroups
@@ -1203,10 +1252,13 @@ function SecaoAgendamento({
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {slotsResp.slots.map((s) => {
                 const ativo = slotSelecionado?.inicio_at === s.inicio_at
+                // Sem nenhum profissional livre = agenda cheia nesse horário.
+                const indisponivel = s.staff_ids_livres.length === 0
                 return (
                   <TouchableOpacity
                     key={s.inicio_at}
                     onPress={() => aoSelecionarSlot(s)}
+                    disabled={indisponivel}
                     activeOpacity={0.75}
                     style={{
                       paddingVertical: 8,
@@ -1215,12 +1267,22 @@ function SecaoAgendamento({
                       borderWidth: ativo ? 2 : 1,
                       borderColor: ativo ? colors.ink : colors.line,
                       backgroundColor: ativo ? colors.ink : colors.surface,
+                      opacity: indisponivel
+                        ? consumerDesign.opacity.disabled
+                        : 1,
                     }}
                   >
                     <Text
                       style={{
                         fontSize: 13,
-                        color: ativo ? colors.accent : colors.ink,
+                        color: ativo
+                          ? colors.accent
+                          : indisponivel
+                            ? colors.inkSoft
+                            : colors.ink,
+                        textDecorationLine: indisponivel
+                          ? 'line-through'
+                          : 'none',
                         ...fontStyle(design.body, 700),
                       }}
                     >
