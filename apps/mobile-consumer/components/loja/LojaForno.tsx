@@ -135,16 +135,26 @@ function partirWordmark(nome: string): string[] {
 }
 
 /**
- * O manifesto do statement: a primeira oração da descrição da casa, que na
- * referência é curta e gritada. Longa demais viraria um paredão de caps — aí
- * vale mais a frase de DNA do que espremer a da loja.
+ * Reparte a descrição da casa entre as DUAS vozes que a mostram, para o mesmo
+ * texto não aparecer duas vezes na mesma rolagem: o STATEMENT leva a primeira
+ * oração em caps gigantes (o manifesto da referência) e o cartão da casa leva
+ * o que sobra. Oração curta ou longa demais não vira caps gigantes — aí o
+ * statement usa a frase de DNA e o cartão fica com o texto inteiro.
  */
-function frasePrincipal(descricao: string | null | undefined): string {
-  if (!descricao) return STATEMENT_PADRAO
-  const primeira = descricao.split(/[—.!?]/)[0]?.trim() ?? ''
-  return primeira.length >= 8 && primeira.length <= 54
-    ? primeira.toUpperCase()
-    : STATEMENT_PADRAO
+function repartirDescricao(descricao: string | null | undefined): {
+  manifesto: string
+  detalhe: string | null
+} {
+  const texto = descricao?.trim() ?? ''
+  if (!texto) return { manifesto: STATEMENT_PADRAO, detalhe: null }
+
+  const corte = texto.search(/[—.!?]/)
+  const primeira = (corte === -1 ? texto : texto.slice(0, corte)).trim()
+  if (primeira.length < 8 || primeira.length > 54) {
+    return { manifesto: STATEMENT_PADRAO, detalhe: texto }
+  }
+  const resto = corte === -1 ? '' : texto.slice(corte + 1).trim()
+  return { manifesto: primeira.toUpperCase(), detalhe: resto || null }
 }
 
 /**
@@ -230,10 +240,25 @@ export function LojaForno<T extends ProdutoVitrine>({
         .slice(0, 4),
     [secaoPoster, secoes],
   )
-  // Uma seção que já virou cartaz não se repete no cardápio.
+  // A seção do cartaz só sai do cardápio quando o cartaz mostra TODOS os seus
+  // itens. Numa pizzaria de verdade "Pizzas" tem 18 sabores e o cartaz leva 4:
+  // tirá-la esconderia os outros 14 do app inteiro — e, se nenhum item tivesse
+  // foto, o cartaz nem renderiza e a seção sumiria por completo. Repetir 4
+  // itens no cardápio é barato; perder produto, não.
   const secoesCardapio = useMemo(
-    () => secoes.filter((s) => s !== secaoPoster),
-    [secoes, secaoPoster],
+    () =>
+      secoes.filter(
+        (s) => s !== secaoPoster || doPoster.length < s.produtos.length,
+      ),
+    [secoes, secaoPoster, doPoster],
+  )
+
+  // O manifesto do statement e o texto do cartão da casa saem da MESMA
+  // descrição, repartida — o hero não a imprime (a referência não tem
+  // parágrafo no hero: é wordmark, botão e pizza).
+  const { manifesto, detalhe } = useMemo(
+    () => repartirDescricao(loja.descricao),
+    [loja.descricao],
   )
 
   const rolarParaCardapio = () =>
@@ -271,7 +296,6 @@ export function LojaForno<T extends ProdutoVitrine>({
         >
           <HeroForno
             nome={loja.nome}
-            descricao={loja.descricao ?? null}
             foto={fotos[0] ?? null}
             // Só há para onde vazar se o bloco de ouro vier logo abaixo: sem
             // pôster, o disco desceria por cima do statement no creme.
@@ -289,7 +313,7 @@ export function LojaForno<T extends ProdutoVitrine>({
         />
 
         {/* ── Statement: o manifesto em caps vermelhas sobre o creme ── */}
-        <StatementForno frase={frasePrincipal(loja.descricao)} />
+        <StatementForno frase={manifesto} />
 
         {/* ── Alvo: a pizza sobre os anéis, no cartão vermelho ── */}
         {fotos.length > 0 && (
@@ -297,9 +321,7 @@ export function LojaForno<T extends ProdutoVitrine>({
         )}
 
         {/* ── A casa: badges redondos, texto e o line-art fantasma ── */}
-        {loja.descricao && (
-          <CasaForno nome={loja.nome} descricao={loja.descricao} />
-        )}
+        {detalhe && <CasaForno nome={loja.nome} descricao={detalhe} />}
 
         {/* ── Cardápio: a lista completa sobre o creme ── */}
         <View
@@ -362,13 +384,11 @@ export function LojaForno<T extends ProdutoVitrine>({
 
 function HeroForno({
   nome,
-  descricao,
   foto,
   vazar,
   aoVerCardapio,
 }: {
   nome: string
-  descricao: string | null
   foto: string | null
   vazar: boolean
   aoVerCardapio: () => void
@@ -420,9 +440,10 @@ function HeroForno({
 
       {/* Wordmark: as linhas esmagadas em ouro sobre o preto. */}
       <View style={{ alignItems: 'center', paddingHorizontal: 18, marginTop: 14 }}>
-        {linhas.map((linha) => (
+        {/* Índice como chave: "Pizza Pizza" partiria em duas linhas iguais. */}
+        {linhas.map((linha, i) => (
           <Text
-            key={linha}
+            key={i}
             numberOfLines={1}
             adjustsFontSizeToFit
             style={{
@@ -439,29 +460,12 @@ function HeroForno({
         ))}
       </View>
 
-      {descricao && (
-        <Text
-          numberOfLines={2}
-          style={{
-            marginTop: 18,
-            paddingHorizontal: 34,
-            textAlign: 'center',
-            fontSize: 14.5,
-            lineHeight: 21,
-            color: comAlfa(CREME_FIXO, 0.82),
-            ...fontStyle(design.body, 500),
-          }}
-        >
-          {descricao}
-        </Text>
-      )}
-
       {/* CTA: o retângulo-pill vermelho da referência. */}
       <TouchableOpacity
         onPress={aoVerCardapio}
         activeOpacity={0.88}
         style={{
-          marginTop: 26,
+          marginTop: 30,
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
@@ -586,11 +590,15 @@ function ItemPoster<T extends ProdutoVitrine>({
         />
       )}
 
-      {/* O nome gigante em vermelho sobre o ouro: display large, a régua de
-          contraste é AA large (≥ 3) e está travada em __tests__. */}
+      {/* O nome gigante em vermelho sobre o ouro. O par de cores vale como AA
+          LARGE (≥ 3, travado em __tests__), e "large" é ≥ 24px em peso — então
+          o encolhimento automático precisa de piso: 37 × 0,7 ≈ 26px ainda é
+          large. Nome comprido ganha uma 3ª linha antes de encolher. Se o corpo
+          base cair, recalcular o `minimumFontScale`. */}
       <Text
-        numberOfLines={2}
+        numberOfLines={3}
         adjustsFontSizeToFit
+        minimumFontScale={0.7}
         style={{
           marginTop: 16,
           fontSize: Math.round(37 * typeFactor),

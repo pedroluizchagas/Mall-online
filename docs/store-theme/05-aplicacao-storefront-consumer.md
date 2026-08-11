@@ -180,17 +180,25 @@ BOTÕES circulares creme (voltar e sacola com contador), fixos, com fio e sombra
 para lerem sobre os três palcos por onde passam — **sem barra de menu inferior
 e sem FAB**. Hero em PRETO DE FORNO (veios de mármore em branco a 3% de alfa)
 com a COROA em ouro isolada acima do WORDMARK empilhado em Archivo Black ouro,
-a descrição da casa, o CTA em retângulo vermelho "VER CARDÁPIO ⌄" que rola até
-a lista, e o DISCO GIGANTE de pizza (`banner_url`, recorte redondo puro) que
-desce por cima do bloco seguinte — o overlap da referência. O CARDÁPIO-PÔSTER é
-a seção-assinatura: bloco OURO full-bleed com um item por vez (disco de 72% da
-largura + nome em caps VERMELHAS gigantes + preço), elegendo a seção pelo regex
-`/pizza|favorit|destaque|especia|da casa/` e removendo-a da lista para não
-repetir. Depois vêm o STATEMENT (a 1ª oração da descrição em caps vermelhas
-gigantes, ou a frase de DNA quando ela é longa demais), o ALVO (cartão vermelho
+o CTA em retângulo vermelho "VER CARDÁPIO ⌄" que rola até a lista, e o DISCO
+GIGANTE de pizza (`banner_url`, recorte redondo puro) que desce por cima do
+bloco seguinte — o overlap da referência. O hero **não** imprime a descrição da
+casa: a referência é wordmark, botão e pizza, e o texto tem duas outras vozes
+adiante. O CARDÁPIO-PÔSTER é a seção-assinatura: bloco OURO full-bleed com um
+item por vez (disco de 72% da largura + nome em caps VERMELHAS gigantes +
+preço), elegendo a seção pelo regex `/pizza|favorit|destaque|especia|da casa/`.
+Diferente da ritual e da horta, a seção eleita só SAI do cardápio quando o
+cartaz mostra todos os seus itens: aqui o regex casa com a seção principal de
+qualquer pizzaria ("Pizzas"), e como o cartaz leva no máximo 4 discos, removê-la
+esconderia os demais sabores do app inteiro — repetir 4 itens é barato, perder
+produto não. Depois vêm o STATEMENT (a 1ª oração da descrição em caps vermelhas
+gigantes, ou a frase de DNA quando ela é curta/longa demais), o ALVO (cartão vermelho
 com anéis concêntricos atrás da pizza e o nome da casa em ouro atravessando e
 sendo CORTADO pelas bordas do cartão) e o cartão da CASA (badges circulares com
-coroa e fatia, descrição e line-art fantasma de garfo/raminho a 9% de alfa). O
+coroa e fatia, e line-art fantasma de garfo/raminho a 9% de alfa). A descrição
+é REPARTIDA entre essas duas vozes — a 1ª oração vira o statement e o resto vai
+para o cartão da casa —, para o mesmo texto não aparecer duas vezes na mesma
+rolagem; casa sem "resto" simplesmente não ganha o cartão. O
 cardápio é uma lista sóbria na mesma voz (thumb redondo, nome, descrição,
 preço) e o fecho é bloco preto com coroa, nome em ouro e o relógio vivo "HOJE
 HH:MM–HH:MM · N MIN · HH:MM". **Zero animação contínua** — a referência não tem
