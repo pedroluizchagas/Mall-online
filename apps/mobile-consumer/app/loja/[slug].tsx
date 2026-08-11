@@ -36,6 +36,8 @@ import { LojaRitual } from '@/components/loja/LojaRitual'
 import { ProdutoRitual } from '@/components/loja/ProdutoRitual'
 import { LojaMagazine } from '@/components/loja/LojaMagazine'
 import { ProdutoMagazine } from '@/components/loja/ProdutoMagazine'
+import { LojaHorta } from '@/components/loja/LojaHorta'
+import { ProdutoHorta } from '@/components/loja/ProdutoHorta'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -93,6 +95,12 @@ const CATEGORIAS_VITRINE_SERENA = new Set([
 const CATEGORIAS_VITRINE_ARTESA = new Set([
   'casa-decoracao',
   'floricultura-plantas',
+])
+
+/** Categorias da vitrine horta (arquétipo `garden` — comida saudável). */
+const CATEGORIAS_VITRINE_HORTA = new Set([
+  'alimentos-bebidas',
+  'saude-bem-estar',
 ])
 
 export default function PaginaLoja() {
@@ -266,6 +274,11 @@ export default function PaginaLoja() {
   // Magazine: lojas de departamento/vende-tudo (categoria guarda-chuva).
   const vitrineMagazine =
     design.arquetipo === 'magazine' && loja?.categoria_slug === 'outros'
+  // Horta: comida saudável (saladerias, bowls, cafés naturais) — creme +
+  // verde-floresta, pastéis, selos recortados e fotos-adesivo.
+  const vitrineHorta =
+    design.arquetipo === 'garden' &&
+    CATEGORIAS_VITRINE_HORTA.has(loja?.categoria_slug)
 
   if (
     vitrineEditorial ||
@@ -278,7 +291,8 @@ export default function PaginaLoja() {
     vitrineTorra ||
     vitrineSmash ||
     vitrineRitual ||
-    vitrineMagazine
+    vitrineMagazine ||
+    vitrineHorta
   ) {
     // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
     // do JSX sobre componentes genéricos) — renderizada num ramo próprio.
@@ -298,7 +312,9 @@ export default function PaginaLoja() {
                   ? LojaSmash
                   : vitrineRitual
                     ? LojaRitual
-                    : LojaEditorial
+                    : vitrineHorta
+                      ? LojaHorta
+                      : LojaEditorial
     const Pdp = vitrineRaw
       ? ProdutoRaw
       : vitrineSerena
@@ -319,7 +335,9 @@ export default function PaginaLoja() {
                       ? ProdutoRitual
                       : vitrineMagazine
                         ? ProdutoMagazine
-                        : ProdutoEditorial
+                        : vitrineHorta
+                          ? ProdutoHorta
+                          : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
