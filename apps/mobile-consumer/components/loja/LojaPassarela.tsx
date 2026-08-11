@@ -18,6 +18,7 @@ import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
 import { supabase } from '@/lib/supabase'
 import { type ProdutoVitrine } from '@/components/loja/LojaEditorial'
+import { GRADIENTE_HERO } from '@/components/loja/gradientes'
 import {
   BotaoPassarela,
   ChipEstoque,
@@ -106,7 +107,11 @@ function estoqueDe(p: ProdutoVitrine): number | null {
  */
 function chipDe(p: ProdutoVitrine): string | null {
   const estoque = estoqueDe(p)
-  if (estoque != null && estoque <= ESTOQUE_BAIXO) return `Só ${estoque} na loja`
+  // Zero (ou lixo negativo) não vira "Só 0 na loja": `estoque` é campo livre
+  // do lojista, e quem publica estoque é justamente quem vai zerá-lo.
+  if (estoque != null && estoque > 0 && estoque <= ESTOQUE_BAIXO) {
+    return `Só ${estoque} na loja`
+  }
   return temPromo(p) ? 'Oferta' : null
 }
 
@@ -168,13 +173,21 @@ export function LojaPassarela<T extends ProdutoVitrine>({
   // ── Estado da adição rápida ──
   /** Ids em flash "NA SACOLA ✓" (some sozinho). */
   const [confirmados, setConfirmados] = useState<string[]>([])
-  /** Id em consulta de opções — a pill fica inerte enquanto isso. */
-  const [checando, setChecando] = useState<string | null>(null)
+  /** Ids em consulta de opções — cada pill sabe do SEU estado, não do alheio. */
+  const [checando, setChecando] = useState<string[]>([])
   /** Produto esperando o usuário decidir se troca de loja. */
   const [pedidoTroca, setPedidoTroca] = useState<T | null>(null)
   /** Cache de "tem variação?" por produto — uma consulta por peça, não por toque. */
   const temOpcoesCache = useRef(new Map<string, boolean>())
-  const timeoutsFlash = useRef<ReturnType<typeof setTimeout>[]>([])
+  /**
+   * Ids cuja consulta ainda vale. Sair para o PDP esvazia o conjunto: abrir o
+   * produto NÃO desmonta a vitrine (o PDP é irmão dela na árvore), e sem isso
+   * uma consulta lenta cairia depois, adicionando uma peça em silêncio ou
+   * abrindo o diálogo de troca ATRÁS do modal.
+   */
+  const emVoo = useRef(new Set<string>())
+  /** Timer do flash por produto — re-adicionar reinicia o do próprio id. */
+  const timersFlash = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const vivo = useRef(true)
 
   useEffect(() => {
@@ -193,11 +206,12 @@ export function LojaPassarela<T extends ProdutoVitrine>({
   }, [])
 
   useEffect(() => {
+    const timers = timersFlash.current
     vivo.current = true
     return () => {
       vivo.current = false
-      timeoutsFlash.current.forEach(clearTimeout)
-      timeoutsFlash.current = []
+      timers.forEach(clearTimeout)
+      timers.clear()
     }
   }, [])
 
@@ -210,27 +224,36 @@ export function LojaPassarela<T extends ProdutoVitrine>({
       origem: { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY },
     })
 
-  /** Consulta (uma vez por produto) se a peça exige escolha de variação. */
+  /**
+   * Consulta (uma vez por produto) se a peça exige escolha de variação.
+   *
+   * O supabase-js NÃO rejeita a promise quando a rede falha: ele resolve com
+   * `{ data: null, error }`. Ler só o `.data` faria a falha parecer "não tem
+   * variação" — e a peça entraria na sacola sem tamanho, em silêncio. Por isso
+   * o erro é checado explicitamente, e o resultado desse caminho NÃO entra no
+   * cache: a próxima tentativa precisa poder acertar.
+   */
   async function checarOpcoes(id: string): Promise<boolean> {
     const cacheado = temOpcoesCache.current.get(id)
     if (cacheado !== undefined) return cacheado
+
+    const consultar = (tabela: string) =>
+      (supabase as any).from(tabela).select('id').eq('product_id', id)
+
     try {
       const [opts, mods] = await Promise.all([
-        (supabase as any)
-          .from('product_option_groups')
-          .select('id')
-          .eq('product_id', id),
-        (supabase as any)
-          .from('product_modifier_groups')
-          .select('id')
-          .eq('product_id', id),
+        consultar('product_option_groups'),
+        consultar('product_modifier_groups'),
       ])
-      const tem = ((opts.data?.length ?? 0) + (mods.data?.length ?? 0)) > 0
+      // Sem resposta confiável (rede caída, RLS negando, 5xx) o caminho seguro
+      // é mandar para o PDP: roupa tem tamanho, e vender no escuro é pior que
+      // um toque a mais.
+      if (opts?.error || mods?.error || !opts?.data || !mods?.data) return true
+
+      const tem = opts.data.length + mods.data.length > 0
       temOpcoesCache.current.set(id, tem)
       return tem
     } catch {
-      // Falha de rede não pode virar venda às cegas: roupa tem tamanho, e o
-      // caminho seguro é abrir o produto. Não cacheia — a próxima tenta de novo.
       return true
     }
   }
@@ -249,13 +272,28 @@ export function LojaPassarela<T extends ProdutoVitrine>({
       loja.taxa_entrega,
     )
     setPedidoTroca(null)
-    setConfirmados((atual) => [...atual, p.id])
-    const id = setTimeout(() => {
-      if (vivo.current) {
-        setConfirmados((atual) => atual.filter((x) => x !== p.id))
-      }
-    }, 1400)
-    timeoutsFlash.current.push(id)
+    setConfirmados((atual) =>
+      atual.includes(p.id) ? atual : [...atual, p.id],
+    )
+    // Tocar de novo na mesma peça reinicia o flash dela, em vez de deixar o
+    // timer antigo apagá-lo antes da hora.
+    clearTimeout(timersFlash.current.get(p.id))
+    timersFlash.current.set(
+      p.id,
+      setTimeout(() => {
+        timersFlash.current.delete(p.id)
+        if (vivo.current) {
+          setConfirmados((atual) => atual.filter((x) => x !== p.id))
+        }
+      }, 1400),
+    )
+  }
+
+  /** Abre o produto e descarta o que estiver em voo — ver `emVoo`. */
+  function abrirProduto(p: T) {
+    emVoo.current.clear()
+    setChecando([])
+    aoAbrirProduto(p)
   }
 
   /**
@@ -264,14 +302,24 @@ export function LojaPassarela<T extends ProdutoVitrine>({
    * que é onde a escolha existe.
    */
   async function adicaoRapida(p: T) {
-    if (checando) return
-    setChecando(p.id)
+    // Trava por PEÇA, não global: uma consulta pendurada não pode deixar a
+    // grade inteira inerte. Com o diálogo de troca aberto, nada mais entra
+    // até o usuário decidir.
+    if (emVoo.current.has(p.id) || pedidoTroca) return
+
+    emVoo.current.add(p.id)
+    setChecando((atual) => [...atual, p.id])
+
     const exigeEscolha = await checarOpcoes(p.id)
-    if (!vivo.current) return
-    setChecando(null)
+
+    // A consulta perdeu a validade no meio do caminho (desmontou, ou o usuário
+    // abriu um produto): o resultado é descartado sem efeito nenhum.
+    if (!vivo.current || !emVoo.current.has(p.id)) return
+    emVoo.current.delete(p.id)
+    setChecando((atual) => atual.filter((x) => x !== p.id))
 
     if (exigeEscolha) {
-      aoAbrirProduto(p)
+      abrirProduto(p)
       return
     }
     if (storeAtual && storeAtual !== loja.id) {
@@ -284,7 +332,7 @@ export function LojaPassarela<T extends ProdutoVitrine>({
   const estadoDe = (p: T): EstadoRapido =>
     confirmados.includes(p.id)
       ? 'adicionado'
-      : checando === p.id
+      : checando.includes(p.id)
         ? 'checando'
         : 'pronta'
 
@@ -375,7 +423,7 @@ export function LojaPassarela<T extends ProdutoVitrine>({
                 proporcao={1.15}
                 estado={estadoDe(p)}
                 aoAdicionar={() => adicaoRapida(p)}
-                aoAbrir={() => aoAbrirProduto(p)}
+                aoAbrir={() => abrirProduto(p)}
               />
             ))}
           </View>
@@ -393,7 +441,7 @@ export function LojaPassarela<T extends ProdutoVitrine>({
               secao={secao}
               estadoDe={estadoDe}
               aoAdicionar={adicaoRapida}
-              aoAbrirProduto={aoAbrirProduto}
+              aoAbrirProduto={abrirProduto}
             />
           ))}
         </View>
@@ -445,6 +493,10 @@ export function LojaPassarela<T extends ProdutoVitrine>({
             left: 0,
             right: 0,
             bottom: 0,
+            // Acima do chrome (zIndex 30): sem isso os botões voltar/sacola
+            // pintam por cima do véu e continuam tocáveis, e um toque no
+            // voltar sairia da tela com a decisão pendente.
+            zIndex: 40,
             backgroundColor: comAlfa(colors.ink, 0.5),
             alignItems: 'center',
             justifyContent: 'center',
@@ -576,33 +628,23 @@ function HeroPassarela({
         resizeMode="cover"
       />
 
-      {/* Véu chapado só na metade de baixo — sem gradiente, que exigiria
-          dependência nova; a foto de moda já escurece no pé. */}
-      <View
-        pointerEvents="none"
+      {/* O mesmo gradiente de duas bandas dos outros heros full-bleed da casa
+          (PNG de 1px, zero dependência): denso no topo para o relógio claro do
+          sistema, transparente no miolo e denso na base para o texto. A moda
+          desta vitrine é fotografada em fundo BRANCO de estúdio — um véu
+          chapado leve deixaria o título abaixo de AA. */}
+      <Image
+        source={{ uri: GRADIENTE_HERO }}
         style={{
           position: 'absolute',
+          top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          height: altura * 0.52,
-          backgroundColor: comAlfa('#000000', 0.38),
+          width: '100%',
+          height: '100%',
         }}
-      />
-
-      {/* Véu curto no topo: o relógio e a bateria do sistema são CLAROS aqui,
-          e a foto de moda pode ser clara justamente em cima (a da Selene é).
-          Sem isso o status bar some em metade das lojas. */}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: 0,
-          height: insets.top + 64,
-          backgroundColor: comAlfa('#000000', 0.22),
-        }}
+        resizeMode="stretch"
       />
 
       <View
@@ -935,6 +977,7 @@ function FechoPassarela({
         marginTop: 56,
         paddingTop: 40,
         paddingBottom: 48,
+        paddingHorizontal: 24,
         alignItems: 'center',
         borderTopWidth: 1,
         borderTopColor: colors.line,
@@ -947,10 +990,12 @@ function FechoPassarela({
       />
 
       <Text
+        numberOfLines={2}
         style={{
           marginTop: 16,
           fontSize: 13,
           letterSpacing: 3.4,
+          textAlign: 'center',
           textTransform: 'uppercase',
           color: colors.ink,
           ...fontStyle(design.body, 700),

@@ -95,8 +95,9 @@ export function ProdutoPassarela({ produto, loja, onFechar }: Props) {
   const precoFinal = produto.preco_promocional ?? produto.preco
   const temPromo =
     !!produto.preco_promocional && produto.preco_promocional < produto.preco
+  // Zero não vira "Só 0 na loja" — espelha a regra de `chipDe` na vitrine.
   const chip =
-    typeof estoque === 'number' && estoque <= ESTOQUE_BAIXO
+    typeof estoque === 'number' && estoque > 0 && estoque <= ESTOQUE_BAIXO
       ? `Só ${estoque} na loja`
       : temPromo
         ? 'Oferta'
@@ -263,21 +264,34 @@ export function ProdutoPassarela({ produto, loja, onFechar }: Props) {
                   bottom: 14,
                   flexDirection: 'row',
                   justifyContent: 'center',
-                  gap: 6,
                 }}
               >
-                {paginas.map((_, i) => (
-                  <View
-                    key={i}
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: 3,
-                      backgroundColor: colors.ink,
-                      opacity: i === fotoAtiva ? 1 : 0.28,
-                    }}
-                  />
-                ))}
+                {/* Cápsula escura por baixo: aqui os pontos caem sobre a FOTO
+                    (o palco é a imagem inteira), e metade do catálogo é peça
+                    preta em fundo escuro — pontos de tinta sumiriam. */}
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    gap: 6,
+                    paddingHorizontal: 9,
+                    paddingVertical: 6,
+                    borderRadius: 999,
+                    backgroundColor: comAlfa('#000000', 0.4),
+                  }}
+                >
+                  {paginas.map((_, i) => (
+                    <View
+                      key={i}
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: 3,
+                        backgroundColor: '#FFFFFF',
+                        opacity: i === fotoAtiva ? 1 : 0.4,
+                      }}
+                    />
+                  ))}
+                </View>
               </View>
             )}
           </View>

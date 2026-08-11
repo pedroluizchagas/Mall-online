@@ -226,9 +226,12 @@ vitrine consulta `product_option_groups`/`product_modifier_groups` — peça com
 variação NUNCA entra às cegas (roupa tem tamanho), ela abre o PDP; falha de
 rede também abre o PDP, nunca vende no escuro. A consulta é cacheada por peça
 num `useRef`, e a guarda de troca de loja mora AQUI (e não só no PDP), porque
-é aqui que a compra nasce. Hero de foto full-bleed sob véu chapado (sem
-gradiente — evita dependência nova) com eyebrow, manchete e pill branca "VER
-PEÇAS"; loja sem foto degrada para bloco de tinta com o monograma. Depois vêm
+é aqui que a compra nasce. Hero de foto full-bleed sob o `GRADIENTE_HERO` da
+casa (o mesmo PNG de duas bandas dos outros heros full-bleed — denso no topo
+para o relógio do sistema, denso na base para o texto), com eyebrow, manchete
+e pill branca "VER PEÇAS"; loja sem foto degrada para bloco de tinta com o
+monograma. O gradiente não é luxo aqui: a moda desta vitrine é fotografada em
+fundo BRANCO de estúdio, e um véu chapado leve deixaria o título abaixo de AA. Depois vêm
 a COLUNA de destaques (até 3 cards quase full-width) e as GRADES DE 2, cada
 uma com o título em peso **400 gigante** — subir para bold aqui mata o
 arquétipo. A ficha é a linha NOME à esquerda / PREÇO à direita escrita direto
