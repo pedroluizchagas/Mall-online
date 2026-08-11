@@ -57,7 +57,7 @@ A **listagem do catálogo** também pode variar de estrutura por nicho (lista de
 - `mode: dark` não pode reduzir contraste de status (success/warning/danger fixos).
 - Movimento decorativo (autoplay, parallax, transições de ambiente) desliga quando o sistema pede "reduzir movimento" (`AccessibilityInfo.isReduceMotionEnabled`).
 
-## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual, horta e forno
+## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual, horta, forno e passarela
 
 Além da **pele** (tokens), um arquétipo pode carregar um **layout próprio** no
 consumer. `StoreDesign.arquetipo` (mobile, [04 §4.4]) expõe o código do preset
@@ -66,7 +66,8 @@ exatamente para isso. Implementados: **editorial** (moda/beleza), **raw**
 (casa/decoração), **noir** (fine dining), **volt** (fitness), **clinic**
 (farmácia/saúde), **roast** (cafeterias), **magazine** (departamento),
 **smash** (hamburgueria/fast-food), **ritual** (açaíterias/alimentação
-lifestyle), **garden** (comida saudável) e **slice** (pizzarias/cantinas).
+lifestyle), **garden** (comida saudável), **slice** (pizzarias/cantinas) e
+**mono** (moda monocromática).
 
 **Gates** (em `app/loja/[slug].tsx`) — loja real que satisfaça os critérios
 veste o layout automaticamente; o resto segue no catálogo padrão:
@@ -88,6 +89,9 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
 - `garden` + categoria ∈ {`alimentos-bebidas`, `saude-bem-estar`}
   (`CATEGORIAS_VITRINE_HORTA` — comida saudável);
 - `slice` + categoria `alimentos-bebidas` (pizzarias/cantinas);
+- `mono` + categoria `vestuario-calcados` (moda monocromática — o editorial
+  veste a mesma categoria, mas o gate é por ARQUÉTIPO: os dois nunca disputam
+  a mesma loja);
 - `magazine` + categoria `outros` (lojas de departamento).
 
 **Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
@@ -212,6 +216,37 @@ compartilhado em `components/loja/forno-ui.tsx` (coroa, fatia, pizza redonda,
 anéis, line-art, botão). A Archivo Black 900 é DNA do layout, não token —
 carregada localmente, como o Shrikhand da ritual; o resto da vitrine fala a
 Archivo do tema, que aqui serve display E corpo.
+
+**Vitrine passarela** (referência Homelander, [02 §A8]): moda monocromática —
+a única vitrine em que **a compra acontece na grade**. Cada card tem uma PILL
+CLARA de adição flutuando sobre a foto: tocar nela põe a peça na sacola sem
+abrir o produto; tocar na foto abre o produto (a pill é IRMÃ da foto no palco,
+não filha, para os dois gestos nunca se confundirem). Antes de adicionar, a
+vitrine consulta `product_option_groups`/`product_modifier_groups` — peça com
+variação NUNCA entra às cegas (roupa tem tamanho), ela abre o PDP; falha de
+rede também abre o PDP, nunca vende no escuro. A consulta é cacheada por peça
+num `useRef`, e a guarda de troca de loja mora AQUI (e não só no PDP), porque
+é aqui que a compra nasce. Hero de foto full-bleed sob véu chapado (sem
+gradiente — evita dependência nova) com eyebrow, manchete e pill branca "VER
+PEÇAS"; loja sem foto degrada para bloco de tinta com o monograma. Depois vêm
+a COLUNA de destaques (até 3 cards quase full-width) e as GRADES DE 2, cada
+uma com o título em peso **400 gigante** — subir para bold aqui mata o
+arquétipo. A ficha é a linha NOME à esquerda / PREÇO à direita escrita direto
+na página. O CHIP LARANJA (`LARANJA_ESTOQUE`, a única cor do arquétipo, AA
+travado em `__tests__`) acende com `metadata.estoque ≤ 40` ou, sem estoque
+informado, com promoção. A seção eleita para a coluna só sai das grades quando
+a coluna mostra todos os seus itens — a mesma regra que a vitrine forno
+aprendeu do jeito difícil. Fecho com monograma coroado, nome em caps espaçadas
+e o relógio vivo; saída radial na TINTA. **Zero animação contínua.** A
+estética P&B vem da FOTOGRAFIA: o RN não aplica grayscale sem dependência
+nova, então as lojas-demo dessaturam na origem (`fotoPB` → `sat=-100` no CDN
+da Unsplash) e a foto do lojista entra como ele a enviou. Componentes:
+`components/loja/LojaPassarela.tsx` + `ProdutoPassarela.tsx` (mesmo palco
+cinza, ficha nome/preço e CTA que INVERTE para claro com fio ao confirmar —
+no mono não há cor para onde ir), com o vocabulário gráfico em
+`components/loja/passarela-ui.tsx` (botão, monograma coroado, chip, pill de
+adição). Primeira vitrine **sem fonte-DNA local**: a voz é o peso da Manrope
+do tema, não uma família extra.
 
 **Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
 casa repetida em degradê âmbar com o produto flutuando por cima, trocando

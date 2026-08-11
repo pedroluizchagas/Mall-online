@@ -1,16 +1,16 @@
 # 02 — Arquétipos de design
 
-> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **14 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **19 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
+> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **15 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **20 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
 >
 > **Implementação:** `packages/lib/src/store-theme/presets.ts` (catálogo `ARQUETIPOS`).
 
 ## 2.1 Por que arquétipos (e não um design por loja)
 
-Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "19 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
+Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "20 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
 
-## 2.2 Os 19 arquétipos
+## 2.2 Os 20 arquétipos
 
-### Derivados de referência (14)
+### Derivados de referência (15)
 
 #### A. Heritage — `heritage`
 - **Nichos:** restaurantes, churrascarias, cafeterias boutique.
@@ -68,6 +68,15 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Paletas:** vermelho+creme (default), Basílico (verde-oliva de cantina), Vinho (a casa de massas ao tinto). O preto e o ouro são DNA do layout e não trocam com a paleta — o que troca é o vermelho de display e a tinta do creme, então as três peles repintam a vitrine sem código novo. O vermelho sobre o ouro só carrega DISPLAY grande (régua AA large ≥ 3, travada em `__tests__`); texto pequeno sobre o ouro usa sempre a tinta preta.
 - **Layout próprio no consumer:** vitrine forno — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
 - **Por que não é o Smash, o Roast, o Heritage nem o Noir:** smash é o outro fast-food de caps pesadas, mas é PÁGINA BORDÔ dark, com laranja de acento e pills por toda parte — um mundo de cor contínuo; slice é página CLARA fatiada em blocos chapados, com recortes redondos, anéis e coroa (gramática de cartaz de pizzaria, não de lanchonete) e modo `light`, não `dark`. Roast é pôster retrô VERDE dark de cafeteria, com título repetido em degradê. Heritage é serifa clássica contida — slice é grotesca esmagada, zero serifa. Noir é luxo preto metálico serifado; no slice o preto é só UM dos quatro blocos e a voz é pop-cartaz, não cerimônia. 2026-08: 19º arquétipo, 14º derivado de referência, com **vitrine própria**.
+
+#### A8. Mono — `mono`
+- **Nichos:** moda monocromática masculina e feminina — alfaiataria, básicos premium, cápsulas de peças neutras (alternativa de `vestuario-calcados`).
+- **DNA:** um mundo SEM COR — página branca, tinta quase-preta e FOTOGRAFIA EM PRETO E BRANCO como assinatura mais forte; a única mancha de cor do sistema inteiro é o CHIP LARANJA de escassez ("Só 12 na loja"), reservado ao que é de fato urgente. COMÉRCIO NO CARD: a pill clara "adicionar" flutua SOBRE a foto e coloca a peça na sacola sem abrir o produto (peça com variação abre o produto — roupa tem tamanho). Cards de canto redondo pousados num PALCO CINZA: primeiro uma coluna quase full-width com os destaques, depois grades de 2. Linha NOME à esquerda / PREÇO à direita escrita direto na página, sem cartão. Títulos de seção em peso REGULAR gigante — a elegância vem do tamanho, não do bold. MONOGRAMA COROADO (coroa de traço fino sobre a inicial) como único ornamento.
+- **Mood:** monocromático, contemporâneo, direto.
+- **Refs:** [Homelander](https://homelanderstores.framer.website/).
+- **Paletas:** branco+tinta (default), Areia (off-white quente de quiet luxury), Porcelana (rosé quase imperceptível). As paletas do mono trocam a TEMPERATURA do branco e **nunca acrescentam cor** — é a regra que mantém o arquétipo de pé. O laranja do chip é DNA da vitrine, não token, e sustenta texto branco com AA travado em `__tests__`.
+- **Layout próprio no consumer:** vitrine passarela — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
+- **Por que não é o Editorial, o Raw, o Serene nem o Noir:** editorial é o vizinho perigoso (também branco, sans, minimal), e é exatamente aí que o §2.5 decide — editorial é CONTEMPLATIVO: vitrine sem chrome, fotos 3:4 sem cartão, seções numeradas, PDP imersivo, e **toda compra passa pelo PDP**. Mono é COMÉRCIO-PRIMEIRO: card em palco cinza com adição na própria grade, chip de escassez e a linha nome/preço como ficha inteira. A interação é estruturalmente outra — e a fotografia P&B com uma única cor de urgência é identidade que paleta nenhuma do editorial produz. Raw é dark, condensada pesada e humor de drop street. Serene é delicadeza de skincare (tipo fina, cinza-névoa, botão de contorno), sem gramática de moda nem comércio no card. Noir é preto dramático com serifa metálica; mono é branco com grotesca e um só ornamento. 2026-08: 20º arquétipo, 15º derivado de referência, com **vitrine própria**.
 
 #### B. Raw / Street — `raw`
 - **Nichos:** moda masculina/sport, streetwear.
@@ -158,7 +167,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 | Categoria (slug) | Template funcional | Arquétipo default | Alternativas |
 |---|---|---|---|
 | `alimentos-bebidas` | food | **heritage** | noir, roast, ritual, smash, garden, slice, market, soft |
-| `vestuario-calcados` | fashion | **editorial** | raw, noir, volt |
+| `vestuario-calcados` | fashion | **editorial** | raw, noir, volt, mono |
 | `acessorios-joias` | fashion | **noir** | serene, editorial |
 | `farmacia-medicamentos` | pharmacy | **clinic** | market |
 | `beleza-cosmeticos` | generic | **serene** | editorial, noir, soft |
@@ -189,7 +198,7 @@ Cada arquétipo tem **paleta default** (hex em [03](03-design-tokens-e-schema.md
 
 ## 2.5 Como evoluir esta lista
 
-Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 20º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
+Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 21º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
 
 ## 2.6 Referências completas (fonte: design-lojas.md)
 
@@ -198,6 +207,7 @@ Nova referência deve ser **classificada num arquétipo existente** antes de cog
 - **Açaíterias / matcha & lifestyle** → Ritual: OCHA.
 - **Comida saudável / saladerias & cafés naturais** → Garden: Sonder & Sprout.
 - **Pizzarias / cantinas italianas** → Slice: Restaurin ("Pizza Lounge").
+- **Moda monocromática (masculina e feminina)** → Mono: Homelander.
 - **Vestuário masculino / sport** → Raw: Wearix, Rawline, Wearvo.
 - **Vestuário feminino / unissex** → Editorial: Veonn, Zaro, Marion, AXM.
 - **Acessórios** → Editorial (Axels) / Noir (Caelora, Aurum).
