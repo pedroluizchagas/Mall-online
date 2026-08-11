@@ -12,7 +12,7 @@
  * a PELE (arquétipo/cores/tipografia) vive aqui.
  */
 
-/** Os 19 arquétipos que cobrem 100% das 20 categorias do Mallevo. */
+/** Os 20 arquétipos que cobrem 100% das 20 categorias do Mallevo. */
 export type ArquetipoCodigo =
   | 'heritage' // restaurantes/alimentação premium — serifa, neutros quentes
   | 'roast' // cafeterias/confeitarias boutique — pôster retrô, verde + âmbar
@@ -20,6 +20,7 @@ export type ArquetipoCodigo =
   | 'smash' // hamburgueria/fast-food — bordô + laranja, caps pesadas, apetite
   | 'garden' // comida saudável/natural — creme + verde-floresta, pastéis, serifa macia
   | 'slice' // pizzarias/cantinas — creme fatiado em preto/ouro/vermelho, caps esmagadas
+  | 'mono' // moda monocromática — branco, fotografia P&B, compra na grade, laranja único
   | 'magazine' // lojas de departamento/vende-tudo — varejo claro, serifa clássica
   | 'raw' // streetwear/moda sport — dark, sans pesada, alto contraste
   | 'editorial' // moda elegante/cosméticos/neutro default — clean, whitespace

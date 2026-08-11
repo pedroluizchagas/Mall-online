@@ -106,6 +106,9 @@ importers:
       '@expo-google-fonts/inter':
         specifier: ^0.4.2
         version: 0.4.2
+      '@expo-google-fonts/manrope':
+        specifier: 0.4.1
+        version: 0.4.1
       '@expo-google-fonts/nunito':
         specifier: ^0.4.2
         version: 0.4.2
@@ -1319,6 +1322,9 @@ packages:
 
   '@expo-google-fonts/inter@0.4.2':
     resolution: {integrity: sha512-syfiImMaDmq7cFi0of+waE2M4uSCyd16zgyWxdPOY7fN2VBmSLKEzkfbZgeOjJq61kSqPBNNtXjggiQiSD6gMQ==}
+
+  '@expo-google-fonts/manrope@0.4.1':
+    resolution: {integrity: sha512-3Ydkj5dS4M6/xgjk7UT/+9wq1xnqo2LO9E5K/EIaynY2phJOGwFzvtAE9EEImqXj96TEg2jzZ095Mmac5w8nvQ==}
 
   '@expo-google-fonts/nunito@0.4.2':
     resolution: {integrity: sha512-1KCWphw/I2ugqfs9iRHUCkPTnomNgGPtF4AvqVquoEKxr0EL+mcLNLgeixsslbaSFevRR6/KJAE3sc8g0VaY0Q==}
@@ -7293,6 +7299,8 @@ snapshots:
   '@expo-google-fonts/fraunces@0.4.1': {}
 
   '@expo-google-fonts/inter@0.4.2': {}
+
+  '@expo-google-fonts/manrope@0.4.1': {}
 
   '@expo-google-fonts/nunito@0.4.2': {}
 

@@ -13,7 +13,7 @@ import type { Archetype, ArquetipoCodigo, ArquetipoSugestao } from './types'
  */
 export const CATEGORIA_SLUG_TO_ARQUETIPO = {
   'alimentos-bebidas': { default: 'heritage', alternativas: ['noir', 'roast', 'ritual', 'smash', 'garden', 'slice', 'market', 'soft'] },
-  'vestuario-calcados': { default: 'editorial', alternativas: ['raw', 'noir', 'volt'] },
+  'vestuario-calcados': { default: 'editorial', alternativas: ['raw', 'noir', 'volt', 'mono'] },
   'acessorios-joias': { default: 'noir', alternativas: ['serene', 'editorial'] },
   'farmacia-medicamentos': { default: 'clinic', alternativas: ['market'] },
   'beleza-cosmeticos': { default: 'serene', alternativas: ['editorial', 'noir', 'soft'] },

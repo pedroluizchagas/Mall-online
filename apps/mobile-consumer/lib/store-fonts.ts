@@ -48,6 +48,12 @@ import {
   Quicksand_700Bold,
 } from '@expo-google-fonts/quicksand'
 import {
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+} from '@expo-google-fonts/manrope'
+import {
   SpaceGrotesk_500Medium,
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
@@ -60,7 +66,7 @@ import {
 import { Anton_400Regular } from '@expo-google-fonts/anton'
 
 /**
- * Fontes dos 19 arquétipos (StoreTheme) para o mobile-consumer.
+ * Fontes dos 20 arquétipos (StoreTheme) para o mobile-consumer.
  *
  * RN não herda fontFamily nem sintetiza pesos: cada peso é um arquivo próprio
  * com nome `Familia_600SemiBold`. Este módulo mapeia as famílias/pesos
@@ -136,6 +142,15 @@ const FONTES: Record<string, Record<number, Font.FontSource>> = {
     500: Quicksand_500Medium,
     600: Quicksand_600SemiBold,
     700: Quicksand_700Bold,
+  },
+  // O 400 entra no DISPLAY da mono (títulos de seção gigantes em peso leve):
+  // é o único arquétipo em que o display não é bold, então o peso precisa
+  // existir no mapa para o `pesoMaisProximo` não derrubar num 600.
+  Manrope: {
+    400: Manrope_400Regular,
+    500: Manrope_500Medium,
+    600: Manrope_600SemiBold,
+    700: Manrope_700Bold,
   },
   'Space Grotesk': {
     500: SpaceGrotesk_500Medium,

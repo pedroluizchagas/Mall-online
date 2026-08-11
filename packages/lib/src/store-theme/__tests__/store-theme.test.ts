@@ -259,6 +259,40 @@ describe('qualidade de autoria dos ARQUETIPOS', () => {
       ).toBeGreaterThanOrEqual(3)
     }
   })
+
+  /** Peles do mono: o preset e as paletas curadas, checadas juntas. */
+  const PELES_MONO = [
+    ['preset', ARQUETIPOS.mono.tokens.color],
+    ...PALETAS.mono.map((p) => [`paleta ${p.codigo}`, p.color] as const),
+  ] as const
+
+  /**
+   * Na vitrine passarela a linha nome/preço de cada card é escrita DIRETO na
+   * página, ao lado do cartão e não dentro dele — mesma exigência da garden e
+   * da slice, por outro caminho.
+   */
+  it('mono: inkMuted legível sobre bg — a ficha do card escreve direto na página', () => {
+    for (const [nome, cor] of PELES_MONO) {
+      expect(
+        contrastRatio(cor.bg, cor.inkMuted),
+        `mono/${nome}: inkMuted ilegível sobre bg`,
+      ).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  /**
+   * O chip de escassez é a ÚNICA cor do arquétipo e carrega texto branco em
+   * corpo pequeno, então a régua é AA de texto normal — o laranja da
+   * referência (~#F97316) dava 2,8:1 e foi aprofundado na autoria. Espelho da
+   * constante `LARANJA_ESTOQUE` de `passarela-ui.tsx`: se mudar lá, muda aqui.
+   */
+  it('mono: o chip de escassez sustenta texto branco (AA de texto pequeno)', () => {
+    const LARANJA_ESTOQUE = '#C2410C'
+    expect(
+      contrastRatio(LARANJA_ESTOQUE, '#FFFFFF'),
+      'mono: texto do chip de escassez ilegível sobre o laranja',
+    ).toBeGreaterThanOrEqual(4.5)
+  })
 })
 
 describe('PALETAS curadas por arquétipo', () => {

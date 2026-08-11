@@ -1,7 +1,7 @@
 import type { Archetype, ArquetipoCodigo, ColorTokens } from './types'
 
 /**
- * Catálogo dos 19 arquétipos com seus tokens default.
+ * Catálogo dos 20 arquétipos com seus tokens default.
  *
  * Valores iniciais destilados das referências (docs/store-theme/02) e
  * desenhados internamente para os nichos sem referência (clinic, tech, market,
@@ -226,6 +226,44 @@ export const ARQUETIPOS = {
         // color-block e pelo peso 900 de DNA da vitrine, não pela família.
         display: { family: 'Archivo', weights: [700, 800] },
         body: { family: 'Archivo', weights: [400, 500, 600, 700] },
+        scale: 'regular',
+      },
+      shape: { radius: 'round', density: 'comfortable' },
+    },
+  },
+
+  // ── Referências: moda monocromática / alfaiataria / básicos premium ────────
+  mono: {
+    codigo: 'mono',
+    nome: 'Mono',
+    descricao:
+      'Moda em preto e branco. Página branca, fotografia monocromática, cards em palco cinza com compra direta na grade, e uma única cor no sistema: o laranja do chip de escassez. Para alfaiataria e básicos premium.',
+    mood: ['monocromático', 'contemporâneo', 'direto'],
+    referencias: ['https://homelanderstores.framer.website/'],
+    tokens: {
+      mode: 'light',
+      color: pele({
+        bg: '#FFFFFF',
+        surface: '#FFFFFF',
+        // O palco cinza dos cards da referência — toda foto pousa nele.
+        surfaceAlt: '#F2F2F2',
+        ink: '#111111',
+        // A linha nome/preço de cada card escreve DIRETO no branco da página
+        // (sem surface por baixo), como na garden/ritual/slice — AA contra o
+        // `bg` garantido em __tests__.
+        inkMuted: '#6E6E6E',
+        line: '#ECECEC',
+        // O CTA do mundo mono é PRETO: a única cor do arquétipo está reservada
+        // ao chip de escassez, e ela não é token — é DNA da vitrine.
+        accent: '#111111',
+        accentInk: '#FFFFFF',
+      }),
+      typography: {
+        // Família única, como a referência. Os títulos de seção falam em 400
+        // GIGANTE: a elegância vem do tamanho com peso leve, não de bold —
+        // por isso o 400 entra no display, o que nenhum outro arquétipo faz.
+        display: { family: 'Manrope', weights: [400, 600, 700] },
+        body: { family: 'Manrope', weights: [400, 500, 600, 700] },
         scale: 'regular',
       },
       shape: { radius: 'round', density: 'comfortable' },

@@ -179,6 +179,30 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
       },
     },
   ],
+  mono: [
+    {
+      // Off-white quente de quiet luxury. As paletas do mono trocam a
+      // TEMPERATURA do branco e nunca acrescentam cor — a única do arquétipo
+      // é o laranja do chip de escassez, que é DNA da vitrine, não token.
+      codigo: 'areia',
+      nome: 'Areia',
+      color: {
+        bg: '#F6F2EA', surface: '#FCFAF6', surfaceAlt: '#ECE6D8',
+        ink: '#1A1712', inkMuted: '#6B6355', line: '#E5DECE',
+        accent: '#1A1712', accentInk: '#F6F2EA',
+      },
+    },
+    {
+      // Rosé quase imperceptível — o branco das lojas femininas.
+      codigo: 'porcelana',
+      nome: 'Porcelana',
+      color: {
+        bg: '#FAF5F2', surface: '#FFFDFB', surfaceAlt: '#F2E9E3',
+        ink: '#201417', inkMuted: '#6F5D5B', line: '#EBE0D9',
+        accent: '#201417', accentInk: '#FAF5F2',
+      },
+    },
+  ],
   magazine: [
     {
       // O rosa-varejo da referência Revive.
