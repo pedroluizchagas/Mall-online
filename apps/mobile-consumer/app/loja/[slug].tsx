@@ -40,6 +40,8 @@ import { LojaHorta } from '@/components/loja/LojaHorta'
 import { ProdutoHorta } from '@/components/loja/ProdutoHorta'
 import { LojaForno } from '@/components/loja/LojaForno'
 import { ProdutoForno } from '@/components/loja/ProdutoForno'
+import { LojaPassarela } from '@/components/loja/LojaPassarela'
+import { ProdutoPassarela } from '@/components/loja/ProdutoPassarela'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -285,6 +287,11 @@ export default function PaginaLoja() {
   // pizzas em recorte redondo e coroa real.
   const vitrineForno =
     design.arquetipo === 'slice' && loja?.categoria_slug === 'alimentos-bebidas'
+  // Passarela: moda monocromática — branco, fotografia P&B e a compra
+  // acontecendo na própria grade (o editorial veste a mesma categoria, mas o
+  // gate é por arquétipo: os dois nunca disputam a mesma loja).
+  const vitrinePassarela =
+    design.arquetipo === 'mono' && loja?.categoria_slug === 'vestuario-calcados'
 
   if (
     vitrineEditorial ||
@@ -299,7 +306,8 @@ export default function PaginaLoja() {
     vitrineRitual ||
     vitrineMagazine ||
     vitrineHorta ||
-    vitrineForno
+    vitrineForno ||
+    vitrinePassarela
   ) {
     // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
     // do JSX sobre componentes genéricos) — renderizada num ramo próprio.
@@ -323,7 +331,9 @@ export default function PaginaLoja() {
                       ? LojaHorta
                       : vitrineForno
                         ? LojaForno
-                        : LojaEditorial
+                        : vitrinePassarela
+                          ? LojaPassarela
+                          : LojaEditorial
     const Pdp = vitrineRaw
       ? ProdutoRaw
       : vitrineSerena
@@ -348,7 +358,9 @@ export default function PaginaLoja() {
                           ? ProdutoHorta
                           : vitrineForno
                             ? ProdutoForno
-                            : ProdutoEditorial
+                            : vitrinePassarela
+                              ? ProdutoPassarela
+                              : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
