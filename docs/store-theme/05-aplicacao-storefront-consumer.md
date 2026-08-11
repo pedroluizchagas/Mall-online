@@ -57,7 +57,7 @@ A **listagem do catálogo** também pode variar de estrutura por nicho (lista de
 - `mode: dark` não pode reduzir contraste de status (success/warning/danger fixos).
 - Movimento decorativo (autoplay, parallax, transições de ambiente) desliga quando o sistema pede "reduzir movimento" (`AccessibilityInfo.isReduceMotionEnabled`).
 
-## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual e horta
+## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual, horta e forno
 
 Além da **pele** (tokens), um arquétipo pode carregar um **layout próprio** no
 consumer. `StoreDesign.arquetipo` (mobile, [04 §4.4]) expõe o código do preset
@@ -66,7 +66,7 @@ exatamente para isso. Implementados: **editorial** (moda/beleza), **raw**
 (casa/decoração), **noir** (fine dining), **volt** (fitness), **clinic**
 (farmácia/saúde), **roast** (cafeterias), **magazine** (departamento),
 **smash** (hamburgueria/fast-food), **ritual** (açaíterias/alimentação
-lifestyle) e **garden** (comida saudável).
+lifestyle), **garden** (comida saudável) e **slice** (pizzarias/cantinas).
 
 **Gates** (em `app/loja/[slug].tsx`) — loja real que satisfaça os critérios
 veste o layout automaticamente; o resto segue no catálogo padrão:
@@ -87,6 +87,7 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
 - `ritual` + categoria `alimentos-bebidas` (açaíterias/alimentação lifestyle);
 - `garden` + categoria ∈ {`alimentos-bebidas`, `saude-bem-estar`}
   (`CATEGORIAS_VITRINE_HORTA` — comida saudável);
+- `slice` + categoria `alimentos-bebidas` (pizzarias/cantinas);
 - `magazine` + categoria `outros` (lojas de departamento).
 
 **Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
@@ -171,6 +172,38 @@ canto e CTA rosa que vira verde "NA SACOLA ✓"), com o vocabulário gráfico
 compartilhado em `components/loja/horta-ui.tsx` (selo, rabisco, foto-adesivo,
 botão-adesivo). A Baloo 2 do wordmark e a Caveat da assinatura são DNA do
 layout, não token — carregadas localmente, como o Shrikhand da ritual.
+
+**Vitrine forno** (referência Restaurin / "Pizza Lounge", [02 §A7]): pizzarias
+e cantinas — a página creme é FATIADA em blocos chapados full-bleed que trocam
+de cor por seção, e a tipografia troca de cor junto. O chrome se resume a DOIS
+BOTÕES circulares creme (voltar e sacola com contador), fixos, com fio e sombra
+para lerem sobre os três palcos por onde passam — **sem barra de menu inferior
+e sem FAB**. Hero em PRETO DE FORNO (veios de mármore em branco a 3% de alfa)
+com a COROA em ouro isolada acima do WORDMARK empilhado em Archivo Black ouro,
+a descrição da casa, o CTA em retângulo vermelho "VER CARDÁPIO ⌄" que rola até
+a lista, e o DISCO GIGANTE de pizza (`banner_url`, recorte redondo puro) que
+desce por cima do bloco seguinte — o overlap da referência. O CARDÁPIO-PÔSTER é
+a seção-assinatura: bloco OURO full-bleed com um item por vez (disco de 72% da
+largura + nome em caps VERMELHAS gigantes + preço), elegendo a seção pelo regex
+`/pizza|favorit|destaque|especia|da casa/` e removendo-a da lista para não
+repetir. Depois vêm o STATEMENT (a 1ª oração da descrição em caps vermelhas
+gigantes, ou a frase de DNA quando ela é longa demais), o ALVO (cartão vermelho
+com anéis concêntricos atrás da pizza e o nome da casa em ouro atravessando e
+sendo CORTADO pelas bordas do cartão) e o cartão da CASA (badges circulares com
+coroa e fatia, descrição e line-art fantasma de garfo/raminho a 9% de alfa). O
+cardápio é uma lista sóbria na mesma voz (thumb redondo, nome, descrição,
+preço) e o fecho é bloco preto com coroa, nome em ouro e o relógio vivo "HOJE
+HH:MM–HH:MM · N MIN · HH:MM". **Zero animação contínua** — a referência não tem
+marquee, então só a transição de saída (radial no PRETO) se move. Texto sobre o
+preto e sobre o ouro usa creme/preto FIXOS (as paletas trocam a tinta do tema);
+o vermelho sobre o ouro só carrega DISPLAY grande, régua AA large travada em
+`__tests__`. Componentes: `components/loja/LojaForno.tsx` + `ProdutoForno.tsx`
+(palco de anéis concêntricos com a pizza no centro, badge coroado girado e CTA
+vermelho que vira PRETO com "NA SACOLA ✓" em ouro), com o vocabulário gráfico
+compartilhado em `components/loja/forno-ui.tsx` (coroa, fatia, pizza redonda,
+anéis, line-art, botão). A Archivo Black 900 é DNA do layout, não token —
+carregada localmente, como o Shrikhand da ritual; o resto da vitrine fala a
+Archivo do tema, que aqui serve display E corpo.
 
 **Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
 casa repetida em degradê âmbar com o produto flutuando por cima, trocando

@@ -1,16 +1,16 @@
 # 02 — Arquétipos de design
 
-> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **13 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **18 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
+> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **14 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **19 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
 >
 > **Implementação:** `packages/lib/src/store-theme/presets.ts` (catálogo `ARQUETIPOS`).
 
 ## 2.1 Por que arquétipos (e não um design por loja)
 
-Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "18 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
+Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "19 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
 
-## 2.2 Os 18 arquétipos
+## 2.2 Os 19 arquétipos
 
-### Derivados de referência (13)
+### Derivados de referência (14)
 
 #### A. Heritage — `heritage`
 - **Nichos:** restaurantes, churrascarias, cafeterias boutique.
@@ -59,6 +59,15 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Paletas:** verde+creme (default), Beterraba (vermelho-terroso), Cacau (grão tostado). Os pastéis rosa/caramelo são DNA do layout e não trocam com a paleta — o que troca é o verde do hero e a tinta do creme, então as três peles repintam a vitrine sem código novo.
 - **Layout próprio no consumer:** vitrine horta — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
 - **Por que não é o Roast, o Heritage, o Ritual nem o Soft:** roast é o outro verde-floresta, mas é pôster retrô DARK — a página É verde, com âmbar, título repetido em degradê e cardápio-cartaz com marca d'água; garden é página CLARA em que o verde é âncora, não fundo. Heritage é o clássico contido (serifa + neutros + foto full-bleed), sem adesivo, selo ou rabisco. Ritual é rosa-página com cartões flutuando e caps condensadas — a gramática oposta das seções full-bleed em serifa. Soft é serviço acolhedor genérico, sem a linguagem farm-to-table nem vitrine de alimentação. 2026-08: 18º arquétipo, 13º derivado de referência, com **vitrine própria**.
+
+#### A7. Slice — `slice`
+- **Nichos:** pizzarias, cantinas italianas e casas de massas (alternativa de `alimentos-bebidas`).
+- **DNA:** cartaz de pizzaria — a página creme é FATIADA em blocos chapados full-bleed que trocam de cor por seção: PRETO de forno (hero e fecho, com veios de mármore quase imperceptíveis), OURO (o cardápio-pôster) e o VERMELHO do tema, que aqui não é só CTA — é a TINTA de todo o display sobre o creme. Uma grotesca ULTRA-pesada (Archivo Black) em caps para tudo que é título, mudando de cor conforme o bloco (ouro sobre o preto, vermelho sobre o ouro, vermelho sobre o creme); COROA real isolada acima do wordmark e dentro dos badges redondos; PIZZA EM RECORTE REDONDO, sem moldura, vazando de um bloco para o outro (o disco gigante do hero desce por cima do ouro); cardápio-pôster com um item por vez — disco grande e nome gigante embaixo; statement-manifesto em caps vermelhas; cartão vermelho com ANÉIS CONCÊNTRICOS atrás da pizza (o alvo) e o nome da casa em ouro atravessando e sendo cortado pelas bordas; cartão claro com badges circulares e line-art FANTASMA de cozinha (garfo, raminho).
+- **Mood:** apetitoso, majestoso, intenso.
+- **Refs:** [Restaurin / "Pizza Lounge"](https://restaurin.framer.website/).
+- **Paletas:** vermelho+creme (default), Basílico (verde-oliva de cantina), Vinho (a casa de massas ao tinto). O preto e o ouro são DNA do layout e não trocam com a paleta — o que troca é o vermelho de display e a tinta do creme, então as três peles repintam a vitrine sem código novo. O vermelho sobre o ouro só carrega DISPLAY grande (régua AA large ≥ 3, travada em `__tests__`); texto pequeno sobre o ouro usa sempre a tinta preta.
+- **Layout próprio no consumer:** vitrine forno — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
+- **Por que não é o Smash, o Roast, o Heritage nem o Noir:** smash é o outro fast-food de caps pesadas, mas é PÁGINA BORDÔ dark, com laranja de acento e pills por toda parte — um mundo de cor contínuo; slice é página CLARA fatiada em blocos chapados, com recortes redondos, anéis e coroa (gramática de cartaz de pizzaria, não de lanchonete) e modo `light`, não `dark`. Roast é pôster retrô VERDE dark de cafeteria, com título repetido em degradê. Heritage é serifa clássica contida — slice é grotesca esmagada, zero serifa. Noir é luxo preto metálico serifado; no slice o preto é só UM dos quatro blocos e a voz é pop-cartaz, não cerimônia. 2026-08: 19º arquétipo, 14º derivado de referência, com **vitrine própria**.
 
 #### B. Raw / Street — `raw`
 - **Nichos:** moda masculina/sport, streetwear.
@@ -148,7 +157,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 
 | Categoria (slug) | Template funcional | Arquétipo default | Alternativas |
 |---|---|---|---|
-| `alimentos-bebidas` | food | **heritage** | noir, roast, ritual, smash, garden, market, soft |
+| `alimentos-bebidas` | food | **heritage** | noir, roast, ritual, smash, garden, slice, market, soft |
 | `vestuario-calcados` | fashion | **editorial** | raw, noir, volt |
 | `acessorios-joias` | fashion | **noir** | serene, editorial |
 | `farmacia-medicamentos` | pharmacy | **clinic** | market |
@@ -180,7 +189,7 @@ Cada arquétipo tem **paleta default** (hex em [03](03-design-tokens-e-schema.md
 
 ## 2.5 Como evoluir esta lista
 
-Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 18º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
+Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 20º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
 
 ## 2.6 Referências completas (fonte: design-lojas.md)
 
@@ -188,6 +197,7 @@ Nova referência deve ser **classificada num arquétipo existente** antes de cog
 - **Hamburgueria / fast-food** → Smash: Stack N Snack.
 - **Açaíterias / matcha & lifestyle** → Ritual: OCHA.
 - **Comida saudável / saladerias & cafés naturais** → Garden: Sonder & Sprout.
+- **Pizzarias / cantinas italianas** → Slice: Restaurin ("Pizza Lounge").
 - **Vestuário masculino / sport** → Raw: Wearix, Rawline, Wearvo.
 - **Vestuário feminino / unissex** → Editorial: Veonn, Zaro, Marion, AXM.
 - **Acessórios** → Editorial (Axels) / Noir (Caelora, Aurum).
