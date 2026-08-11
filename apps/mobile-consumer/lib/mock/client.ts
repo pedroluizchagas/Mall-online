@@ -9,6 +9,7 @@
  */
 
 import { criarDB, MOCK_USER, MOCK_SESSION, type MockDB } from './dataset'
+import { EXPLORE_FEED } from './feed'
 
 type Resultado<T = any> = { data: T; error: null | { message: string; code?: string } }
 
@@ -19,13 +20,72 @@ const novoId = (prefixo: string) =>
   `${prefixo}-${Date.now().toString(36)}-${idSeq++}`
 
 /**
+ * Views só-leitura: não fazem parte do MockDB mutável, mas o app lê delas
+ * como leria de uma tabela. Fallback — se o dataset já expõe a chave, ela
+ * ganha. Nada aqui é alvo de insert/update.
+ */
+const TABELAS_VIRTUAIS: Record<string, any[]> = {
+  public_explore_feed: EXPLORE_FEED,
+}
+
+const ISO_DATA = /^\d{4}-\d{2}-\d{2}([T ]\d{2}:\d{2}|$)/
+
+/**
+ * Ordem total entre dois valores de coluna, para os operadores de
+ * comparação e para o order(). Número compara como número; timestamp ISO
+ * compara como instante (não quebra se um vier com fuso e outro em UTC);
+ * string numérica ("42") compara como número; o resto, lexicograficamente.
+ * `null`/`undefined` ficam de fora — é o que o Postgres faz com NULL.
+ */
+function comparar(a: unknown, b: unknown): number | null {
+  if (a == null || b == null) return null
+  if (typeof a === 'number' && typeof b === 'number') return a - b
+
+  const sa = String(a)
+  const sb = String(b)
+
+  if (ISO_DATA.test(sa) && ISO_DATA.test(sb)) {
+    const ta = Date.parse(sa)
+    const tb = Date.parse(sb)
+    if (Number.isFinite(ta) && Number.isFinite(tb)) return ta - tb
+  }
+
+  const na = Number(sa)
+  const nb = Number(sb)
+  if (
+    sa.trim() !== '' &&
+    sb.trim() !== '' &&
+    Number.isFinite(na) &&
+    Number.isFinite(nb)
+  ) {
+    return na - nb
+  }
+
+  return sa < sb ? -1 : sa > sb ? 1 : 0
+}
+
+type OperadorOrdem = 'lt' | 'lte' | 'gt' | 'gte'
+
+const SATISFAZ: Record<OperadorOrdem, (delta: number) => boolean> = {
+  lt: (d) => d < 0,
+  lte: (d) => d <= 0,
+  gt: (d) => d > 0,
+  gte: (d) => d >= 0,
+}
+
+/**
  * Builder encadeável e "thenable" — espelha o PostgREST no que o app usa:
- * select/insert/update/upsert/delete + eq/ilike/order/limit/single.
+ * select/insert/update/upsert/delete + eq/neq/in/ilike/lt/lte/gt/gte +
+ * order/limit/single. Os comparadores existem sobretudo pela paginação
+ * keyset do Explorar (`.lt('publicado_em', ultima)`).
  * Filtros com coluna aninhada (ex.: "stores.ativo") são ignorados de
  * propósito: os embeds já vêm resolvidos no dataset.
  */
 class MockQuery implements PromiseLike<Resultado> {
   private filtros: { col: string; val: unknown }[] = []
+  private diferentes: { col: string; val: unknown }[] = []
+  private conjuntos: { col: string; vals: readonly unknown[] }[] = []
+  private ordens: { col: string; op: OperadorOrdem; val: unknown }[] = []
   private likes: { col: string; termo: string }[] = []
   private ordenar: { col: string; asc: boolean } | null = null
   private limite: number | null = null
@@ -61,6 +121,30 @@ class MockQuery implements PromiseLike<Resultado> {
     this.filtros.push({ col, val })
     return this
   }
+  neq(col: string, val: unknown) {
+    this.diferentes.push({ col, val })
+    return this
+  }
+  in(col: string, vals: readonly unknown[]) {
+    this.conjuntos.push({ col, vals })
+    return this
+  }
+  lt(col: string, val: unknown) {
+    return this.comparacao(col, 'lt', val)
+  }
+  lte(col: string, val: unknown) {
+    return this.comparacao(col, 'lte', val)
+  }
+  gt(col: string, val: unknown) {
+    return this.comparacao(col, 'gt', val)
+  }
+  gte(col: string, val: unknown) {
+    return this.comparacao(col, 'gte', val)
+  }
+  private comparacao(col: string, op: OperadorOrdem, val: unknown) {
+    this.ordens.push({ col, op, val })
+    return this
+  }
   ilike(col: string, termo: string) {
     this.likes.push({ col, termo })
     return this
@@ -83,7 +167,7 @@ class MockQuery implements PromiseLike<Resultado> {
   }
 
   private linhas(): any[] {
-    return (this.db as any)[this.tabela] ?? []
+    return (this.db as any)[this.tabela] ?? TABELAS_VIRTUAIS[this.tabela] ?? []
   }
 
   /** Garante embeds (loja, itens, entrega) num pedido recém-criado. */
@@ -133,6 +217,21 @@ class MockQuery implements PromiseLike<Resultado> {
       if (col.includes('.')) continue // filtro sobre embed — já resolvido
       rows = rows.filter((r) => r?.[col] === val)
     }
+    for (const { col, val } of this.diferentes) {
+      if (col.includes('.')) continue
+      rows = rows.filter((r) => r?.[col] !== val)
+    }
+    for (const { col, vals } of this.conjuntos) {
+      if (col.includes('.')) continue
+      rows = rows.filter((r) => vals.includes(r?.[col]))
+    }
+    for (const { col, op, val } of this.ordens) {
+      if (col.includes('.')) continue
+      rows = rows.filter((r) => {
+        const delta = comparar(r?.[col], val)
+        return delta === null ? false : SATISFAZ[op](delta)
+      })
+    }
     for (const { col, termo } of this.likes) {
       const alvo = termo.replace(/%/g, '').toLowerCase()
       rows = rows.filter((r) =>
@@ -142,9 +241,9 @@ class MockQuery implements PromiseLike<Resultado> {
     if (this.ordenar) {
       const { col, asc } = this.ordenar
       rows.sort((a, b) => {
-        if (a[col] < b[col]) return asc ? -1 : 1
-        if (a[col] > b[col]) return asc ? 1 : -1
-        return 0
+        const delta = comparar(a?.[col], b?.[col])
+        if (delta === null) return 0
+        return asc ? Math.sign(delta) : -Math.sign(delta)
       })
     }
     if (this.limite != null) rows = rows.slice(0, this.limite)
@@ -257,7 +356,12 @@ export function criarSupabaseMock() {
 
     channel: canalFake,
     removeChannel: () => {},
-    async rpc() {
+    /**
+     * Toda RPC vira no-op bem-sucedido. Aceita nome e argumentos porque as
+     * telas chamam com payload (ex.: `increment_post_view` no Explorar) e o
+     * retorno é ignorado — o contador só existe no backend real.
+     */
+    async rpc(_fn?: string, _args?: Record<string, unknown>) {
       return ok(null)
     },
   }
