@@ -1,7 +1,7 @@
 import type { Archetype, ArquetipoCodigo, ColorTokens } from './types'
 
 /**
- * Catálogo dos 20 arquétipos com seus tokens default.
+ * Catálogo dos 21 arquétipos com seus tokens default.
  *
  * Valores iniciais destilados das referências (docs/store-theme/02) e
  * desenhados internamente para os nichos sem referência (clinic, tech, market,
@@ -264,6 +264,47 @@ export const ARQUETIPOS = {
         // por isso o 400 entra no display, o que nenhum outro arquétipo faz.
         display: { family: 'Manrope', weights: [400, 600, 700] },
         body: { family: 'Manrope', weights: [400, 500, 600, 700] },
+        scale: 'regular',
+      },
+      shape: { radius: 'round', density: 'comfortable' },
+    },
+  },
+
+  // ── Referências: hortifruti / quitandas / mercados frescos ─────────────────
+  fresh: {
+    codigo: 'fresh',
+    nome: 'Fresh',
+    descricao:
+      'Feira premium. Página clara, hero-cartão verde-mata com colagem de frescos, lima de ação, chips circulares de categoria, ofertas por tempo e preço por unidade. Para hortifruti e mercados frescos.',
+    mood: ['fresco', 'vivo', 'confiável'],
+    // Destilado de um mockup de app grocery enviado pelo cliente: existe
+    // referência, mas ela não tem URL pública para registrar aqui. NÃO é um
+    // arquétipo desenhado internamente — ver docs/store-theme/02 §A9.
+    referencias: [],
+    tokens: {
+      mode: 'light',
+      color: pele({
+        bg: '#FBFBF7',
+        surface: '#FFFFFF',
+        // Verde-névoa dos discos de categoria e dos palcos de foto.
+        surfaceAlt: '#F1F4EC',
+        ink: '#17211A',
+        // A unidade ("/kg") e a linha de descrição de cada card escrevem
+        // DIRETO no claro da página, sem cartão por baixo — AA contra o `bg`
+        // garantido em __tests__ (mesma regra de garden/slice/mono).
+        inkMuted: '#63705F',
+        line: '#E7EBE2',
+        // LIMA de ação: pill de CTA, chip do cronômetro e selo de oferta. Ele
+        // é CLARO, então NUNCA é cor de TEXTO sobre a página — só entra como
+        // FUNDO, com `accentInk` por cima. Preço e título são sempre `ink`.
+        accent: '#C6E84B',
+        accentInk: '#1F3020',
+      }),
+      typography: {
+        // A sans geométrica ARREDONDADA única da referência: uma família só,
+        // do rótulo de 11px ao título de seção.
+        display: { family: 'Plus Jakarta Sans', weights: [500, 600, 700] },
+        body: { family: 'Plus Jakarta Sans', weights: [400, 500, 600, 700] },
         scale: 'regular',
       },
       shape: { radius: 'round', density: 'comfortable' },

@@ -54,6 +54,12 @@ import {
   Manrope_700Bold,
 } from '@expo-google-fonts/manrope'
 import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from '@expo-google-fonts/plus-jakarta-sans'
+import {
   SpaceGrotesk_500Medium,
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
@@ -66,7 +72,7 @@ import {
 import { Anton_400Regular } from '@expo-google-fonts/anton'
 
 /**
- * Fontes dos 20 arquétipos (StoreTheme) para o mobile-consumer.
+ * Fontes dos 21 arquétipos (StoreTheme) para o mobile-consumer.
  *
  * RN não herda fontFamily nem sintetiza pesos: cada peso é um arquivo próprio
  * com nome `Familia_600SemiBold`. Este módulo mapeia as famílias/pesos
@@ -151,6 +157,15 @@ const FONTES: Record<string, Record<number, Font.FontSource>> = {
     500: Manrope_500Medium,
     600: Manrope_600SemiBold,
     700: Manrope_700Bold,
+  },
+  // Família com espaço no nome, como 'Cormorant Garamond' e 'Space Grotesk':
+  // `nomeFonte` remove os espaços e chega em 'PlusJakartaSans_600SemiBold',
+  // que é o export real do pacote (conferido).
+  'Plus Jakarta Sans': {
+    400: PlusJakartaSans_400Regular,
+    500: PlusJakartaSans_500Medium,
+    600: PlusJakartaSans_600SemiBold,
+    700: PlusJakartaSans_700Bold,
   },
   'Space Grotesk': {
     500: SpaceGrotesk_500Medium,

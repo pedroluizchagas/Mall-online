@@ -293,6 +293,46 @@ describe('qualidade de autoria dos ARQUETIPOS', () => {
       'mono: texto do chip de escassez ilegível sobre o laranja',
     ).toBeGreaterThanOrEqual(4.5)
   })
+
+  /** Peles do fresh: o preset e as paletas curadas, checadas juntas. */
+  const PELES_FRESH = [
+    ['preset', ARQUETIPOS.fresh.tokens.color],
+    ...PALETAS.fresh.map((p) => [`paleta ${p.codigo}`, p.color] as const),
+  ] as const
+
+  /**
+   * Na vitrine feira a unidade ("/kg") e a descrição de cada card são escritas
+   * DIRETO na página, ao lado do preço e fora de qualquer cartão.
+   */
+  it('fresh: inkMuted legível sobre bg — a unidade escreve direto no claro', () => {
+    for (const [nome, cor] of PELES_FRESH) {
+      expect(
+        contrastRatio(cor.bg, cor.inkMuted),
+        `fresh/${nome}: inkMuted ilegível sobre bg`,
+      ).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  /**
+   * O hero-cartão e o fecho da feira são VERDE-MATA fixo (DNA da vitrine, não
+   * token) com creme fixo por cima, e a pill de ação pousa sobre esse verde
+   * nas três peles — componente de UI, régua 3:1 (WCAG 1.4.11). Espelho das
+   * constantes de `feira-ui.tsx`: se mudarem lá, mudam aqui.
+   */
+  it('fresh: o verde-mata sustenta o creme e a pill de accent de cada pele', () => {
+    const VERDE_MATA = '#22392B'
+    const CREME_FEIRA = '#F4F7EC'
+    expect(
+      contrastRatio(VERDE_MATA, CREME_FEIRA),
+      'fresh: creme ilegível sobre o verde-mata',
+    ).toBeGreaterThanOrEqual(4.5)
+    for (const [nome, cor] of PELES_FRESH) {
+      expect(
+        contrastRatio(VERDE_MATA, cor.accent),
+        `fresh/${nome}: pill de ação some sobre o verde-mata`,
+      ).toBeGreaterThanOrEqual(3)
+    }
+  })
 })
 
 describe('PALETAS curadas por arquétipo', () => {

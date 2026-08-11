@@ -203,6 +203,30 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
       },
     },
   ],
+  fresh: [
+    {
+      // Vitrine de outono: o âmbar no lugar do lima. O VERDE-MATA do
+      // hero-cartão e do fecho é DNA da vitrine e fica nas três peles — o que
+      // a paleta troca é a cor de AÇÃO e a temperatura do claro.
+      codigo: 'colheita',
+      nome: 'Colheita',
+      color: {
+        bg: '#FCFAF3', surface: '#FFFFFF', surfaceAlt: '#F5F0DE',
+        ink: '#201C12', inkMuted: '#6E6752', line: '#EDE7D4',
+        accent: '#EFC23D', accentInk: '#2A2410',
+      },
+    },
+    {
+      // Pitanga: o vermelho-fruta claro da banca de verão.
+      codigo: 'pitanga',
+      nome: 'Pitanga',
+      color: {
+        bg: '#FDF9F6', surface: '#FFFFFF', surfaceAlt: '#F7ECE5',
+        ink: '#231512', inkMuted: '#71594E', line: '#F0E4DD',
+        accent: '#F08A6E', accentInk: '#3A140C',
+      },
+    },
+  ],
   magazine: [
     {
       // O rosa-varejo da referência Revive.

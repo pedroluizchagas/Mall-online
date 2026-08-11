@@ -12,7 +12,7 @@ import type { Archetype, ArquetipoCodigo, ArquetipoSugestao } from './types'
  * Record<CategoriaSlug, ...>` garante cobertura total (zero lacunas).
  */
 export const CATEGORIA_SLUG_TO_ARQUETIPO = {
-  'alimentos-bebidas': { default: 'heritage', alternativas: ['noir', 'roast', 'ritual', 'smash', 'garden', 'slice', 'market', 'soft'] },
+  'alimentos-bebidas': { default: 'heritage', alternativas: ['noir', 'roast', 'ritual', 'smash', 'garden', 'slice', 'fresh', 'market', 'soft'] },
   'vestuario-calcados': { default: 'editorial', alternativas: ['raw', 'noir', 'volt', 'mono'] },
   'acessorios-joias': { default: 'noir', alternativas: ['serene', 'editorial'] },
   'farmacia-medicamentos': { default: 'clinic', alternativas: ['market'] },
@@ -28,7 +28,7 @@ export const CATEGORIA_SLUG_TO_ARQUETIPO = {
   'brinquedos-presentes': { default: 'playful', alternativas: ['soft'] },
   'floricultura-plantas': { default: 'artisan', alternativas: ['soft', 'editorial'] },
   automotivo: { default: 'utility', alternativas: ['noir'] },
-  'mercado-conveniencia': { default: 'market', alternativas: ['utility'] },
+  'mercado-conveniencia': { default: 'market', alternativas: ['utility', 'fresh'] },
   'oficinas-manutencao': { default: 'utility', alternativas: ['market'] },
   'aulas-cursos': { default: 'editorial', alternativas: ['playful', 'soft'] },
   outros: { default: 'magazine', alternativas: ['editorial', 'market', 'soft'] },

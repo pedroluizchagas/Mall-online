@@ -12,7 +12,7 @@
  * a PELE (arquétipo/cores/tipografia) vive aqui.
  */
 
-/** Os 20 arquétipos que cobrem 100% das 20 categorias do Mallevo. */
+/** Os 21 arquétipos que cobrem 100% das 20 categorias do Mallevo. */
 export type ArquetipoCodigo =
   | 'heritage' // restaurantes/alimentação premium — serifa, neutros quentes
   | 'roast' // cafeterias/confeitarias boutique — pôster retrô, verde + âmbar
@@ -21,6 +21,7 @@ export type ArquetipoCodigo =
   | 'garden' // comida saudável/natural — creme + verde-floresta, pastéis, serifa macia
   | 'slice' // pizzarias/cantinas — creme fatiado em preto/ouro/vermelho, caps esmagadas
   | 'mono' // moda monocromática — branco, fotografia P&B, compra na grade, laranja único
+  | 'fresh' // hortifruti/mercado fresco — verde-mata + lima, chips de foto, preço por unidade
   | 'magazine' // lojas de departamento/vende-tudo — varejo claro, serifa clássica
   | 'raw' // streetwear/moda sport — dark, sans pesada, alto contraste
   | 'editorial' // moda elegante/cosméticos/neutro default — clean, whitespace
@@ -87,7 +88,12 @@ export interface Archetype {
   descricao: string
   /** Mood em poucas palavras — usado nos cards de seleção. */
   mood: readonly string[]
-  /** Referências-âncora (URLs) que destilaram este DNA. Vazio = arquétipo desenhado internamente. */
+  /**
+   * Referências-âncora (URLs) que destilaram este DNA. Vazio = sem URL
+   * PÚBLICA: ou o arquétipo foi desenhado internamente, ou foi destilado de
+   * material privado (mockup de cliente). Qual dos dois, o docs/store-theme/02
+   * diz na entrada do arquétipo — o array vazio sozinho não distingue.
+   */
   referencias: readonly string[]
   tokens: ThemeTokens
 }
