@@ -1,16 +1,16 @@
 # 02 — Arquétipos de design
 
-> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências do Framer colapsam em **15 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **20 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
+> Este doc absorve e estrutura o antigo `design-lojas.md`. As referências externas colapsam em **16 arquétipos**; mais **5 arquétipos desenhados internamente** cobrem os nichos sem referência (farmácia, eletrônicos, mercado, construção/oficinas, brinquedos). Total: **21 arquétipos que cobrem 100% das 20 categorias** do Mallevo. Cada loja veste **um arquétipo + uma paleta**; o nicho sugere o default.
 >
 > **Implementação:** `packages/lib/src/store-theme/presets.ts` (catálogo `ARQUETIPOS`).
 
 ## 2.1 Por que arquétipos (e não um design por loja)
 
-Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "20 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
+Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipografia, estrutura, mood), as referências revelam **famílias**. Isso reduz "25 designs" para "21 presets parametrizáveis por paleta" — variedade real sem explosão de manutenção. As referências cobriam só varejo boutique + alimentação; os nichos de **serviço, saúde, tecnologia, mercado e utilidade** exigiram arquétipos próprios, desenhados internamente segundo o mesmo método.
 
-## 2.2 Os 20 arquétipos
+## 2.2 Os 21 arquétipos
 
-### Derivados de referência (15)
+### Derivados de referência (16)
 
 #### A. Heritage — `heritage`
 - **Nichos:** restaurantes, churrascarias, cafeterias boutique.
@@ -77,6 +77,16 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Paletas:** branco+tinta (default), Areia (off-white quente de quiet luxury), Porcelana (rosé quase imperceptível). As paletas do mono trocam a TEMPERATURA do branco e **nunca acrescentam cor** — é a regra que mantém o arquétipo de pé. O laranja do chip é DNA da vitrine, não token, e sustenta texto branco com AA travado em `__tests__`.
 - **Layout próprio no consumer:** vitrine passarela — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
 - **Por que não é o Editorial, o Raw, o Serene nem o Noir:** editorial é o vizinho perigoso (também branco, sans, minimal), e é exatamente aí que o §2.5 decide — editorial é CONTEMPLATIVO: vitrine sem chrome, fotos 3:4 sem cartão, seções numeradas, PDP imersivo, e **toda compra passa pelo PDP**. Mono é COMÉRCIO-PRIMEIRO: card em palco cinza com adição na própria grade, chip de escassez e a linha nome/preço como ficha inteira. A interação é estruturalmente outra — e a fotografia P&B com uma única cor de urgência é identidade que paleta nenhuma do editorial produz. Raw é dark, condensada pesada e humor de drop street. Serene é delicadeza de skincare (tipo fina, cinza-névoa, botão de contorno), sem gramática de moda nem comércio no card. Noir é preto dramático com serifa metálica; mono é branco com grotesca e um só ornamento. 2026-08: 20º arquétipo, 15º derivado de referência, com **vitrine própria**.
+
+#### A9. Fresh — `fresh`
+- **Nichos:** hortifruti, quitandas, mercados frescos e empórios de bairro (alternativa de `mercado-conveniencia` e de `alimentos-bebidas`).
+- **DNA:** feira premium numa página clara. HERO-CARTÃO verde-mata (cartão com gutter, **não** full-bleed) com manchete creme, pill de ação e uma COLAGEM de discos de foto sangrando o canto — vira pager com dots quando a casa tem mais de uma foto. CHIPS CIRCULARES de categoria com foto, que rolam a página até o corredor correspondente. OFERTAS com CRONÔMETRO contando até a virada do dia. Cards soltos com sombra suave, selo de oferta no canto e preço com UNIDADE ("R$ 8,90 **/kg**"), que é como uma quitanda vende. Uma sans geométrica arredondada única, do rótulo de 11px ao título de seção.
+- **Mood:** fresco, vivo, confiável.
+- **Refs:** mockup de app grocery enviado pelo cliente (sem URL pública).
+- **Traduções conscientes da referência:** o mockup tem um **coração de favorito** no card, **estrelas de avaliação** e uma **barra de navegação flutuante** própria. Nenhum dos três entrou: o app não tem lista de desejos nem rating de produto (um coração que não guarda nada mentiria para o cliente, e estrelas inventadas mentiriam sobre o produto), e a barra de navegação do aplicativo é do aplicativo — **nenhuma vitrine desenha a sua**. O canto do card ficou com o selo de oferta e a linha de baixo com a descrição: mesmos lugares, informação verdadeira.
+- **Paletas:** verde+lima (default), Colheita (âmbar de outono), Pitanga (vermelho-fruta). O VERDE-MATA do hero-cartão e do fecho é DNA da vitrine e fica nas três peles — o que a paleta troca é a cor de AÇÃO e a temperatura do claro. O lima é claro: ele **nunca** é tinta de texto, só fundo com `accentInk` por cima (preço e título são sempre `ink`).
+- **Layout próprio no consumer:** vitrine feira — ver [05 §5.6](05-aplicacao-storefront-consumer.md).
+- **Por que não é o Market, o Volt nem o Garden:** market é o vizinho óbvio (mercado/conveniência) e é exatamente onde o §2.5 decide — market foi desenhado INTERNAMENTE como utilidade densa (grade compacta, ênfase em preço, zero personalidade de marca) e não tem vitrine própria; ele continua servindo a conveniência de corredor. Fresh é a QUITANDA COM MARCA: hero-cartão, chips de foto, cronômetro, preço por unidade — outra gramática e outro contexto de compra. Volt é o outro lima, mas é fitness: caps pesadas, palco cinza, ritmo de performance. Garden é comida saudável PRONTA (restaurante — creme, pastéis, serifa macia); fresh é VAREJO de alimento cru. 2026-08: 21º arquétipo, com **vitrine própria**.
 
 #### B. Raw / Street — `raw`
 - **Nichos:** moda masculina/sport, streetwear.
@@ -166,7 +176,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 
 | Categoria (slug) | Template funcional | Arquétipo default | Alternativas |
 |---|---|---|---|
-| `alimentos-bebidas` | food | **heritage** | noir, roast, ritual, smash, garden, slice, market, soft |
+| `alimentos-bebidas` | food | **heritage** | noir, roast, ritual, smash, garden, slice, fresh, market, soft |
 | `vestuario-calcados` | fashion | **editorial** | raw, noir, volt, mono |
 | `acessorios-joias` | fashion | **noir** | serene, editorial |
 | `farmacia-medicamentos` | pharmacy | **clinic** | market |
@@ -182,7 +192,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 | `brinquedos-presentes` | generic | **playful** | soft |
 | `floricultura-plantas` | generic | **artisan** | soft, editorial |
 | `automotivo` | generic | **utility** | noir |
-| `mercado-conveniencia` | generic | **market** | utility |
+| `mercado-conveniencia` | generic | **market** | utility, fresh |
 | `oficinas-manutencao` | services | **utility** | market |
 | `aulas-cursos` | services | **editorial** | playful, soft |
 | `outros` | generic | **magazine** | editorial, market, soft |
@@ -198,7 +208,7 @@ Cada arquétipo tem **paleta default** (hex em [03](03-design-tokens-e-schema.md
 
 ## 2.5 Como evoluir esta lista
 
-Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 21º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
+Nova referência deve ser **classificada num arquétipo existente** antes de cogitar um 22º. Só criar arquétipo novo quando uma loja não couber em nenhum DNA atual (estrutura de layout ou contexto de uso genuinamente diferente). A variedade vem das **paletas** dentro de cada arquétipo, não de novos arquétipos.
 
 ## 2.6 Referências completas (fonte: design-lojas.md)
 
@@ -208,6 +218,7 @@ Nova referência deve ser **classificada num arquétipo existente** antes de cog
 - **Comida saudável / saladerias & cafés naturais** → Garden: Sonder & Sprout.
 - **Pizzarias / cantinas italianas** → Slice: Restaurin ("Pizza Lounge").
 - **Moda monocromática (masculina e feminina)** → Mono: Homelander.
+- **Hortifruti / mercado fresco** → Fresh: mockup de app grocery (cliente).
 - **Vestuário masculino / sport** → Raw: Wearix, Rawline, Wearvo.
 - **Vestuário feminino / unissex** → Editorial: Veonn, Zaro, Marion, AXM.
 - **Acessórios** → Editorial (Axels) / Noir (Caelora, Aurum).

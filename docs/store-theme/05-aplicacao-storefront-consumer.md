@@ -57,7 +57,7 @@ A **listagem do catálogo** também pode variar de estrutura por nicho (lista de
 - `mode: dark` não pode reduzir contraste de status (success/warning/danger fixos).
 - Movimento decorativo (autoplay, parallax, transições de ambiente) desliga quando o sistema pede "reduzir movimento" (`AccessibilityInfo.isReduceMotionEnabled`).
 
-## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual, horta, forno e passarela
+## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual, horta, forno, passarela e feira
 
 Além da **pele** (tokens), um arquétipo pode carregar um **layout próprio** no
 consumer. `StoreDesign.arquetipo` (mobile, [04 §4.4]) expõe o código do preset
@@ -66,8 +66,14 @@ exatamente para isso. Implementados: **editorial** (moda/beleza), **raw**
 (casa/decoração), **noir** (fine dining), **volt** (fitness), **clinic**
 (farmácia/saúde), **roast** (cafeterias), **magazine** (departamento),
 **smash** (hamburgueria/fast-food), **ritual** (açaíterias/alimentação
-lifestyle), **garden** (comida saudável), **slice** (pizzarias/cantinas) e
-**mono** (moda monocromática).
+lifestyle), **garden** (comida saudável), **slice** (pizzarias/cantinas),
+**mono** (moda monocromática) e **fresh** (hortifruti/mercado fresco).
+
+> **Regra que vale para TODAS elas:** nenhuma vitrine desenha barra de navegação
+> própria nem FAB de carrinho. A navegação do aplicativo
+> (`app/(tabs)/_layout.tsx`) é a do aplicativo, e o chrome de vitrine se resume
+> aos dois botões flutuantes (voltar e sacola com contador). Mockup de
+> referência que traga a própria barra tem essa parte ignorada.
 
 **Gates** (em `app/loja/[slug].tsx`) — loja real que satisfaça os critérios
 veste o layout automaticamente; o resto segue no catálogo padrão:
@@ -92,6 +98,8 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
 - `mono` + categoria `vestuario-calcados` (moda monocromática — o editorial
   veste a mesma categoria, mas o gate é por ARQUÉTIPO: os dois nunca disputam
   a mesma loja);
+- `fresh` + categoria ∈ {`mercado-conveniencia`, `alimentos-bebidas`}
+  (`CATEGORIAS_VITRINE_FEIRA` — hortifruti/mercado fresco);
 - `magazine` + categoria `outros` (lojas de departamento).
 
 **Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
@@ -250,6 +258,30 @@ no mono não há cor para onde ir), com o vocabulário gráfico em
 `components/loja/passarela-ui.tsx` (botão, monograma coroado, chip, pill de
 adição). Primeira vitrine **sem fonte-DNA local**: a voz é o peso da Manrope
 do tema, não uma família extra.
+
+**Vitrine feira** (referência: mockup de app grocery, [02 §A9]): hortifruti e
+mercados frescos. A página é clara do topo ao pé — o hero é CARTÃO com gutter,
+não foto full-bleed —, então é a primeira vitrine **sem virada de status bar**
+(fica `dark` sempre). O hero é um cartão VERDE-MATA com manchete creme, pill de
+ação em lima e uma COLAGEM de dois discos de foto sangrando o canto; com mais
+de uma foto vira pager com dots (largura explícita na ScrollView, a regra
+herdada). Abaixo, a fileira de CHIPS CIRCULARES: um disco de foto por seção do
+cardápio (sem foto, o disco leva a inicial), e tocar rola a página até o
+corredor — as âncoras são um `Map<titulo, y>` alimentado por `onLayout`. As
+OFERTAS são um recorte TRANSVERSAL do catálogo (produtos com
+`preco_promocional`, teto de 6) com um `ChipCronometro` contando até a virada
+do dia; o bloco **não remove nada** dos corredores, porque é uma vitrine do que
+já está lá — nenhum produto perde o seu lugar na lista. Cada corredor é uma
+grade de 2 com TODOS os produtos da seção. O card é o da banca: foto quadrada,
+selo de oferta no canto, nome, descrição e o preço com a UNIDADE ao lado
+(`metadata.unidade` → "R$ 8,90 /kg"). Fecho em cartão verde com o relógio vivo.
+O único tique da tela é o cronômetro, que recalcula do relógio a cada segundo
+(em vez de decrementar) para não acumular deriva e virar o dia sozinho.
+Componentes: `components/loja/LojaFeira.tsx` + `ProdutoFeira.tsx` (preço grande
+com unidade, ficha de especificações e CTA lima que vira o verde da casa), com
+o vocabulário em `components/loja/feira-ui.tsx` (botão, selo de oferta, chip de
+cronômetro, disco de categoria). Sem fonte-DNA local: a voz é a Plus Jakarta
+Sans do tema.
 
 **Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
 casa repetida em degradê âmbar com o produto flutuando por cima, trocando
