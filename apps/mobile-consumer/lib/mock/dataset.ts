@@ -23,6 +23,7 @@ import {
   LOGO_FARMACIA,
   LOGO_FORNO_REAL,
   LOGO_MONARCA,
+  LOGO_QUINTAL,
   LOGO_SELENE,
   LOGO_ROXA,
   LOGO_URBAN_WEAR,
@@ -150,7 +151,7 @@ const fotoModa = (id: string, w = 600, h = 800) =>
 const fotoPB = (id: string, w = 600, h = 800) =>
   `${fotoModa(id, w, h)}&sat=-100`
 
-/** [produto, precoCentavos, descricao, fotoUrl?, especificacoes?, exigeReceita?, estoque?] */
+/** [produto, precoCentavos, descricao, fotoUrl?, especificacoes?, exigeReceita?, estoque?, unidade?] */
 type ItemCatalogo = [
   string,
   number,
@@ -161,6 +162,9 @@ type ItemCatalogo = [
   // Peças restantes. Só as lojas que vivem de escassez informam (a vitrine
   // passarela acende o chip laranja abaixo de 40); ausente → nada muda.
   number?,
+  // Unidade de venda ('kg', 'un', 'dz', 'maço'...). Quem vende a peso informa
+  // e a vitrine feira imprime o "/kg" ao lado do preço; ausente → nada muda.
+  string?,
 ]
 type Catalogo = [string, ItemCatalogo[]][]
 
@@ -644,6 +648,67 @@ const PISOS: PisoSpec[] = [
       { nome: 'Hortifruti Viçoso', slug: 'hortifruti-vicoso', descricao: 'Frutas, legumes e verduras fresquinhos todo dia.', taxa: 390, tempo: 30, categoriaSlug: 'mercado', preset: 'market' },
       { nome: 'Padaria Pão Quente', slug: 'padaria-pao-quente', descricao: 'Pães, bolos e salgados saindo do forno a toda hora.', taxa: 0, tempo: 20, categoriaSlug: 'padaria', preset: 'heritage' },
       { nome: 'Empório Natural', slug: 'emporio-natural', descricao: 'Produtos naturais, granéis e orgânicos.', taxa: 590, tempo: 35, categoriaSlug: 'mercado', preset: 'artisan' },
+      {
+        // Anexada no FIM do piso de propósito: `lojaIdx` alimenta
+        // `aceitaOnline = lojaIdx % 3 !== 0` e `ehPromo`, então inserir no
+        // meio mudaria silenciosamente a forma de pagamento e as promoções
+        // das lojas seguintes. No fim, nenhuma loja existente muda — o preço
+        // é esta casa cair no ramo sem cartão online (aceita pix e dinheiro),
+        // que é variedade legítima do mock, não defeito.
+        nome: 'Quintal Verde',
+        slug: 'quintal-verde',
+        descricao:
+          'Colhido de manhã, na sua casa antes do almoço — fruta, verdura e horta o ano inteiro.',
+        taxa: 490,
+        tempo: 35,
+        categoriaSlug: 'hortifruti',
+        // Loja-demo da vitrine feira (mockup grocery): hero-cartão verde-mata,
+        // chips circulares de categoria, ofertas com cronômetro e preço por
+        // unidade. As fotos de PRODUTO usam o tamanho padrão de `fotoModa`
+        // (600×800) porque a galeria do PDP nasce de um `replace('h=800')` —
+        // tamanho customizado degradaria o pager em silêncio.
+        preset: 'fresh',
+        logo: LOGO_QUINTAL,
+        banner: fotoModa('1557844352-761f2565b576', 900, 1200),
+        catalogo: [
+          [
+            'Frutas da estação',
+            [
+              ['Laranja Pera', 690, 'Doce e suculenta, da safra da serra', fotoModa('1547514701-42782101795e'), undefined, undefined, undefined, 'kg'],
+              ['Abacaxi Pérola', 890, 'Coroa firme, polpa branca e perfumada', fotoModa('1550258987-190a2d41a8ba'), undefined, undefined, undefined, 'un'],
+              ['Maçã Gala', 1290, 'Crocante, calibre médio, colhida esta semana', fotoModa('1567306226416-28f0efdc88ce'), undefined, undefined, undefined, 'kg'],
+              ['Manga Palmer', 1090, 'No ponto de comer hoje, sem fiapo', fotoModa('1601493700631-2b16ec4b4716'), undefined, undefined, undefined, 'kg'],
+              ['Melancia', 490, 'Vendida a quilo, cortamos na hora se quiser', fotoModa('1587049352846-4a222e784d38'), undefined, undefined, undefined, 'kg'],
+            ],
+          ],
+          [
+            'Verduras & legumes',
+            [
+              ['Batata Asterix', 790, 'Casca rosada, boa para forno e purê', fotoModa('1518977676601-b53f82aba655'), undefined, undefined, undefined, 'kg'],
+              ['Tomate Italiano', 1190, 'Firme, de molho ou salada', fotoModa('1592924357228-91a4daadcfea'), undefined, undefined, undefined, 'kg'],
+              ['Espinafre', 590, 'Folha larga, maço amarrado na horta', fotoModa('1576045057995-568f588f82fb'), undefined, undefined, undefined, 'maço'],
+              ['Cenoura com rama', 690, 'Vem com a rama — dá refogado e caldo', fotoModa('1598170845058-32b9d6a5da37'), undefined, undefined, undefined, 'maço'],
+              ['Pimentão colorido', 1490, 'Vermelho e amarelo, casca lisa e grossa', fotoModa('1601648764658-cf37e8c89b70'), undefined, undefined, undefined, 'kg'],
+            ],
+          ],
+          [
+            'Da horta',
+            [
+              ['Manjericão em vaso', 1590, 'Vivo, no vaso — dura semanas na pia', fotoModa('1618375569909-3c8616cf7733'), undefined, undefined, undefined, 'un'],
+              ['Hortelã fresca', 490, 'Maço grande, colhido no dia', fotoModa('1628556270448-4d4e4148e1b1'), undefined, undefined, undefined, 'maço'],
+              ['Alho da roça', 2490, 'Cabeça graúda, dente firme e cheiroso', fotoModa('1540148426945-6cf22a6b2383'), undefined, undefined, undefined, 'kg'],
+            ],
+          ],
+          [
+            'Mercearia fresca',
+            [
+              ['Ovos caipiras', 1890, 'Galinha solta, gema alaranjada', fotoModa('1582722872445-44dc5f7e3c8f'), undefined, undefined, undefined, 'dz'],
+              ['Mel silvestre', 3290, 'Puro, de florada da região, 500g', fotoModa('1587049352851-8d4e89133924'), undefined, undefined, undefined, 'pote'],
+              ['Granola artesanal', 2790, 'Aveia, castanhas e passas, sem açúcar', fotoModa('1571748982800-fa51082c2224'), undefined, undefined, undefined, 'pote'],
+            ],
+          ],
+        ],
+      },
     ],
   },
   {
@@ -1121,6 +1186,7 @@ const CATEGORIA_CANON: Record<string, { slug: string; nome: string }> = {
   saudavel: { slug: 'alimentos-bebidas', nome: 'Saudável' },
   pizzaria: { slug: 'alimentos-bebidas', nome: 'Pizzaria' },
   mercado: { slug: 'mercado-conveniencia', nome: 'Mercado' },
+  hortifruti: { slug: 'mercado-conveniencia', nome: 'Hortifruti' },
   farmacia: { slug: 'farmacia-medicamentos', nome: 'Farmácia' },
   bebidas: { slug: 'alimentos-bebidas', nome: 'Bebidas' },
   padaria: { slug: 'alimentos-bebidas', nome: 'Padaria' },
@@ -1190,7 +1256,7 @@ PISOS.forEach((piso, pisoIdx) => {
     const catalogo = loja.catalogo ?? piso.catalogo
     catalogo.forEach(([catNome, itens], catIdx) => {
       const categoryId = `${storeId}-cat-${catIdx + 1}`
-      itens.forEach(([nome, preco, descricao, fotoUrl, especificacoes, exigeReceita, estoque], prodIdx) => {
+      itens.forEach(([nome, preco, descricao, fotoUrl, especificacoes, exigeReceita, estoque, unidade], prodIdx) => {
         // ~1 em cada 4 produtos entra em promoção (−18%)
         const ehPromo = (lojaIdx + prodIdx) % 4 === 0
         const ordem = catIdx * 100 + prodIdx
@@ -1215,12 +1281,13 @@ PISOS.forEach((piso, pisoIdx) => {
           category_id: categoryId,
           ordem,
           metadata:
-            galeria || especificacoes || exigeReceita || estoque != null
+            galeria || especificacoes || exigeReceita || estoque != null || unidade
               ? {
                   ...(galeria ? { galeria } : {}),
                   ...(especificacoes ? { especificacoes } : {}),
                   ...(exigeReceita ? { exige_receita: true } : {}),
                   ...(estoque != null ? { estoque } : {}),
+                  ...(unidade ? { unidade } : {}),
                 }
               : null,
           categories: { id: categoryId, nome: catNome, ordem: catIdx },
