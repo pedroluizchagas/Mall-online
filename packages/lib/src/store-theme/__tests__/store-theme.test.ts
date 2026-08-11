@@ -200,6 +200,25 @@ describe('qualidade de autoria dos ARQUETIPOS', () => {
       ).toBeGreaterThanOrEqual(4.5)
     }
   })
+
+  /**
+   * Mesma exceção da ritual, por outro caminho: na vitrine horta o rótulo de
+   * categoria e a linha de ingredientes de cada produto são escritos DIRETO no
+   * creme da página, sem cartão por baixo. Sem esta guarda, um refino de cor
+   * devolve silenciosamente o texto de apoio para abaixo de AA.
+   */
+  it('garden: inkMuted legível sobre bg — rótulos e ingredientes escrevem no creme', () => {
+    const peles = [
+      ['preset', ARQUETIPOS.garden.tokens.color],
+      ...PALETAS.garden.map((p) => [`paleta ${p.codigo}`, p.color] as const),
+    ] as const
+    for (const [nome, cor] of peles) {
+      expect(
+        contrastRatio(cor.bg, cor.inkMuted),
+        `garden/${nome}: inkMuted ilegível sobre bg`,
+      ).toBeGreaterThanOrEqual(4.5)
+    }
+  })
 })
 
 describe('PALETAS curadas por arquétipo', () => {

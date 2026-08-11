@@ -31,10 +31,13 @@ type DadosBancarios = DadosBancariosPix | DadosBancariosConta
 /**
  * Presets válidos do StoreTheme v2 — espelha `ArquetipoCodigo` de
  * packages/lib/src/store-theme/presets.ts (a function Deno não importa o
- * workspace). Se um 12º arquétipo nascer, adicionar aqui também.
+ * workspace). Os 18 arquétipos atuais; quando um novo nascer, adicionar aqui
+ * TAMBÉM — uma lista defasada faz o onboarding descartar o tema em silêncio
+ * (foi o que aconteceu com os 6 arquétipos de 2026-08 até esta correção).
  */
 const PRESETS_VALIDOS = new Set([
-  'heritage', 'raw', 'editorial', 'noir', 'soft', 'artisan',
+  'heritage', 'roast', 'ritual', 'smash', 'garden', 'magazine',
+  'raw', 'editorial', 'noir', 'serene', 'volt', 'soft', 'artisan',
   'clinic', 'tech', 'market', 'utility', 'playful',
 ])
 

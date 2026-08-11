@@ -40,6 +40,12 @@ import {
   Spectral_600SemiBold,
 } from '@expo-google-fonts/spectral'
 import {
+  Quicksand_400Regular,
+  Quicksand_500Medium,
+  Quicksand_600SemiBold,
+  Quicksand_700Bold,
+} from '@expo-google-fonts/quicksand'
+import {
   SpaceGrotesk_500Medium,
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
@@ -52,7 +58,7 @@ import {
 import { Anton_400Regular } from '@expo-google-fonts/anton'
 
 /**
- * Fontes dos 17 arquétipos (StoreTheme) para o mobile-consumer.
+ * Fontes dos 18 arquétipos (StoreTheme) para o mobile-consumer.
  *
  * RN não herda fontFamily nem sintetiza pesos: cada peso é um arquivo próprio
  * com nome `Familia_600SemiBold`. Este módulo mapeia as famílias/pesos
@@ -117,6 +123,12 @@ const FONTES: Record<string, Record<number, Font.FontSource>> = {
     400: Spectral_400Regular,
     500: Spectral_500Medium,
     600: Spectral_600SemiBold,
+  },
+  Quicksand: {
+    400: Quicksand_400Regular,
+    500: Quicksand_500Medium,
+    600: Quicksand_600SemiBold,
+    700: Quicksand_700Bold,
   },
   'Space Grotesk': {
     500: SpaceGrotesk_500Medium,

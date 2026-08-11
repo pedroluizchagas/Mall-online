@@ -7,7 +7,7 @@ import type { ThemeTokens } from './types'
  *
  * Consumidores web: `StoreThemeRoot` (storefront) e o preview do editor de
  * tema (dashboard) — carrega APENAS as famílias da loja/preset em questão,
- * não as 8 dos 11 arquétipos.
+ * não o conjunto inteiro de famílias do catálogo de arquétipos.
  */
 export function googleFontsHref(tokens: ThemeTokens): string | null {
   const familias = new Map<string, Set<number>>()

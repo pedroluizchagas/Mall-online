@@ -128,6 +128,31 @@ export const PALETAS: Record<ArquetipoCodigo, readonly Paleta[]> = {
       },
     },
   ],
+  garden: [
+    {
+      // Beterraba assada: o mesmo farm-to-table com o vermelho-terroso no
+      // lugar do verde — o rosa dos cartões continua servindo a pele.
+      codigo: 'beterraba',
+      nome: 'Beterraba',
+      color: {
+        bg: '#FAF3E3', surface: '#FFFDF6', surfaceAlt: '#F3E8D3',
+        // inkMuted aprofundado pelo mesmo motivo do preset: os rótulos e as
+        // linhas de ingredientes desta vitrine escrevem direto no creme.
+        ink: '#3A1A24', inkMuted: '#6E5148', line: '#EDDCC8',
+        accent: '#7A2743', accentInk: '#FAF3E3',
+      },
+    },
+    {
+      // Cacau e grão tostado: a casa de granola/pães integrais.
+      codigo: 'cacau',
+      nome: 'Cacau',
+      color: {
+        bg: '#F8F1E4', surface: '#FFFCF4', surfaceAlt: '#EFE4D2',
+        ink: '#2E2318', inkMuted: '#6E6049', line: '#E8DCC6',
+        accent: '#4C3323', accentInk: '#F8F1E4',
+      },
+    },
+  ],
   magazine: [
     {
       // O rosa-varejo da referência Revive.

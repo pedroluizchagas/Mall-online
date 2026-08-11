@@ -1,7 +1,7 @@
 import type { Archetype, ArquetipoCodigo, ColorTokens } from './types'
 
 /**
- * Catálogo dos 17 arquétipos com seus tokens default.
+ * Catálogo dos 18 arquétipos com seus tokens default.
  *
  * Valores iniciais destilados das referências (docs/store-theme/02) e
  * desenhados internamente para os nichos sem referência (clinic, tech, market,
@@ -148,6 +148,45 @@ export const ARQUETIPOS = {
       typography: {
         display: { family: 'Archivo', weights: [600, 700, 800] },
         body: { family: 'Nunito', weights: [400, 500, 600, 700] },
+        scale: 'regular',
+      },
+      shape: { radius: 'round', density: 'comfortable' },
+    },
+  },
+
+  // ── Referências: comida saudável / saladerias / cafés naturais ─────────────
+  garden: {
+    codigo: 'garden',
+    nome: 'Garden',
+    descricao:
+      'Fresco e orgânico. Creme de página, verde-floresta de âncora, pastéis rosa e caramelo, serifa macia, selos recortados e fotos-adesivo. Para comida saudável e cafés naturais.',
+    mood: ['fresco', 'orgânico', 'acolhedor'],
+    referencias: ['https://caring-simplicity-482902.framer.app/'],
+    tokens: {
+      mode: 'light',
+      color: pele({
+        bg: '#F7F1DE',
+        surface: '#FFFBEF',
+        surfaceAlt: '#EFE6CC',
+        ink: '#22391B',
+        // Oliva aprofundada: os rótulos de categoria e as linhas de
+        // ingredientes desta pele são escritos DIRETO no creme da página (sem
+        // surface por baixo), então o inkMuted precisa sustentar AA contra
+        // `bg` — mesma exigência da ritual, garantida em __tests__.
+        inkMuted: '#676844',
+        line: '#E7DDBE',
+        // O verde-floresta do hero e do rodapé da referência; é ele que
+        // recebe o wordmark rosa e sustenta o creme como tinta.
+        accent: '#2E4B26',
+        accentInk: '#F7F1DE',
+      }),
+      typography: {
+        // Serifa macia dos títulos de seção e dos nomes de prato. A Fraunces
+        // também serve o heritage — aqui a voz muda pelo corpo arredondado e
+        // pelo mundo de cor, não pela família de display.
+        display: { family: 'Fraunces', weights: [600, 700] },
+        // Sans arredondada da referência: ingredientes, horários e pills.
+        body: { family: 'Quicksand', weights: [400, 500, 600, 700] },
         scale: 'regular',
       },
       shape: { radius: 'round', density: 'comfortable' },
