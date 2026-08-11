@@ -15,6 +15,7 @@ import {
   LOGO_ARENA_FIT,
   LOGO_LOJAO,
   LOGO_BELLA,
+  LOGO_BROTO,
   LOGO_BURGER_HOUSE,
   LOGO_CAFE_AROMA,
   LOGO_CANTINA,
@@ -430,6 +431,59 @@ const PISOS: PisoSpec[] = [
               ['Frutas Extras', 490, 'Porção de banana, morango ou kiwi pra completar', fotoModa('1571771894821-ce9b6c11b08e')],
               ['Picolé de Açaí', 890, 'Açaí puro no palito · amora · coco ralado', fotoModa('1488900128323-21503983a07e')],
               ['Combo de Complementos', 990, 'Granola · leite condensado · paçoca · cacau nibs', fotoModa('1495214783159-3503fd1b572d')],
+            ],
+          ],
+        ],
+      },
+      {
+        nome: 'Broto & Grão',
+        slug: 'broto-e-grao',
+        descricao:
+          'Comida de verdade não precisa ser sem graça — colhida perto, montada na hora, sem atalhos.',
+        taxa: 490,
+        tempo: 30,
+        categoriaSlug: 'saudavel',
+        // Loja-demo da vitrine horta (Sonder & Sprout): creme + verde-floresta,
+        // pastéis rosa/caramelo, selos recortados e fotos-adesivo. O "&" do
+        // nome vira o selo carimbado entre as duas linhas do wordmark.
+        preset: 'garden',
+        logo: LOGO_BROTO,
+        banner: fotoModa('1490645935967-10de6ba17061', 900, 1200),
+        catalogo: [
+          [
+            // O rótulo casa com o regex que elege a seção do carrossel de
+            // favoritos (LojaHorta.tsx) — sem ele a vitrine cai nos primeiros
+            // itens com foto.
+            'Favoritos da casa',
+            [
+              ['Toast de Abacate & Ovo', 2490, 'Pão de fermentação · abacate · ovo caipira · flor de sal', fotoModa('1525351484163-7529414344d8')],
+              ['Bowl Berry Muesli', 2290, 'Morango · blueberry · muesli · aveia · creme de coco', fotoModa('1494597564530-871f2b93ac55')],
+              ['Sanduíche da Horta', 2690, 'Grãos na crosta · tomate · pesto da casa · folhas da estação', fotoModa('1528735602780-2552fd46c7af')],
+              ['Toast Cogumelo & Espinafre', 2590, 'Ricota temperada · cogumelos salteados · espinafre fresco', fotoModa('1482049016688-2d3e1b311543')],
+            ],
+          ],
+          [
+            'Bowls & saladas',
+            [
+              ['Bowl Colheita', 2890, 'Grãos · legumes assados · homus · tahine de limão', fotoModa('1512621776951-a57141f2eefd')],
+              ['Salada Verde Completa', 2390, 'Folhas orgânicas · abacate · sementes tostadas · vinagrete de mel', fotoModa('1540189549336-e6e99c3679fe')],
+              ['Bowl Proteico', 3190, 'Frango grelhado · quinoa · brócolis · molho de iogurte', fotoModa('1546069901-ba9599a7e63c')],
+              ['Panqueca de Aveia & Frutas', 2190, 'Aveia · banana · frutas vermelhas · mel de flor', fotoModa('1567620905732-2d1ec7ab7445')],
+            ],
+          ],
+          [
+            'Sucos & smoothies',
+            [
+              ['Suco Verde da Manhã 500ml', 1290, 'Couve · abacaxi · gengibre · limão-siciliano', fotoModa('1610970881699-44a5587cabec')],
+              ['Smoothie de Frutas Vermelhas', 1590, 'Morango · amora · banana · leite de amêndoas', fotoModa('1505252585461-04db1eb84625')],
+              ['Salada de Frutas da Estação', 1190, 'Frutas do dia · calda cítrica · hortelã', fotoModa('1490474418585-ba9bad8fd0ea')],
+            ],
+          ],
+          [
+            'Doces naturais',
+            [
+              ['Rabanada Integral de Frutas', 1690, 'Pão integral · frutas vermelhas · iogurte natural', fotoModa('1484723091739-30a097e8f929')],
+              ['Bowl Zero Açúcar', 2190, 'Adoçado com tâmara · granola sem glúten · frutas vermelhas', fotoModa('1596591606975-97ee5cef3a1e')],
             ],
           ],
         ],
@@ -904,6 +958,7 @@ const CATEGORIA_CANON: Record<string, { slug: string; nome: string }> = {
   japonesa: { slug: 'alimentos-bebidas', nome: 'Japonesa' },
   cafeteria: { slug: 'alimentos-bebidas', nome: 'Cafeteria' },
   sobremesas: { slug: 'alimentos-bebidas', nome: 'Sobremesas' },
+  saudavel: { slug: 'alimentos-bebidas', nome: 'Saudável' },
   mercado: { slug: 'mercado-conveniencia', nome: 'Mercado' },
   farmacia: { slug: 'farmacia-medicamentos', nome: 'Farmácia' },
   bebidas: { slug: 'alimentos-bebidas', nome: 'Bebidas' },
