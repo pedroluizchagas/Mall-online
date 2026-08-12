@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useCartStore } from '@/store/useCartStore'
 import { useOrderStore } from '@/store/useOrderStore'
+import { useTotalSeguidas } from '@/store/useSeguidas'
+import { useTotalFavoritos } from '@/store/useFavoritos'
 import { GerenciarEnderecos } from '@/components/GerenciarEnderecos'
 import { EditarPerfil } from '@/components/EditarPerfil'
 import { HeaderTela } from '@/components/HeaderTela'
@@ -66,6 +68,8 @@ export default function TelaPerfil() {
   const primeiraLetra = consumer?.nome?.charAt(0).toUpperCase() ?? '?'
   const nomeExibido = consumer?.nome ?? 'Usuário'
   const qtdEnderecos = consumer?.enderecos?.length ?? 0
+  const qtdSeguindo = useTotalSeguidas()
+  const qtdFavoritos = useTotalFavoritos()
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
@@ -163,6 +167,18 @@ export default function TelaPerfil() {
               aoTocar={() =>
                 setSecaoAtiva((s) => (s === 'editar' ? null : 'editar'))
               }
+            />
+            <ItemPerfil
+              icone="users"
+              rotulo="Lojas que sigo"
+              badge={String(qtdSeguindo)}
+              aoTocar={() => router.push('/(tabs)/seguindo')}
+            />
+            <ItemPerfil
+              icone="heart"
+              rotulo="Favoritos"
+              badge={String(qtdFavoritos)}
+              aoTocar={() => router.push('/(tabs)/favoritos')}
             />
             <ItemPerfil
               icone="orders"

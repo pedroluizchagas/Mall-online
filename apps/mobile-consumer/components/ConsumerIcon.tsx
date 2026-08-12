@@ -18,6 +18,8 @@ export type ConsumerIconName =
   | 'reels'
   | 'orders'
   | 'user'
+  /** Lojas seguidas (tela Seguindo, atalho do Início). */
+  | 'users'
   // Comuns (espelho do courier)
   | 'search'
   | 'pin'
@@ -126,6 +128,15 @@ function renderIcon(name: ConsumerIconName, color: string, strokeWidth: number) 
         <>
           <Circle {...common} cx="12" cy="8" r="3.25" />
           <Path {...common} d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
+        </>
+      )
+    case 'users':
+      return (
+        <>
+          <Circle {...common} cx="9.5" cy="8.5" r="3.25" />
+          <Path {...common} d="M3.5 19.5a6 6 0 0 1 12 0" />
+          <Path {...common} d="M16.25 5.9a3.25 3.25 0 0 1 0 5.2" />
+          <Path {...common} d="M17.75 14.4a6 6 0 0 1 2.75 5.1" />
         </>
       )
 
