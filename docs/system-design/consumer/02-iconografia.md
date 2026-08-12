@@ -31,7 +31,7 @@ import Svg, { Circle, Path, Rect, Line } from 'react-native-svg'
 
 export type ConsumerIconName =
   // Navegação principal (tabs)
-  | 'home' | 'reels' | 'orders' | 'user'
+  | 'home' | 'reels' | 'orders' | 'user' | 'users'
   // Comuns (espelho do courier)
   | 'search' | 'pin' | 'clock' | 'package' | 'back' | 'phone'
   | 'check' | 'logout' | 'shield' | 'spark' | 'eye' | 'eye-off' | 'camera'
@@ -92,6 +92,7 @@ function renderIcon(name: ConsumerIconName, color: string, strokeWidth: number) 
 | `reels` | `Clapperboard` | tab "Explorar" |
 | `orders` | `ClipboardList` | tab "Pedidos" |
 | `user` | `User` | tab "Perfil" |
+| `users` | `Users` | slot do Início quando a rota é `seguindo`; item "Lojas que sigo" no Perfil; empty state da tela Seguindo |
 
 ### 4.2 Reaproveitados do courier (21)
 | Nome | Uso no consumer |
@@ -108,7 +109,7 @@ function renderIcon(name: ConsumerIconName, color: string, strokeWidth: number) 
 | `spark` | promo, novidades |
 | `eye` / `eye-off` | toggle senha (auth) |
 | `camera` | upload de foto (perfil — futuro) |
-| `store` | placeholder de loja sem logo |
+| `store` | placeholder de loja sem logo; marca a resposta da loja no stream de comentários |
 | `cash` | método de pagamento dinheiro |
 | `wallet` | método de pagamento online |
 | `trend` | métricas (futuro) |
@@ -122,8 +123,8 @@ function renderIcon(name: ConsumerIconName, color: string, strokeWidth: number) 
 | `bike` | `Bike` | NotificacoesPopup, status pedido |
 | `truck` | `Truck` | LojaCard (taxa de entrega) |
 | `tag` | `Tag` | promoções, NotificacoesPopup |
-| `heart` | `Heart` | reels (curtir) |
-| `comment` | `MessageCircle` | reels (comentar) |
+| `heart` | `Heart` | reels e card de Seguindo (curtir = favoritar); slot de Pedidos quando a rota é `favoritos`; tile e empty state da tela Favoritos |
+| `comment` | `MessageCircle` | reels (abre o modo comentários; accent quando aberto), contador do card em Seguindo, notificação de resposta |
 | `send` | `Send` | reels (compartilhar) |
 | `play` | `Play` | reels (gallery → play) |
 | `volume` | `Volume2` | reels (com som) |

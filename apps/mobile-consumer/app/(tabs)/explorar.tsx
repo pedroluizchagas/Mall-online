@@ -21,67 +21,43 @@ import {
 } from 'react-native-gesture-handler'
 import { useVideoPlayer, VideoView } from 'expo-video'
 import { Image, ActivityIndicator } from 'react-native'
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
 import { supabase } from '@/lib/supabase'
+import { useImersao } from '@/store/useImersao'
+import { useCurtida } from '@/store/useFavoritos'
+import { useComentariosDoPost } from '@/store/useComentarios'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { ComentariosLive } from '@/components/explorar/ComentariosLive'
+import {
+  CabecalhoLoja,
+  DescricaoPost,
+  PilulaProduto,
+} from '@/components/explorar/InfoPost'
 import { consumerDesign } from '@/lib/consumer-design'
+import {
+  carregarPosts,
+  compartilharPost,
+  formatarContagem,
+  PAGINA_POSTS,
+  type Post,
+} from '@/lib/posts'
 
 const { colors, radius, shadow } = consumerDesign
 
 const { width: W, height: H } = Dimensions.get('window')
 
-// Contrato da view public_explore_feed (docs/partner-app/02 §6) — o feed
-// real publicado pelo Partner App. Fotos e vídeos no mesmo feed.
-interface Reel {
-  id: string
-  tipo: 'video' | 'foto'
-  loja_slug: string
-  loja_nome: string
-  loja_inicial: string
-  media_url: string
-  thumb_url: string | null
-  descricao: string
-  tags: string[]
-  curtidas: number
-  comentarios: number
-  duracao_seg: number | null
-  publicado_em: string
-  produto?: { id: string; nome: string; preco: number } | null
-}
+/**
+ * O contrato da view (tipo, mapeamento e paginação keyset) mora em
+ * `lib/posts.ts` — a tela Seguindo lê o MESMO feed, só que filtrado pelas
+ * lojas seguidas. `Reel` é o apelido local: aqui o post é um reel de tela
+ * cheia; lá é um card.
+ */
+type Reel = Post
 
-const PAGINA = 20
+const PAGINA = PAGINA_POSTS
 
-// Carga do feed real: keyset por publicado_em (scroll infinito).
-// anon lê SÓ a view — store_posts é bloqueada por RLS.
-async function carregarFeed(antesDe?: string): Promise<Reel[]> {
-  let query = supabase
-    .from('public_explore_feed')
-    .select('*')
-    .order('publicado_em', { ascending: false })
-    .limit(PAGINA)
-
-  if (antesDe) query = query.lt('publicado_em', antesDe)
-
-  const { data, error } = await query
-  if (error) throw new Error(error.message)
-
-  return (data ?? []).map((r) => ({
-    id: r.id as string,
-    tipo: (r.tipo as 'video' | 'foto') ?? 'video',
-    loja_slug: r.loja_slug ?? '',
-    loja_nome: r.loja_nome ?? '',
-    loja_inicial: r.loja_inicial ?? '',
-    media_url: r.media_url ?? '',
-    thumb_url: r.thumb_url,
-    descricao: r.descricao ?? '',
-    tags: (r.tags ?? []).map((t) => (t.startsWith('#') ? t : `#${t}`)),
-    curtidas: r.curtidas ?? 0,
-    comentarios: r.comentarios ?? 0,
-    duracao_seg: r.duracao_seg,
-    publicado_em: r.publicado_em ?? '',
-    produto: (r.produto as Reel['produto']) ?? null,
-  }))
-}
+/** Quanto a linha do overlay sobe no modo comentários (altura da caixa). */
+const SUBIDA_COMENTARIOS = 58
 
 // Gradiente preto inferior para dar contraste ao texto sobre vídeo.
 // Mantém rgba literal — overlay sobre vídeo é caso documentado em
@@ -119,6 +95,8 @@ interface ReelItemProps {
   tabBarHeight: number
   overlayVisivel: boolean
   onToggleOverlay: () => void
+  modoComentarios: boolean
+  onAlternarComentarios: () => void
 }
 
 function ReelItem({
@@ -129,9 +107,15 @@ function ReelItem({
   tabBarHeight,
   overlayVisivel,
   onToggleOverlay,
+  modoComentarios,
+  onAlternarComentarios,
 }: ReelItemProps) {
-  const [curtido, setCurtido] = useState(false)
-  const [curtidas, setCurtidas] = useState(reel.curtidas)
+  // Curtir = favoritar: o coração salva o reel na tela Favoritos.
+  const { favorito, curtidas, alternar } = useCurtida(reel)
+  // A view publica o contador de antes; o que se escreveu no app entra por
+  // cima — mesmo otimismo do coração.
+  const escritos = useComentariosDoPost(reel.id)
+  const totalComentarios = reel.comentarios + (escritos?.length ?? 0)
 
   const overlayOpacity = useRef(new Animated.Value(1)).current
   const contentY = useRef(new Animated.Value(32)).current
@@ -140,6 +124,7 @@ function ReelItem({
   const actionsOpacity = useRef(new Animated.Value(0)).current
   const heartScale = useRef(new Animated.Value(1)).current
   const muteScale = useRef(new Animated.Value(1)).current
+  const subidaOverlay = useRef(new Animated.Value(0)).current
 
   const ehVideo = reel.tipo === 'video'
   // Foto não instancia player (source null) — mesmo hook, sem custo.
@@ -209,6 +194,30 @@ function ReelItem({
     }).start()
   }, [overlayVisivel])
 
+  // A coluna da esquerda cede lugar à camada de comentários (que remonta as
+  // mesmas peças em outra ordem). Reaproveita `contentOpacity` de propósito:
+  // a animação de entrada só roda quando o reel vira ativo, e isso não
+  // acontece com o modo comentários aberto — não há disputa pelo valor.
+  useEffect(() => {
+    if (!isActive) return
+    Animated.parallel([
+      Animated.timing(contentOpacity, {
+        toValue: modoComentarios ? 0 : 1,
+        duration: consumerDesign.motion.fast,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      // A linha inteira sobe para a coluna de ações não encostar na caixa
+      // de escrever, que ocupa o rodapé no modo comentários.
+      Animated.timing(subidaOverlay, {
+        toValue: modoComentarios ? -SUBIDA_COMENTARIOS : 0,
+        duration: consumerDesign.motion.base,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start()
+  }, [modoComentarios, isActive])
+
   function toggleCurtida() {
     Animated.sequence([
       Animated.spring(heartScale, {
@@ -224,10 +233,7 @@ function ReelItem({
         useNativeDriver: true,
       }),
     ]).start()
-    setCurtido((prev) => {
-      setCurtidas((c) => c + (prev ? -1 : 1))
-      return !prev
-    })
+    alternar()
   }
 
   function handleToggleMute() {
@@ -246,10 +252,6 @@ function ReelItem({
       }),
     ]).start()
     onToggleMute()
-  }
-
-  function formatarNumero(n: number) {
-    return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n)
   }
 
   return (
@@ -294,10 +296,15 @@ function ReelItem({
           paddingHorizontal: 16,
           gap: 14,
           opacity: overlayOpacity,
+          transform: [{ translateY: subidaOverlay }],
         }}
         pointerEvents={overlayVisivel ? 'box-none' : 'none'}
       >
-        {/* Esquerda: loja + descrição + produto */}
+        {/*
+          Esquerda: loja · descrição · produto.
+          No modo comentários esta coluna apaga e a camada ao vivo assume,
+          com as MESMAS peças em outra ordem (components/explorar/InfoPost).
+        */}
         <Animated.View
           style={{
             flex: 1,
@@ -305,148 +312,11 @@ function ReelItem({
             opacity: contentOpacity,
             transform: [{ translateY: contentY }],
           }}
+          pointerEvents={modoComentarios ? 'none' : 'box-none'}
         >
-          <View
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
-          >
-            <View
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 19,
-                backgroundColor: colors.accent,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 2,
-                borderColor: colors.white,
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.ink,
-                  fontWeight: '800',
-                  fontSize: 16,
-                  lineHeight: 20,
-                }}
-              >
-                {reel.loja_inicial}
-              </Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={() => router.push(`/loja/${reel.loja_slug}`)}
-              activeOpacity={0.75}
-            >
-              <Text
-                style={{
-                  color: colors.white,
-                  fontWeight: '700',
-                  fontSize: 14,
-                  textShadowColor: 'rgba(0,0,0,0.4)',
-                  textShadowRadius: 4,
-                  textShadowOffset: { width: 0, height: 1 },
-                }}
-              >
-                {reel.loja_nome}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              activeOpacity={0.75}
-              style={{
-                paddingHorizontal: 12,
-                paddingVertical: 5,
-                borderRadius: radius.pill,
-                borderWidth: 1.5,
-                borderColor: colors.accent,
-              }}
-            >
-              <Text
-                style={{
-                  color: colors.accent,
-                  fontSize: 11,
-                  fontWeight: '800',
-                  letterSpacing: 0.3,
-                }}
-              >
-                Seguir
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text
-            style={{
-              color: colors.white,
-              fontSize: 13,
-              lineHeight: 19,
-              fontWeight: '500',
-              textShadowColor: 'rgba(0,0,0,0.5)',
-              textShadowRadius: 6,
-              textShadowOffset: { width: 0, height: 1 },
-            }}
-            numberOfLines={3}
-          >
-            {reel.descricao}
-          </Text>
-
-          <Text
-            style={{
-              color: colors.inkSoft,
-              fontSize: 12,
-              fontWeight: '600',
-            }}
-          >
-            {reel.tags.join('  ')}
-          </Text>
-
-          {reel.produto && (
-            <TouchableOpacity
-              onPress={() => router.push(`/loja/${reel.loja_slug}`)}
-              activeOpacity={0.85}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: 8,
-                alignSelf: 'flex-start',
-                backgroundColor: 'rgba(17,18,22,0.6)',
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.18)',
-                borderRadius: radius.pill,
-                paddingHorizontal: 14,
-                paddingVertical: 9,
-              }}
-            >
-              <ConsumerIcon name="bag" size={13} color={colors.accent} />
-              <Text
-                style={{
-                  color: colors.white,
-                  fontSize: 12,
-                  fontWeight: '600',
-                  maxWidth: 130,
-                }}
-                numberOfLines={1}
-              >
-                {reel.produto.nome}
-              </Text>
-              <View
-                style={{
-                  width: 1,
-                  height: 12,
-                  backgroundColor: 'rgba(255,255,255,0.22)',
-                }}
-              />
-              <Text
-                style={{
-                  color: colors.accent,
-                  fontSize: 13,
-                  fontWeight: '800',
-                }}
-              >
-                {/* preco em centavos (products.preco) */}
-                R$ {(reel.produto.preco / 100).toFixed(2).replace('.', ',')}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <CabecalhoLoja post={reel} />
+          <DescricaoPost post={reel} linhas={3} />
+          <PilulaProduto post={reel} />
         </Animated.View>
 
         {/* Direita: ações */}
@@ -476,13 +346,18 @@ function ReelItem({
           <TouchableOpacity
             onPress={toggleCurtida}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel={
+              favorito ? 'Remover dos favoritos' : 'Curtir e salvar nos favoritos'
+            }
             style={{ alignItems: 'center', gap: 5 }}
           >
             <Animated.View style={{ transform: [{ scale: heartScale }] }}>
               <ConsumerIcon
                 name="heart"
                 size={28}
-                color={curtido ? colors.danger : colors.white}
+                color={favorito ? colors.danger : colors.white}
+                strokeWidth={favorito ? 2.2 : 1.9}
               />
             </Animated.View>
             <Text
@@ -492,28 +367,42 @@ function ReelItem({
                 fontWeight: '700',
               }}
             >
-              {formatarNumero(curtidas)}
+              {formatarContagem(curtidas)}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
+            onPress={onAlternarComentarios}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: modoComentarios }}
+            accessibilityLabel={
+              modoComentarios ? 'Fechar comentários' : 'Ver comentários'
+            }
             style={{ alignItems: 'center', gap: 5 }}
           >
-            <ConsumerIcon name="comment" size={28} color={colors.white} />
+            <ConsumerIcon
+              name="comment"
+              size={28}
+              color={modoComentarios ? colors.accent : colors.white}
+              strokeWidth={modoComentarios ? 2.3 : 1.9}
+            />
             <Text
               style={{
-                color: colors.white,
+                color: modoComentarios ? colors.accent : colors.white,
                 fontSize: 11,
                 fontWeight: '700',
               }}
             >
-              {formatarNumero(reel.comentarios)}
+              {formatarContagem(totalComentarios)}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
+            onPress={() => void compartilharPost(reel)}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Compartilhar"
             style={{ alignItems: 'center', gap: 5 }}
           >
             <ConsumerIcon name="send" size={28} color={colors.white} />
@@ -832,6 +721,7 @@ export default function TelaExplorar() {
   const [ativo, setAtivo] = useState(0)
   const [mutado, setMutado] = useState(false)
   const [modoGaleria, setModoGaleria] = useState(false)
+  const [modoComentarios, setModoComentarios] = useState(false)
   const [overlayVisivel, setOverlayVisivel] = useState(true)
   const [reels, setReels] = useState<Reel[]>([])
   const [carregandoFeed, setCarregandoFeed] = useState(true)
@@ -842,12 +732,39 @@ export default function TelaExplorar() {
   const vistosRef = useRef<Set<string>>(new Set())
   const insets = useSafeAreaInsets()
   const flatListRef = useRef<FlatList>(null)
+  const setImersivo = useImersao((s) => s.setImersivo)
+  const [focado, setFocado] = useState(true)
+
+  // A tab bar vive no layout e não desmonta com a tela — avisa por store.
+  // Só some com o overlay do reel: na galeria e fora da aba ela volta.
+  useFocusEffect(
+    useCallback(() => {
+      setFocado(true)
+      return () => setFocado(false)
+    }, [])
+  )
+
+  // Imersivo = tab bar recolhida. Dois caminhos levam lá: apagar o overlay
+  // (toque no vídeo) e abrir os comentários — neste, a barra precisa sair
+  // para a caixa de escrever ocupar o rodapé.
+  useEffect(() => {
+    const semOverlay = !overlayVisivel && !modoGaleria
+    setImersivo(focado && (semOverlay || modoComentarios))
+  }, [focado, overlayVisivel, modoGaleria, modoComentarios, setImersivo])
+
+  // Trocar de reel ou abrir a galeria encerra o modo comentários: ele é de
+  // UM post, e ficar aberto sobre outro mostraria a conversa errada.
+  useEffect(() => {
+    setModoComentarios(false)
+  }, [ativo, modoGaleria])
+
+  useEffect(() => () => setImersivo(false), [setImersivo])
 
   const carregarInicial = useCallback(async () => {
     setCarregandoFeed(true)
     setErroFeed(null)
     try {
-      const pagina = await carregarFeed()
+      const pagina = await carregarPosts()
       setReels(pagina)
       setFimDoFeed(pagina.length < PAGINA)
     } catch (e) {
@@ -867,7 +784,7 @@ export default function TelaExplorar() {
     carregandoMaisRef.current = true
     try {
       const ultima = reels[reels.length - 1].publicado_em
-      const pagina = await carregarFeed(ultima)
+      const pagina = await carregarPosts({ antesDe: ultima })
       if (pagina.length < PAGINA) setFimDoFeed(true)
       if (pagina.length > 0) {
         setReels((prev) => {
@@ -1085,6 +1002,8 @@ export default function TelaExplorar() {
                 viewabilityConfig={viewabilityConfig}
                 onEndReached={() => void carregarMais()}
                 onEndReachedThreshold={2}
+                // Lendo comentários, deslizar não pode trocar de reel.
+                scrollEnabled={!modoComentarios}
                 getItemLayout={(_, index) => ({
                   length: H,
                   offset: H * index,
@@ -1099,6 +1018,10 @@ export default function TelaExplorar() {
                     tabBarHeight={tabBarHeight}
                     overlayVisivel={overlayVisivel}
                     onToggleOverlay={() => setOverlayVisivel((v) => !v)}
+                    modoComentarios={modoComentarios && index === ativo}
+                    onAlternarComentarios={() =>
+                      setModoComentarios((v) => !v)
+                    }
                   />
                 )}
               />
@@ -1153,6 +1076,19 @@ export default function TelaExplorar() {
           </Animated.View>
         </Animated.View>
       </PinchGestureHandler>
+
+      {/*
+        Camada ao vivo — fora da FlatList de propósito: é UMA por tela (do
+        reel ativo), então tem um listener de teclado só e uma corrente de
+        temporizadores só, em vez de uma por card montado.
+      */}
+      {reels[ativo] && (
+        <ComentariosLive
+          post={reels[ativo]}
+          visivel={modoComentarios}
+          onFechar={() => setModoComentarios(false)}
+        />
+      )}
     </GestureHandlerRootView>
   )
 }

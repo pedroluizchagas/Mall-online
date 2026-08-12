@@ -11,16 +11,14 @@ import { supabase } from '@/lib/supabase'
 import { HeaderTela } from '@/components/HeaderTela'
 import { BannerCarousel } from '@/components/BannerCarousel'
 import { LojaCardH } from '@/components/LojaCardH'
-import {
-  NotificacoesPopup,
-  NOTIFICACOES_NAO_LIDAS,
-} from '@/components/NotificacoesPopup'
+import { NotificacoesPopup } from '@/components/NotificacoesPopup'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { Card } from '@/components/ui/Card'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
+import { useNaoLidas } from '@/store/useNotificacoes'
 import { formatarReais, PISOS } from '@mallevo/lib'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
 import { metaDoStatus, ehAtivo } from '@/lib/status-pedido'
@@ -113,6 +111,10 @@ const SECAO_POR_CATEGORIA: Record<string, number> = (() => {
 // ─────────────────────────────────────────────────────────
 
 function BotaoBell({ aoTocar }: { aoTocar: () => void }) {
+  // Contador vivo: resposta de loja a um comentário acende a bolinha aqui,
+  // e "marcar todas lidas" no popup a apaga (antes era constante de módulo).
+  const naoLidas = useNaoLidas()
+
   return (
     <TouchableOpacity
       onPress={aoTocar}
@@ -128,7 +130,7 @@ function BotaoBell({ aoTocar }: { aoTocar: () => void }) {
       }}
     >
       <ConsumerIcon name="bell" size={18} color={colors.ink} />
-      {NOTIFICACOES_NAO_LIDAS > 0 && (
+      {naoLidas > 0 && (
         <View
           style={{
             position: 'absolute',
