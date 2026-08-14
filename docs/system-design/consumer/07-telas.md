@@ -13,6 +13,8 @@
 | Home (Início) | `app/(tabs)/index.tsx` | 4 |
 | Buscar | `app/(tabs)/buscar.tsx` | 4 |
 | Explorar (reels) | `app/(tabs)/explorar.tsx` | 9 |
+| Seguindo | `app/(tabs)/seguindo.tsx` | 9 |
+| Favoritos | `app/(tabs)/favoritos.tsx` | 9 |
 | Pedidos | `app/(tabs)/pedidos.tsx` | 7 |
 | Perfil | `app/(tabs)/perfil.tsx` | 8 |
 | Loja | `app/loja/[slug].tsx` | 5 |
@@ -461,6 +463,50 @@ Manter base **dark fullscreen** (vídeos exigem). Realinhar **accents** (eram â
 - Botão "Comprar" passa a ser `<Botao variante="primario" tamanho="sm" iconeEsquerda="bag" />` em vez de pílula âmbar inline.
 
 > Reels é o último PR (Fase 9) porque tem o maior volume de inline styles.
+
+### Modo comentários (o "ao vivo")
+
+Tocar no ícone de comentários não abre folha nem empurra o vídeo: o reel **muda de modo**. É a mesma tela, reorganizada em torno da conversa.
+
+O que acontece ao abrir:
+
+| Elemento | No reel | No modo comentários |
+|---|---|---|
+| Barra de navegação | visível | recolhe (`useImersao`) — o rodapé é da caixa de escrever |
+| Rolagem do feed | troca de reel | **travada** (`scrollEnabled={false}`) |
+| Coluna de informação | loja · descrição · produto | **descrição · produto · loja** |
+| Comentários | — | stream ao vivo acima da informação |
+| Coluna de ações | visível | visível (curtir sem sair da conversa) |
+
+**Por que a ordem inverte.** No reel, a primeira pergunta é "de quem é isso?" — daí a loja no topo. Lendo comentários, a loja vira o rodapé da conversa: quem responde é ela, e o nome precisa estar colado na caixa de escrever, não a três blocos de distância. Descrição e preço sobem porque viram contexto do que se está lendo, não chamada.
+
+As peças são **as mesmas** (`components/explorar/InfoPost.tsx`), montadas em outra ordem — nunca markup duplicado, senão os dois modos divergem no primeiro ajuste de estilo.
+
+**O stream.** Sem balão e sem fundo: só texto branco com sombra (`SOMBRA_TEXTO`), porque fundo sólido sobre vídeo sujaria a imagem e caixa de comentário não é o assunto — o vídeo é. Regras:
+
+- entra **um por vez** (`RITMO_MS = 2000`), por baixo, empurrando os anteriores para cima;
+- no máximo 5 linhas simultâneas, esmaecendo com a idade (`1 → 0.78 → 0.55 → 0.32`), que é o que dá a leitura de "ao vivo" em vez de lista;
+- resposta da loja aparece em accent, com ícone `store` e o rótulo "respondeu você";
+- cada linha corta em 3 linhas de texto — cinco comentários longos empilhados cobririam o vídeo inteiro.
+- a caixa **não** abre com o teclado: ao tocar em comentários se quer primeiro ler o que está rolando. Escrever é o toque seguinte.
+
+### O laço da resposta
+
+```
+usuário comenta ──► useComentarios.comentar()
+                     ├─ registra o comentário (AsyncStorage)
+                     └─ agenda a resposta da loja (5,2 s)
+                             ├─ entra no stream, se ainda estiver aberto
+                             └─ useNotificacoes.adicionar() ──► sino da home
+```
+
+O agendamento vive **no store, fora do React** — não em `useEffect` de componente. É o que torna a promessa verdadeira: o usuário comenta, sai do Explorar, e a resposta chega mesmo assim. Um backend real troca o `setTimeout` por um canal realtime escrevendo no mesmo lugar; a UI não muda. Um post não acumula respostas pendentes (`Set` de controle), senão comentar três vezes viraria uma salva de notificações.
+
+### Dados dos comentários
+
+Não existe `post_comments` no schema — a view publica só o **contador**. `lib/comentarios.ts` gera um conjunto plausível e **estável** por post (mesmo id → mesmos autores, entre boots) e guarda as falas de resposta da loja. `store/useComentarios.ts` persiste só o que nasceu da interação. Quando a tabela existir, mudam essas duas funções e nada mais.
+
+O contador do ícone soma o que foi escrito no app ao número da view — mesmo otimismo do coração.
 
 ---
 
@@ -999,6 +1045,128 @@ Acompanhar pedido: timeline de status, mapa do entregador (se em rota), itens, c
 - Card de status atual com cor de status → Card escuro com ícone em `softColor(meta.cor)`.
 - Mapa do entregador com `pinColor: '#1A4D3A'` → tokens.
 - `ItemCarrinhoCard` ganha prop `readonly` (boolean) que oculta botões `+`/`-`.
+
+---
+
+## 11. Seguindo (`(tabs)/seguindo.tsx`)
+
+### Propósito
+
+O Explorar é descoberta: feed de todas as lojas, tela cheia, som ligado, algoritmo do shopping. **Seguindo é curadoria**: só as lojas que o usuário escolheu, em ordem cronológica, som mudo por padrão. Uma tela existe para achar o que não se conhece; a outra, para não perder o que já se ama.
+
+### Como se chega
+
+1. **Perfil → "Lojas que sigo"** (com contador) — caminho descoberto por leitura.
+2. **Atalho do Início** — 1 toque no slot do Início alterna para cá, 2 toques voltam ([`05-shell-app.md` §1](./05-shell-app.md#atalho-do-início--seguindo)). Caminho de repetição, para quem já usa.
+
+### Wireframe
+
+```
+┌──────────────────────────────────┐
+│ ‹   Seguindo              🔍     │  HeaderTela variante="voltar"
+├──────────────────────────────────┤
+│ (◯)  (◯)  (◯)  (◯)  (+)          │  RailSeguindo — anel accent + Descobrir
+│ Café  Barb  Ateliê  Pet  Descob   │  toque longo = deixar de seguir
+├──────────────────────────────────┤
+│ ┌──────────────────────────────┐ │
+│ │ (◯) Café Aroma      [Seguindo]│ │  cabeçalho: avatar, nome, "2 h"
+│ │     2 h                       │ │
+│ │ ┌──────────────────────────┐  │ │
+│ │ │      mídia 4:5           │  │ │  vídeo toca só no card mais visível
+│ │ │      🔇 / 28s            │  │ │  toque duplo curte
+│ │ └──────────────────────────┘  │ │
+│ │ ♥ 623   💬 51   ➤     [🛍 R$ 9,90]│ │
+│ │ **Café Aroma** Lote novo do…  │ │
+│ │ #cafe #torraartesanal         │ │
+│ └──────────────────────────────┘ │
+└──────────────────────────────────┘
+```
+
+### Uma superfície, duas perguntas
+
+Nada de segmentado "Feed | Lojas": abas empurram o conteúdo para baixo e obrigam a escolher antes de ver qualquer coisa. As duas perguntas convivem na mesma rolagem — o **rail** responde "quem eu sigo", o **feed** responde "o que publicaram".
+
+Consequência assumida: gerenciar quem se segue perde a lista dedicada. O unfollow vive em dois lugares — o botão "Seguindo" no cabeçalho de cada card e o **toque longo no avatar do rail** (com `Alert` de confirmação), que é a única saída para uma loja que ainda não publicou nada.
+
+### Dados
+
+- Mesma view do Explorar (`public_explore_feed`), filtrada por `.in('loja_slug', seguidas)`, mesma paginação keyset por `publicado_em`. Contrato compartilhado em `lib/posts.ts` — **não duplicar o tipo nem o mapeamento na tela**.
+- Nome e logo das lojas vêm de um `select` em `stores` com `.in('slug', ...)`; a tela funciona sem eles (cai na inicial sobre `ink`).
+- Quem segue o quê: `store/useSeguidas.ts` (zustand + AsyncStorage). **Local por ora** — não existe `store_follows` no schema. Quando existir, o store vira cache otimista e a UI não muda.
+
+### Regras de comportamento
+
+- **Remover não recarrega.** Se o conjunto seguido só perdeu slugs, a tela filtra os posts em memória em vez de refazer o fetch: deixar de seguir no meio da rolagem não pode jogar o usuário de volta ao topo. Só adição dispara recarga.
+- **Vídeo toca em um card só** (o mais visível, `itemVisiblePercentThreshold: 60`) e pausa ao sair da aba (`useFocusEffect`).
+- **Mudo por padrão** (`mutado` inicia `true`), ao contrário do Explorar: feed de card se lê rolando, não assistindo.
+- **Mídia 4:5, não 9:16.** Reel inteiro tomaria a tela e apagaria a diferença entre as duas telas.
+- Três estados vazios distintos: sem hidratar (esqueleto), sem seguir ninguém (`EmptyState` + CTA Explorar), seguindo mas sem posts ("Nada novo por aqui").
+
+### Componentes
+
+| Componente | Papel |
+|---|---|
+| `components/BotaoSeguir.tsx` | único ponto de escrita em `useSeguidas`; peles `reel` (sobre vídeo) e `claro` (sobre surface) |
+| `components/seguindo/CardPost.tsx` | card do feed + `Avatar` (logo ou inicial) |
+| `components/seguindo/RailSeguindo.tsx` | trilho horizontal das lojas seguidas + item "Descobrir" |
+
+### Pendências assumidas
+
+- Comentários são **contador, não botão** — não existe tela de comentários (igual ao Explorar).
+- Compartilhar usa `Share` nativo com texto; ganha deep link quando o post tiver URL pública.
+
+---
+
+## 12. Favoritos (`(tabs)/favoritos.tsx`)
+
+### Propósito
+
+**Curtir é favoritar.** O coração do Explorar e do card de Seguindo não incrementa um contador efêmero: ele guarda o post aqui. Fundir "curtir" e "salvar" numa ação só é decisão de produto — num app de shopping, duas ações parecidas na mesma barra de ícones só criariam dúvida sobre qual usar.
+
+### Como se chega
+
+1. **Perfil → "Favoritos"** (com contador).
+2. **Atalho da barra** — 1 toque no slot de Pedidos alterna para cá, 2 voltam ([`05-shell-app.md` §1](./05-shell-app.md#slots-com-atalho-início--seguindo-pedidos--favoritos)).
+
+### Wireframe
+
+```
+┌──────────────────────────────────┐
+│ ‹   Favoritos             🔍     │  HeaderTela variante="voltar"
+├──────────────────────────────────┤
+│ ┌────────────┐  ┌────────────┐   │  grade 2×, tile 4:5
+│ │♥        ▶ │  │♥           │   │  ♥ aceso = salvo · ▶ = vídeo
+│ │            │  │            │   │
+│ │ [R$ 32,90] │  │            │   │  preço só quando há produto
+│ │ Burger Ho… │  │ Ateliê Ca… │   │
+│ │ 2 d        │  │ 3 d        │   │
+│ └────────────┘  └────────────┘   │
+│  Toque longo para remover.       │
+└──────────────────────────────────┘
+```
+
+### Grade, não feed
+
+Seguindo já é uma coluna de cards para **ler**; repetir o formato aqui daria duas telas iguais com conteúdos diferentes. De uma coleção se quer bater o olho e **reconhecer** — daí a grade 2×, mídia grande, nome da loja e preço. Mesma proporção 4:5 da mídia do card, para a coleção parecer a mesma biblioteca vista de longe.
+
+- **Toque abre a loja** (`/loja/[slug]`): é onde a curtida vira compra, e não existe tela de detalhe de post.
+- **Toque longo remove**, com `Alert` — mesmo gesto do rail de Seguindo. O coração do tile é selo de estado, não botão: se fosse botão, competiria com o toque que abre a loja.
+
+### Dados — por que guardar o post inteiro
+
+`store/useFavoritos.ts` (zustand + AsyncStorage) persiste o **snapshot completo do post**, não só o id:
+
+- a tela abre instantânea e funciona offline;
+- post despublicado pelo lojista não abre buraco na coleção de quem salvou;
+- `public_explore_feed` não garante que um id continue existindo.
+
+O snapshot envelhece (preço, contadores), então a tela refresca em segundo plano o que ainda está no ar — `carregarPosts({ ids })` → `atualizarSnapshots()`. Falha de rede **não** vira erro visível: já existe conteúdo na mão. `favoritadoEm` é preservado no refresh, senão a coleção reordenaria debaixo do dedo de quem está rolando.
+
+Local por ora, como [`useSeguidas`](#11-seguindo-tabsseguindotsx): não existe `post_likes` no schema.
+
+### Regra compartilhada do coração
+
+O hook `useCurtida(post)` (mesmo arquivo do store) devolve `{ favorito, curtidas, alternar, favoritar }` e é o **único** lugar que sabe somar +1 ao contador do backend, que não conhece a curtida local. Cada tela mantém sua própria animação (pulso no reel, pulso + explosão no toque duplo do card) — só a regra é compartilhada, porque a apresentação é legitimamente diferente nas duas.
 
 ---
 

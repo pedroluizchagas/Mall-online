@@ -143,6 +143,33 @@ export function formatarMomentoCurto(data?: string | null) {
 }
 
 /**
+ * "agora", "12 min", "3 h", "5 d", "2 sem", "12 jun".
+ *
+ * Data no futuro (o dataset de demonstração tem ISOs fixos que podem estar
+ * à frente do relógio do aparelho) cai em "agora" em vez de "-3 h".
+ */
+export function tempoRelativo(iso: string) {
+  const instante = Date.parse(iso)
+  if (!Number.isFinite(instante)) return ''
+
+  const minutos = Math.floor((Date.now() - instante) / 60000)
+  if (minutos < 1) return 'agora'
+  if (minutos < 60) return `${minutos} min`
+
+  const horas = Math.floor(minutos / 60)
+  if (horas < 24) return `${horas} h`
+
+  const dias = Math.floor(horas / 24)
+  if (dias < 7) return `${dias} d`
+  if (dias < 30) return `${Math.floor(dias / 7)} sem`
+
+  return new Date(instante).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+  })
+}
+
+/**
  * Aplica alpha 18% em uma cor hex sólida.
  * Usado em backgrounds de status badge: `softColor(colors.warning)`.
  */

@@ -14,73 +14,16 @@ import { BlurView } from 'expo-blur'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Botao } from '@/components/ui/Botao'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
-import { consumerDesign, softColor } from '@/lib/consumer-design'
+import {
+  consumerDesign,
+  softColor,
+  tempoRelativo,
+} from '@/lib/consumer-design'
+import { useNotificacoes, type TipoNotificacao } from '@/store/useNotificacoes'
 
 const { colors, radius } = consumerDesign
 
 const SCREEN_H = Dimensions.get('window').height
-
-type TipoNotificacao = 'pedido' | 'promo' | 'novidade' | 'sistema'
-
-interface Notificacao {
-  id: string
-  tipo: TipoNotificacao
-  titulo: string
-  corpo: string
-  tempo: string
-  lida: boolean
-}
-
-const NOTIFICACOES_MOCK: Notificacao[] = [
-  {
-    id: '1',
-    tipo: 'pedido',
-    titulo: 'Pedido a caminho!',
-    corpo: 'Seu pedido saiu para entrega. Fique de olho!',
-    tempo: '5 min',
-    lida: false,
-  },
-  {
-    id: '2',
-    tipo: 'promo',
-    titulo: 'Frete grátis hoje',
-    corpo: 'Peça qualquer coisa até meia-noite e ganhe frete grátis.',
-    tempo: '1 h',
-    lida: false,
-  },
-  {
-    id: '3',
-    tipo: 'novidade',
-    titulo: 'Nova loja disponível',
-    corpo: 'Farmácia Aroeira chegou no Mallevo! Confira já.',
-    tempo: '3 h',
-    lida: true,
-  },
-  {
-    id: '4',
-    tipo: 'pedido',
-    titulo: 'Pedido entregue',
-    corpo: 'Seu pedido foi entregue com sucesso. Bom apetite!',
-    tempo: 'Ontem',
-    lida: true,
-  },
-  {
-    id: '5',
-    tipo: 'promo',
-    titulo: '10% off no próximo pedido',
-    corpo: 'Use o cupom VOLTA10 e economize na próxima compra.',
-    tempo: '2 dias',
-    lida: true,
-  },
-  {
-    id: '6',
-    tipo: 'sistema',
-    titulo: 'Bem-vindo ao Mallevo',
-    corpo: 'Seu cadastro foi concluído. Explore as melhores lojas!',
-    tempo: '1 sem',
-    lida: true,
-  },
-]
 
 interface ConfigTipo {
   cor: string
@@ -92,6 +35,7 @@ const CONFIG_TIPO: Record<TipoNotificacao, ConfigTipo> = {
   promo: { cor: colors.warning, icone: 'tag' },
   novidade: { cor: colors.accent, icone: 'spark' },
   sistema: { cor: colors.inkSoft, icone: 'info' },
+  comentario: { cor: colors.accent, icone: 'comment' },
 }
 
 interface Props {
@@ -101,8 +45,9 @@ interface Props {
 
 export function NotificacoesPopup({ visivel, onFechar }: Props) {
   const insets = useSafeAreaInsets()
-  const [notificacoes, setNotificacoes] =
-    useState<Notificacao[]>(NOTIFICACOES_MOCK)
+  const notificacoes = useNotificacoes((s) => s.lista)
+  const marcarLida = useNotificacoes((s) => s.marcarLida)
+  const marcarTodasLidas = useNotificacoes((s) => s.marcarTodasLidas)
   const [modalMontado, setModalMontado] = useState(false)
 
   const backdropOpacity = useRef(new Animated.Value(0)).current
@@ -146,16 +91,6 @@ export function NotificacoesPopup({ visivel, onFechar }: Props) {
   }, [visivel])
 
   const naoLidas = notificacoes.filter((n) => !n.lida).length
-
-  function marcarTodasLidas() {
-    setNotificacoes((prev) => prev.map((n) => ({ ...n, lida: true })))
-  }
-
-  function marcarLida(id: string) {
-    setNotificacoes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, lida: true } : n))
-    )
-  }
 
   return (
     <Modal
@@ -434,7 +369,7 @@ export function NotificacoesPopup({ visivel, onFechar }: Props) {
                           textTransform: 'uppercase',
                         }}
                       >
-                        {item.tempo}
+                        {tempoRelativo(item.criado_em)}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -447,7 +382,3 @@ export function NotificacoesPopup({ visivel, onFechar }: Props) {
     </Modal>
   )
 }
-
-export const NOTIFICACOES_NAO_LIDAS = NOTIFICACOES_MOCK.filter(
-  (n) => !n.lida
-).length

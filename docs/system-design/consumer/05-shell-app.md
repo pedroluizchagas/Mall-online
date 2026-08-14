@@ -52,6 +52,35 @@
 | `perfil` | `user` | Perfil |
 
 > `buscar` continua oculto da tab bar (`{ href: null }`) — só acessível via `router.push('/(tabs)/buscar')` a partir do header da home. Mantido como hoje.
+>
+> `seguindo` e `favoritos` também são rotas de `(tabs)` com `{ href: null }`: não têm botão próprio, quem as alcança é o **slot da tab vizinha** (atalho abaixo) ou o Perfil.
+
+### Slots com atalho (Início ⇄ Seguindo, Pedidos ⇄ Favoritos)
+
+Duas telas de coleção pessoal não cabiam na barra: ela tem quatro slots e um quinto/sexto quebraria a régua do shell. Cada uma pendura na tab de que é vizinha semântica — Seguindo é outro jeito de ver o shopping (Início), Favoritos é outra coisa que você guardou (Pedidos). O slot vira um **alternador**, não um destino fixo.
+
+Declaração única em `ATALHOS` (`(tabs)/_layout.tsx`):
+
+| Tab base | Rota irmã | Ícone alternado |
+|---|---|---|
+| `index` | `seguindo` | `home` → `users` |
+| `pedidos` | `favoritos` | `orders` → `heart` |
+
+| Toque | Rota atual | Vai para |
+|---|---|---|
+| 1 toque | a tab base | a rota irmã |
+| 1 toque | a rota irmã | a tab base |
+| 1 toque | qualquer outra tab | a tab base |
+| 2 toques (< 320 ms) | qualquer | a tab base |
+
+Regras de implementação:
+
+- **Navegar por nome, nunca por índice.** `state.routes` inclui as rotas sem botão (`buscar`, `seguindo`, `favoritos`), então a posição em `state.routes` não corresponde à posição em `TABS`.
+- O toque duplo **não** tem a guarda "já está focada": o segundo toque pode chegar antes de `state` refletir o primeiro, e a volta à base não pode falhar.
+- Cada slot tem seu próprio carimbo de tempo (`ultimoToque` é um mapa por tab): alternar entre Início e Pedidos rápido não deve virar "toque duplo".
+- O slot fica **aceso** (accent) tanto na base quanto na irmã — é a mesma casa, em outro modo.
+- O ícone troca com cross-fade de `motion.fast` (`IconeAlternado`). Essa troca é o único aviso de que o atalho está ativo: sem ela, quem está na rota irmã não teria como saber que o próximo toque volta.
+- Ambas as telas irmãs põem o **mesmo destino no botão voltar do header** que o toque duplo: Seguindo → Início, Favoritos → Pedidos. `router.back()` dependeria de pilha, e não há pilha quando se chega pelo atalho.
 
 ### Implementação de referência
 
