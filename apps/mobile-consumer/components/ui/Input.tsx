@@ -24,7 +24,11 @@ interface InputProps {
   multilinha?: boolean
   iconeEsquerda?: ConsumerIconName
   acessorioDireita?: ReactNode
-  /** true = input desenhado sobre fundo escuro (telas auth). */
+  /**
+   * true = input desenhado sobre fundo escuro (telas auth). Além das cores
+   * do campo, troca o teclado do iOS para dark e acende caret/seleção no
+   * accent — o teclado também faz parte da superfície.
+   */
   fundoEscuro?: boolean
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
   autoFocus?: boolean
@@ -130,6 +134,11 @@ export function Input({
           multiline={multilinha}
           textAlignVertical={multilinha ? 'top' : 'center'}
           maxLength={maxLength}
+          keyboardAppearance={fundoEscuro ? 'dark' : 'light'}
+          // Caret lima só no escuro: sobre superfície clara o accent é claro
+          // demais para um traço de 2px — o caret padrão (escuro) fica.
+          selectionColor={fundoEscuro ? colors.accent : undefined}
+          cursorColor={fundoEscuro ? colors.accent : undefined}
           style={{
             flex: 1,
             fontSize: 16,

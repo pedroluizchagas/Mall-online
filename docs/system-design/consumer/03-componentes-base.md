@@ -203,7 +203,7 @@ interface InputProps {
   multilinha?: boolean                 // muda altura, alinha topo
   iconeEsquerda?: ConsumerIconName
   acessorioDireita?: React.ReactNode   // pra coisas custom (botão "Aplicar cupom")
-  fundoEscuro?: boolean                // true = input sobre surfaceDark (auth screens)
+  fundoEscuro?: boolean                // true = input sobre surfaceDark (auth screens); também troca o teclado iOS para dark e acende caret/seleção no accent
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'
   autoFocus?: boolean
 }
@@ -668,7 +668,7 @@ export function Skeleton({ largura, altura, raio = 14 }: SkeletonProps) {
 ```
 
 ### Diferenças vs hoje
-- `'#E5E7EB'` hardcoded → `colors.canvasAlt` (`#E8E8E3`).
+- `'#E5E7EB'` hardcoded → `colors.canvasAlt` (`#E7E7EA`).
 - `arredondado: boolean` (apenas pill) → `raio: number` (qualquer valor).
 - Ciclo 800/800ms → 650/650ms (tokens `motion.pulse`), idêntico ao courier.
 

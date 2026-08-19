@@ -390,17 +390,29 @@ Carrossel auto-rotativo no topo do home.
    - `sucesso`: background `colors.success`, ink em texto
    - `destaque`: background `colors.surfaceDark`, accent
 3. **Indicadores (dots)** usam `colors.accent` quando ativo, `colors.inkSoft` quando inativo. Largura ativa 18, inativa 6 (mantido).
-4. **Círculos decorativos** mantidos, mas opacidade derivada (`rgba(255,255,255,0.07)`).
+4. **Círculos decorativos** mantidos, mas opacidade derivada (`rgba(255,255,255,0.07)`) — **só em cartaz sem foto** (fallback; hoje todo banner do home leva foto).
+5. **Linguagem única: foto + véu** (2026-08-18): toda peça leva `foto` (Unsplash de ID fixo, padrão do dataset) em `absoluteFill` + **`VeuBanner`** — gradiente linear SVG horizontal com a **cor da voz** quase sólida na esquerda (onde mora o texto), liberando a foto à direita (stops 0.95 → 0.62 → 0.08); id do gradiente deriva da cor (sem colisão). A voz define o véu:
+   - **institucional** → cor do `tom` Mallevo (`primario` = ink + tag lima; `destaque` = surfaceDark + lima; `sucesso` = success + texto ink);
+   - **anúncio** (`anuncio` presente) → cor de MARCA do anunciante, com selo **"Anúncio"** micro (9.5/700, white 55%, tracking 1.1) no topo direito — convenção de mídia: anúncio se declara, discreto. Hex de marca vive como **dado** no mock/backend (`lib/banners-mock.ts`), nunca em código de UI — exceção em [01 §11](./01-tokens.md#11-casos-limite-exceções-permitidas).
+6. **Legibilidade sobre foto**: tag pill ganha peso próprio — `rgba(0,0,0,0.32)` para tag clara, `rgba(255,255,255,0.6)` quando a voz escreve em ink (tom `sucesso`); subtítulo sobe para opacity 0.8.
+7. **Curadoria de foto é visual, não só HTTP**: cada ID foi **olhado** antes de entrar (IDs de memória renderam estacionamento e doação de sangue). Ao trocar uma arte, baixar e conferir o conteúdo — validação 200 não diz o que a imagem mostra.
 
 ### API
 
 ```tsx
+interface AnuncioBanner {
+  cor: string       // cor-base da MARCA: fundo e véu sobre a foto
+  accent: string    // acento da marca (texto da tag)
+}
+
 interface Banner {
   id: string
-  tom: 'primario' | 'sucesso' | 'destaque'
-  tag: string             // "Novidade", "Promo"
+  tom?: 'primario' | 'sucesso' | 'destaque'  // institucional; ignorado com anuncio
+  tag: string             // "Novidade" — ou "Show · 22 ago" (a tag carrega a data do evento)
   titulo: string
   subtitulo: string
+  foto?: string           // Unsplash ID fixo; véu na cor da voz. Sem foto = cartaz chapado
+  anuncio?: AnuncioBanner // presente = mídia de parceiro (selo "Anúncio")
   aoTocar?: () => void    // futuro: link p/ promoção
 }
 
@@ -409,6 +421,19 @@ interface BannerCarouselProps {
   intervalo?: number  // default 4000
 }
 ```
+
+### Mocks (`lib/banners-mock.ts`) — todos com foto conferida visualmente
+
+| Peça | Voz | Foto | Véu |
+|---|---|---|---|
+| Divino Beer — Detonautas, 22 ago | anúncio | palco aceso + plateia | noite quente `#170D05`, âmbar `#FFB43A` |
+| Frete grátis no primeiro pedido | casa (`primario`) | entregador de bike, mochila térmica | ink + tag lima |
+| Villefort Supermercado — ofertas | anúncio | gôndola de hortifrúti | vermelho varejo `#D6221C`, amarelo `#FFD84D` |
+| Novos restaurantes esta semana | casa (`destaque`) | prato servido, taças à mesa | surfaceDark + tag lima |
+| Jalk Ferro e Aço — obra | anúncio | esqueleto de aço + gruas amarelas | aço `#101214`, laranja `#FF7A2F` |
+| Pague com Pix e economize | casa (`sucesso`) | mão pagando no celular | success + texto ink |
+
+Ordem do carrossel intercala casa e mídia: divino-beer → frete-grátis → villefort → novos-restaurantes → jalk → pix. O slide claro do Pix fecha o ciclo dando respiro ao ritmo escuro/vermelho.
 
 ### Estrutura interna
 

@@ -11,15 +11,37 @@
  */
 export const consumerDesign = {
   colors: {
-    // Backgrounds claros
-    canvas: '#F3F3F1',
-    canvasAlt: '#E8E8E3',
+    // Backgrounds claros — família zinco ("vidro fumê"), casada com o
+    // marquee #18181B e a escala do painel web do lojista. O fumê mora no
+    // canvas; a surface branca acende sobre ele — elevação por
+    // luminosidade, não por sombra.
+    canvas: '#F1F1F3',
+    canvasAlt: '#E7E7EA',
     surface: '#FFFFFF',
-    surfaceMuted: '#ECECE9',
+    surfaceMuted: '#ECECEF',
 
     // Backgrounds escuros (destaque)
     surfaceDark: '#2F3034',
     surfaceDarkSoft: '#3A3B40',
+
+    // Marquise — fachada do home. Base zinco-quente + brilho lima-profundo:
+    // o MESMO degradê do painel web do lojista (apps/web, (auth)/entrar) —
+    // dois blobs de `marqueeGlow` (~20% topo-direito, ~10% pé-esquerdo)
+    // difusos sobre `marquee` criam o verde-oliva da marca.
+    marquee: '#18181B',
+    // Lima-profundo do brand web (#C1F148) — SÓ para a atmosfera da fachada
+    // (GlowNeon). O sinal de interação continua sendo `accent` (#D8FF3E);
+    // no glow, a diferença de matiz é imperceptível (alpha ≤ 22%) e aquece
+    // o fundo sem criar um segundo lima de UI.
+    marqueeGlow: '#C1F148',
+    marqueeGlass: 'rgba(255, 255, 255, 0.08)',
+    marqueeGlassStrong: 'rgba(255, 255, 255, 0.13)',
+    marqueeLine: 'rgba(255, 255, 255, 0.10)',
+    marqueeInkSoft: 'rgba(255, 255, 255, 0.66)',
+    marqueeInkMuted: 'rgba(255, 255, 255, 0.42)',
+
+    // Ink translúcido — pílula da tab bar "vidro" sobre o conteúdo
+    inkGlass: 'rgba(17, 18, 22, 0.95)',
 
     // Texto
     ink: '#111216',
@@ -27,13 +49,14 @@ export const consumerDesign = {
     inkSoft: '#8B8E94',
 
     // Linhas
-    line: '#E5E5E0',
+    line: '#E4E4E7',
     lineDark: '#4A4B50',
 
     // Accent (CTA primário)
     accent: '#D8FF3E',
     accentStrong: '#C8F22E',
     accentSoft: 'rgba(216, 255, 62, 0.18)',
+    accentRing: 'rgba(216, 255, 62, 0.34)',
 
     // Neutro
     white: '#FFFFFF',
@@ -60,7 +83,11 @@ export const consumerDesign = {
     '2xl': 24,
     '3xl': 32,
     '4xl': 40,
-    tabBarHeight: 96, // 68 (altura) + 16 (bottom inset folga) + 12 (margem extra)
+    // Reserva de rolagem sob a tab bar, dimensionada pelo PIOR caso real:
+    // iPhone com inset 34 → pé max(34-8,12)=26 + altura 70 = topo a 96px
+    // do rodapé, + 12 de folga = 108. Em aparelho sem inset (pé 12) sobra
+    // folga extra — inofensivo para padding de rolagem.
+    tabBarHeight: 108,
   },
   typography: {
     display: { size: 32, weight: '800', tracking: -0.5 },

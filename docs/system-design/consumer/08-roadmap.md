@@ -56,7 +56,7 @@ module.exports = {
     extend: {
       colors: {
         // novos (Fase 1)
-        canvas: '#F3F3F1', surface: '#FFFFFF', /* ... */ accent: '#D8FF3E', /* ... */
+        canvas: '#F1F1F3', surface: '#FFFFFF', /* ... */ accent: '#D8FF3E', /* ... */
 
         // antigos (deprecated — removidos na Fase 9)
         verde: { profundo: '#1A4D3A', medio: '#4CAF82', 500: '#287D5C', 100: '#E8F5EE' },
