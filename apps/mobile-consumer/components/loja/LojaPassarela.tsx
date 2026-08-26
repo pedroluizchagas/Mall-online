@@ -27,6 +27,7 @@ import {
   comAlfa,
   type EstadoRapido,
 } from '@/components/loja/passarela-ui'
+import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
 import { useStoreDesign } from '@/lib/store-theme'
 import { fontStyle } from '@/lib/store-fonts'
@@ -56,6 +57,9 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window')
 
 /** Abaixo disto, a peça vira chip de escassez. */
 const ESTOQUE_BAIXO = 40
+
+/** Altura útil da barra de menu inferior (sem o safe-area inset). */
+const ALTURA_BARRA_MENU = 58
 
 /** Dias na ordem de `Date.getDay()` — chaves de `stores.horarios`. */
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
@@ -397,7 +401,9 @@ export function LojaPassarela<T extends ProdutoVitrine>({
             e.nativeEvent.contentOffset.y < alturaHero.current - insets.top - 48
           if (claro !== statusClaro) setStatusClaro(claro)
         }}
-        contentContainerStyle={{ paddingBottom: espacoFinal + insets.bottom }}
+        contentContainerStyle={{
+          paddingBottom: espacoFinal + ALTURA_BARRA_MENU + insets.bottom,
+        }}
       >
         <View
           onLayout={(e) => {
@@ -482,6 +488,8 @@ export function LojaPassarela<T extends ProdutoVitrine>({
           }}
         />
       </View>
+
+      <BarraMenuPassarela sairPara={sairPara} />
 
       {/* Guarda de troca de loja — aqui, e não só no PDP: a compra desta
           vitrine acontece na grade, então a pergunta também precisa. */}
@@ -1015,6 +1023,85 @@ function FechoPassarela({
       >
         {meta.join('  ·  ')}
       </Text>
+    </View>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Barra de menu inferior — a régua do shell sem uma gota de cor
+// ─────────────────────────────────────────────────────────────
+
+const ITENS_MENU: {
+  rotulo: string
+  icone: ConsumerIconName
+  rota: string
+  ativo?: boolean
+}[] = [
+  // A loja é navegada a partir do Início — é o item "aceso" da barra.
+  { rotulo: 'Início', icone: 'home', rota: '/', ativo: true },
+  { rotulo: 'Explorar', icone: 'reels', rota: '/explorar' },
+  { rotulo: 'Pedidos', icone: 'orders', rota: '/pedidos' },
+  { rotulo: 'Perfil', icone: 'user', rota: '/perfil' },
+]
+
+/**
+ * Barra fixa no branco da página, com o mesmo fio que separa as seções: o
+ * ativo é a TINTA (peso 600) e o inativo o cinza dela — nenhum accent, que
+ * neste arquétipo seria a única cor da tela e roubaria a fotografia. Sem
+ * animação, como todo o resto da vitrine.
+ */
+function BarraMenuPassarela({
+  sairPara,
+}: {
+  sairPara: (acao: () => void) => (e: GestureResponderEvent) => void
+}) {
+  const design = useStoreDesign()
+  const { colors } = design
+  const insets = useSafeAreaInsets()
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 12,
+        flexDirection: 'row',
+        backgroundColor: colors.canvas,
+        borderTopWidth: 1,
+        borderTopColor: colors.line,
+        paddingTop: 10,
+        paddingBottom: Math.max(insets.bottom, 12),
+      }}
+    >
+      {ITENS_MENU.map((item) => {
+        const cor = item.ativo ? colors.ink : colors.inkMuted
+        return (
+          <TouchableOpacity
+            key={item.rota}
+            onPress={sairPara(() => router.navigate(item.rota as never))}
+            activeOpacity={0.7}
+            style={{ flex: 1, alignItems: 'center', gap: 4 }}
+          >
+            <ConsumerIcon
+              name={item.icone}
+              size={21}
+              color={cor}
+              strokeWidth={item.ativo ? 2 : 1.6}
+            />
+            <Text
+              style={{
+                fontSize: 10,
+                letterSpacing: 0.4,
+                color: cor,
+                ...fontStyle(design.body, item.ativo ? 600 : 400),
+              }}
+            >
+              {item.rotulo}
+            </Text>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
 }
