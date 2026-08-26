@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   Image,
   Animated,
+  type GestureResponderEvent,
 } from 'react-native'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -45,8 +46,9 @@ import { ProdutoPassarela } from '@/components/loja/ProdutoPassarela'
 import { LojaFeira } from '@/components/loja/LojaFeira'
 import { ProdutoFeira } from '@/components/loja/ProdutoFeira'
 import { Badge } from '@/components/ui/Badge'
-import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
+import { useTransicaoSaida } from '@/store/useTransicaoSaida'
 import { consumerDesign } from '@/lib/consumer-design'
 import {
   StoreDesignProvider,
@@ -56,6 +58,9 @@ import {
 import { fontStyle } from '@/lib/store-fonts'
 
 const { shadow } = consumerDesign
+
+/** Altura útil da barra de menu inferior (sem o safe-area inset). */
+const ALTURA_BARRA_MENU = 58
 
 interface Produto {
   id: string
@@ -125,6 +130,7 @@ export default function PaginaLoja() {
   const [splashVisivel, setSplashVisivel] = useState(true)
   const scrollY = useRef(new Animated.Value(0)).current
   const totalItens = useCartStore((s) => s.totalItens())
+  const iniciarSaida = useTransicaoSaida((s) => s.iniciar)
 
   // Pele da loja: preset v2 explícito tematiza (cores + forma + densidade +
   // tipografia, fontes carregadas em background); sem tema / v1 → Mallevo.
@@ -243,7 +249,23 @@ export default function PaginaLoja() {
     { rotulo: 'Pix', ativo: !!loja?.aceita_pix },
   ].filter((m) => m.ativo)
 
-  const espacoFinal = totalItens > 0 ? 120 : 40
+  // Espaço no pé do layout PADRÃO: o do FAB (quando há sacola) mais a barra
+  // de menu, que mora abaixo dele. As vitrines de arquétipo recebem o seu
+  // próprio `espacoFinal` e cuidam da barra delas.
+  const espacoFinal = (totalItens > 0 ? 120 : 40) + ALTURA_BARRA_MENU
+
+  /**
+   * Sair da loja é mudar de ambiente — o mesmo ritual das vitrines de
+   * arquétipo: a cor da casa floresce do toque, cobre a tela e dissolve no
+   * Mallevo. Loja sem tema não tem cor própria: `undefined` deixa o véu cair
+   * no ink Mallevo, que é o default do store.
+   */
+  const sairPara = (acao: () => void) => (e: GestureResponderEvent) =>
+    iniciarSaida({
+      acao,
+      cor: design.themed ? colors.accent : undefined,
+      origem: { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY },
+    })
 
   // Loja de serviço (template `services`): o produto é agendado, não entregue.
   // Mesma checagem que o ModalProduto faz para montar o layout `agendamento`.
@@ -718,8 +740,10 @@ export default function PaginaLoja() {
         ))}
       </Animated.ScrollView>
 
-      {/* FAB carrinho */}
+      {/* FAB carrinho — flutua ACIMA da barra de menu, nunca por cima dela */}
       {totalItens > 0 && <FabCarrinho />}
+
+      <BarraMenuPadrao sairPara={sairPara} />
 
       {/* Modal do produto */}
       {produtoSelecionado && loja && (
@@ -751,7 +775,9 @@ function FabCarrinho() {
           position: 'absolute',
           left: 16,
           right: 16,
-          bottom: insets.bottom + 16,
+          // Acima da barra de menu: `insets.bottom + 16` punha o FAB
+          // exatamente onde a barra passou a morar.
+          bottom: ALTURA_BARRA_MENU + Math.max(insets.bottom, 12) + 12,
           height: 56,
           borderRadius: design.radius.pill,
           backgroundColor: colors.accent,
@@ -836,6 +862,92 @@ function LinhaMeta({
       <Text style={{ fontSize: 13, color: cor, ...fontStyle(design.body, 600) }}>
         {rotulo}
       </Text>
+    </View>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Barra de menu inferior — a régua do shell no layout padrão
+// ─────────────────────────────────────────────────────────────
+
+const ITENS_MENU: {
+  rotulo: string
+  icone: ConsumerIconName
+  rota: string
+  ativo?: boolean
+}[] = [
+  // A loja é navegada a partir do Início — é o item "aceso" da barra.
+  { rotulo: 'Início', icone: 'home', rota: '/', ativo: true },
+  { rotulo: 'Explorar', icone: 'reels', rota: '/explorar' },
+  { rotulo: 'Pedidos', icone: 'orders', rota: '/pedidos' },
+  { rotulo: 'Perfil', icone: 'user', rota: '/perfil' },
+]
+
+/**
+ * A rede de segurança da regra "toda loja tem barra": este layout atende TODA
+ * loja que não cai numa vitrine de arquétipo — sem tema, tema v1, loja de
+ * serviço, categoria fora do gate.
+ *
+ * Pele neutra de tokens, sem literal nenhum: em loja tematizada sem vitrine
+ * própria ela repinta junto com o resto da página, e em loja sem tema fica no
+ * Mallevo. O ativo só usa `accent` quando há tema — sem ele o accent É o do
+ * app, e a tinta lê melhor sobre a superfície da barra.
+ */
+function BarraMenuPadrao({
+  sairPara,
+}: {
+  sairPara: (acao: () => void) => (e: GestureResponderEvent) => void
+}) {
+  const design = useStoreDesign()
+  const { colors } = design
+  const insets = useSafeAreaInsets()
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 12,
+        flexDirection: 'row',
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: colors.line,
+        paddingTop: 10,
+        paddingBottom: Math.max(insets.bottom, 12),
+      }}
+    >
+      {ITENS_MENU.map((item) => {
+        const cor = item.ativo
+          ? design.themed
+            ? colors.accent
+            : colors.ink
+          : colors.inkMuted
+        return (
+          <TouchableOpacity
+            key={item.rota}
+            onPress={sairPara(() => router.navigate(item.rota as never))}
+            activeOpacity={0.7}
+            style={{ flex: 1, alignItems: 'center', gap: 4 }}
+          >
+            <ConsumerIcon
+              name={item.icone}
+              size={21}
+              color={cor}
+              strokeWidth={item.ativo ? 2.1 : 1.7}
+            />
+            <Text
+              style={{
+                fontSize: 10,
+                color: cor,
+                ...fontStyle(design.body, item.ativo ? 700 : 500),
+              }}
+            >
+              {item.rotulo}
+            </Text>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
 }
