@@ -25,6 +25,7 @@ import {
   VERDE_MATA,
   comAlfa,
 } from '@/components/loja/feira-ui'
+import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
 import { useStoreDesign } from '@/lib/store-theme'
 import { fontStyle } from '@/lib/store-fonts'
@@ -45,9 +46,10 @@ import { fontStyle } from '@/lib/store-fonts'
  *   UNIDADE ("/kg"), que é o jeito de vender de uma quitanda.
  *
  * A página é clara do topo ao pé (o hero é cartão, não foto full-bleed), então
- * esta é a primeira vitrine sem virada de status bar. E, como todas as irmãs,
- * ela NÃO desenha barra de navegação própria nem FAB: a navegação do app é a
- * do app.
+ * esta é a primeira vitrine sem virada de status bar. Como toda vitrine, ela
+ * desenha a própria barra de menu inferior (réplica da régua do shell vestida
+ * no DNA da casa — nunca a TabBar do app), e não usa FAB: a sacola do chrome
+ * é a porta do carrinho.
  */
 
 const { width: SCREEN_W } = Dimensions.get('window')
@@ -57,6 +59,9 @@ const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
 
 /** Teto de itens no bloco de ofertas — o resto continua nos corredores. */
 const MAX_OFERTAS = 6
+
+/** Altura útil da barra de menu inferior (sem o safe-area inset). */
+const ALTURA_BARRA_MENU = 58
 
 interface Horario {
   abre: string
@@ -233,7 +238,7 @@ export function LojaFeira<T extends ProdutoVitrine>({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: insets.top + 66,
-          paddingBottom: espacoFinal + insets.bottom,
+          paddingBottom: espacoFinal + ALTURA_BARRA_MENU + insets.bottom,
         }}
       >
         <HeroFeira
@@ -299,8 +304,8 @@ export function LojaFeira<T extends ProdutoVitrine>({
         />
       </ScrollView>
 
-      {/* Chrome: dois botões claros fixos. Nada de FAB e nada de barra de
-          navegação própria — a do app é a do app. */}
+      {/* Chrome: dois botões claros fixos no topo, a barra de menu no pé.
+          Sem FAB — a sacola do chrome é a porta do carrinho. */}
       <View
         pointerEvents="box-none"
         style={{
@@ -325,6 +330,8 @@ export function LojaFeira<T extends ProdutoVitrine>({
           }}
         />
       </View>
+
+      <BarraMenuFeira sairPara={sairPara} />
     </View>
   )
 }
@@ -842,6 +849,85 @@ function FechoFeira({
       >
         {meta.join('  ·  ')}
       </Text>
+    </View>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Barra de menu inferior — a régua do shell no claro da quitanda
+// ─────────────────────────────────────────────────────────────
+
+const ITENS_MENU: {
+  rotulo: string
+  icone: ConsumerIconName
+  rota: string
+  ativo?: boolean
+}[] = [
+  // A loja é navegada a partir do Início — é o item "aceso" da barra.
+  { rotulo: 'Início', icone: 'home', rota: '/', ativo: true },
+  { rotulo: 'Explorar', icone: 'reels', rota: '/explorar' },
+  { rotulo: 'Pedidos', icone: 'orders', rota: '/pedidos' },
+  { rotulo: 'Perfil', icone: 'user', rota: '/perfil' },
+]
+
+/**
+ * Barra fixa no claro da página, com o fio dos cards.
+ *
+ * O ativo é o VERDE_MATA, e NÃO o `accent`: o acento desta pele é o LIMA, que
+ * só existe como FUNDO (com `accentInk` por cima) — como tinta sobre a página
+ * clara ele reprova AA na hora. Mesma regra que o preço e o título já seguem.
+ */
+function BarraMenuFeira({
+  sairPara,
+}: {
+  sairPara: (acao: () => void) => (e: GestureResponderEvent) => void
+}) {
+  const design = useStoreDesign()
+  const { colors } = design
+  const insets = useSafeAreaInsets()
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 12,
+        flexDirection: 'row',
+        backgroundColor: colors.surface,
+        borderTopWidth: 1,
+        borderTopColor: colors.line,
+        paddingTop: 10,
+        paddingBottom: Math.max(insets.bottom, 12),
+      }}
+    >
+      {ITENS_MENU.map((item) => {
+        const cor = item.ativo ? VERDE_MATA : colors.inkMuted
+        return (
+          <TouchableOpacity
+            key={item.rota}
+            onPress={sairPara(() => router.navigate(item.rota as never))}
+            activeOpacity={0.7}
+            style={{ flex: 1, alignItems: 'center', gap: 4 }}
+          >
+            <ConsumerIcon
+              name={item.icone}
+              size={21}
+              color={cor}
+              strokeWidth={item.ativo ? 2.1 : 1.7}
+            />
+            <Text
+              style={{
+                fontSize: 10,
+                color: cor,
+                ...fontStyle(design.body, item.ativo ? 700 : 500),
+              }}
+            >
+              {item.rotulo}
+            </Text>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
 }
