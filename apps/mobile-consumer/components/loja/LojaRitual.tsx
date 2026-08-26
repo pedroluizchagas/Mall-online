@@ -17,7 +17,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Shrikhand_400Regular, useFonts } from '@expo-google-fonts/shrikhand'
 import { formatarReais } from '@mallevo/lib'
-import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
 import { type ProdutoVitrine } from '@/components/loja/LojaEditorial'
@@ -33,8 +33,9 @@ import { fontStyle } from '@/lib/store-fonts'
  * DNA destilado da referência:
  * - PÁGINA ROSA onde toda seção é um cartão de canto redondo FLUTUANDO — o
  *   gutter rosa contorna tudo e é a assinatura nº 1 do layout;
- * - PILL FLUTUANTE centrado como ÚNICO chrome (saída · status · sacola),
- *   fixo o scroll inteiro — sem barra de menu inferior, como na referência;
+ * - PILL FLUTUANTE centrado no topo (saída · status · sacola), fixo o scroll
+ *   inteiro, ecoado no pé pela pílula da barra de menu — a página é uma
+ *   família de cartões flutuando no rosa, e o chrome flutua com ela;
  * - HERO cartão-foto com o wordmark groovy GIGANTE em rosa sobre a foto,
  *   statement de marca em caps condensadas creme, fileira de miniaturas que
  *   trocam a foto por crossfade e um RELÓGIO VIVO no rodapé;
@@ -53,6 +54,8 @@ const GUTTER = 12
 /** Canto dos cartões: sempre o mesmo, o layout inteiro é uma família de pills. */
 const RAIO_CARTAO = 28
 const ALTURA_PILL = 52
+/** Altura da pílula de menu do pé (o inset entra por fora dela). */
+const ALTURA_BARRA_MENU = 58
 /**
  * Folga lateral da palavra-assinatura, como FRAÇÃO da largura do cartão. Um
  * Text absoluto SEM `left`/`right` é medido pelo Yoga em AtMost(largura) e
@@ -266,7 +269,11 @@ export function LojaRitual<T extends ProdutoVitrine>({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: insets.top + ALTURA_PILL + 16,
-          paddingBottom: espacoFinal + insets.bottom + 24,
+          paddingBottom:
+            espacoFinal +
+            ALTURA_BARRA_MENU +
+            Math.max(insets.bottom, 12) +
+            24,
         }}
       >
         {/* ── Hero: cartão-foto com wordmark groovy e seletor de miniaturas ── */}
@@ -330,8 +337,8 @@ export function LojaRitual<T extends ProdutoVitrine>({
             alignSelf: 'center',
             // Teto de largura + texto que encolhe: com o corpo do sistema em
             // fontScale alto o status quebraria em 2 linhas e vazaria da
-            // pílula de altura fixa, espremendo o chevron — a ÚNICA saída
-            // desta vitrine (não há barra de menu inferior).
+            // pílula de altura fixa, espremendo o chevron — a saída de volta
+            // desta vitrine.
             maxWidth: SCREEN_W - 28,
             zIndex: 20,
             height: ALTURA_PILL,
@@ -447,6 +454,8 @@ export function LojaRitual<T extends ProdutoVitrine>({
           )}
         </TouchableOpacity>
       </View>
+
+      <BarraMenuRitual sairPara={sairPara} />
     </View>
   )
 }
@@ -1113,6 +1122,89 @@ function FechoRitual({
           {meta}
         </Text>
       </View>
+    </View>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Barra de menu inferior — a pílula creme que ecoa o pill do topo
+// ─────────────────────────────────────────────────────────────
+
+const ITENS_MENU: {
+  rotulo: string
+  icone: ConsumerIconName
+  rota: string
+  ativo?: boolean
+}[] = [
+  // A loja é navegada a partir do Início — é o item "aceso" da barra.
+  { rotulo: 'Início', icone: 'home', rota: '/', ativo: true },
+  { rotulo: 'Explorar', icone: 'reels', rota: '/explorar' },
+  { rotulo: 'Pedidos', icone: 'orders', rota: '/pedidos' },
+  { rotulo: 'Perfil', icone: 'user', rota: '/perfil' },
+]
+
+/**
+ * PÍLULA, não barra colada: nesta vitrine tudo flutua no rosa com o gutter
+ * contornando cada cartão, e uma barra rente à base quebraria a assinatura nº
+ * 1 do layout. Papel CREME — o mesmo do cardápio —, com o rosa do menu no
+ * ativo (4,85:1 sobre o creme; o accent claro da pele reprovaria AA aqui, a
+ * mesma razão que já existe para os itens do cardápio).
+ */
+function BarraMenuRitual({
+  sairPara,
+}: {
+  sairPara: (acao: () => void) => (e: GestureResponderEvent) => void
+}) {
+  const design = useStoreDesign()
+  const { colors } = design
+  const insets = useSafeAreaInsets()
+  return (
+    <View
+      style={[
+        {
+          position: 'absolute',
+          left: GUTTER,
+          right: GUTTER,
+          bottom: Math.max(insets.bottom, 12),
+          zIndex: 20,
+          height: ALTURA_BARRA_MENU,
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: CREME,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: comAlfa(colors.accentInk, 0.12),
+        },
+        consumerDesign.shadow.floating,
+      ]}
+    >
+      {ITENS_MENU.map((item) => {
+        const cor = item.ativo ? ROSA_MENU : comAlfa(ROSA_MENU, 0.55)
+        return (
+          <TouchableOpacity
+            key={item.rota}
+            onPress={sairPara(() => router.navigate(item.rota as never))}
+            activeOpacity={0.7}
+            style={{ flex: 1, alignItems: 'center', gap: 3 }}
+          >
+            <ConsumerIcon
+              name={item.icone}
+              size={20}
+              color={cor}
+              strokeWidth={item.ativo ? 2.1 : 1.7}
+            />
+            <Text
+              style={{
+                fontSize: 10,
+                color: cor,
+                ...fontStyle(design.body, item.ativo ? 700 : 500),
+              }}
+            >
+              {item.rotulo}
+            </Text>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
 }
