@@ -21,7 +21,7 @@ import { Baloo2_800ExtraBold } from '@expo-google-fonts/baloo-2'
 import { Caveat_700Bold } from '@expo-google-fonts/caveat'
 import { useFonts } from 'expo-font'
 import { formatarReais } from '@mallevo/lib'
-import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
 import { type ProdutoVitrine } from '@/components/loja/LojaEditorial'
@@ -88,6 +88,9 @@ const MARQUEE = [
 
 /** Dias na ordem de `Date.getDay()` — chaves de `stores.horarios`. */
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
+
+/** Altura útil da barra de menu inferior (sem o safe-area inset). */
+const ALTURA_BARRA_MENU = 58
 
 interface Horario {
   abre: string
@@ -284,7 +287,9 @@ export function LojaHorta<T extends ProdutoVitrine>({
             e.nativeEvent.contentOffset.y < alturaHero.current - insets.top - 48
           if (claro !== statusClaro) setStatusClaro(claro)
         }}
-        contentContainerStyle={{ paddingBottom: espacoFinal + insets.bottom }}
+        contentContainerStyle={{
+          paddingBottom: espacoFinal + ALTURA_BARRA_MENU + insets.bottom,
+        }}
       >
         {/* ── Hero: verde, wordmark com selo e a foto-adesivo pendurada ── */}
         <View
@@ -380,6 +385,8 @@ export function LojaHorta<T extends ProdutoVitrine>({
           }}
         />
       </View>
+
+      <BarraMenuHorta sairPara={sairPara} />
     </View>
   )
 }
@@ -1233,6 +1240,87 @@ function FechoHorta({ nome, tempo }: { nome: string; tempo: number | null }) {
           .filter(Boolean)
           .join('  ·  ')}
       </Text>
+    </View>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Barra de menu inferior — o adesivo creme que fecha a página
+// ─────────────────────────────────────────────────────────────
+
+const ITENS_MENU: {
+  rotulo: string
+  icone: ConsumerIconName
+  rota: string
+  ativo?: boolean
+}[] = [
+  // A loja é navegada a partir do Início — é o item "aceso" da barra.
+  { rotulo: 'Início', icone: 'home', rota: '/', ativo: true },
+  { rotulo: 'Explorar', icone: 'reels', rota: '/explorar' },
+  { rotulo: 'Pedidos', icone: 'orders', rota: '/pedidos' },
+  { rotulo: 'Perfil', icone: 'user', rota: '/perfil' },
+]
+
+/**
+ * Barra fixa em creme com fio e sombra — o mesmo vocabulário dos
+ * botões-adesivo do chrome, para ela ler tanto no fecho VERDE quanto sobre o
+ * creme das seções claras (a página alterna faixas de borda a borda, e uma
+ * barra chapada sem sombra sumiria dentro da faixa verde).
+ */
+function BarraMenuHorta({
+  sairPara,
+}: {
+  sairPara: (acao: () => void) => (e: GestureResponderEvent) => void
+}) {
+  const design = useStoreDesign()
+  const { colors } = design
+  const insets = useSafeAreaInsets()
+  return (
+    <View
+      style={[
+        {
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 12,
+          flexDirection: 'row',
+          backgroundColor: colors.canvas,
+          borderTopWidth: 1,
+          borderTopColor: colors.line,
+          paddingTop: 10,
+          paddingBottom: Math.max(insets.bottom, 12),
+        },
+        consumerDesign.shadow.floating,
+      ]}
+    >
+      {ITENS_MENU.map((item) => {
+        const cor = item.ativo ? colors.accent : colors.inkMuted
+        return (
+          <TouchableOpacity
+            key={item.rota}
+            onPress={sairPara(() => router.navigate(item.rota as never))}
+            activeOpacity={0.7}
+            style={{ flex: 1, alignItems: 'center', gap: 4 }}
+          >
+            <ConsumerIcon
+              name={item.icone}
+              size={21}
+              color={cor}
+              strokeWidth={item.ativo ? 2.1 : 1.7}
+            />
+            <Text
+              style={{
+                fontSize: 10,
+                color: cor,
+                ...fontStyle(design.body, item.ativo ? 700 : 500),
+              }}
+            >
+              {item.rotulo}
+            </Text>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
 }
