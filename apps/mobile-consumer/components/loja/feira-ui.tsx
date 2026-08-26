@@ -52,9 +52,9 @@ export function formatarContagem(segundos: number): string {
 }
 
 /**
- * Botão circular claro com fio e sombra — o chrome INTEIRO desta vitrine.
- * Sem FAB e sem barra de menu própria: a barra de navegação do app é a do
- * app, e nenhuma vitrine desenha a sua.
+ * Botão circular claro com fio e sombra — o chrome de TOPO desta vitrine
+ * (voltar e sacola). Sem FAB: a sacola daqui é a porta do carrinho. O pé da
+ * tela é da barra de menu, que a vitrine desenha por conta própria.
  */
 export function BotaoFeira({
   icone,

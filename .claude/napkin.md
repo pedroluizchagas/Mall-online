@@ -31,7 +31,9 @@
    Do instead: gate por `design.arquetipo` (StoreDesign, lib/store-theme.tsx) + categoria da loja — nunca por slug de loja. Demo: `vitrine-fashion` (editorial/moda) usa `components/loja/LojaEditorial.tsx`; picsum é aleatório, lojas-demo com cara real usam fotos Unsplash de ID fixo via `catalogo`/`banner` no LojaSpec (lib/mock/dataset.ts).
 
 ## User Directives
-1. **[2026-08-08] Design das lojas parceiras deve ser premium, não genérico "tipo iFood"**
+1. **[2026-08-26] Toda loja do consumer mostra a barra de navegação — sem exceção de arquétipo**
+   Do instead: vitrine nova = `BarraMenu<Nome>` própria no arquivo (Início/Explorar/Pedidos/Perfil, Início aceso, `sairPara` na cor da casa). Molde A = fixa com fio (`LojaEditorial`); molde B = pílula flutuante quando a página troca de cor por seção (`LojaSmash`/`LojaForno`/`LojaRitual`). Nunca a TabBar de `(tabs)/_layout.tsx` — esse arquivo é intocável. Layout sem vitrine tem `BarraMenuPadrao` em `app/loja/[slug].tsx`. Teste-guarda em `packages/lib/.../store-theme.test.ts` quebra se faltar. Revogou o "sem barra de menu inferior" de ritual/horta/forno nos docs.
+2. **[2026-08-08] Design das lojas parceiras deve ser premium, não genérico "tipo iFood"**
    Do instead: ao mexer em telas de loja, replicar a linguagem do arquétipo (referências em docs/store-theme/02): foto grande, tipografia com contraste forte, zero chrome nos cards, acento só em micro-momentos.
-2. **[2026-08-08] Transições de tela devem ser abstratas — sem wordmark, logo ou texto**
+3. **[2026-08-08] Transições de tela devem ser abstratas — sem wordmark, logo ou texto**
    Do instead: mudança de ambiente = COR + movimento. Direção aprovada: radial — círculo na cor da paleta da loja nasce do ponto do toque, cobre a tela e dissolve no canvas Mallevo (TransicaoMallevo; a tela passa cor/origem via useTransicaoSaida). Rejeitados: véu com marca "mallevo." e cortina dupla neutra. Não reintroduzir branding/texto em transições.

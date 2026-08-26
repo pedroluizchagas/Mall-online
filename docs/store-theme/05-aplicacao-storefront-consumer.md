@@ -69,11 +69,24 @@ exatamente para isso. Implementados: **editorial** (moda/beleza), **raw**
 lifestyle), **garden** (comida saudável), **slice** (pizzarias/cantinas),
 **mono** (moda monocromática) e **fresh** (hortifruti/mercado fresco).
 
-> **Regra que vale para TODAS elas:** nenhuma vitrine desenha barra de navegação
-> própria nem FAB de carrinho. A navegação do aplicativo
-> (`app/(tabs)/_layout.tsx`) é a do aplicativo, e o chrome de vitrine se resume
-> aos dois botões flutuantes (voltar e sacola com contador). Mockup de
-> referência que traga a própria barra tem essa parte ignorada.
+> **Regra que vale para TODAS elas — barra de navegação é obrigatória.** Toda
+> loja aberta no consumer mostra a régua do shell (Início · Explorar · Pedidos
+> · Perfil, com Início aceso): cada vitrine desenha a **sua própria** barra de
+> menu inferior, e o layout padrão de `app/loja/[slug].tsx` tem a
+> `BarraMenuPadrao` como rede de segurança para toda loja sem vitrine. Dois
+> moldes: **fixa** colada na base com fio superior (`LojaEditorial`, o caso
+> comum) ou **pílula flutuante** quando a página troca de cor por seção e uma
+> barra rente à base herdaria a cor de baixo dela (`LojaSmash`, `LojaForno`,
+> `LojaRitual`). Cada uma é uma RÉPLICA vestida no DNA do arquétipo, nunca a
+> TabBar de `app/(tabs)/_layout.tsx` — esse arquivo é intocável. Tocar num item
+> sai da loja pela transição radial na cor da casa. Presença coberta por
+> teste-guarda em `packages/lib/src/store-theme/__tests__/store-theme.test.ts`:
+> vitrine nova sem barra quebra o CI.
+>
+> **FAB de carrinho continua fora das vitrines:** a sacola do chrome (com
+> contador) é a porta do carrinho, e a pill flutuante duplicaria a função
+> disputando espaço com a barra. Só o layout padrão tem FAB — e ele flutua
+> acima da barra.
 
 **Gates** (em `app/loja/[slug].tsx`) — loja real que satisfaça os critérios
 veste o layout automaticamente; o resto segue no catálogo padrão:
@@ -133,10 +146,11 @@ ao confirmar).
 
 **Vitrine ritual** (referência OCHA, [02 §A5]): açaíteria lifestyle — a página
 inteira é ROSA e cada seção é um cartão de canto bem redondo FLUTUANDO nela (o
-gutter rosa fica visível ao redor de tudo); o chrome se resume a um PILL
-FLUTUANTE centrado no topo (voltar · "• Aberto para pedidos" · disco rosa da
-sacola) que não sai da tela o scroll inteiro — **sem barra de menu inferior**
-nesta vitrine, a saída da loja é só o chevron. Hero é cartão-foto de altura
+gutter rosa fica visível ao redor de tudo); o chrome é um PILL FLUTUANTE
+centrado no topo (voltar · "• Aberto para pedidos" · disco rosa da sacola) que
+não sai da tela o scroll inteiro, **ecoado no pé pela pílula CREME da barra de
+menu** (papel do cardápio, ativo em `ROSA_MENU` 4,85:1 — o accent claro da
+pele reprovaria AA aqui): tudo flutua no rosa, o chrome inclusive. Hero é cartão-foto de altura
 quase cheia com o WORDMARK GROOVY (Shrikhand, DNA do layout e não token) em
 rosa gigante sobre a imagem, statement da casa em caps condensadas creme e, na
 base, uma fileira de MINIATURAS que troca a foto do hero por crossfade (só no
@@ -158,9 +172,11 @@ o rosa e barra de compra em pill roxa que pisca "NA SACOLA ✓" ao confirmar).
 
 **Vitrine horta** (referência Sonder & Sprout, [02 §A6]): comida saudável — a
 página é CREME e as seções são FULL-BLEED empilhadas, o oposto dos cartões
-flutuantes da ritual. O chrome se resume a DOIS BOTÕES-ADESIVO circulares
-creme (voltar e sacola com contador), fixos, com fio e sombra para lerem tanto
-sobre o verde quanto sobre o creme — **sem barra de menu inferior e sem FAB**.
+flutuantes da ritual. O chrome são DOIS BOTÕES-ADESIVO circulares creme
+(voltar e sacola com contador), fixos, com fio e sombra para lerem tanto sobre
+o verde quanto sobre o creme — e a **barra de menu repete esse vocabulário**:
+creme com fio E sombra, ativo no verde-floresta, porque uma barra chapada
+sumiria dentro da faixa verde do fecho. Sem FAB.
 Hero verde-floresta com o WORDMARK GIGANTE em caps gordas ROSA quebrado em
 duas linhas e um SELO RECORTADO (escalopado, SVG polar `r = R(0,9 + 0,1·cos
 12θ)`) carimbado ENTRE elas carregando o "&" do nome — sem conector no nome, o
@@ -187,10 +203,11 @@ layout, não token — carregadas localmente, como o Shrikhand da ritual.
 
 **Vitrine forno** (referência Restaurin / "Pizza Lounge", [02 §A7]): pizzarias
 e cantinas — a página creme é FATIADA em blocos chapados full-bleed que trocam
-de cor por seção, e a tipografia troca de cor junto. O chrome se resume a DOIS
-BOTÕES circulares creme (voltar e sacola com contador), fixos, com fio e sombra
-para lerem sobre os três palcos por onde passam — **sem barra de menu inferior
-e sem FAB**. Hero em PRETO DE FORNO (veios de mármore em branco a 3% de alfa)
+de cor por seção, e a tipografia troca de cor junto. O chrome são DOIS BOTÕES
+circulares creme (voltar e sacola com contador), fixos, com fio e sombra para
+lerem sobre os três palcos por onde passam — e a barra de menu é **PÍLULA
+FLUTUANTE preta** (ativo em OURO) pelo mesmo motivo: rente à base ela
+herdaria a cor do bloco de baixo a cada rolagem. Sem FAB. Hero em PRETO DE FORNO (veios de mármore em branco a 3% de alfa)
 com a COROA em ouro isolada acima do WORDMARK empilhado em Archivo Black ouro,
 o CTA em retângulo vermelho "VER CARDÁPIO ⌄" que rola até a lista, e o DISCO
 GIGANTE de pizza (`banner_url`, recorte redondo puro) que desce por cima do
@@ -248,7 +265,9 @@ travado em `__tests__`) acende com `metadata.estoque ≤ 40` ou, sem estoque
 informado, com promoção. A seção eleita para a coluna só sai das grades quando
 a coluna mostra todos os seus itens — a mesma regra que a vitrine forno
 aprendeu do jeito difícil. Fecho com monograma coroado, nome em caps espaçadas
-e o relógio vivo; saída radial na TINTA. **Zero animação contínua.** A
+e o relógio vivo; saída radial na TINTA. A barra de menu é fixa no branco com
+o fio das seções, ativo na TINTA e nenhum accent — aqui o accent É a tinta, e
+cor na base roubaria a fotografia. **Zero animação contínua.** A
 estética P&B vem da FOTOGRAFIA: o RN não aplica grayscale sem dependência
 nova, então as lojas-demo dessaturam na origem (`fotoPB` → `sat=-100` no CDN
 da Unsplash) e a foto do lojista entra como ele a enviou. Componentes:
@@ -275,6 +294,9 @@ já está lá — nenhum produto perde o seu lugar na lista. Cada corredor é um
 grade de 2 com TODOS os produtos da seção. O card é o da banca: foto quadrada,
 selo de oferta no canto, nome, descrição e o preço com a UNIDADE ao lado
 (`metadata.unidade` → "R$ 8,90 /kg"). Fecho em cartão verde com o relógio vivo.
+A barra de menu é fixa no claro da página, com o ativo em `VERDE_MATA` e não no
+accent: o acento desta pele é o LIMA, que só existe como FUNDO — como tinta
+sobre a página clara ele reprova AA, a mesma regra que preço e título seguem.
 O único tique da tela é o cronômetro, que recalcula do relógio a cada segundo
 (em vez de decrementar) para não acumular deriva e virar o dia sozinho.
 Componentes: `components/loja/LojaFeira.tsx` + `ProdutoFeira.tsx` (preço grande
