@@ -521,6 +521,9 @@ function GaleriaGrid({
             onChangeText={setBusca}
             placeholder="Pesquisar"
             placeholderTextColor="rgba(255,255,255,0.35)"
+            selectionColor={colors.accent}
+            cursorColor={colors.accent}
+            keyboardAppearance="dark"
             style={{
               flex: 1,
               fontSize: 14,

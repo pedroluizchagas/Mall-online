@@ -106,8 +106,8 @@ function TabBar({ state, navigation }: TabBarProps) {
 
   /**
    * Navega por NOME (não por índice): a lista de rotas inclui as telas sem
-   * botão (`buscar`, `seguindo`, `favoritos`), então posição em
-   * `state.routes` não corresponde à posição em `TABS`.
+   * botão (`seguindo`, `favoritos`), então posição em `state.routes` não
+   * corresponde à posição em `TABS`.
    */
   function irPara(nome: string, mesmoSeFocada = false) {
     const rota = state.routes.find((r) => r.name === nome)
@@ -141,13 +141,23 @@ function TabBar({ state, navigation }: TabBarProps) {
           position: 'absolute',
           left: 16,
           right: 16,
-          bottom: Math.max(insets.bottom, 12) + 4,
-          height: 68,
-          backgroundColor: colors.ink,
-          borderRadius: radius.xl,
+          // Pé da cápsula: um pouco DENTRO da safe area (inset - 8), não
+          // acima dela — em iPhone com inset 34 (12/14/15 Pro Max etc.) o
+          // `inset + 4` antigo deixava a barra alta demais e o topo dela
+          // passava da reserva `spacing.tabBarHeight`, cobrindo o fim das
+          // listas. O indicador de home ocupa só os ~13px finais; 26px de
+          // pé não colidem. Piso de 12 preserva aparelhos sem inset.
+          bottom: Math.max(insets.bottom - 8, 12),
+          height: 70,
+          // Cápsula de vidro escuro: ink translúcido + fio de luz na borda —
+          // o conteúdo passa por baixo e a barra "flutua" de verdade.
+          backgroundColor: colors.inkGlass,
+          borderWidth: 1,
+          borderColor: colors.marqueeLine,
+          borderRadius: radius.pill,
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: 6,
+          paddingHorizontal: 8,
           opacity: visivel,
           transform: [{ translateY: deslocY }],
         },
@@ -301,8 +311,7 @@ export default function LayoutTabs() {
         <Tabs.Screen name="explorar" options={{ title: 'Explorar' }} />
         <Tabs.Screen name="pedidos" options={{ title: 'Pedidos' }} />
         <Tabs.Screen name="perfil" options={{ title: 'Perfil' }} />
-        {/* buscar permanece acessível via router.push mas não aparece na tab bar */}
-        <Tabs.Screen name="buscar" options={{ href: null }} />
+        {/* A busca não é rota: é o overlay Concierge dentro do Início. */}
         {/*
          * seguindo e favoritos também não têm botão próprio: chega-se pelo
          * Perfil ou pelo atalho da tab vizinha (1 toque vai, 2 voltam — ver

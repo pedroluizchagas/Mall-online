@@ -19,14 +19,26 @@ apps/mobile-consumer/
 export const consumerDesign = {
   colors: {
     // — Backgrounds claros
-    canvas: '#F3F3F1',         // fundo padrão de telas claras
-    canvasAlt: '#E8E8E3',      // fundo levemente mais escuro (skeletons, separadores)
+    canvas: '#F1F1F3',         // fundo padrão de telas claras — zinco fumê (vidro), casado com marquee #18181B
+    canvasAlt: '#E7E7EA',      // fundo levemente mais escuro (skeletons, separadores)
     surface: '#FFFFFF',        // card/painel claro
-    surfaceMuted: '#ECECE9',   // pill de busca, chip inativo, divisor sutil
+    surfaceMuted: '#ECECEF',   // pill de busca, chip inativo, divisor sutil
 
     // — Backgrounds escuros (destaque)
     surfaceDark: '#2F3034',    // card escuro principal (pedido ativo, header de loja, modais)
     surfaceDarkSoft: '#3A3B40',// camada interna de cards escuros (sub-painéis, inputs sobre dark)
+
+    // — Marquise (fachada noturna do home — 07-telas.md §3)
+    marquee: '#18181B',                          // fundo da fachada — zinco quente, o MESMO do painel web do lojista
+    marqueeGlow: '#C1F148',                      // lima-profundo do brand web; SÓ atmosfera (GlowNeon, alpha ≤ 22%) — interação continua no accent
+    marqueeGlass: 'rgba(255, 255, 255, 0.08)',   // vidro fumê (busca, moedas, cartão ao vivo)
+    marqueeGlassStrong: 'rgba(255, 255, 255, 0.13)', // camada interna sobre o vidro (trilha de barra, monograma)
+    marqueeLine: 'rgba(255, 255, 255, 0.10)',    // fio de luz nas bordas sobre a fachada
+    marqueeInkSoft: 'rgba(255, 255, 255, 0.66)', // texto secundário sobre a fachada
+    marqueeInkMuted: 'rgba(255, 255, 255, 0.42)',// labels/micro sobre a fachada
+
+    // — Ink translúcido (cápsula da tab bar)
+    inkGlass: 'rgba(17, 18, 22, 0.95)',
 
     // — Texto
     ink: '#111216',            // texto principal e fundo da tab bar
@@ -34,13 +46,14 @@ export const consumerDesign = {
     inkSoft: '#8B8E94',        // texto terciário, labels uppercase
 
     // — Linhas
-    line: '#E5E5E0',           // bordas/divisores claros
+    line: '#E4E4E7',           // bordas/divisores claros
     lineDark: '#4A4B50',       // bordas/divisores sobre dark
 
     // — Accent (CTA primário)
     accent: '#D8FF3E',         // lime — botões primários, estados ativos, indicadores
     accentStrong: '#C8F22E',   // lime mais saturado — pressed states, switches ativos
     accentSoft: 'rgba(216, 255, 62, 0.18)', // background de chip/avatar em accent
+    accentRing: 'rgba(216, 255, 62, 0.34)', // aro aceso: vitrine seguida na marquise
 
     // — Neutro
     white: '#FFFFFF',
@@ -148,12 +161,20 @@ export function softColor(hex: string) {
 ### Backgrounds
 | Token | Hex | Uso |
 |---|---|---|
-| `canvas` | `#F3F3F1` | fundo padrão de tela |
-| `canvasAlt` | `#E8E8E3` | skeleton, divisor de bloco |
+| `canvas` | `#F1F1F3` | fundo padrão de tela — zinco fumê |
+| `canvasAlt` | `#E7E7EA` | skeleton, divisor de bloco |
 | `surface` | `#FFFFFF` | card/painel claro |
-| `surfaceMuted` | `#ECECE9` | pill de busca, chip inativo |
+| `surfaceMuted` | `#ECECEF` | pill de busca, chip inativo |
 | `surfaceDark` | `#2F3034` | card escuro de destaque |
 | `surfaceDarkSoft` | `#3A3B40` | sub-painel dentro de card escuro |
+| `marquee` | `#18181B` | fachada do home — zinco quente (degradê do painel web do lojista) |
+| `marqueeGlow` | `#C1F148` | lima-profundo do brand web, só atmosfera da fachada (GlowNeon) |
+| `marqueeGlass` | `rgba(255,255,255,0.08)` | vidro fumê sobre a fachada |
+| `marqueeGlassStrong` | `rgba(255,255,255,0.13)` | camada interna do vidro |
+| `marqueeLine` | `rgba(255,255,255,0.10)` | fio de luz em bordas sobre a fachada |
+| `marqueeInkSoft` | `rgba(255,255,255,0.66)` | texto secundário sobre a fachada |
+| `marqueeInkMuted` | `rgba(255,255,255,0.42)` | labels/micro sobre a fachada |
+| `inkGlass` | `rgba(17,18,22,0.95)` | cápsula translúcida da tab bar |
 
 ### Texto
 | Token | Hex | Uso |
@@ -165,7 +186,7 @@ export function softColor(hex: string) {
 ### Linhas
 | Token | Hex | Uso |
 |---|---|---|
-| `line` | `#E5E5E0` | divisor sobre fundo claro |
+| `line` | `#E4E4E7` | divisor sobre fundo claro |
 | `lineDark` | `#4A4B50` | divisor sobre fundo escuro |
 
 ### Accent
@@ -174,6 +195,7 @@ export function softColor(hex: string) {
 | `accent` | `#D8FF3E` | CTA primário, estado ativo |
 | `accentStrong` | `#C8F22E` | pressed state, switch ativo |
 | `accentSoft` | `rgba(216, 255, 62, 0.18)` | background de avatar/chip em accent |
+| `accentRing` | `rgba(216, 255, 62, 0.34)` | aro de vitrine seguida na marquise |
 
 ### Status
 | Token | Hex | Aplicação no consumer |
@@ -284,16 +306,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        canvas: '#F3F3F1',
-        'canvas-alt': '#E8E8E3',
+        canvas: '#F1F1F3',
+        'canvas-alt': '#E7E7EA',
         surface: '#FFFFFF',
-        'surface-muted': '#ECECE9',
+        'surface-muted': '#ECECEF',
         'surface-dark': '#2F3034',
         'surface-dark-soft': '#3A3B40',
         ink: '#111216',
         'ink-muted': '#5E6168',
         'ink-soft': '#8B8E94',
-        line: '#E5E5E0',
+        line: '#E4E4E7',
         'line-dark': '#4A4B50',
         accent: '#D8FF3E',
         'accent-strong': '#C8F22E',
@@ -347,6 +369,7 @@ Hex literal **fora** de `consumer-design.ts` só é tolerado em:
 2. **Overlays sobre vídeo** (Reels) — gradientes pretos com alpha (`rgba(0,0,0,0.55)`) são padrão de leitura sobre vídeo. Documentar inline com comentário curto.
 3. **`assets/` e `app.json`** — splash backgroundColor e adaptive icon background. Mantemos sincronizados manualmente: `splash.backgroundColor` = `colors.ink` = `#111216`.
 4. **Mapas (`react-native-maps`)** — pinos custom precisam de cor literal porque não recebem tema. Sempre que possível, derivar da paleta (`colors.accent`, `colors.ink`).
+5. **Criativos de anúncio (`lib/banners-mock.ts`)** — cor e acento de **marca do anunciante** são dado do criativo (como os presets de loja no dataset), não UI do Mallevo. Vivem no mock (futuramente no backend) e entram no `BannerCarousel` via `Banner.anuncio` — nunca hardcoded em componente.
 
 Qualquer outro hex em UI é bug — abrir issue ou corrigir em PR adjacente.
 
@@ -354,7 +377,7 @@ Qualquer outro hex em UI é bug — abrir issue ou corrigir em PR adjacente.
 
 | Atual (consumer hoje) | Novo (consumer alvo) |
 |---|---|
-| `bg-creme #F4F0EB` | `bg-canvas #F3F3F1` |
+| `bg-creme #F4F0EB` | `bg-canvas #F1F1F3` |
 | `bg-verde-profundo #1A4D3A` | `bg-ink #111216` (botão primário vira `bg-accent`) |
 | `text-verde-profundo` | `text-accent` (em CTA) ou `text-ink` (em texto) — caso a caso |
 | `bg-verde-medio #4CAF82` | `bg-success #8ED14F` (status) ou `bg-accent` (CTA) |
@@ -365,8 +388,8 @@ Qualquer outro hex em UI é bug — abrir issue ou corrigir em PR adjacente.
 | `text-ink-500 #6B6B60` | `text-ink-muted #5E6168` |
 | `text-ink-400 #8A8A7E` | `text-ink-soft #8B8E94` |
 | `text-ink-300 #B0B0A5` | `text-ink-soft` (com `opacity-70`) |
-| `border-ink-200 #D0D0C5` | `border-line #E5E5E0` |
-| `bg-warm #E8E0D4` | `bg-canvas-alt #E8E8E3` |
+| `border-ink-200 #D0D0C5` | `border-line #E4E4E7` |
+| `bg-warm #E8E0D4` | `bg-canvas-alt #E7E7EA` |
 | `bg-gold #C5975B` | (remover — sem equivalente no courier) |
 
 ## 13. Critério de aceite (Fase 1)

@@ -11,7 +11,7 @@
 | Boas-vindas | `app/(auth)/boas-vindas.tsx` | 8 |
 | Entrar | `app/(auth)/entrar.tsx` | 8 |
 | Home (Início) | `app/(tabs)/index.tsx` | 4 |
-| Buscar | `app/(tabs)/buscar.tsx` | 4 |
+| Buscar — Concierge (overlay do Início) | `components/home/Concierge.tsx` | 4 |
 | Explorar (reels) | `app/(tabs)/explorar.tsx` | 9 |
 | Seguindo | `app/(tabs)/seguindo.tsx` | 9 |
 | Favoritos | `app/(tabs)/favoritos.tsx` | 9 |
@@ -173,36 +173,43 @@ Os 3 modos (`entrar`, `cadastro`, `confirmar`) usam o mesmo shell visual; só mu
 ## 3. Home (`(tabs)/index.tsx`)
 
 ### Propósito
-Catálogo principal: header de localização, banner, categorias, lista de lojas por seção.
+A entrada do shopping: fachada noturna com busca e vitrines das lojas do usuário no topo, catálogo por pisos curatoriais na folha clara abaixo.
+
+### Conceito — "Marquise" (redesign 2026-08-14)
+
+O topo do Início é a **fachada do shopping à noite**: painel `marquee` (zinco quente `#18181B`) com o **degradê do painel web do lojista** vazando por trás — dois blobs de `marqueeGlow` lima-profundo em gradiente radial SVG (~22% topo-direito, ~12% pé-esquerdo) —, statement em **Plus Jakarta Sans 600** (a fonte da marca, a mesma do web) com a última linha acesa em **itálico** no `accent` (o gesto do "futuro" do login web), busca em vidro fumê e a fileira de **vitrines circulares** — as lojas que o usuário segue (aro aceso `accentRing`), ou as "em alta" para quem ainda não segue ninguém. O conteúdo claro sobe por cima como uma **folha arredondada** (`radius.md` — 20, o "raio Apple"; curva maior fazia o banner parecer estourado nos cantos — margem -24): sair da fachada e entrar no shopping. Componente: `components/home/Marquise.tsx`.
 
 ### Wireframe alvo
 
 ```
 ┌─────────────────────────────────────────┐
-│ HeaderTela variante="principal"         │
-│  [📍 ink/40] OLÁ, PEDRO       [bell]    │
-│            Divinópolis ▼                 │
+│ ███ marquee + glow lima ████████████████│
+│  📍 ENTREGAR EM                  sino    │  ← ícones nus, sem moedas de vidro
+│     Divinópolis ▼                        │
 │                                          │
-│ ┌─────────────────────────────────────┐ │
-│ │ [Search ink-soft] O que procura...  │ │  ← search pill, surface, radius pill
+│  BOA NOITE, PEDRO                        │  ← micro caps marqueeInkMuted
+│  A cidade inteira,                       │  ← Jakarta Sans 600 34, white; linha acesa itálica
+│  na sua mão.                             │  ← idem, em accent
+│  O shopping digital de Divinópolis       │  ← bodySm marqueeInkSoft
+│                                          │
+│ ┌─ vidro fumê ────────────────────[▸]─┐ │  ← busca: marqueeGlass + moeda accent
+│ │ [search] O que você procura hoje?   │ │
 │ └─────────────────────────────────────┘ │
 │                                          │
-│ ┌─────────────────────────────────────┐ │
-│ │ [bike accent]  Pedido em rota       │ │  ← Card escuro, banner pedido ativo (se houver)
-│ │                Saiu para entrega  ▷ │ │
-│ └─────────────────────────────────────┘ │
+│  ◔ SUAS LOJAS (ou ✦ EM ALTA AGORA)      │
+│  (+)   (◉)   (◉)   (◉)   (◉)  →         │  ← vitrines 62px; seguida = aro lima
+│ Descobrir Yamato Aroma  Lux              │
 │                                          │
-│  BannerCarousel (3 banners, dark)        │
-│                                          │
-│  ◉ Hambúrguer   Mercado   Farmácia ...   │  ← linha horizontal de Chips
-│                                          │
-│  Praça de Alimentação                    │  ← h2 ink
-│  Restaurantes, fast food e cafés         │  ← bodySm inkMuted
-│  ┌──────┐ ┌──────┐ ┌──────┐  →           │  ← LojaCardH scroll horizontal
-│  │      │ │      │ │      │              │
-│                                          │
-│  Essenciais do Dia a Dia                 │  ← h2
-│  ...                                      │
+│ ┌─ AO VIVO ─────────────────── 52% ──┐  │  ← cartão vidro do pedido ativo
+│ │ [chef] Em preparo               ▷  │  │     (só se ehAtivo(statusAtual))
+│ │ ▓▓▓▓▓▓▓▓░░░░░░░░ barra accent      │  │
+│ └────────────────────────────────────┘  │
+│ ╭──────── folha clara (radius.md) ──────╮
+│ │  BannerCarousel                        │
+│ │  Praça de Alimentação                  │  ← Jakarta Sans 700 21, ink
+│ │  Restaurantes, lanches e cafés         │  ← bodySm inkMuted
+│ │  ┌──────┐ ┌──────┐ ┌──────┐  →         │  ← LojaCardH scroll horizontal
+│ ╰────────────────────────────────────────╯
 └─────────────────────────────────────────┘
             (tab bar flutuante)
 ```
@@ -211,185 +218,116 @@ Catálogo principal: header de localização, banner, categorias, lista de lojas
 
 #### "Pisos" — repensados
 
-Hoje o home tem 5 "pisos" (Térreo, 1º…4º Piso) com:
-- barrinha colorida lateral de 3px,
-- nome em `fontFamily: 'serif'`,
-- subcategorias (chips com emoji) ou filtros de cozinha (chips ativos).
+As seções derivam dos 9 PISOS curatoriais de `@mallevo/lib` (ver comentários em `index.tsx`): título + subtítulo, sem filtros nem chips no home. Título de seção usa a fonte-assinatura da marca (`useFontesMarquee().letreiro` — Plus Jakarta Sans 700 com fallback de sistema durante o load), 21px, tracking -0.4: **letreiros de corredor**, a mesma voz do hero. Space Grotesk continua existindo só nos temas de loja (`lib/store-fonts.ts`) — voz de lojista, não da casa.
 
-Decisão de redesign:
-- **Sai a metáfora de pisos** explícita. As seções continuam (são úteis para agrupar lojas), mas viram seções comuns com:
-  - título `h2` em `ink`, sem barrinha lateral.
-  - subtítulo `bodySm` em `inkMuted`.
-  - **filtros e subcategorias removidos do home**. Isso vira responsabilidade da tela `buscar` (filtros de categoria) e da tela `loja` (filtros internos). O home mostra **lojas curadas**, sem ruído de filtro.
-- Razão: filtros + categorias + chips de cozinha + cards de loja na mesma rolagem brigam por atenção. A cada seção, o usuário esquece o que era pra fazer. Limpa a hierarquia.
+#### Marquise (substitui o header)
 
-#### Header
+O home **não usa mais** `<HeaderTela>`. A `<Marquise>` desenha:
+- linha de portaria **sem chrome** (2026-08-18): pin `accent` nu (19px) + endereço, sino nu 22px (`SinoNoturno`, badge `danger` com aro `marquee` no ombro do ícone, `hitSlop` preservando o alvo de ~44px). As moedas de vidro saíram — vidro na fachada é só de conteúdo: busca, vitrines e cartão ao vivo;
+- saudação (`saudacaoPorHorario()` + primeiro nome) em micro caps;
+- statement fixo "A cidade inteira, / na sua mão." + slogan oficial;
+- busca em `marqueeGlass` com borda `marqueeLine` e moeda `accent` à direita (toca → abre o **Concierge**, overlay de busca sobre a própria home — §4; nunca navega);
+- fileira de vitrines com slot "Descobrir" (borda tracejada, toca → `/(tabs)/explorar`); seguidas vêm de `useSeguidas` (join com o catálogo por slug para logo/tempo — seguida sem match ainda aparece com monograma); fallback "em alta" = primeiras lojas do catálogo;
+- entrada com stagger: um `Animated.Value` único, cada peça lê uma janela do intervalo (statement → busca → vitrines).
 
-Substitui o desenho inline pelo `<HeaderTela variante="principal">` com:
-- `acaoDireita` = botão de bell (com `softColor(colors.danger)` no badge não lido)
-- `aoTocarLocalizacao` = abre modal de seleção de endereço (deferido — mantém o atual stub)
+#### Cartão de pedido ao vivo
 
-#### Search
+`CardPedidoVivo` (interno à tela) rende no pé da fachada quando `ehAtivo(statusAtual)`: vidro `marqueeGlass`, ponto "ao vivo" pulsando (`motion.pulse`), rótulo + descrição do status e **barra de progresso** `META_STATUS.progresso` animada em `accent`, com percentual à direita. Substitui o antigo `CardPedidoAtivo` (Card escuro sem barra).
 
-Pill `surface` com radius `pill`, ícone `search` 16 em `inkSoft`, texto placeholder `inkSoft`. Toca → `router.push('/(tabs)/buscar')`.
+#### Folha de vidro fosco (2026-08-18)
 
-#### Banner de pedido ativo
+Bloco com `borderTopLeft/RightRadius: radius.md`, `marginTop: -24` sobre a fachada, `backgroundColor: canvas`, `flexGrow: 1`, `overflow: hidden`. Referência: o fundo difuso do iOS ("send with effect") — um material **nublado**, não um cinza chapado. O que faz a folha ler como vidro:
 
-Bloco já especificado em [`06-status-pedido.md` §5](./06-status-pedido.md#5-como-cada-tela-consome). Aparece sob o search se `ehAtivo(statusAtual)`.
+- **canvas família zinco** (`#F1F1F3` — ver [01](./01-tokens.md)): o fumê mora no fundo; a `surface` branca dos cards acende sobre ele — elevação por luminosidade;
+- **`VidroFosco`** (sub-componente da tela): campo de nuvens SVG nos primeiros ~860px, recortado no raio pelo `overflow: hidden`. Camadas (só tokens): sombra da fachada (`marquee` 7% → 0 vertical), nuvem fria (`inkSoft` 7%) + fôlego azul (`info` 4%) — as nuvens do vidro iOS —, bloom leitoso (`white` 55% → 0) e o **neon da marquise atravessando o vidro** no canto (`marqueeGlow` 5%) — continuidade física com a fachada, assinatura que o iOS não tem. No squint: fumê nublado, nunca "sujo". Abaixo do campo, canvas limpo — a dissolução é imperceptível nessas opacidades.
 
-#### Estrutura final
+Contém BannerCarousel + seções. A status bar do Início é **light** apenas com a tela em foco (`useFocusEffect` + `<StatusBar style="light">` condicional); as demais abas seguem escuras.
 
-```tsx
-<View style={{ flex: 1, backgroundColor: colors.canvas }}>
-  <ScrollView contentContainerStyle={{ paddingBottom: spacing.tabBarHeight }}>
-    <HeaderTela
-      variante="principal"
-      rotuloLocalizacao={primeiroNome ? `OLÁ, ${primeiroNome.toUpperCase()}` : 'ENTREGAR EM'}
-      textoLocalizacao={cidadeAtual}
-      aoTocarLocalizacao={escolherLocal}
-      acaoDireita={<BotaoBell />}
-    />
+### Mudanças vs redesign anterior
 
-    <BarraBusca />                {/* TouchableOpacity pill que navega pra /buscar */}
-
-    {ehAtivo(statusAtual) && <CardPedidoAtivo />}
-
-    <BannerCarousel banners={BANNERS_MOCK} />
-
-    <ChipsCategoria />            {/* horizontal scroll de Chip */}
-
-    {SECOES.map((secao) => (
-      <SecaoLojas key={secao.id} secao={secao} lojas={lojasDe(secao)} />
-    ))}
-  </ScrollView>
-</View>
-```
-
-`<SecaoLojas>` é interno à tela. Recebe `{ titulo, subtitulo, lojas }` e renderiza:
-
-```tsx
-<View style={{ paddingTop: 28 }}>
-  <View style={{ paddingHorizontal: 24, marginBottom: 14 }}>
-    <Text style={typography.h2}>{titulo}</Text>
-    <Text style={{ ...typography.bodySm, color: colors.inkMuted, marginTop: 2 }}>
-      {subtitulo}
-    </Text>
-  </View>
-  <ScrollView horizontal contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}>
-    {lojas.map((loja) => (
-      <LojaCardH key={loja.id} loja={loja} aoTocar={() => router.push(`/loja/${loja.slug}`)} />
-    ))}
-  </ScrollView>
-</View>
-```
-
-### Mudanças vs hoje
-
-| Antes | Depois |
+| Antes (redesign 1) | Depois (Marquise) |
 |---|---|
-| Header inline com `MapPin` em verde profundo | `<HeaderTela variante="principal">` com `pin` em `accent` sobre quadrado `ink` |
-| Search com `surface` + sombra | Search pill `surface` sem sombra (visualmente mais "leve") |
-| Barrinha colorida lateral 3px nos títulos | Sem barra; só `h2` |
-| `fontFamily: 'serif'` | sistema, peso 800 |
-| Filtros/subcategorias misturados nos pisos | Removidos do home |
-| `FLOOR_METADATA` hardcoded com cores de marca antiga | Lista simples de seções (`SECOES`) — só `id`, `titulo`, `subtitulo`, regra de filtro |
-| `BannerCarousel` com 3 cores hardcoded | `BannerCarousel banners={…}` com tokens |
+| `HeaderTela variante="principal"` sobre canvas | Fachada `marquee` com glow, statement e saudação |
+| Search pill `surface` | Busca em vidro fumê (`marqueeGlass` + `marqueeLine`) com moeda `accent` |
+| Sem lugar para lojas seguidas no home | Fileira de vitrines (seguidas com aro aceso / em alta) |
+| `CardPedidoAtivo` (ícone + rótulo) | `CardPedidoVivo` (pulso ao vivo + barra de progresso) |
+| Títulos de seção sistema 800 | Plus Jakarta Sans 700 (letreiro da marca), fallback sistema |
+| Canvas contínuo | Folha clara arredondada sobre a fachada |
 
 ### Manter
 
-- Lógica de fetch (`carregarDados`, `Promise.all`).
-- `RefreshControl`.
+- Lógica de fetch (`carregarDados`), teto `LIMITE_LOJAS`, agrupamento por piso e fallback `casa-vida`.
+- `RefreshControl` (tint `white` — o topo é escuro).
 - Comportamento do bell (abre `NotificacoesPopup`).
+- Barra do carrinho fixa acima da tab bar.
 
 ---
 
-## 4. Buscar (`(tabs)/buscar.tsx`)
+## 4. Buscar — Concierge (overlay do Início)
 
 ### Propósito
-Campo de busca + resultados (lojas + produtos) com debounce.
+Busca de lojas + produtos **sem sair do Início**: overlay imersivo sobre a própria home. Componente: `components/home/Concierge.tsx`. A antiga rota `(tabs)/buscar` foi removida.
+
+### Conceito — "Concierge" (redesign 2026-08-18)
+
+Tocar a pílula de vidro da marquise não navega: **a noite toma a tela**. O véu `marquee` (com o mesmo `GlowNeon` da fachada) cobre a home inteira, a pílula **acende** — aro `accentRing`, a mesma luz das vitrines seguidas — e vira um `TextInput` de verdade. Embaixo, o balcão do concierge: buscas **recentes** do aparelho e os termos **muito buscados**; digitou, os resultados chegam ao vivo em lista limpa sobre o vidro, sem chrome. Fechar recua o véu — o Início está exatamente onde ficou (scroll, estado, tudo), porque nunca houve navegação.
+
+A tab bar **se recolhe** enquanto o overlay vive (`useImersao`, o mesmo mecanismo do modo imersivo do Explorar): buscar é um momento modal, zero chrome do shell.
 
 ### Wireframe alvo
 
 ```
 ┌─────────────────────────────────────────┐
-│ HeaderTela variante="voltar" titulo="Buscar"│
+│ ███ véu marquee + glow lima ████████████│
+│ ┌─ pílula ACESA (aro accentRing) ─────┐ │
+│ │ [search lima] termo…    (○/×)      │ │ Cancelar
+│ └─────────────────────────────────────┘ │  ← moeda direita: spinner accent
+│                                          │    (buscando) ou × limpar
+│  ◷ RECENTES                     Limpar  │  ← micro caps; só se houver
+│  (pizza) (tênis) (açaí)                 │  ← chips de vidro, wrap
 │                                          │
-│ ┌─────────────────────────────────────┐ │
-│ │ [search] termo de busca...   [×]   │ │  ← Input padrão com clearable
-│ └─────────────────────────────────────┘ │
+│  ✦ MUITO BUSCADOS                       │  ← spark accent
+│  (Pizza) (Açaí) (Burger) (Sushi)        │  ← termos que existem no catálogo
+│  (Café) (Farmácia) (Barbearia) (Ração)  │
 │                                          │
-│ Categorias                               │  ← h3
-│  ◯ Todos  ◯ Restaurantes  ◯ Mercado ... │  ← Chips horizontais
+│  — digitou ≥ 2 chars: —                 │
+│  LOJAS                                   │  ← micro caps marqueeInkMuted
+│  (◉) Forno Real                      ▸  │  ← aro 46 logo/monograma accent
+│      Pizzaria · 40 min                   │
+│  PRODUTOS                                │
+│  [□] Pizza Margherita        R$ 42,00   │  ← thumb 46 radius.sm; preço white 800
+│      Forno Real                          │
 │                                          │
-│ Lojas                                    │  ← label uppercase
-│  ┌─────────────────────────────────┐   │
-│  │ LojaCard                         │   │
-│  └─────────────────────────────────┘   │
-│  ...                                     │
-│                                          │
-│ Produtos                                 │  ← label uppercase
-│  ┌─────────────────────────────────┐   │
-│  │ ProdutoCard variante="lista"     │   │
-│  └─────────────────────────────────┘   │
+│  (vazio: disco de vidro + "Nada por     │
+│   aqui" + sugestão de outro nome)       │
 └─────────────────────────────────────────┘
+        (tab bar recolhida — useImersao)
 ```
 
-### Estrutura
+### Comportamentos
 
-```tsx
-<View style={{ flex: 1, backgroundColor: colors.canvas }}>
-  <HeaderTela variante="voltar" titulo="Buscar" />
+- **Abertura**: um `Animated.Value` único com janelas (padrão da Marquise) — véu funde primeiro (`motion.slow`, out-cubic), pílula acende, balcão sobe. O foco do teclado só acontece **depois** que o véu assenta (`motion.base + 40ms`) — teclado subindo durante o fade engasgaria a entrada.
+- **Fechamento**: `Cancelar` ou botão físico de voltar (Android, `BackHandler`). Saída mais curta que a entrada (`motion.base`, in-cubic) — some rápido, sem cerimônia.
+- **Busca**: debounce 400ms, mínimo 2 chars; mesmas queries da tela antiga (`stores` ilike nome limit 5 + `products` ilike nome limit 10, só ativos/disponíveis). Resposta atrasada de termo antigo é descartada (carimbo de requisição).
+- **Moeda direita da pílula**: troca de papel — spinner `accent` enquanto busca, `×` de limpar quando há termo (limpar re-foca o campo).
+- **Recentes** (`store/useBuscasRecentes.ts`, AsyncStorage, cap 8, dedupe case-insensitive): só registra em momento de **commit** — submit do teclado, toque em resultado ou reuso de chip. Digitação abandonada ("piz", "pizz") nunca entra.
+- **Muito buscados**: chips fixos com termos que **existem no dataset** — chip que devolve zero resultado é anti-vitrine.
+- **Tocar resultado**: registra o termo, `Keyboard.dismiss()`, `router.push('/loja/[slug]')`. O overlay **permanece montado**: na volta da loja os resultados continuam lá, sem re-focar o teclado (padrão App Store — "voltei, tento o próximo resultado").
+- **Loading**: 3 linhas-fantasma de vidro (`marqueeGlass`) — o `<Skeleton>` padrão é claro demais para a fachada.
+- **Teclado com a cara da fachada**: `keyboardAppearance="dark"` (iOS) + caret/seleção `accent` (`cursorColor`/`selectionColor`, Android/iOS). Regra geral do app: **campo sobre superfície escura sobe teclado escuro** — vale também para os campos do Explorar (pesquisa e comentários) e para `<Input fundoEscuro>` (auth). No Android a cor do teclado em si é do app de teclado do usuário — não é controlável.
+- **Acessibilidade**: `accessibilityViewIsModal`, roles/labels nos toques, hitSlop generoso nos alvos pequenos.
 
-  <View style={{ paddingHorizontal: 24 }}>
-    <Input
-      valor={termo}
-      aoMudar={onChange}            // já com debounce dentro
-      iconeEsquerda="search"
-      placeholder="Lojas, produtos, categorias..."
-      autoFocus
-      acessorioDireita={termo ? <BotaoLimpar /> : null}
-    />
-  </View>
+### Mudanças vs tela antiga
 
-  {/* Categorias (chips de filtro de tipo) */}
-  <ScrollView horizontal contentContainerStyle={{ paddingHorizontal: 24, gap: 8, paddingTop: 20 }}>
-    {CATEGORIAS.map((c) => (
-      <Chip key={c.id} rotulo={c.nome} ativo={categoriaAtiva === c.id} aoTocar={() => setCategoriaAtiva(c.id)} />
-    ))}
-  </ScrollView>
-
-  {buscando && <LoadingState altura={120} />}
-
-  {!buscando && resultadosLojas.length > 0 && (
-    <Secao titulo="Lojas">
-      {resultadosLojas.map((loja) => <LojaCard key={loja.id} loja={loja} aoTocar={...} />)}
-    </Secao>
-  )}
-
-  {!buscando && resultadosProdutos.length > 0 && (
-    <Secao titulo="Produtos">
-      {resultadosProdutos.map((p) => <ProdutoCard key={p.id} produto={p} aoTocar={...} />)}
-    </Secao>
-  )}
-
-  {!buscando && termo.length >= 2 && resultadosLojas.length === 0 && resultadosProdutos.length === 0 && (
-    <EmptyState
-      icone="search"
-      titulo="Nada encontrado"
-      descricao="Tente buscar por outra loja, produto ou categoria."
-    />
-  )}
-</View>
-```
-
-### Mudanças vs hoje
-
-| Antes | Depois |
+| Antes (`(tabs)/buscar`) | Depois (Concierge) |
 |---|---|
-| Header sem voltar | `HeaderTela variante="voltar"` |
-| TextInput com classes Tailwind | `<Input>` |
-| Sem chips de categoria | Chips de filtro de tipo (Todos / Lojas / Produtos / categoria) |
-| Empty state texto solto | `<EmptyState>` |
+| `router.push` — trocava de tela, perdia o contexto da home | Overlay sobre a própria home; fechar devolve o scroll intacto |
+| Tela branca (`canvas`) com `HeaderTela` + `Input` | Ambiente da fachada noturna: véu `marquee`, glow, vidro fumê |
+| Empty state "digite para buscar" | Balcão útil de largada: recentes persistidos + muito buscados |
+| `autoFocus` imediato | Foco coreografado após o véu assentar |
+| Cards brancos com sombra | Linhas limpas sobre o vidro, zero chrome |
+| Tab bar visível | Tab bar recolhida (`useImersao`) — momento modal |
+| Sem histórico | `useBuscasRecentes` (AsyncStorage) |
 
 ---
 

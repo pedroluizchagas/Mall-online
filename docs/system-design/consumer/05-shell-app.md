@@ -51,9 +51,9 @@
 | `pedidos` | `orders` | Pedidos |
 | `perfil` | `user` | Perfil |
 
-> `buscar` continua oculto da tab bar (`{ href: null }`) — só acessível via `router.push('/(tabs)/buscar')` a partir do header da home. Mantido como hoje.
+> A busca **não é rota**: é o overlay `Concierge` dentro do próprio Início (ver [07 §4](./07-telas.md#4-buscar--concierge-overlay-do-início)). A antiga rota `(tabs)/buscar` foi removida.
 >
-> `seguindo` e `favoritos` também são rotas de `(tabs)` com `{ href: null }`: não têm botão próprio, quem as alcança é o **slot da tab vizinha** (atalho abaixo) ou o Perfil.
+> `seguindo` e `favoritos` são rotas de `(tabs)` com `{ href: null }`: não têm botão próprio, quem as alcança é o **slot da tab vizinha** (atalho abaixo) ou o Perfil.
 
 ### Slots com atalho (Início ⇄ Seguindo, Pedidos ⇄ Favoritos)
 
@@ -75,7 +75,7 @@ Declaração única em `ATALHOS` (`(tabs)/_layout.tsx`):
 
 Regras de implementação:
 
-- **Navegar por nome, nunca por índice.** `state.routes` inclui as rotas sem botão (`buscar`, `seguindo`, `favoritos`), então a posição em `state.routes` não corresponde à posição em `TABS`.
+- **Navegar por nome, nunca por índice.** `state.routes` inclui as rotas sem botão (`seguindo`, `favoritos`), então a posição em `state.routes` não corresponde à posição em `TABS`.
 - O toque duplo **não** tem a guarda "já está focada": o segundo toque pode chegar antes de `state` refletir o primeiro, e a volta à base não pode falhar.
 - Cada slot tem seu próprio carimbo de tempo (`ultimoToque` é um mapa por tab): alternar entre Início e Pedidos rápido não deve virar "toque duplo".
 - O slot fica **aceso** (accent) tanto na base quanto na irmã — é a mesma casa, em outro modo.
@@ -111,13 +111,20 @@ function TabBar({ state, navigation }: { state: any; navigation: any }) {
         position: 'absolute',
         left: 16,
         right: 16,
-        bottom: Math.max(insets.bottom, 12) + 4,
-        height: 68,
-        backgroundColor: colors.ink,
-        borderRadius: radius.xl,
+        // Pé DENTRO da safe area (inset - 8): `inset + 4` deixava a barra
+        // alta demais em iPhones de inset 34 e o topo dela estourava a
+        // reserva `spacing.tabBarHeight` (ajuste 2026-08-14).
+        bottom: Math.max(insets.bottom - 8, 12),
+        height: 70,
+        // Cápsula de vidro escuro (redesign Marquise 2026-08-14): ink
+        // translúcido + fio de luz na borda; o conteúdo passa por baixo.
+        backgroundColor: colors.inkGlass,
+        borderWidth: 1,
+        borderColor: colors.marqueeLine,
+        borderRadius: radius.pill,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 6,
+        paddingHorizontal: 8,
         ...consumerDesign.shadow.floating,
       }}
     >
@@ -183,7 +190,6 @@ export default function LayoutTabs() {
         <Tabs.Screen name="explorar" />
         <Tabs.Screen name="pedidos" />
         <Tabs.Screen name="perfil" />
-        <Tabs.Screen name="buscar" options={{ href: null }} />
       </Tabs>
     </>
   )
@@ -215,11 +221,11 @@ Reels é fullscreen e a tab bar precisa ficar **sobre** o vídeo. Manter `positi
 
 | Antes | Depois |
 |---|---|
-| Branca `rgba(255,255,255,0.94)` fixa no fundo | Pill flutuante `colors.ink` com radius `xl` |
-| Indicador superior 28x3 verde | Sem indicador — cor + stroke do ícone diferenciam |
+| Branca `rgba(255,255,255,0.94)` fixa no fundo | Cápsula flutuante `inkGlass` com fio `marqueeLine` e radius `pill` |
+| Indicador superior 28x3 verde | Sem indicador — cor `accent` + stroke do ícone diferenciam (halo circular foi testado e rejeitado em 2026-08-14) |
 | Ícone com fundo redondo `rgba(26,77,58,0.08)` quando ativo | Sem fundo — só cor e stroke |
 | Label "Início" abaixo do ícone | Sem label |
-| `borderTopWidth: 1` cinza | Sem borda |
+| `borderTopWidth: 1` cinza | Borda 1px `marqueeLine` (fio de luz) |
 | Lucide icons | ConsumerIcon |
 
 ---
@@ -227,6 +233,8 @@ Reels é fullscreen e a tab bar precisa ficar **sobre** o vídeo. Manter `positi
 ## 2. Header de tela (novo componente)
 
 Hoje cada tela desenha seu próprio header inline. Padrão diverge: tamanho de avatar, espaçamentos, cores de texto. Solução: `<HeaderTela>`.
+
+> Desde o redesign Marquise (2026-08-14), o **home não usa mais** `<HeaderTela>`: a fachada (`components/home/Marquise.tsx`, spec em [`07-telas.md` §3](./07-telas.md#3-home-tabsindextsx)) desenha a própria linha de portaria. A variante `principal` segue valendo para o perfil.
 
 ### Visual alvo (3 variantes)
 
@@ -247,7 +255,7 @@ Hoje cada tela desenha seu próprio header inline. Padrão diverge: tamanho de a
 └─────────────────────────────────────────────────┘
 ```
 
-#### Variante `simples` (pedidos, buscar)
+#### Variante `simples` (pedidos)
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -640,7 +648,8 @@ Definir em `consumer-design.ts` (mover lá pra ficar único):
 // adicionar em consumerDesign:
 spacing: {
   ...,
-  tabBarHeight: 68 + 16 + 12, // 96
+  // pior caso real: pé 26 (iPhone inset 34 - 8) + altura 70 + folga 12
+  tabBarHeight: 108,
 }
 ```
 

@@ -250,6 +250,9 @@ export function ComentariosLive({ post, visivel, onFechar }: Props) {
             onSubmitEditing={enviar}
             placeholder={`Comentar como ${autor}`}
             placeholderTextColor="rgba(255,255,255,0.5)"
+            selectionColor={colors.accent}
+            cursorColor={colors.accent}
+            keyboardAppearance="dark"
             returnKeyType="send"
             style={{
               flex: 1,

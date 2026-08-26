@@ -27,7 +27,7 @@ O escopo é **puramente visual e de organização de UI**. Nenhuma feature é ad
 | Eixo | Courier (referência) | Consumer (hoje) | Consumer (alvo) |
 |---|---|---|---|
 | Tokens | `lib/courier-design.ts` | espalhados inline | `lib/consumer-design.ts` (espelho) |
-| Background app | `canvas #F3F3F1` | `creme #F4F0EB` | `canvas #F3F3F1` |
+| Background app | `canvas #F3F3F1` | `creme #F4F0EB` | `canvas #F1F1F3` (zinco fumê) |
 | Accent | `lime #D8FF3E` | verde profundo `#1A4D3A` + âmbar `#D4A04A` | `lime #D8FF3E` |
 | Texto principal | `ink #111216` | `ink-900 #1C1C19` | `ink #111216` |
 | Tab bar | flutuante, dark, pill `radius.xl` | branca, fixa, com top-bar verde no ativo | flutuante, dark, pill `radius.xl` |
@@ -125,7 +125,7 @@ Uma fase só é considerada pronta quando:
 
 ## 10. Glossário rápido
 
-- **canvas**: cor de fundo do app (claro). `#F3F3F1`.
+- **canvas**: cor de fundo do app (claro). `#F1F1F3` — zinco fumê.
 - **surface**: cor de card/painel claro. `#FFFFFF`.
 - **surfaceDark**: cor de card/painel escuro de destaque. `#2F3034`.
 - **ink**: cor de texto principal (também usada como fundo de tab bar). `#111216`.
