@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Archivo_900Black } from '@expo-google-fonts/archivo'
 import { useFonts } from 'expo-font'
 import { formatarReais } from '@mallevo/lib'
-import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
 import { type ProdutoVitrine } from '@/components/loja/LojaEditorial'
@@ -75,6 +75,9 @@ const STATEMENT_PADRAO = 'UMA EXPERIÊNCIA DE PIZZA INESQUECÍVEL'
 
 /** Dias na ordem de `Date.getDay()` — chaves de `stores.horarios`. */
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
+
+/** Altura da pílula de menu inferior (o inset entra por fora dela). */
+const ALTURA_BARRA_MENU = 58
 
 /** Disco do hero e o quanto ele desce por cima do bloco seguinte. */
 const DISCO_HERO = Math.round(SCREEN_W * 0.92)
@@ -282,7 +285,10 @@ export function LojaForno<T extends ProdutoVitrine>({
             e.nativeEvent.contentOffset.y < alturaHero.current - insets.top - 48
           if (claro !== statusClaro) setStatusClaro(claro)
         }}
-        contentContainerStyle={{ paddingBottom: espacoFinal + insets.bottom }}
+        contentContainerStyle={{
+          paddingBottom:
+            espacoFinal + ALTURA_BARRA_MENU + Math.max(insets.bottom, 12) + 12,
+        }}
       >
         {/* ── Hero: bloco preto, coroa, wordmark ouro e o disco vazando ── */}
         <View
@@ -374,6 +380,8 @@ export function LojaForno<T extends ProdutoVitrine>({
           }}
         />
       </View>
+
+      <BarraMenuForno sairPara={sairPara} />
     </View>
   )
 }
@@ -1039,6 +1047,89 @@ function FechoForno({
       >
         {meta.join('  ·  ')}
       </Text>
+    </View>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Barra de menu inferior — pílula preta que atravessa os palcos
+// ─────────────────────────────────────────────────────────────
+
+const ITENS_MENU: {
+  rotulo: string
+  icone: ConsumerIconName
+  rota: string
+  ativo?: boolean
+}[] = [
+  // A loja é navegada a partir do Início — é o item "aceso" da barra.
+  { rotulo: 'Início', icone: 'home', rota: '/', ativo: true },
+  { rotulo: 'Explorar', icone: 'reels', rota: '/explorar' },
+  { rotulo: 'Pedidos', icone: 'orders', rota: '/pedidos' },
+  { rotulo: 'Perfil', icone: 'user', rota: '/perfil' },
+]
+
+/**
+ * PÍLULA e não barra colada, pelo mesmo motivo dos botões circulares do
+ * chrome: a página é fatiada em blocos chapados que trocam de cor por seção, e
+ * uma barra rente à base herdaria a cor de baixo dela a cada rolagem. Preta —
+ * o palco do hero e do fecho —, com o ativo em OURO (8,66:1) e o inativo no
+ * creme fixo a meio tom.
+ */
+function BarraMenuForno({
+  sairPara,
+}: {
+  sairPara: (acao: () => void) => (e: GestureResponderEvent) => void
+}) {
+  const design = useStoreDesign()
+  const insets = useSafeAreaInsets()
+  return (
+    <View
+      style={[
+        {
+          position: 'absolute',
+          left: 14,
+          right: 14,
+          bottom: Math.max(insets.bottom, 12),
+          zIndex: 12,
+          height: ALTURA_BARRA_MENU,
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: PRETO_FORNO,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: comAlfa(CREME_FIXO, 0.14),
+        },
+        consumerDesign.shadow.floating,
+      ]}
+    >
+      {ITENS_MENU.map((item) => {
+        const cor = item.ativo ? OURO : comAlfa(CREME_FIXO, 0.62)
+        return (
+          <TouchableOpacity
+            key={item.rota}
+            onPress={sairPara(() => router.navigate(item.rota as never))}
+            activeOpacity={0.7}
+            style={{ flex: 1, alignItems: 'center', gap: 3 }}
+          >
+            <ConsumerIcon
+              name={item.icone}
+              size={20}
+              color={cor}
+              strokeWidth={item.ativo ? 2.1 : 1.7}
+            />
+            <Text
+              style={{
+                fontSize: 10,
+                letterSpacing: 0.6,
+                color: cor,
+                ...fontStyle(design.body, item.ativo ? 700 : 500),
+              }}
+            >
+              {item.rotulo}
+            </Text>
+          </TouchableOpacity>
+        )
+      })}
     </View>
   )
 }
