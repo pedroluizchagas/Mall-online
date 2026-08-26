@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { CATEGORIA_SLUG_TO_TEMPLATE } from '../../templates/mapping'
 import { ARQUETIPOS, ARQUETIPO_FALLBACK } from '../presets'
@@ -471,5 +473,60 @@ describe('googleFontsHref', () => {
     expect(href.match(/family=/g)).toHaveLength(1)
     // pesos de display (500,600,700) e body (400,500) unidos.
     expect(href).toContain('family=Inter:wght@400;500;600;700')
+  })
+})
+
+/**
+ * Guarda de PRESENÇA, não de estilo: por ordem do produto, toda loja aberta no
+ * mobile-consumer mostra a barra de navegação — as vitrines de arquétipo com a
+ * sua própria (réplica da régua do shell vestida no DNA da casa, molde fixo ou
+ * pílula) e o layout padrão com a `BarraMenuPadrao`.
+ *
+ * O teste mora aqui, e não no app, porque o consumer não tem runner: este é o
+ * único vitest do monorepo que já roda em CI. Ele lê os arquivos como TEXTO —
+ * o que basta para o que precisa provar (ninguém esqueceu a barra numa vitrine
+ * nova), sem arrastar React Native para dentro do runner.
+ *
+ * Vitrine nova SEM barra quebra aqui. O plano da mudança está em
+ * `docs/dev/plano-barra-menu-vitrines.md`.
+ */
+describe('barra de menu — presença em toda loja do consumer', () => {
+  const DIR_VITRINES = resolve(
+    __dirname,
+    '../../../../../apps/mobile-consumer/components/loja',
+  )
+  const LAYOUT_PADRAO = resolve(
+    __dirname,
+    '../../../../../apps/mobile-consumer/app/loja/[slug].tsx',
+  )
+
+  const vitrines = readdirSync(DIR_VITRINES)
+    .filter((f) => /^Loja[A-Z].*\.tsx$/.test(f))
+    .sort()
+
+  it('encontra as vitrines de arquétipo no disco', () => {
+    // Se o diretório mudar de lugar, o `it.each` abaixo passaria vazio e a
+    // guarda viraria decoração — esta asserção é o que impede isso.
+    expect(vitrines.length).toBeGreaterThanOrEqual(15)
+  })
+
+  it.each(vitrines)('%s desenha a própria barra de menu', (arquivo) => {
+    const fonte = readFileSync(resolve(DIR_VITRINES, arquivo), 'utf8')
+    expect(
+      fonte.includes('BarraMenu'),
+      `${arquivo}: vitrine sem barra de menu inferior. Toda loja do consumer ` +
+        `mostra a régua do shell — replique o molde de uma irmã ` +
+        `(LojaEditorial = fixa, LojaSmash = pílula) e vista no DNA do ` +
+        `arquétipo. Ver docs/dev/plano-barra-menu-vitrines.md.`,
+    ).toBe(true)
+  })
+
+  it('o layout padrão de loja também tem a sua', () => {
+    const fonte = readFileSync(LAYOUT_PADRAO, 'utf8')
+    expect(
+      fonte.includes('BarraMenuPadrao'),
+      'app/loja/[slug].tsx: o layout padrão é a rede de segurança da regra — ' +
+        'toda loja sem vitrine de arquétipo depende dele para ter barra.',
+    ).toBe(true)
   })
 })
