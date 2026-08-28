@@ -9,6 +9,7 @@ import { useTotalSeguidas } from '@/store/useSeguidas'
 import { useTotalFavoritos } from '@/store/useFavoritos'
 import { GerenciarEnderecos } from '@/components/GerenciarEnderecos'
 import { EditarPerfil } from '@/components/EditarPerfil'
+import { AvatarPerfil } from '@/components/AvatarPerfil'
 import { garantirConsumer } from '@/lib/perfil'
 import { HeaderTela } from '@/components/HeaderTela'
 import { Card } from '@/components/ui/Card'
@@ -53,7 +54,6 @@ export default function TelaPerfil() {
     ])
   }
 
-  const primeiraLetra = consumer?.nome?.charAt(0).toUpperCase() ?? '?'
   const nomeExibido = consumer?.nome ?? 'Usuário'
   const qtdEnderecos = consumer?.enderecos?.length ?? 0
   const qtdSeguindo = useTotalSeguidas()
@@ -79,27 +79,7 @@ export default function TelaPerfil() {
             <View
               style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}
             >
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: radius.pill,
-                  backgroundColor: colors.accent,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: '800',
-                    color: colors.ink,
-                    letterSpacing: -0.5,
-                  }}
-                >
-                  {primeiraLetra}
-                </Text>
-              </View>
+              <AvatarPerfil tamanho={56} />
               <View style={{ flex: 1 }}>
                 <Text
                   style={{

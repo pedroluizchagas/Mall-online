@@ -354,6 +354,29 @@ export function criarSupabaseMock() {
       },
     },
 
+    /**
+     * Storage de mentira: no modo demonstração não há bucket para escrever.
+     * `getPublicUrl` devolve uma URL plausível e `remove` é no-op — o que a
+     * tela de perfil precisa para o fluxo de foto não quebrar na demo.
+     * O upload em si nem chega aqui: vai por `fetch` direto (lib/avatar.ts).
+     */
+    storage: {
+      from(bucket: string) {
+        return {
+          getPublicUrl(caminho: string) {
+            return {
+              data: {
+                publicUrl: `https://mock.mallevo.local/${bucket}/${caminho}`,
+              },
+            }
+          },
+          async remove(_caminhos: string[]) {
+            return ok(null)
+          },
+        }
+      },
+    },
+
     channel: canalFake,
     removeChannel: () => {},
     /**
