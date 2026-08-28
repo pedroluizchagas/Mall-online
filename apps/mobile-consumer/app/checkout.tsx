@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { View, Text, ScrollView, Alert } from 'react-native'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -24,6 +24,7 @@ import { LoadingState } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { consumerDesign } from '@/lib/consumer-design'
 import { enderecoPadrao } from '@/lib/enderecos'
+import { distanciaMetros, obterLocalizacaoAtual } from '@/lib/localizacao'
 import type { Endereco } from '@mallevo/types'
 
 const { colors } = consumerDesign
@@ -33,6 +34,17 @@ const { colors } = consumerDesign
 // `aceita_dinheiro`/`aceita_cartao_maquininha` permanecem no schema mas
 // são ignoradas pelos consumer-facing apps.
 type FormaPagamento = 'online_cartao' | 'online_pix'
+
+/**
+ * A partir de quanto vale perguntar "você está longe deste endereço?".
+ *
+ * 2 km fica acima do raio de um bairro (pedir do trabalho para a casa na
+ * mesma região não incomoda) e bem abaixo de "outra cidade". O que se quer
+ * pegar é a troca de endereço esquecida: quem se mudou, quem estava na casa
+ * dos pais no último pedido, quem tem o endereço do trabalho como padrão e
+ * está pedindo de casa num domingo.
+ */
+const LIMIAR_DISTANCIA_M = 2000
 
 export default function TelaCheckout() {
   const insets = useSafeAreaInsets()
@@ -64,6 +76,12 @@ export default function TelaCheckout() {
   const [etapa, setEtapa] = useState<'revisao' | 'processando' | 'concluido'>(
     'revisao'
   )
+  /**
+   * O aviso de distância pergunta no máximo uma vez por endereço escolhido.
+   * Ref e não state: mudá-lo não deve repintar a tela, e o valor precisa
+   * estar atualizado já na chamada recursiva de `handleFazerPedido`.
+   */
+  const confirmouDistancia = useRef(false)
 
   useEffect(() => {
     if (!store_id) {
@@ -117,12 +135,60 @@ export default function TelaCheckout() {
     return null
   }
 
+  /**
+   * Avisa quando o endereço de entrega está longe de onde o usuário está.
+   *
+   * Devolve `true` se o pedido deve PARAR e esperar a resposta do diálogo.
+   * Qualquer coisa que impeça a comparação — sem permissão, sem GPS, sem
+   * coordenada no endereço, timeout — devolve `false` e o pagamento segue:
+   * esta é uma cortesia, nunca um bloqueio de venda.
+   */
+  async function pausarPorDistancia(): Promise<boolean> {
+    if (ehAgendamento) return false
+    if (confirmouDistancia.current) return false
+
+    const destino = enderecoSelecionado
+    if (!destino?.latitude || !destino?.longitude) return false
+
+    const atual = await obterLocalizacaoAtual()
+    if (!atual) return false
+
+    const metros = distanciaMetros(atual, {
+      latitude: destino.latitude,
+      longitude: destino.longitude,
+    })
+    if (metros <= LIMIAR_DISTANCIA_M) return false
+
+    const km = (metros / 1000).toFixed(1).replace('.', ',')
+
+    Alert.alert(
+      'Você está longe deste endereço',
+      `Sua localização atual está a cerca de ${km} km de "${
+        destino.apelido ?? destino.rua
+      }".\n\nConfirma a entrega neste endereço?`,
+      [
+        { text: 'Revisar endereço', style: 'cancel' },
+        {
+          text: 'Confirmar entrega',
+          onPress: () => {
+            confirmouDistancia.current = true
+            handleFazerPedido()
+          },
+        },
+      ]
+    )
+    return true
+  }
+
   async function handleFazerPedido() {
     const erro = validar()
     if (erro) {
       Alert.alert('Atenção', erro)
       return
     }
+
+    // Antes de qualquer cobrança: o endereço é mesmo este?
+    if (await pausarPorDistancia()) return
 
     setProcessando(true)
     setEtapa('processando')
@@ -375,7 +441,12 @@ export default function TelaCheckout() {
           <SeletorEndereco
             enderecos={consumer?.enderecos ?? []}
             selecionado={enderecoSelecionado}
-            onSelecionar={setEnderecoSelecionado}
+            onSelecionar={(end) => {
+              setEnderecoSelecionado(end)
+              // Endereço novo, pergunta nova: a confirmação valia para o
+              // anterior.
+              confirmouDistancia.current = false
+            }}
           />
         )}
 
