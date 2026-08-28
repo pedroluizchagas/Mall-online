@@ -25,9 +25,19 @@ export type SupportTicketPrioridade = 'baixa' | 'normal' | 'alta' | 'critica'
 
 export type SupportTicketStatus = 'aberto' | 'em_andamento' | 'resolvido' | 'fechado'
 
+// Tipo de local do endereço — define o ícone na listagem e o apelido
+// sugerido. 'outro' é o default implícito de endereço sem tipo.
+export type TipoEndereco = 'casa' | 'trabalho' | 'outro'
+
 // Endereço (usado em consumers.enderecos e orders.endereco_entrega)
+//
+// `tipo` e `padrao` são OPCIONAIS de propósito: a coluna é JSONB e a base já
+// tem endereços gravados sem eles. Todo consumidor destes campos precisa
+// tolerar `undefined` (ver lib/enderecos.ts no mobile-consumer).
 export interface Endereco {
   apelido?: string        // ex: 'Casa', 'Trabalho'
+  tipo?: TipoEndereco
+  padrao?: boolean        // endereço pré-selecionado no checkout
   rua: string
   numero: string
   complemento?: string

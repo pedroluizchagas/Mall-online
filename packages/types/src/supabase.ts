@@ -118,33 +118,39 @@ export type Database = {
       consumers: {
         Row: {
           atualizado_em: string
+          cpf: string | null
           criado_em: string
+          data_nascimento: string | null
           enderecos: Json | null
           foto_url: string | null
           id: string
           nome: string
           telefone: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           atualizado_em?: string
+          cpf?: string | null
           criado_em?: string
+          data_nascimento?: string | null
           enderecos?: Json | null
           foto_url?: string | null
           id?: string
           nome: string
           telefone?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           atualizado_em?: string
+          cpf?: string | null
           criado_em?: string
+          data_nascimento?: string | null
           enderecos?: Json | null
           foto_url?: string | null
           id?: string
           nome?: string
           telefone?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }

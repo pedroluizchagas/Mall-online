@@ -2,11 +2,15 @@ import { create } from 'zustand'
 import type { User } from '@supabase/supabase-js'
 import type { Endereco } from '@mallevo/types'
 
-interface ConsumerProfile {
+export interface ConsumerProfile {
   id: string
   nome: string
   telefone?: string | null
   foto_url?: string | null
+  /** Somente dígitos (11 caracteres) — a máscara é responsabilidade da UI. */
+  cpf?: string | null
+  /** ISO `YYYY-MM-DD`, como vem do Postgres. */
+  data_nascimento?: string | null
   enderecos: Endereco[]
 }
 
