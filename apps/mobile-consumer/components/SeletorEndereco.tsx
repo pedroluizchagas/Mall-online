@@ -6,7 +6,6 @@ import { FolhaModal } from '@/components/ui/FolhaModal'
 import { FormularioEndereco } from '@/components/FormularioEndereco'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
-import { useAuthStore } from '@/store/useAuthStore'
 import { adicionarEndereco, iconePorTipo, mesmoEndereco } from '@/lib/enderecos'
 
 const { colors, radius, shadow } = consumerDesign
@@ -31,19 +30,15 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
 
   async function handleSalvar(endereco: Endereco) {
     setSalvando(true)
-    const ok = await adicionarEndereco(enderecos, endereco)
+    // Devolve o endereço como ficou na lista salva — com as coordenadas da
+    // geocodificação, de que depende o aviso de distância no checkout.
+    const salvo = await adicionarEndereco(endereco)
     setSalvando(false)
 
-    if (!ok) {
+    if (!salvo) {
       Alert.alert('Erro', 'Não foi possível salvar o endereço. Tente novamente.')
       return
     }
-
-    // O endereço gravado é o último da lista já normalizada pelo store —
-    // pegá-lo de lá garante que a seleção carrega as coordenadas obtidas na
-    // geocodificação (das quais depende o aviso de distância no checkout).
-    const lista = useAuthStore.getState().consumer?.enderecos ?? []
-    const salvo = lista[lista.length - 1] ?? endereco
 
     onSelecionar(salvo)
     setAdicionando(false)

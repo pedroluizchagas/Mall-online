@@ -35,14 +35,20 @@ type Edicao = null | 'novo' | number
 export function GerenciarEnderecos({ enderecos }: Props) {
   const [edicao, setEdicao] = useState<Edicao>(null)
   const [salvando, setSalvando] = useState(false)
+  /**
+   * Índice em operação, ou `null`. Uma escrita trava a lista INTEIRA, não
+   * só a linha tocada: a coluna é um JSONB único, então duas operações
+   * concorrentes gravam a lista completa e a última desfaz a primeira.
+   */
   const [ocupado, setOcupado] = useState<number | null>(null)
+  const escrevendo = ocupado !== null
 
   async function handleSalvar(endereco: Endereco) {
     setSalvando(true)
     const ok =
       edicao === 'novo'
-        ? await adicionarEndereco(enderecos, endereco)
-        : await editarEndereco(enderecos, edicao as number, endereco)
+        ? (await adicionarEndereco(endereco)) !== null
+        : await editarEndereco(edicao as number, endereco)
     setSalvando(false)
 
     if (!ok) {
@@ -64,7 +70,7 @@ export function GerenciarEnderecos({ enderecos }: Props) {
           style: 'destructive',
           onPress: async () => {
             setOcupado(indice)
-            const ok = await removerEndereco(enderecos, indice)
+            const ok = await removerEndereco(indice)
             setOcupado(null)
             if (!ok) {
               Alert.alert('Erro', 'Não foi possível remover. Tente novamente.')
@@ -77,7 +83,7 @@ export function GerenciarEnderecos({ enderecos }: Props) {
 
   async function handleDefinirPadrao(indice: number) {
     setOcupado(indice)
-    const ok = await definirPadrao(enderecos, indice)
+    const ok = await definirPadrao(indice)
     setOcupado(null)
     if (!ok) {
       Alert.alert('Erro', 'Não foi possível definir o padrão. Tente novamente.')
@@ -154,7 +160,10 @@ export function GerenciarEnderecos({ enderecos }: Props) {
   return (
     <View style={{ paddingHorizontal: 24, paddingTop: 8, gap: 8 }}>
       {enderecos.map((end, i) => {
-        const desabilitado = ocupado === i
+        // Toda a lista trava durante qualquer escrita (ver `ocupado`); só a
+        // linha em operação esmaece, para mostrar onde está acontecendo.
+        const desabilitado = escrevendo
+        const emOperacao = ocupado === i
         return (
           <Card key={i} preenchimento="md" sombra="none">
             <View
@@ -162,7 +171,7 @@ export function GerenciarEnderecos({ enderecos }: Props) {
                 flexDirection: 'row',
                 alignItems: 'flex-start',
                 gap: 12,
-                opacity: desabilitado ? consumerDesign.opacity.disabled : 1,
+                opacity: emOperacao ? consumerDesign.opacity.disabled : 1,
               }}
             >
               <View

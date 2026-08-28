@@ -13,6 +13,7 @@ import {
   validarCPF,
   validarDataNascimento,
   validarTelefone,
+  telefoneParaBanco,
   dataParaExibicao,
 } from '@/lib/validacao'
 
@@ -77,17 +78,21 @@ export function EditarPerfil({ onFechar }: { onFechar: () => void }) {
 
     const atualizacao = {
       nome: nome.trim(),
-      telefone: digitos(telefone) || null,
+      telefone: telefoneParaBanco(telefone) || null,
       cpf: cpfDigitos || null,
       data_nascimento: nascimentoIso,
     }
 
-    const { error } = await supabase
+    // `.select()` para distinguir "gravou" de "não casou nenhuma linha": um
+    // UPDATE sem linha correspondente volta sem erro, e a tela mostraria os
+    // dados salvos que sumiriam no próximo boot.
+    const { data, error } = await supabase
       .from('consumers')
       .update(atualizacao)
       .eq('user_id', u.id)
+      .select('id')
 
-    if (error) {
+    if (error || !data || data.length === 0) {
       setErros({ nome: 'Erro ao salvar. Tente novamente.' })
       setSalvando(false)
       return

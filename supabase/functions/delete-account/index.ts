@@ -36,6 +36,30 @@ Deno.serve(async (req) => {
     const user = await getAuthenticatedUser(req)
     const supabase = getSupabaseAdmin()
 
+    // O JWT só prova que existe um usuário — não diz QUAL app o emitiu.
+    // Sem esta checagem, um lojista ou entregador com sessão válida
+    // conseguiria chamar esta rota e destruir a própria operação:
+    // `tenants.user_id` e `couriers.user_id` têm ON DELETE CASCADE para
+    // auth.users, e de tenants cascateiam stores, produtos, posts. Este
+    // endpoint é EXCLUSIVO do consumidor.
+    const [{ data: tenant }, { data: courier }] = await Promise.all([
+      supabase.from('tenants').select('id').eq('user_id', user.id).maybeSingle(),
+      supabase.from('couriers').select('id').eq('user_id', user.id).maybeSingle(),
+    ])
+
+    if (tenant || courier) {
+      return new Response(
+        JSON.stringify({
+          error:
+            'Esta conta é de lojista ou entregador e não pode ser excluída por aqui. Fale com o suporte.',
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     const { data: consumer } = await supabase
       .from('consumers')
       .select('id')
@@ -73,8 +97,29 @@ Deno.serve(async (req) => {
     // Os push_tokens saem sozinhos: user_id tem ON DELETE CASCADE para
     // auth.users (migration 011), então o delete abaixo os leva junto.
     const { error: erroAuth } = await supabase.auth.admin.deleteUser(user.id)
+
     if (erroAuth) {
-      throw new Error('Não foi possível excluir o login. Tente novamente.')
+      // Os dados pessoais JÁ FORAM apagados neste ponto — dizer "tente
+      // novamente" seria mentira, porque não há mais nada a apagar e uma
+      // segunda tentativa cairia no mesmo erro. O cliente encerra a sessão
+      // do mesmo jeito; o que resta é um login órfão para o suporte.
+      //
+      // Causa mais provável se isto disparar em produção: a migration
+      // 20260828120000 não foi aplicada, então `consumers.user_id` ainda
+      // tem o ON DELETE CASCADE original e o FK de `orders` bloqueia a
+      // remoção justamente para quem já pediu alguma coisa.
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          dados_removidos: true,
+          error:
+            'Seus dados pessoais foram apagados, mas o login não pôde ser removido. Fale com o suporte para concluir.',
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders(), 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     return new Response(JSON.stringify({ ok: true }), {

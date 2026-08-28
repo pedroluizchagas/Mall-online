@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import type { Endereco, TipoEndereco } from '@mallevo/types'
 import { Botao } from '@/components/ui/Botao'
@@ -47,23 +47,35 @@ export function FormularioEndereco({
   const [estado, setEstado] = useState(inicial?.estado ?? 'MG')
   const [buscandoCep, setBuscandoCep] = useState(false)
   const [erros, setErros] = useState<Partial<Record<Campo, string>>>({})
+  /** Último CEP consultado — ver buscarCep. Começa com o do endereço em
+   *  edição, para reabrir o formulário não redisparar a consulta. */
+  const ultimoCepBuscado = useRef((inicial?.cep ?? '').replace(/\D/g, ''))
 
   function limparErro(campo: Campo) {
     setErros((e) => (e[campo] ? { ...e, [campo]: undefined } : e))
   }
 
-  /** Preenche rua/bairro/cidade/estado a partir do CEP (ViaCEP). */
+  /**
+   * Preenche rua/bairro/cidade/estado a partir do CEP (ViaCEP).
+   *
+   * Só busca quando o CEP MUDOU de verdade. Sem essa guarda, corrigir um
+   * dígito e redigitá-lo dispara a consulta de novo e devolve a rua do
+   * ViaCEP por cima da que a pessoa tinha corrigido à mão — comum em
+   * CEP de faixa, onde o logradouro devolvido não é o do endereço.
+   */
   async function buscarCep(valor: string) {
     const limpo = valor.replace(/\D/g, '')
     if (limpo.length !== 8) return
+    if (limpo === ultimoCepBuscado.current) return
+    ultimoCepBuscado.current = limpo
 
     setBuscandoCep(true)
     try {
       const res = await fetch(`https://viacep.com.br/ws/${limpo}/json/`)
       const dados = await res.json()
       if (!dados.erro) {
-        // O ViaCEP não devolve número; e não sobrescreve o que o usuário já
-        // digitou à mão em rua/bairro só porque o CEP chegou depois.
+        // O ViaCEP não devolve número. Sobrescrever rua/bairro aqui é o
+        // certo: o CEP é outro, então o endereço anterior não vale mais.
         if (dados.logradouro) setRua(dados.logradouro)
         if (dados.bairro) setBairro(dados.bairro)
         if (dados.localidade) setCidade(dados.localidade)

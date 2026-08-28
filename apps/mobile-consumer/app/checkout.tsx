@@ -82,6 +82,8 @@ export default function TelaCheckout() {
    * estar atualizado já na chamada recursiva de `handleFazerPedido`.
    */
   const confirmouDistancia = useRef(false)
+  /** Trava de reentrada do botão de pagar — ver handleFazerPedido. */
+  const enviando = useRef(false)
 
   useEffect(() => {
     if (!store_id) {
@@ -113,9 +115,18 @@ export default function TelaCheckout() {
     }
 
     carregarLoja()
-
-    setEnderecoSelecionado(enderecoPadrao(consumer?.enderecos ?? []))
   }, [store_id])
+
+  // Efeito separado do carregamento da loja porque depende dos endereços:
+  // se o perfil ainda estava hidratando quando o checkout abriu (ou falhou
+  // e só chegou depois), a lista muda e o padrão precisa ser escolhido
+  // então — senão a tela fica sem endereço e pede um que o usuário já tem.
+  // Só age enquanto nada foi escolhido: nunca sobrescreve a escolha manual.
+  useEffect(() => {
+    if (enderecoSelecionado) return
+    const padrao = enderecoPadrao(consumer?.enderecos ?? [])
+    if (padrao) setEnderecoSelecionado(padrao)
+  }, [consumer?.enderecos, enderecoSelecionado])
 
   useEffect(() => {
     if (formaPagamento !== 'online_cartao') {
@@ -181,16 +192,31 @@ export default function TelaCheckout() {
   }
 
   async function handleFazerPedido() {
+    // Trava de reentrada SÍNCRONA. `processando` é state e só desabilita o
+    // botão no próximo render — entre o toque e esse render cabe outro
+    // toque, e daí saem duas cobranças. A checagem de distância pode
+    // esperar até 5s pelo GPS, o que escancara essa janela.
+    if (enviando.current) return
+    enviando.current = true
+
     const erro = validar()
     if (erro) {
       Alert.alert('Atenção', erro)
+      enviando.current = false
       return
     }
 
-    // Antes de qualquer cobrança: o endereço é mesmo este?
-    if (await pausarPorDistancia()) return
-
+    // O botão já entra em carregando: a espera pelo GPS não pode parecer
+    // que o toque não funcionou.
     setProcessando(true)
+
+    // Antes de qualquer cobrança: o endereço é mesmo este?
+    if (await pausarPorDistancia()) {
+      setProcessando(false)
+      enviando.current = false
+      return
+    }
+
     setEtapa('processando')
 
     try {
@@ -199,10 +225,13 @@ export default function TelaCheckout() {
       } else {
         await fluxoPix()
       }
+      // Sucesso não destrava: a tela já navegou para o pedido, e um toque
+      // atrasado não pode disparar uma segunda cobrança.
     } catch (e: any) {
       Alert.alert('Erro', e.message ?? 'Não foi possível processar o pedido.')
       setProcessando(false)
       setEtapa('revisao')
+      enviando.current = false
     }
   }
 

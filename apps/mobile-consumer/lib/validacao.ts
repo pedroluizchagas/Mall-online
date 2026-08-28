@@ -108,9 +108,24 @@ export function dataParaExibicao(iso: string | null | undefined): string {
 
 // ───────────────────────── Telefone ─────────────────────────
 
+/**
+ * Descarta o código do país de números em E.164.
+ *
+ * Valores gravados fora do app (importação, seed, integração) chegam como
+ * `+5537999990000`. Sem isto, o `slice(0, 11)` cortaria os dois últimos
+ * dígitos e a máscara exibiria `(55) 37999-9900` — que ao salvar
+ * SOBRESCREVERIA o telefone real da pessoa por um número inexistente.
+ */
+function semCodigoPais(d: string): string {
+  if ((d.length === 12 || d.length === 13) && d.startsWith('55')) {
+    return d.slice(2)
+  }
+  return d
+}
+
 /** (37) 99999-9999 — celular com 9 dígitos ou fixo com 8. */
 export function mascaraTelefone(valor: string): string {
-  const d = digitos(valor).slice(0, 11)
+  const d = semCodigoPais(digitos(valor)).slice(0, 11)
   if (d.length <= 2) return d.length ? `(${d}` : ''
   if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`
   if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`
@@ -119,7 +134,12 @@ export function mascaraTelefone(valor: string): string {
 
 /** Aceita fixo (10) ou celular (11). Vazio é válido: o campo é opcional. */
 export function validarTelefone(valor: string): boolean {
-  const d = digitos(valor)
+  const d = semCodigoPais(digitos(valor))
   if (d.length === 0) return true
   return d.length === 10 || d.length === 11
+}
+
+/** Forma canônica para o banco: só dígitos, sem código de país. */
+export function telefoneParaBanco(valor: string): string {
+  return semCodigoPais(digitos(valor)).slice(0, 11)
 }

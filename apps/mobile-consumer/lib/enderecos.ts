@@ -74,13 +74,22 @@ export function mesmoEndereco(
   )
 }
 
+/** A lista viva, direto do store — nunca uma cópia capturada em render. */
+export function enderecosAtuais(): Endereco[] {
+  return useAuthStore.getState().consumer?.enderecos ?? []
+}
+
 /**
  * Grava a lista inteira e atualiza o store.
  *
  * A coluna é um JSONB único, então toda escrita é da lista completa — não
- * existe update parcial de um item.
+ * existe update parcial de um item. É justamente por isso que as funções
+ * abaixo montam a lista a partir de `enderecosAtuais()` e não de um
+ * argumento: duas operações concorrentes (definir padrão numa linha e
+ * remover outra, por exemplo) partiriam de fotografias diferentes e a
+ * segunda desfaria a primeira em silêncio.
  */
-export async function salvarEnderecos(lista: Endereco[]): Promise<boolean> {
+async function salvarEnderecos(lista: Endereco[]): Promise<boolean> {
   const normalizada = normalizarPadrao(lista)
 
   const {
@@ -88,12 +97,17 @@ export async function salvarEnderecos(lista: Endereco[]): Promise<boolean> {
   } = await supabase.auth.getUser()
   if (!user) return false
 
-  const { error } = await supabase
+  // `.select()` para saber se alguma linha foi de fato afetada: um UPDATE
+  // que não casa nada volta sem erro, e sem esta checagem a tela mostraria
+  // o endereço salvo até o app reiniciar e ele sumir (acontece quando a
+  // linha em `consumers` não existe — ver lib/perfil.ts).
+  const { data, error } = await supabase
     .from('consumers')
     .update({ enderecos: normalizada as unknown as Json })
     .eq('user_id', user.id)
+    .select('id')
 
-  if (error) return false
+  if (error || !data || data.length === 0) return false
 
   const consumer = useAuthStore.getState().consumer
   if (consumer) {
@@ -117,22 +131,33 @@ async function comCoordenadas(endereco: Endereco): Promise<Endereco> {
   return { ...endereco, latitude: coords.latitude, longitude: coords.longitude }
 }
 
+/** Devolve o endereço acrescentado (já com coordenadas), ou `null`. */
 export async function adicionarEndereco(
-  lista: Endereco[],
   novo: Endereco
-): Promise<boolean> {
+): Promise<Endereco | null> {
   const completo = await comCoordenadas(novo)
+
+  // Lista lida DEPOIS da geocodificação, que leva segundos: nesse intervalo
+  // outra tela pode ter mexido nos endereços.
+  const lista = enderecosAtuais()
   // Primeiro endereço da conta já nasce padrão — normalizarPadrao cuida
   // disso, mas explicitar aqui evita depender do efeito colateral.
   const entrada = lista.length === 0 ? { ...completo, padrao: true } : completo
-  return salvarEnderecos([...lista, entrada])
+
+  const ok = await salvarEnderecos([...lista, entrada])
+  if (!ok) return null
+
+  // Devolve o objeto da lista normalizada — é ele que carrega o `padrao`
+  // final e é a ele que o checkout precisa se referir.
+  const atual = enderecosAtuais()
+  return atual[atual.length - 1] ?? entrada
 }
 
 export async function editarEndereco(
-  lista: Endereco[],
   indice: number,
   editado: Endereco
 ): Promise<boolean> {
+  const lista = enderecosAtuais()
   if (indice < 0 || indice >= lista.length) return false
 
   const anterior = lista[indice]
@@ -153,28 +178,29 @@ export async function editarEndereco(
         longitude: anterior.longitude,
       }
 
+  // Relê depois do await da geocodificação, e confere que o alvo não mudou
+  // debaixo dos pés — se a lista foi mexida nesse meio-tempo, o índice pode
+  // apontar para outro endereço e a edição sobrescreveria o errado.
+  const atual = enderecosAtuais()
+  if (!mesmoEndereco(atual[indice], anterior)) return false
+
   // O padrão é atributo da posição na lista, não do formulário: editar não
   // pode promover nem rebaixar ninguém.
-  const nova = [...lista]
-  nova[indice] = { ...completo, padrao: anterior.padrao }
+  const nova = [...atual]
+  nova[indice] = { ...completo, padrao: atual[indice].padrao }
   return salvarEnderecos(nova)
 }
 
-export async function removerEndereco(
-  lista: Endereco[],
-  indice: number
-): Promise<boolean> {
+export async function removerEndereco(indice: number): Promise<boolean> {
+  const lista = enderecosAtuais()
+  if (indice < 0 || indice >= lista.length) return false
   // Remover o padrão deixa a lista sem nenhum; normalizarPadrao promove o
   // primeiro que sobrou.
   return salvarEnderecos(lista.filter((_, i) => i !== indice))
 }
 
-export async function definirPadrao(
-  lista: Endereco[],
-  indice: number
-): Promise<boolean> {
+export async function definirPadrao(indice: number): Promise<boolean> {
+  const lista = enderecosAtuais()
   if (indice < 0 || indice >= lista.length) return false
-  return salvarEnderecos(
-    lista.map((e, i) => ({ ...e, padrao: i === indice }))
-  )
+  return salvarEnderecos(lista.map((e, i) => ({ ...e, padrao: i === indice })))
 }

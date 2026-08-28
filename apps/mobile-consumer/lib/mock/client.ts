@@ -276,8 +276,18 @@ class MockQuery implements PromiseLike<Resultado> {
       return ok(data)
     }
 
-    // update / upsert-conflito / delete — no-op silencioso suficiente
-    // para o fluxo de demonstração (ex.: push_tokens).
+    if (this.modo === 'update') {
+      // Aplica de verdade nas linhas casadas e DEVOLVE as afetadas: o app
+      // usa `.select()` depois do update para distinguir "gravou" de
+      // "não casou nenhuma linha" (perfil e endereços dependem disso).
+      const afetadas = this.aplicarLeitura()
+      for (const linha of afetadas) Object.assign(linha, this.payload)
+      if (this.umResultado) return ok(afetadas[0] ?? null)
+      return ok(afetadas)
+    }
+
+    // upsert-conflito / delete — no-op silencioso suficiente para o fluxo
+    // de demonstração (ex.: push_tokens).
     if (this.umResultado) return ok(null)
     return ok([])
   }

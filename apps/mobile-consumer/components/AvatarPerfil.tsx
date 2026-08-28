@@ -40,12 +40,17 @@ export function AvatarPerfil({ tamanho = 56 }: { tamanho?: number }) {
 
   async function persistir(url: string | null) {
     if (!consumer) return
-    const { error } = await supabase
+    // `.select()` porque um UPDATE que não casa linha nenhuma volta sem
+    // erro — a foto pareceria salva e sumiria no próximo boot.
+    const { data, error } = await supabase
       .from('consumers')
       .update({ foto_url: url })
       .eq('id', consumer.id)
+      .select('id')
 
-    if (error) throw new Error('Não foi possível salvar a foto.')
+    if (error || !data || data.length === 0) {
+      throw new Error('Não foi possível salvar a foto.')
+    }
     setConsumer({ ...consumer, foto_url: url })
     setErroImagem(false)
   }

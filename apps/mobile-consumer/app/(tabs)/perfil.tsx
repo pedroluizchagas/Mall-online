@@ -75,7 +75,19 @@ export default function TelaPerfil() {
       )
 
       const resultado = await resposta.json()
-      if (!resposta.ok) throw new Error(resultado.error ?? 'Erro no servidor.')
+
+      if (!resposta.ok) {
+        // Falha parcial: os dados já foram apagados e só o login sobrou.
+        // Manter a pessoa logada numa conta esvaziada seria pior do que
+        // deslogar — ela só veria "Conta excluída" no lugar do próprio nome.
+        if (resultado.dados_removidos) {
+          Alert.alert('Conta excluída parcialmente', resultado.error, [
+            { text: 'Entendi', onPress: encerrarSessao },
+          ])
+          return
+        }
+        throw new Error(resultado.error ?? 'Erro no servidor.')
+      }
 
       await encerrarSessao()
     } catch (e) {
