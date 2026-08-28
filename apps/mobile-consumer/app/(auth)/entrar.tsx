@@ -15,6 +15,7 @@ import { Botao } from '@/components/ui/Botao'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
+import { digitos, mascaraTelefone, validarTelefone } from '@/lib/validacao'
 
 const { colors, radius } = consumerDesign
 
@@ -23,12 +24,20 @@ type Modo = 'entrar' | 'cadastrar' | 'confirmar'
 export default function TelaEntrar() {
   const insets = useSafeAreaInsets()
   const [modo, setModo] = useState<Modo>('entrar')
+  const [nome, setNome] = useState('')
+  const [telefone, setTelefone] = useState('')
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [carregando, setCarregando] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
   function validar() {
+    if (modo === 'cadastrar') {
+      // Só não-vazio: nome de uma palavra só é perfeitamente válido, e
+      // exigir sobrenome barraria gente de verdade na porta de entrada.
+      if (!nome.trim()) return 'Digite seu nome.'
+      if (!validarTelefone(telefone)) return 'Telefone inválido.'
+    }
     if (!email.trim()) return 'Digite seu email.'
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) return 'Email inválido.'
@@ -49,10 +58,19 @@ export default function TelaEntrar() {
     setErro(null)
 
     if (modo === 'cadastrar') {
+      // nome/telefone viajam no user_metadata: quem cria a linha em
+      // `consumers` é o garantirConsumer() no boot (lib/perfil.ts), e sem
+      // sessão confirmada não dá para escrever na tabela aqui.
       const { data, error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password: senha,
-        options: { data: { role: 'consumer' } },
+        options: {
+          data: {
+            role: 'consumer',
+            nome: nome.trim(),
+            telefone: digitos(telefone) || null,
+          },
+        },
       })
       setCarregando(false)
       if (error) {
@@ -218,6 +236,34 @@ export default function TelaEntrar() {
 
           {/* Form */}
           <View style={{ gap: 14 }}>
+            {modo === 'cadastrar' && (
+              <>
+                <Input
+                  rotulo="Nome completo"
+                  valor={nome}
+                  aoMudar={(t) => {
+                    setNome(t)
+                    setErro(null)
+                  }}
+                  placeholder="Como podemos te chamar"
+                  fundoEscuro
+                />
+
+                <Input
+                  rotulo="Celular (opcional)"
+                  valor={telefone}
+                  aoMudar={(t) => {
+                    setTelefone(mascaraTelefone(t))
+                    setErro(null)
+                  }}
+                  placeholder="(37) 99999-9999"
+                  tipo="telefone"
+                  maxLength={15}
+                  fundoEscuro
+                />
+              </>
+            )}
+
             <Input
               rotulo="Email"
               valor={email}
@@ -271,6 +317,8 @@ export default function TelaEntrar() {
                 tamanho="md"
                 onPress={() => {
                   setModo(modo === 'entrar' ? 'cadastrar' : 'entrar')
+                  setNome('')
+                  setTelefone('')
                   setErro(null)
                 }}
               />
