@@ -41,6 +41,14 @@
           "locationAlwaysAndWhenInUsePermission": "Usamos sua localização para mostrar lojas próximas."
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Precisamos da sua galeria para você escolher a foto do seu perfil.",
+          "cameraPermission": "Precisamos da câmera para você tirar a foto do seu perfil.",
+          "microphonePermission": false
+        }
+      ],
       "expo-video",
       "expo-font"
     ],
