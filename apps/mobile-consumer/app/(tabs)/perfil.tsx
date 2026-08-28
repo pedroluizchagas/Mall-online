@@ -164,14 +164,7 @@ export default function TelaPerfil() {
 
         {/* Endereços expandido */}
         {secaoAtiva === 'enderecos' && (
-          <GerenciarEnderecos
-            enderecos={consumer?.enderecos ?? []}
-            onAtualizar={(novos) => {
-              const c = useAuthStore.getState().consumer
-              if (c)
-                useAuthStore.getState().setConsumer({ ...c, enderecos: novos })
-            }}
-          />
+          <GerenciarEnderecos enderecos={consumer?.enderecos ?? []} />
         )}
 
         {/* Ajuda */}

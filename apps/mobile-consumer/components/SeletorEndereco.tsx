@@ -1,21 +1,13 @@
 import { useState } from 'react'
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native'
-import { supabase } from '@/lib/supabase'
-import { useAuthStore } from '@/store/useAuthStore'
-import type { Endereco, Json } from '@mallevo/types'
-import { geocodificarEndereco } from '@/lib/geocode'
+import { View, Text, TouchableOpacity, Alert } from 'react-native'
+import type { Endereco } from '@mallevo/types'
 import { Botao } from '@/components/ui/Botao'
-import { Input } from '@/components/ui/Input'
+import { FolhaModal } from '@/components/ui/FolhaModal'
+import { FormularioEndereco } from '@/components/FormularioEndereco'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
+import { useAuthStore } from '@/store/useAuthStore'
+import { adicionarEndereco, iconePorTipo, mesmoEndereco } from '@/lib/enderecos'
 
 const { colors, radius, shadow } = consumerDesign
 
@@ -25,89 +17,41 @@ interface Props {
   onSelecionar: (endereco: Endereco) => void
 }
 
+/**
+ * Escolha do endereço de entrega no checkout.
+ *
+ * O formulário embutido virou FormularioEndereco (compartilhado com o
+ * perfil) e a escrita passou para lib/enderecos.ts — este arquivo cuida só
+ * da seleção e de abrir a folha.
+ */
 export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props) {
   const [modalAberto, setModalAberto] = useState(false)
   const [adicionando, setAdicionando] = useState(false)
-  const [novoEndereco, setNovoEndereco] = useState<Partial<Endereco>>({
-    cidade: 'Divinópolis',
-    estado: 'MG',
-  })
   const [salvando, setSalvando] = useState(false)
-  const { consumer, setConsumer } = useAuthStore()
 
-  async function buscarCep(cep: string) {
-    const cepLimpo = cep.replace(/\D/g, '')
-    if (cepLimpo.length !== 8) return
+  async function handleSalvar(endereco: Endereco) {
+    setSalvando(true)
+    const ok = await adicionarEndereco(enderecos, endereco)
+    setSalvando(false)
 
-    try {
-      const res = await fetch(`https://viacep.com.br/ws/${cepLimpo}/json/`)
-      const dados = await res.json()
-      if (!dados.erro) {
-        setNovoEndereco((prev) => ({
-          ...prev,
-          rua: dados.logradouro,
-          bairro: dados.bairro,
-          cidade: dados.localidade,
-          estado: dados.uf,
-          cep: cepLimpo,
-        }))
-      }
-    } catch {
-      // Ignorar erro de CEP
-    }
-  }
-
-  async function salvarEndereco() {
-    if (!novoEndereco.rua || !novoEndereco.numero || !novoEndereco.bairro) {
+    if (!ok) {
+      Alert.alert('Erro', 'Não foi possível salvar o endereço. Tente novamente.')
       return
     }
 
-    setSalvando(true)
+    // O endereço gravado é o último da lista já normalizada pelo store —
+    // pegá-lo de lá garante que a seleção carrega as coordenadas obtidas na
+    // geocodificação (das quais depende o aviso de distância no checkout).
+    const lista = useAuthStore.getState().consumer?.enderecos ?? []
+    const salvo = lista[lista.length - 1] ?? endereco
 
-    const enderecoCompleto: Endereco = {
-      apelido:
-        novoEndereco.apelido || `Endereço ${(enderecos.length ?? 0) + 1}`,
-      rua: novoEndereco.rua!,
-      numero: novoEndereco.numero!,
-      complemento: novoEndereco.complemento,
-      bairro: novoEndereco.bairro!,
-      cidade: novoEndereco.cidade ?? 'Divinópolis',
-      estado: novoEndereco.estado ?? 'MG',
-      cep: novoEndereco.cep ?? '',
-    }
-
-    // Geocodifica para habilitar agrupamento de entregas (docs/31 §10).
-    // Falha aqui não impede o cadastro: sem coordenada o pedido vira
-    // entrega individual, que é o comportamento correto de fallback.
-    const coords = await geocodificarEndereco(enderecoCompleto)
-    if (coords) {
-      enderecoCompleto.latitude = coords.latitude
-      enderecoCompleto.longitude = coords.longitude
-    }
-
-    const novosEnderecos = [...(enderecos ?? []), enderecoCompleto]
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) return
-
-    await supabase
-      .from('consumers')
-      .update({ enderecos: novosEnderecos as unknown as Json })
-      .eq('user_id', user.id)
-
-    if (consumer) {
-      setConsumer({ ...consumer, enderecos: novosEnderecos })
-    }
-
-    onSelecionar(enderecoCompleto)
+    onSelecionar(salvo)
     setAdicionando(false)
     setModalAberto(false)
-    setSalvando(false)
   }
 
   function fecharModal() {
+    if (salvando) return
     setModalAberto(false)
     setAdicionando(false)
   }
@@ -155,7 +99,11 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
               justifyContent: 'center',
             }}
           >
-            <ConsumerIcon name="pin" size={18} color={colors.accent} />
+            <ConsumerIcon
+              name={iconePorTipo(selecionado.tipo)}
+              size={18}
+              color={colors.accent}
+            />
           </View>
           <View style={{ flex: 1, gap: 2 }}>
             <Text
@@ -190,143 +138,54 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
         />
       )}
 
-      <ModalEnderecos
+      <FolhaModal
         visivel={modalAberto}
-        adicionando={adicionando}
-        enderecos={enderecos}
-        selecionado={selecionado}
-        novoEndereco={novoEndereco}
-        salvando={salvando}
+        titulo={adicionando ? 'Novo endereço' : 'Endereços salvos'}
         onFechar={fecharModal}
-        onSelecionar={(end) => {
-          onSelecionar(end)
-          setModalAberto(false)
-        }}
-        onAdicionar={() => setAdicionando(true)}
-        onCancelarAdicao={() => setAdicionando(false)}
-        onCampoMudou={(campo, valor) => {
-          setNovoEndereco((p) => ({ ...p, [campo]: valor }))
-        }}
-        onCepMudou={(cep) => {
-          setNovoEndereco((p) => ({ ...p, cep }))
-          buscarCep(cep)
-        }}
-        onSalvar={salvarEndereco}
-      />
-    </View>
-  )
-}
-
-interface ModalEnderecosProps {
-  visivel: boolean
-  adicionando: boolean
-  enderecos: Endereco[]
-  selecionado: Endereco | null
-  novoEndereco: Partial<Endereco>
-  salvando: boolean
-  onFechar: () => void
-  onSelecionar: (endereco: Endereco) => void
-  onAdicionar: () => void
-  onCancelarAdicao: () => void
-  onCampoMudou: (campo: keyof Endereco, valor: string) => void
-  onCepMudou: (cep: string) => void
-  onSalvar: () => void
-}
-
-function ModalEnderecos({
-  visivel,
-  adicionando,
-  enderecos,
-  selecionado,
-  novoEndereco,
-  salvando,
-  onFechar,
-  onSelecionar,
-  onAdicionar,
-  onCancelarAdicao,
-  onCampoMudou,
-  onCepMudou,
-  onSalvar,
-}: ModalEnderecosProps) {
-  return (
-    <Modal
-      visible={visivel}
-      animationType="slide"
-      transparent
-      onRequestClose={onFechar}
-    >
-      <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: `rgba(17, 18, 22, ${consumerDesign.opacity.overlay})`,
-          }}
-          activeOpacity={1}
-          onPress={onFechar}
-        />
-
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={{
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: radius.xl,
-            borderTopRightRadius: radius.xl,
-            maxHeight: '85%',
-            overflow: 'hidden',
-          }}
-        >
-          <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
-            <View
-              style={{
-                width: 40,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: colors.line,
-              }}
-            />
-          </View>
-
-          <View
-            style={{
-              paddingHorizontal: 20,
-              paddingTop: 12,
-              paddingBottom: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.line,
-            }}
-          >
-            <Text
-              style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}
-            >
-              {adicionando ? 'Novo endereço' : 'Endereços salvos'}
-            </Text>
-          </View>
-
-          <ScrollView
-            contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            {!adicionando ? (
-              <>
-                {enderecos.map((end, i) => {
-                  const ativo = selecionado === end
-                  return (
-                    <TouchableOpacity
-                      key={i}
-                      onPress={() => onSelecionar(end)}
-                      activeOpacity={consumerDesign.opacity.pressedSoft}
+      >
+        {adicionando ? (
+          <FormularioEndereco
+            salvando={salvando}
+            onSalvar={handleSalvar}
+            onCancelar={() => setAdicionando(false)}
+          />
+        ) : (
+          <>
+            {enderecos.map((end, i) => {
+              const ativo = mesmoEndereco(selecionado, end)
+              return (
+                <TouchableOpacity
+                  key={i}
+                  onPress={() => {
+                    onSelecionar(end)
+                    setModalAberto(false)
+                  }}
+                  activeOpacity={consumerDesign.opacity.pressedSoft}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    padding: 16,
+                    borderRadius: radius.md,
+                    borderWidth: ativo ? 1.5 : 1,
+                    borderColor: ativo ? colors.accent : colors.line,
+                    backgroundColor: ativo
+                      ? softColor(colors.accent)
+                      : colors.surface,
+                  }}
+                >
+                  <ConsumerIcon
+                    name={iconePorTipo(end.tipo)}
+                    size={18}
+                    color={ativo ? colors.accent : colors.inkMuted}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <View
                       style={{
-                        padding: 16,
-                        borderRadius: radius.md,
-                        borderWidth: ativo ? 1.5 : 1,
-                        borderColor: ativo ? colors.accent : colors.line,
-                        backgroundColor: ativo
-                          ? softColor(colors.accent)
-                          : colors.surface,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 6,
+                        flexWrap: 'wrap',
                       }}
                     >
                       <Text
@@ -338,112 +197,55 @@ function ModalEnderecos({
                       >
                         {end.apelido ?? end.rua}
                       </Text>
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          color: colors.inkMuted,
-                          marginTop: 2,
-                          fontWeight: '500',
-                        }}
-                      >
-                        {end.rua}, {end.numero}
-                        {end.complemento ? ` — ${end.complemento}` : ''}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: colors.inkSoft,
-                          fontWeight: '500',
-                        }}
-                      >
-                        {end.bairro} — {end.cidade}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
+                      {end.padrao && (
+                        <Text
+                          style={{
+                            fontSize: 10,
+                            fontWeight: '700',
+                            color: colors.accent,
+                            letterSpacing: 0.4,
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Padrão
+                        </Text>
+                      )}
+                    </View>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        color: colors.inkMuted,
+                        marginTop: 2,
+                        fontWeight: '500',
+                      }}
+                    >
+                      {end.rua}, {end.numero}
+                      {end.complemento ? ` — ${end.complemento}` : ''}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 12,
+                        color: colors.inkSoft,
+                        fontWeight: '500',
+                      }}
+                    >
+                      {end.bairro} — {end.cidade}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
 
-                <Botao
-                  label="Adicionar novo endereço"
-                  variante="secundario"
-                  tamanho="md"
-                  iconeEsquerda="plus"
-                  onPress={onAdicionar}
-                />
-              </>
-            ) : (
-              <>
-                <Input
-                  rotulo="Apelido (opcional)"
-                  valor={novoEndereco.apelido ?? ''}
-                  aoMudar={(t) => onCampoMudou('apelido', t)}
-                  placeholder="Ex.: Casa, Trabalho"
-                />
-                <Input
-                  rotulo="CEP"
-                  valor={novoEndereco.cep ?? ''}
-                  aoMudar={onCepMudou}
-                  placeholder="00000-000"
-                  tipo="numero"
-                  maxLength={9}
-                />
-                <View style={{ flexDirection: 'row', gap: 12 }}>
-                  <View style={{ flex: 1 }}>
-                    <Input
-                      rotulo="Rua"
-                      valor={novoEndereco.rua ?? ''}
-                      aoMudar={(t) => onCampoMudou('rua', t)}
-                      placeholder="Nome da rua"
-                    />
-                  </View>
-                  <View style={{ width: 100 }}>
-                    <Input
-                      rotulo="Número"
-                      valor={novoEndereco.numero ?? ''}
-                      aoMudar={(t) => onCampoMudou('numero', t)}
-                      placeholder="123"
-                      tipo="numero"
-                    />
-                  </View>
-                </View>
-                <Input
-                  rotulo="Complemento (opcional)"
-                  valor={novoEndereco.complemento ?? ''}
-                  aoMudar={(t) => onCampoMudou('complemento', t)}
-                  placeholder="Apto, bloco, referência..."
-                />
-                <Input
-                  rotulo="Bairro"
-                  valor={novoEndereco.bairro ?? ''}
-                  aoMudar={(t) => onCampoMudou('bairro', t)}
-                  placeholder="Nome do bairro"
-                />
-
-                <View
-                  style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Botao
-                      label="Cancelar"
-                      variante="ghost"
-                      tamanho="md"
-                      onPress={onCancelarAdicao}
-                    />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Botao
-                      label="Salvar"
-                      variante="primario"
-                      tamanho="md"
-                      carregando={salvando}
-                      onPress={onSalvar}
-                    />
-                  </View>
-                </View>
-              </>
-            )}
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </View>
-    </Modal>
+            <Botao
+              label="Adicionar novo endereço"
+              variante="secundario"
+              tamanho="md"
+              iconeEsquerda="plus"
+              onPress={() => setAdicionando(true)}
+            />
+          </>
+        )}
+      </FolhaModal>
+    </View>
   )
 }

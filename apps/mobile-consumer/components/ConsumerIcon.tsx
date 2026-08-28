@@ -52,6 +52,11 @@ export type ConsumerIconName =
   | 'volume'
   | 'volume-off'
   | 'edit'
+  /** Endereço de trabalho (contraparte de `home` na lista de endereços). */
+  | 'briefcase'
+  /** Endereço padrão do checkout. */
+  | 'star'
+  | 'trash'
   | 'file'
   | 'info'
   | 'bag'
@@ -379,6 +384,30 @@ function renderIcon(name: ConsumerIconName, color: string, strokeWidth: number) 
         <>
           <Path {...common} d="M4 20l1-4 11-11 3 3-11 11-4 1z" />
           <Path {...common} d="M14 7l3 3" />
+        </>
+      )
+    case 'briefcase':
+      return (
+        <>
+          <Rect {...common} x="3" y="7.5" width="18" height="12.5" rx="2" />
+          <Path {...common} d="M9 7.5V6a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 15 6v1.5" />
+          <Path {...common} d="M3 12.5h18" />
+        </>
+      )
+    case 'star':
+      return (
+        <Path
+          {...common}
+          d="M12 3.75l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 17.03l-5.2 2.73.99-5.79-4.21-4.1 5.82-.85L12 3.75z"
+        />
+      )
+    case 'trash':
+      return (
+        <>
+          <Path {...common} d="M4.5 6.5h15" />
+          <Path {...common} d="M9.5 6.5V4.75h5V6.5" />
+          <Path {...common} d="M6.5 6.5l.9 13a1 1 0 0 0 1 .95h7.2a1 1 0 0 0 1-.95l.9-13" />
+          <Path {...common} d="M10.5 10.5v6M13.5 10.5v6" />
         </>
       )
     case 'file':

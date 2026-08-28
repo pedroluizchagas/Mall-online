@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/Input'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { consumerDesign } from '@/lib/consumer-design'
+import { enderecoPadrao } from '@/lib/enderecos'
 import type { Endereco } from '@mallevo/types'
 
 const { colors } = consumerDesign
@@ -95,9 +96,7 @@ export default function TelaCheckout() {
 
     carregarLoja()
 
-    if (consumer && consumer.enderecos && consumer.enderecos.length > 0) {
-      setEnderecoSelecionado(consumer.enderecos[0])
-    }
+    setEnderecoSelecionado(enderecoPadrao(consumer?.enderecos ?? []))
   }, [store_id])
 
   useEffect(() => {
