@@ -9,12 +9,12 @@ import { useTotalSeguidas } from '@/store/useSeguidas'
 import { useTotalFavoritos } from '@/store/useFavoritos'
 import { GerenciarEnderecos } from '@/components/GerenciarEnderecos'
 import { EditarPerfil } from '@/components/EditarPerfil'
+import { garantirConsumer } from '@/lib/perfil'
 import { HeaderTela } from '@/components/HeaderTela'
 import { Card } from '@/components/ui/Card'
 import { Botao } from '@/components/ui/Botao'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
-import type { Endereco } from '@mallevo/types'
 
 const { colors, radius, spacing } = consumerDesign
 
@@ -32,19 +32,7 @@ export default function TelaPerfil() {
     const {
       data: { user: u },
     } = await supabase.auth.getUser()
-    if (u) {
-      const { data } = await supabase
-        .from('consumers')
-        .select('id, nome, telefone, foto_url, enderecos')
-        .eq('user_id', u.id)
-        .single()
-      if (data) {
-        useAuthStore.getState().setConsumer({
-          ...data,
-          enderecos: (data.enderecos ?? []) as unknown as Endereco[],
-        })
-      }
-    }
+    if (u) await garantirConsumer(u)
     setAtualizando(false)
   }, [])
 
