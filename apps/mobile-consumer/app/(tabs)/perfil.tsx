@@ -11,6 +11,7 @@ import { GerenciarEnderecos } from '@/components/GerenciarEnderecos'
 import { EditarPerfil } from '@/components/EditarPerfil'
 import { AvatarPerfil } from '@/components/AvatarPerfil'
 import { garantirConsumer } from '@/lib/perfil'
+import { abrirLink, URL_TERMOS, URL_PRIVACIDADE } from '@/lib/links'
 import { HeaderTela } from '@/components/HeaderTela'
 import { Card } from '@/components/ui/Card'
 import { Botao } from '@/components/ui/Botao'
@@ -27,6 +28,7 @@ export default function TelaPerfil() {
   const { limpar: limparOrder } = useOrderStore()
   const [secaoAtiva, setSecaoAtiva] = useState<SecaoAtiva>(null)
   const [atualizando, setAtualizando] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
 
   const onRefresh = useCallback(async () => {
     setAtualizando(true)
@@ -37,21 +39,86 @@ export default function TelaPerfil() {
     setAtualizando(false)
   }, [])
 
+  /** Encerra a sessão e zera todo estado local. */
+  async function encerrarSessao() {
+    await supabase.auth.signOut()
+    limparAuth()
+    limparCarrinho()
+    limparOrder()
+    router.replace('/(auth)/entrar')
+  }
+
   async function handleSair() {
     Alert.alert('Sair', 'Deseja realmente sair da sua conta?', [
       { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          await supabase.auth.signOut()
-          limparAuth()
-          limparCarrinho()
-          limparOrder()
-          router.replace('/(auth)/entrar')
-        },
-      },
+      { text: 'Sair', style: 'destructive', onPress: encerrarSessao },
     ])
+  }
+
+  async function excluirConta() {
+    setExcluindo(true)
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+      if (!session) throw new Error('Sessão expirada. Entre novamente.')
+
+      const resposta = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }
+      )
+
+      const resultado = await resposta.json()
+      if (!resposta.ok) throw new Error(resultado.error ?? 'Erro no servidor.')
+
+      await encerrarSessao()
+    } catch (e) {
+      Alert.alert(
+        'Não foi possível excluir',
+        e instanceof Error ? e.message : 'Tente novamente mais tarde.'
+      )
+    } finally {
+      setExcluindo(false)
+    }
+  }
+
+  /**
+   * Dupla confirmação: o primeiro diálogo explica o que se perde, o segundo
+   * é a última chance. Um toque só não deveria apagar uma conta.
+   */
+  function handleExcluirConta() {
+    if (excluindo) return
+
+    Alert.alert(
+      'Excluir minha conta',
+      'Seus dados pessoais — nome, telefone, CPF, endereços e foto — serão apagados definitivamente e você perderá o acesso ao aplicativo.\n\nSeus pedidos anteriores são mantidos sem identificação, por exigência fiscal.\n\nEsta ação não pode ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Continuar',
+          style: 'destructive',
+          onPress: () =>
+            Alert.alert(
+              'Tem certeza?',
+              'Esta é a última confirmação. Sua conta será excluída agora.',
+              [
+                { text: 'Cancelar', style: 'cancel' },
+                {
+                  text: 'Excluir conta',
+                  style: 'destructive',
+                  onPress: excluirConta,
+                },
+              ]
+            ),
+        },
+      ]
+    )
   }
 
   const nomeExibido = consumer?.nome ?? 'Usuário'
@@ -181,16 +248,12 @@ export default function TelaPerfil() {
             <ItemPerfil
               icone="file"
               rotulo="Termos de uso"
-              aoTocar={() => {
-                /* TODO */
-              }}
+              aoTocar={() => abrirLink(URL_TERMOS)}
             />
             <ItemPerfil
               icone="shield"
               rotulo="Política de privacidade"
-              aoTocar={() => {
-                /* TODO */
-              }}
+              aoTocar={() => abrirLink(URL_PRIVACIDADE)}
               ultimo
             />
           </View>
@@ -205,6 +268,29 @@ export default function TelaPerfil() {
             iconeEsquerda="logout"
             onPress={handleSair}
           />
+        </View>
+
+        {/* Excluir conta — exigência de App Store e Play para app com
+            cadastro. Fica separado e discreto: é destrutivo e definitivo. */}
+        <View style={{ paddingHorizontal: 24, marginTop: 20 }}>
+          <TouchableOpacity
+            onPress={handleExcluirConta}
+            disabled={excluindo}
+            activeOpacity={consumerDesign.opacity.pressedSoft}
+            accessibilityRole="button"
+            style={{ alignItems: 'center', paddingVertical: 10 }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '600',
+                color: colors.inkMuted,
+                textDecorationLine: 'underline',
+              }}
+            >
+              {excluindo ? 'Excluindo conta...' : 'Excluir minha conta'}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         <Text
