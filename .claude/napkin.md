@@ -27,7 +27,9 @@
    Do instead: antes de usar um ID em mock (banners, dataset), baixar candidatas w=400 pro scratchpad (paralelo + `curl --max-time 15`) e **Read como imagem** para conferir o conteúdo. HTTP 200 não basta: ID válido já rendeu estacionamento e doação de sangue no lugar de "vergalhão" e "entregador".
 5. **[2026-08-18] Tipografia, degradê e neutros da marca vêm do painel web**
    Do instead: voz Mallevo = Plus Jakarta Sans (`useFontesMarquee()`: letreiro 700, statement 600, acento 600 itálico) sobre `marquee #18181B` + glow `marqueeGlow #C1F148` (≤22% alpha, só atmosfera — interação segue no `accent #D8FF3E`). Neutros claros = família zinco fumê (`canvas #F1F1F3`, `line #E4E4E7`; tokens TAMBÉM no tailwind.config.js — manter os dois em sincronia). Folha do home leva `VidroFosco` (nuvens SVG estilo iOS: sombra marquee 7%, inkSoft 7%, info 4%, white 55%, marqueeGlow 5% — só tokens). Referência canônica: apps/web (auth)/entrar. Space Grotesk é SÓ voz de lojista (lib/store-fonts.ts).
-6. **[2026-08-08] Layout por arquétipo no app consumidor**
+6. **[2026-08-20] Pisos na home do consumer = diretório + corredores, monocromático**
+   Do instead: apresentação dos pisos vive em `components/home/Diretorio.tsx` (placas de wayfinding, scroll ancorado via `posicaoPorPiso`/`folhaY` na TelaHome) + letreiro de corredor em `SecaoLojas`. Ícone de piso = ícone de linha em `ICONE_POR_PISO` (ConsumerIcon) — o emoji de `PISOS` (@mallevo/lib) é fallback web/admin, nunca renderiza no consumer. Placas claras usam o material `ui/Vidro` (BlurView só no iOS; Android simula com `glassStrong` — N blurs dimezis na home custam caro), tokens `glass*` no consumer-design. Sem matiz por piso: identidade é ícone + tipografia, acento segue só em micro-momentos.
+7. **[2026-08-08] Layout por arquétipo no app consumidor**
    Do instead: gate por `design.arquetipo` (StoreDesign, lib/store-theme.tsx) + categoria da loja — nunca por slug de loja. Demo: `vitrine-fashion` (editorial/moda) usa `components/loja/LojaEditorial.tsx`; picsum é aleatório, lojas-demo com cara real usam fotos Unsplash de ID fixo via `catalogo`/`banner` no LojaSpec (lib/mock/dataset.ts).
 
 ## User Directives

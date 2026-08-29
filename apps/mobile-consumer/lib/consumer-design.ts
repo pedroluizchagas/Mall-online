@@ -43,6 +43,14 @@ export const consumerDesign = {
     // Ink translúcido — pílula da tab bar "vidro" sobre o conteúdo
     inkGlass: 'rgba(17, 18, 22, 0.95)',
 
+    // Vidro claro — material das placas sobre o canvas fumê (diretório e
+    // letreiros de corredor; componente ui/Vidro). Espelho CLARO do
+    // marqueeGlass: no iOS o véu vem com BlurView por baixo; no Android o
+    // véu forte simula o fosco (blur ao vivo em N placas é caro demais lá).
+    glass: 'rgba(255, 255, 255, 0.55)',
+    glassStrong: 'rgba(255, 255, 255, 0.78)',
+    glassEdge: 'rgba(255, 255, 255, 0.85)',
+
     // Texto
     ink: '#111216',
     inkMuted: '#5E6168',

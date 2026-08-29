@@ -71,6 +71,17 @@ export type ConsumerIconName =
   | 'chevron-up'
   | 'plus'
   | 'minus'
+  // Pisos — sinalização do diretório do shopping (um ícone de linha por piso;
+  // o emoji de PISOS em @mallevo/lib é fallback, nunca aparece no consumer)
+  | 'utensils'
+  | 'hanger'
+  | 'pulse'
+  | 'scissors'
+  | 'paw'
+  | 'armchair'
+  | 'basket'
+  | 'wrench'
+  | 'gift'
 
 interface Props {
   name: ConsumerIconName
@@ -476,6 +487,111 @@ function renderIcon(name: ConsumerIconName, color: string, strokeWidth: number) 
       return <Path {...common} d="M12 5v14M5 12h14" />
     case 'minus':
       return <Path {...common} d="M5 12h14" />
+
+    // ─────────────────────────────────────────────────────────
+    // Pisos (diretório do shopping)
+    // ─────────────────────────────────────────────────────────
+    case 'utensils':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M5.5 3.5v4.75a2.25 2.25 0 0 0 2.25 2.25h.5a2.25 2.25 0 0 0 2.25-2.25V3.5"
+          />
+          <Path {...common} d="M8 3.5v17" />
+          <Path
+            {...common}
+            d="M18.75 14.75V3.5a4.25 4.25 0 0 0-3.5 4.25v5a2 2 0 0 0 2 2h1.5z"
+          />
+          <Path {...common} d="M18.75 14.75v5.75" />
+        </>
+      )
+    case 'hanger':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M14 6.1a2 2 0 1 0-4 0c0 1.55.62 2.8 1.85 3.75"
+          />
+          <Path
+            {...common}
+            d="M12 9.85L19.6 14a1.9 1.9 0 0 1 1 1.67v.33a1 1 0 0 1-1 1H4.4a1 1 0 0 1-1-1v-.33A1.9 1.9 0 0 1 4.4 14L12 9.85z"
+          />
+        </>
+      )
+    case 'pulse':
+      return (
+        <Path {...common} d="M3.25 12.5h3.4L9.5 5.5l5 13.25 2.85-6.25h3.4" />
+      )
+    case 'scissors':
+      return (
+        <>
+          <Circle {...common} cx="6.25" cy="6.5" r="2.6" />
+          <Circle {...common} cx="6.25" cy="17.5" r="2.6" />
+          <Path {...common} d="M19.75 4.5L8.55 15.7" />
+          <Path {...common} d="M14.1 14.15l5.65 5.35" />
+          <Path {...common} d="M8.55 8.3l3.45 3.45" />
+        </>
+      )
+    case 'paw':
+      return (
+        <>
+          <Circle {...common} cx="6" cy="10" r="1.75" />
+          <Circle {...common} cx="9.9" cy="6.75" r="1.75" />
+          <Circle {...common} cx="14.1" cy="6.75" r="1.75" />
+          <Circle {...common} cx="18" cy="10" r="1.75" />
+          <Path
+            {...common}
+            d="M12 12.25c-2.85 0-5.1 2.05-5.1 4.45 0 1.5 1.15 2.8 2.6 2.8 1 0 1.65-.55 2.5-.55s1.5.55 2.5.55c1.45 0 2.6-1.3 2.6-2.8 0-2.4-2.25-4.45-5.1-4.45z"
+          />
+        </>
+      )
+    case 'armchair':
+      return (
+        <>
+          <Path {...common} d="M19 9.5V6.75a2.25 2.25 0 0 0-2.25-2.25h-9.5A2.25 2.25 0 0 0 5 6.75V9.5" />
+          <Path
+            {...common}
+            d="M3.25 15.5a2 2 0 0 0 2 2h13.5a2 2 0 0 0 2-2v-4a2 2 0 0 0-4 0v1.75h-9.5V11.5a2 2 0 0 0-4 0z"
+          />
+          <Path {...common} d="M5.75 17.5v2.25M18.25 17.5v2.25" />
+        </>
+      )
+    case 'basket':
+      return (
+        <>
+          <Path {...common} d="M2.75 10.5h18.5" />
+          <Path
+            {...common}
+            d="M4.25 10.5l1.5 7.65a2 2 0 0 0 1.97 1.6h8.56a2 2 0 0 0 1.97-1.6l1.5-7.65"
+          />
+          <Path {...common} d="M5.75 10.5l3.5-6.25M18.25 10.5l-3.5-6.25" />
+          <Path {...common} d="M10 13.75v2.75M14 13.75v2.75" />
+        </>
+      )
+    case 'wrench':
+      return (
+        <Path
+          {...common}
+          d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+        />
+      )
+    case 'gift':
+      return (
+        <>
+          <Rect {...common} x="3.5" y="7.75" width="17" height="4" rx="1" />
+          <Path {...common} d="M12 7.75v12.5" />
+          <Path {...common} d="M19 11.75v6.5a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-6.5" />
+          <Path
+            {...common}
+            d="M12 7.75H7.75a2.125 2.125 0 0 1 0-4.25C10.7 3.5 12 7.75 12 7.75z"
+          />
+          <Path
+            {...common}
+            d="M12 7.75h4.25a2.125 2.125 0 0 0 0-4.25C13.3 3.5 12 7.75 12 7.75z"
+          />
+        </>
+      )
 
     default:
       return null

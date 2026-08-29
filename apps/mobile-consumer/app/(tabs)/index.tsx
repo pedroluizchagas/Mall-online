@@ -30,6 +30,8 @@ import {
   type VitrineLoja,
 } from '@/components/home/Marquise'
 import { Concierge } from '@/components/home/Concierge'
+import { Diretorio, ICONE_POR_PISO } from '@/components/home/Diretorio'
+import { Vidro } from '@/components/ui/Vidro'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
@@ -295,14 +297,28 @@ function CardPedidoVivo({
   )
 }
 
+/**
+ * Corredor de um piso. O cabeçalho é o "letreiro de corredor": placa de
+ * sinalização com o ícone de linha do piso (a mesma da placa do diretório,
+ * para o olho reconhecer aonde o elevador o trouxe), nome completo na
+ * fonte-assinatura, subtítulo com o que se encontra ali e a contagem de
+ * lojas no canto — tudo monocromático, identidade sem 9 matizes.
+ *
+ * `aoMedir` devolve o y do corredor (relativo à folha) para o scroll
+ * ancorado do diretório.
+ */
 function SecaoLojas({
+  slug,
   titulo,
   subtitulo,
   lojas,
+  aoMedir,
 }: {
+  slug: string
   titulo: string
   subtitulo: string
   lojas: Loja[]
+  aoMedir: (y: number) => void
 }) {
   // Letreiro de corredor: mesma fonte-assinatura da marquise.
   const fontes = useFontesMarquee()
@@ -310,29 +326,72 @@ function SecaoLojas({
   if (lojas.length === 0) return null
 
   return (
-    <View style={{ paddingTop: 28 }}>
-      <View style={{ paddingHorizontal: 24, marginBottom: 14 }}>
-        <Text
-          style={[
-            fontes.letreiro,
-            {
-              fontSize: 21,
-              color: colors.ink,
-              letterSpacing: -0.4,
-            },
-          ]}
-        >
-          {titulo}
-        </Text>
+    <View
+      style={{ paddingTop: 30 }}
+      onLayout={(e) => aoMedir(e.nativeEvent.layout.y)}
+    >
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          paddingHorizontal: 24,
+          marginBottom: 14,
+        }}
+      >
+        {/* Placa do corredor — mesmo vidro das placas do diretório. */}
+        <Vidro raio={radius.sm}>
+          <View
+            style={{
+              width: 44,
+              height: 44,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <ConsumerIcon
+              name={ICONE_POR_PISO[slug] ?? 'store'}
+              size={19}
+              color={colors.ink}
+              strokeWidth={1.8}
+            />
+          </View>
+        </Vidro>
+        <View style={{ flex: 1 }}>
+          <Text
+            style={[
+              fontes.letreiro,
+              {
+                fontSize: 21,
+                color: colors.ink,
+                letterSpacing: -0.4,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {titulo}
+          </Text>
+          <Text
+            style={{
+              fontSize: 13,
+              color: colors.inkMuted,
+              fontWeight: '500',
+              marginTop: 2,
+            }}
+            numberOfLines={1}
+          >
+            {subtitulo}
+          </Text>
+        </View>
         <Text
           style={{
-            fontSize: 13,
-            color: colors.inkMuted,
-            fontWeight: '500',
-            marginTop: 2,
+            fontSize: 11,
+            fontWeight: '700',
+            letterSpacing: 0.8,
+            color: colors.inkSoft,
           }}
         >
-          {subtitulo}
+          {lojas.length} {lojas.length === 1 ? 'LOJA' : 'LOJAS'}
         </Text>
       </View>
       <ScrollView
@@ -408,10 +467,21 @@ function VidroFosco() {
 
 function SkeletonSecao() {
   return (
-    <View style={{ paddingTop: 28 }}>
-      <View style={{ paddingHorizontal: 24, marginBottom: 14, gap: 8 }}>
-        <Skeleton largura="60%" altura={24} raio={6} />
-        <Skeleton largura="40%" altura={14} raio={4} />
+    <View style={{ paddingTop: 30 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          paddingHorizontal: 24,
+          marginBottom: 14,
+        }}
+      >
+        <Skeleton largura={44} altura={44} raio={radius.sm} />
+        <View style={{ flex: 1, gap: 8 }}>
+          <Skeleton largura="55%" altura={20} raio={6} />
+          <Skeleton largura="40%" altura={13} raio={4} />
+        </View>
       </View>
       <ScrollView
         horizontal
@@ -438,6 +508,20 @@ export default function TelaHome() {
   // Busca = overlay Concierge sobre a própria home, nunca navegação: fechar
   // devolve a tela exatamente onde estava (scroll, estado, tudo).
   const [buscaAberta, setBuscaAberta] = useState(false)
+
+  // Scroll ancorado do diretório: o y de cada corredor (relativo à folha) +
+  // o y da folha (relativo ao conteúdo do ScrollView) = destino do elevador.
+  // Refs, não estado: medidas não devem re-renderizar a home.
+  const scrollRef = useRef<ScrollView>(null)
+  const folhaY = useRef(0)
+  const posicaoPorPiso = useRef<Record<string, number>>({})
+
+  function irParaPiso(slug: string) {
+    const y = posicaoPorPiso.current[slug]
+    if (y === undefined) return
+    // O paddingTop do corredor (30) vira o respiro acima do letreiro.
+    scrollRef.current?.scrollTo({ y: folhaY.current + y, animated: true })
+  }
 
   // Foco da tela: a status bar clara só vale enquanto o Início está à frente
   // (as outras abas são claras e usam a status bar escura do layout).
@@ -564,6 +648,7 @@ export default function TelaHome() {
       />
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={
           <RefreshControl
@@ -599,6 +684,9 @@ export default function TelaHome() {
             carrossel parecer estourado para fora nos cantos. overflow
             hidden recorta o VidroFosco no raio da folha. */}
         <View
+          onLayout={(e) => {
+            folhaY.current = e.nativeEvent.layout.y
+          }}
           style={{
             flex: 1,
             marginTop: -24,
@@ -613,6 +701,17 @@ export default function TelaHome() {
           <VidroFosco />
           <BannerCarousel banners={BANNERS_MOCK} />
 
+          {/* Diretório do shopping: só pisos com loja viram placa — placa
+              que não leva a lugar nenhum é sinalização quebrada. */}
+          <Diretorio
+            carregando={carregando}
+            pisos={SECOES.filter((_, i) => grupos[i].length > 0).map((s) => ({
+              slug: s.slug,
+              nome: s.titulo,
+            }))}
+            aoTocarPiso={irParaPiso}
+          />
+
           {carregando
             ? Array.from({ length: 2 }).map((_, i) => <SkeletonSecao key={i} />)
             : grupos.map((lojasDaSecao, i) => {
@@ -621,9 +720,13 @@ export default function TelaHome() {
                 return (
                   <SecaoLojas
                     key={meta.slug}
+                    slug={meta.slug}
                     titulo={meta.titulo}
                     subtitulo={meta.subtitulo}
                     lojas={lojasDaSecao}
+                    aoMedir={(y) => {
+                      posicaoPorPiso.current[meta.slug] = y
+                    }}
                   />
                 )
               })}
