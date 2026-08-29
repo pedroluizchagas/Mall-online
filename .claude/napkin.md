@@ -9,7 +9,9 @@
 ## Execution & Validation (Highest Priority)
 1. **[2026-08-08] Typecheck do mobile-consumer: não há `tsc` no root nem script `typecheck`**
    Do instead: `cd apps/mobile-consumer && ./node_modules/typescript/bin/tsc --noEmit`. O `npx tsc` cai no pacote-armadilha "not the tsc command". ESLint tem script `lint` mas o binário não está instalado — não perder tempo com ele.
-2. **[2026-08-14] `@react-navigation/native` não é importável nos apps mobile (pnpm não faz hoist de dep transitiva)**
+2. **[2026-08-29] Entry do mobile-consumer é `entry.js` físico — não voltar para `"main": "expo-router/entry"`**
+   Do instead: com main apontando pro pacote, o Metro anuncia o bundle pelo caminho `.pnpm` com hash (muda a cada mexida no lockfile) e `/node_modules/expo-router/entry` não resolve da raiz (sem hoist) — app "não carrega". O `entry.js` (`import 'expo-router/entry'`) dá URL estável `/apps/mobile-consumer/entry.bundle`.
+3. **[2026-08-14] `@react-navigation/native` não é importável nos apps mobile (pnpm não faz hoist de dep transitiva)**
    Do instead: usar os re-exports do expo-router (`useFocusEffect`, `useNavigation`, `router`). Para "está em foco?": `useFocusEffect` + estado local — não importar `useIsFocused` direto.
 
 ## Shell & Command Reliability
