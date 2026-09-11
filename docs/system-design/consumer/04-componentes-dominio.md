@@ -14,7 +14,7 @@
 | Antes | Depois | Notas |
 |---|---|---|
 | `LojaCard.tsx` (vertical, ~150 linhas) | `LojaCard.tsx` (refactor in-place) | dark-friendly, sem placeholder colorido, badges via `<Badge>` |
-| `LojaCardH.tsx` (horizontal, ~210 linhas) | `LojaCardH.tsx` (refactor in-place) | mesma DNA, largura `0.62*screen` mantida |
+| `LojaCardH.tsx` (horizontal, ~210 linhas) | **removido** → `home/FachadaLoja.tsx` | fachada full-width com a pele da loja (StoreTheme) |
 | inline em `loja/[slug].tsx` | `ProdutoCard.tsx` (novo) | extrai card de produto reutilizável |
 | `ItemCarrinhoCard.tsx` (~60 linhas) | `ItemCarrinhoCard.tsx` (refactor) | `+`/`-` viram `<ConsumerIcon name="plus|minus">` |
 | inline `CardPedido` em `pedidos.tsx` | `PedidoCard.tsx` (novo) | extrai card de pedido reutilizável |
@@ -91,33 +91,9 @@ O sistema atual usa um array de 6 cores derivadas do nome da loja para criar ava
 
 ---
 
-## 2. `LojaCardH` (horizontal)
+## 2. `LojaCardH` — removido (2026-09-10)
 
-Variante usada em scroll horizontal no home (lista por seção).
-
-### Visual
-
-Igual ao `LojaCard`, mas:
-- Largura fixa: `Math.round(width * 0.62)` (mantém o que existe hoje).
-- Imagem: altura 132 (em vez de 140) — encaixe melhor na grid horizontal.
-- `flexShrink: 0` para não comprimir no flex parent.
-
-### API
-
-```tsx
-interface LojaCardHProps {
-  loja: LojaCardProps['loja']
-  aoTocar: () => void
-}
-```
-
-### Estratégia
-
-Internamente é uma especialização de `LojaCard` com largura fixa. Pode-se ou:
-- (a) compartilhar o JSX numa função interna `<LojaCardBase>` e usar nas duas variantes, ou
-- (b) manter os dois arquivos separados se o JSX divergir mais que esperado.
-
-**Recomendação**: começar separado (b), mais legível. Promover pra base só se aparecer divergência repetida.
+O card horizontal dos corredores foi substituído por `components/home/FachadaLoja.tsx`: fachada full-width que veste a pele da própria loja (StoreTheme) desde a home — hero, logo, nome na fonte do arquétipo, 3 produtos e CTA accent. Spec completa em 07-telas.md §1 ("Fachadas").
 
 ---
 

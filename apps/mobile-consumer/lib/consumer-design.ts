@@ -205,12 +205,21 @@ export function tempoRelativo(iso: string) {
 }
 
 /**
+ * Aplica um alpha arbitrário (0–1) em uma cor hex sólida dos tokens.
+ * Usado para derivar fios e halos na cor de um momento sem criar hex novo:
+ * `corComAlpha(colors.success, 0.55)`.
+ */
+export function corComAlpha(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+/**
  * Aplica alpha 18% em uma cor hex sólida.
  * Usado em backgrounds de status badge: `softColor(colors.warning)`.
  */
 export function softColor(hex: string) {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, 0.18)`
+  return corComAlpha(hex, 0.18)
 }

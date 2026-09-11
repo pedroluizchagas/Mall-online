@@ -121,7 +121,7 @@ interface StoreRow {
   tenant_id: string
   piso: string
   // Embeds que algumas telas pedem (categoria:categories(slug) / categories(nome))
-  categoria: { slug: string }
+  categoria: { slug: string; nome: string }
   categories: { nome: string }
   // Tema visual (StoreThemeConfig v2) — faz a loja "vestir" seu design no app.
   theme: { v: 2; preset: string; palette?: string }
@@ -2782,7 +2782,7 @@ PISOS.forEach((piso, pisoIdx) => {
       horarios: HORARIOS,
       tenant_id: TENANT,
       piso: piso.piso,
-      categoria: { slug: cat.slug },
+      categoria: { slug: cat.slug, nome: cat.nome },
       categories: { nome: cat.nome },
       theme: loja.palette
         ? { v: 2, preset, palette: loja.palette }

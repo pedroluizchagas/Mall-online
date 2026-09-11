@@ -196,9 +196,15 @@ O topo do Início é a **fachada do shopping à noite**: painel `marquee` (zinco
 │ │ [search] O que você procura hoje?   │ │
 │ └─────────────────────────────────────┘ │
 │                                          │
-│  ◔ SUAS LOJAS (ou ✦ EM ALTA AGORA)      │
-│  (+)   (◉)   (◉)   (◉)   (◉)  →         │  ← vitrines 62px; seguida = aro lima
-│ Descobrir Yamato Aroma  Lux              │
+│  ✦ AO VIVO NO SHOPPING     Explorar tudo ›│  ← sobrelinha accent + link marqueeInkSoft
+│  Suas lojas (ou Em alta agora)           │  ← Jakarta 700 21, white
+│ ┌────────┐ ┌────────┐ ┌───               │  ← VitrineCard: retrato 0.40w × 1.45,
+│ │(GRÁTIS)│ │(RÁPIDA)│ │(25 min)          │     foto full-bleed + pílula de momento
+│ │  foto  │ │  foto  │ │                  │
+│ │CAFETERIA │JOALHERIA │                  │  ← categoria micro caps accent
+│ │Aromas do│ │Lux     │ │                  │  ← nome, Jakarta 700 15, white
+│ │25 min ·│ │Entrega…│ │                  │  ← marqueeInkSoft
+│ └────────┘ └────────┘ └───               │
 │                                          │
 │ ┌─ AO VIVO ─────────────────── 52% ──┐  │  ← cartão vidro do pedido ativo
 │ │ [chef] Em preparo               ▷  │  │     (só se ehAtivo(statusAtual))
@@ -206,9 +212,19 @@ O topo do Início é a **fachada do shopping à noite**: painel `marquee` (zinco
 │ └────────────────────────────────────┘  │
 │ ╭──────── folha clara (radius.md) ──────╮
 │ │  BannerCarousel                        │
+│ │  CAMINHANDO PELO PISO 1       3 LOJAS  │  ← sobrelinha micro inkSoft (sem ícone)
 │ │  Praça de Alimentação                  │  ← Jakarta Sans 700 21, ink
 │ │  Restaurantes, lanches e cafés         │  ← bodySm inkMuted
-│ │  ┌──────┐ ┌──────┐ ┌──────┐  →         │  ← LojaCardH scroll horizontal
+│ │ ┌─ FachadaLoja (pele da loja) ───────┐ │
+│ │ │ (CAFETERIA • PISO 1)      [Seguir] │ │  ← hero banner 196 + scrim topo
+│ │ │ [logo] Café Aromas do Vale         │ │  ← display font do arquétipo
+│ │ │        Microlotes e pães…          │ │
+│ │ │ FRESCOS DO DIA           Cardápio ›│ │  ← vocabulário por piso
+│ │ │ [img] [img] [img]                  │ │  ← 3 produtos (products, limit 3)
+│ │ │ ⏱ 25 min · 🚚 Frete grátis [Pedir agora]│ ← CTA accent/accentInk da loja
+│ │ └────────────────────────────────────┘ │
+│ │ └────────────────────────────────────┘ ┌│  ← fileira horizontal, snap por
+│ │                                        ││     fachada (próxima espia ~34px)
 │ ╰────────────────────────────────────────╯
 └─────────────────────────────────────────┘
             (tab bar flutuante)
@@ -218,7 +234,9 @@ O topo do Início é a **fachada do shopping à noite**: painel `marquee` (zinco
 
 #### "Pisos" — repensados
 
-As seções derivam dos 9 PISOS curatoriais de `@mallevo/lib` (ver comentários em `index.tsx`): título + subtítulo, sem filtros nem chips no home. Título de seção usa a fonte-assinatura da marca (`useFontesMarquee().letreiro` — Plus Jakarta Sans 700 com fallback de sistema durante o load), 21px, tracking -0.4: **letreiros de corredor**, a mesma voz do hero. Space Grotesk continua existindo só nos temas de loja (`lib/store-fonts.ts`) — voz de lojista, não da casa.
+As seções derivam dos 9 PISOS curatoriais de `@mallevo/lib` (ver comentários em `index.tsx`): título + subtítulo, sem filtros nem chips no home.
+
+**Fachadas (2026-09-10, referência "Vitrines das Lojas").** O corredor de cada piso é uma **fileira horizontal** de `FachadaLoja` (`components/home/FachadaLoja.tsx`) — a loja vista do corredor, vestindo a PRÓPRIA pele desde a home: `useStoreDesignFromTheme(loja.theme)` dá fundo (`bg` do arquétipo; loja sem tema = `surface` branca), tinta, accent/accentInk, fonte de display (`fontStyle(design.display, 700)` no nome e no monograma), fonte de corpo. **Raios são fixos da casa**, não a escala do arquétipo (uma loja `sharp` não vira caixa de 6px): card `radius.md` 20, caixinha de produto `radius.sm` 14 (padding 10, bg `surface` da loja — `surfaceMuted` sem tema), foto 8, tijolo 14, CTA `pill`. Anatomia: hero `banner_url` 224px com o **véu** (`VeuHero`, um SVG): dissolução na base de transparente (a 42% da altura) até a cor EXATA do fundo do card (ease-in 0→0.28→0.72→1) — a foto vira parte do card, sem linha nem degrau — mais sombra de topo (`ink` 42%→0 em 38%) para a pílula "CATEGORIA • PISO N" (branca 92%, tinta `ink`) e o `BotaoSeguir` variante `reel` (o único chrome Mallevo — seguir é gesto do shopping) lerem sobre qualquer foto. O card **não tem borda** (só `shadow.medium`). Tijolo do logo 60px pousado 44px dentro da zona dissolvida, sem aro (sem logo = 2 iniciais `accentInk` sobre `accent`); nome + `descricao` em 1 linha; vitrine = rótulo + link + 3 produtos (`products` por `store_id`, `disponivel`, `order(ordem)`, `limit 3`, cache de módulo — some se a loja não tem produto); rodapé = "Entrega em N min" + frete (`success` quando grátis) e CTA pílula `accent`. Vocabulário por piso em `VOZ_POR_PISO` (rótulo da vitrine / link / CTA: "Frescos do dia · Cardápio · Pedir agora", "Peças na vitrine · Entrar na loja · Passear"…). Sem rating, "verificado" nem "curadoria": não há dado. Largura `FACHADA_W = width − 16 − 34` (uma loja por "página", a próxima espiando), `snapToInterval = FACHADA_W + FACHADA_GAP(12)`, `decelerationRate="fast"`; o ScrollView leva `paddingVertical: 10` + `marginVertical: -10` para não recortar a sombra. Na fileira os cards esticam à altura do mais alto — o rodapé tem `marginTop: 'auto'` para ficar sempre na base. A query da home pede `descricao` e `theme`. `LojaCardH` foi removido. Título de seção usa a fonte-assinatura da marca (`useFontesMarquee().letreiro` — Plus Jakarta Sans 700 com fallback de sistema durante o load), 21px, tracking -0.4: **letreiros de corredor**, a mesma voz do hero. Space Grotesk continua existindo só nos temas de loja (`lib/store-fonts.ts`) — voz de lojista, não da casa.
 
 #### Marquise (substitui o header)
 
@@ -227,7 +245,7 @@ O home **não usa mais** `<HeaderTela>`. A `<Marquise>` desenha:
 - saudação (`saudacaoPorHorario()` + primeiro nome) em micro caps;
 - statement fixo "A cidade inteira, / na sua mão." + slogan oficial;
 - busca em `marqueeGlass` com borda `marqueeLine` e moeda `accent` à direita (toca → abre o **Concierge**, overlay de busca sobre a própria home — §4; nunca navega);
-- fileira de vitrines com slot "Descobrir" (borda tracejada, toca → `/(tabs)/explorar`); seguidas vêm de `useSeguidas` (join com o catálogo por slug para logo/tempo — seguida sem match ainda aparece com monograma); fallback "em alta" = primeiras lojas do catálogo;
+- fileira de vitrines (2026-09-10, referência "Novidades na Passarela") = **posts recentes dos parceiros** — o "marketing orgânico": o status que o lojista publica vinculado a um produto (mesma view `public_explore_feed` de Explorar/Seguindo, via `carregarPosts` em `lib/posts.ts`). Fonte: posts das lojas seguidas (`carregarPosts({ lojas, limite: 10 })`); sem seguidas — ou seguidas sem post — cai para os 10 mais recentes do shopping (`modoVitrines: 'alta'`). Carrega quando `useSeguidas.hidratado`, independente do catálogo; recarrega no pull-to-refresh. Letreiro: sobrelinha `AO VIVO NO SHOPPING` em `accent` + título "Novidades das suas lojas" / "Novidades na passarela" (`letreiro` 21) + link "Ver tudo ›" (`marqueeInkSoft`) → Seguindo (modo seguidas) ou Explorar (modo alta). **Toque no card leva DIRETO ao post**: `router.navigate({ pathname: '/(tabs)/seguindo' | '/(tabs)/explorar', params: { post: id } })`; as duas telas leem `useLocalSearchParams().post`, rolam até o índice (Seguindo: `scrollToIndex` + `onScrollToIndexFailed` porque os cards têm altura variável; Explorar: `setAtivo` + `scrollToIndex` com `getItemLayout`) e limpam o param (`router.setParams({ post: '' })`) — o mesmo post tocado de novo rola de novo. Cada card é um `VitrineCard` (`components/home/VitrineCard.tsx`, recebe `VitrinePost = { post, theme, logoUrl }` — theme/logo da loja vêm do join por `loja_slug` no catálogo da home): cartaz em retrato `round(width*0.46) × 1.62`, `radius.md`, fundo = `marquee` clareado 5%, fio neutro 1px `marqueeLine` — **sem halo nem fio colorido**. Mídia do post em **toda a layer** (foto → `thumb_url` do vídeo → logo da loja → monograma; `media_url` de vídeo nunca vai a um `<Image>`); a leitura vem de uma **sombra** que sobe do pé na cor do fundo (SVG: transparente a 46% → 0.32 → 0.78 → 0.96 na base) — a mídia nunca é cortada. Legenda: sobrelinha = `loja_nome` em micro caps na cor de **accent da própria loja** (`colorsFromTheme(theme).accent`, só se `contrastRatio ≥ 3` sobre o fundo — senão branco); título = `produto.nome` (sem produto: `descricao`) na `letreiro` 15/19, 2 linhas; sublinha = preço (sem produto: "há 3 sem"). Pílula de **momento** derivada do POST (30px, 11.5/700 caps): publicado < 48h → "Novo" + spark `success`; `curtidas ≥ 1000` → "Em alta" + trend `warning`; vídeo → duração "0:28" + play em `inkGlass`; senão sem pílula. Toque: `Pressable` + spring scale 0.97. O ScrollView leva `paddingVertical: 14` + `marginVertical: -14`. A query da home pede `banner_url` e `categoria:categories(slug, nome)`;
 - entrada com stagger: um `Animated.Value` único, cada peça lê uma janela do intervalo (statement → busca → vitrines).
 
 #### Cartão de pedido ao vivo
@@ -990,68 +1008,66 @@ Acompanhar pedido: timeline de status, mapa do entregador (se em rota), itens, c
 
 ### Propósito
 
-O Explorar é descoberta: feed de todas as lojas, tela cheia, som ligado, algoritmo do shopping. **Seguindo é curadoria**: só as lojas que o usuário escolheu, em ordem cronológica, som mudo por padrão. Uma tela existe para achar o que não se conhece; a outra, para não perder o que já se ama.
+**Seguindo é o Explorar de quem já escolheu o que explorar.** (2026-09-10) É o MESMO feed de reels em tela cheia — player, overlay, curtida, comentários ao vivo, galeria por pinch/lupa, `?post=` — com um filtro só: as lojas que o usuário segue. Uma tela existe para achar o que não se conhece; a outra, para não perder o que já se ama; e as duas se sentem iguais. O card sobre canvas (`CardPost`) foi **removido**.
 
 ### Como se chega
 
 1. **Perfil → "Lojas que sigo"** (com contador) — caminho descoberto por leitura.
 2. **Atalho do Início** — 1 toque no slot do Início alterna para cá, 2 toques voltam ([`05-shell-app.md` §1](./05-shell-app.md#atalho-do-início--seguindo)). Caminho de repetição, para quem já usa.
+3. **Post tocado na marquise do Início** — chega com `?post=<id>` e o feed abre direto nesse reel (o `FeedReels` consome e limpa o param). É a conversão do "marketing orgânico": o status do parceiro na porta do shopping leva direto ao post.
 
 ### Wireframe
 
 ```
 ┌──────────────────────────────────┐
-│ ‹   Seguindo              🔍     │  HeaderTela variante="voltar"
-├──────────────────────────────────┤
+│ (‹) Seguindo              (🔍)   │  cabeçalho sobre o vídeo; ‹ → Início
+│                                  │
+│           reel 9:16              │  idêntico ao Explorar
+│                                  │
+│ (◯) Café Aroma        🔊 ♥ 💬 ➤ 🛍│
+│ Lote novo do…                    │
+│ [🛍 R$ 9,90]                     │
+└──────────────────────────────────┘
+   pinch / 🔍 → galeria:
+┌──────────────────────────────────┐
 │ (◯)  (◯)  (◯)  (◯)  (+)          │  RailSeguindo — anel accent + Descobrir
 │ Café  Barb  Ateliê  Pet  Descob   │  toque longo = deixar de seguir
-├──────────────────────────────────┤
-│ ┌──────────────────────────────┐ │
-│ │ (◯) Café Aroma      [Seguindo]│ │  cabeçalho: avatar, nome, "2 h"
-│ │     2 h                       │ │
-│ │ ┌──────────────────────────┐  │ │
-│ │ │      mídia 4:5           │  │ │  vídeo toca só no card mais visível
-│ │ │      🔇 / 28s            │  │ │  toque duplo curte
-│ │ └──────────────────────────┘  │ │
-│ │ ♥ 623   💬 51   ➤     [🛍 R$ 9,90]│ │
-│ │ **Café Aroma** Lote novo do…  │ │
-│ │ #cafe #torraartesanal         │ │
-│ └──────────────────────────────┘ │
+│ [ 🔍 Pesquisar ]                 │
+│ ▦ ▦ ▦ / ▦ ▦ ▦                    │  grade dos reels seguidos
 └──────────────────────────────────┘
 ```
 
-### Uma superfície, duas perguntas
+### Arquitetura
 
-Nada de segmentado "Feed | Lojas": abas empurram o conteúdo para baixo e obrigam a escolher antes de ver qualquer coisa. As duas perguntas convivem na mesma rolagem — o **rail** responde "quem eu sigo", o **feed** responde "o que publicaram".
+`components/explorar/FeedReels.tsx` é o feed; as duas rotas são casca:
 
-Consequência assumida: gerenciar quem se segue perde a lista dedicada. O unfollow vive em dois lugares — o botão "Seguindo" no cabeçalho de cada card e o **toque longo no avatar do rail** (com `Alert` de confirmação), que é a única saída para uma loja que ainda não publicou nada.
+| Rota | Uso |
+|---|---|
+| `(tabs)/explorar.tsx` | `<FeedReels titulo="Explorar" />` |
+| `(tabs)/seguindo.tsx` | `<FeedReels titulo="Seguindo" lojas={slugs} aoVoltar={→ Início} vazio={…} cabecalhoGaleria={<RailSeguindo/>} />` |
+
+Props do `FeedReels`: `titulo`; `lojas?` (`undefined` = shopping inteiro, `[]` = vazio sem ir ao banco); `aoVoltar?` (moeda ‹ no cabeçalho); `vazio?` (nó sobre o fundo escuro quando o feed carrega vazio); `cabecalhoGaleria?` (nó no topo da galeria, acima da busca).
 
 ### Dados
 
-- Mesma view do Explorar (`public_explore_feed`), filtrada por `.in('loja_slug', seguidas)`, mesma paginação keyset por `publicado_em`. Contrato compartilhado em `lib/posts.ts` — **não duplicar o tipo nem o mapeamento na tela**.
-- Nome e logo das lojas vêm de um `select` em `stores` com `.in('slug', ...)`; a tela funciona sem eles (cai na inicial sobre `ink`).
-- Quem segue o quê: `store/useSeguidas.ts` (zustand + AsyncStorage). **Local por ora** — não existe `store_follows` no schema. Quando existir, o store vira cache otimista e a UI não muda.
+- Mesma view do Explorar (`public_explore_feed`), `carregarPosts({ lojas })` com paginação keyset por `publicado_em`. Contrato em `lib/posts.ts` — **não duplicar o tipo nem o mapeamento**.
+- Nome e logo das lojas (rail) vêm de um `select` em `stores` com `.in('slug', ...)`; a tela funciona sem eles (cai na inicial em `accent` sobre vidro).
+- Quem segue o quê: `store/useSeguidas.ts` (zustand + AsyncStorage). **Local por ora** — não existe `store_follows` no schema.
 
 ### Regras de comportamento
 
-- **Remover não recarrega.** Se o conjunto seguido só perdeu slugs, a tela filtra os posts em memória em vez de refazer o fetch: deixar de seguir no meio da rolagem não pode jogar o usuário de volta ao topo. Só adição dispara recarga.
-- **Vídeo toca em um card só** (o mais visível, `itemVisiblePercentThreshold: 60`) e pausa ao sair da aba (`useFocusEffect`).
-- **Mudo por padrão** (`mutado` inicia `true`), ao contrário do Explorar: feed de card se lê rolando, não assistindo.
-- **Mídia 4:5, não 9:16.** Reel inteiro tomaria a tela e apagaria a diferença entre as duas telas.
-- Três estados vazios distintos: sem hidratar (esqueleto), sem seguir ninguém (`EmptyState` + CTA Explorar), seguindo mas sem posts ("Nada novo por aqui").
+- **Remover não recarrega.** Se o conjunto seguido só perdeu slugs, o `FeedReels` filtra os reels em memória (e clampa o índice ativo) em vez de refazer o fetch: deixar de seguir no meio do feed não pode jogar o usuário de volta ao começo. Só adição dispara recarga.
+- **Som ligado por padrão**, como no Explorar — é o mesmo feed.
+- **O rail vive na galeria**, não sobre o vídeo: sobre o reel ele roubaria a tela; na galeria ele responde "quem eu sigo" ao lado da grade que responde "o que publicaram". Toque longo no avatar = deixar de seguir (com `Alert`), a única saída para uma loja que ainda não publicou.
+- Três estados: sem hidratar (spinner sobre `ink`), sem seguir ninguém (`EmptyState` escuro + CTA Explorar), seguindo sem posts ("Nada novo por aqui").
 
 ### Componentes
 
 | Componente | Papel |
 |---|---|
+| `components/explorar/FeedReels.tsx` | o feed de reels inteiro, compartilhado |
 | `components/BotaoSeguir.tsx` | único ponto de escrita em `useSeguidas`; peles `reel` (sobre vídeo) e `claro` (sobre surface) |
-| `components/seguindo/CardPost.tsx` | card do feed + `Avatar` (logo ou inicial) |
-| `components/seguindo/RailSeguindo.tsx` | trilho horizontal das lojas seguidas + item "Descobrir" |
-
-### Pendências assumidas
-
-- Comentários são **contador, não botão** — não existe tela de comentários (igual ao Explorar).
-- Compartilhar usa `Share` nativo com texto; ganha deep link quando o post tiver URL pública.
+| `components/seguindo/RailSeguindo.tsx` | trilho das lojas seguidas + "Descobrir", pele escura (galeria); `Avatar` mora aqui |
 
 ---
 
@@ -1085,7 +1101,7 @@ Consequência assumida: gerenciar quem se segue perde a lista dedicada. O unfoll
 
 ### Grade, não feed
 
-Seguindo já é uma coluna de cards para **ler**; repetir o formato aqui daria duas telas iguais com conteúdos diferentes. De uma coleção se quer bater o olho e **reconhecer** — daí a grade 2×, mídia grande, nome da loja e preço. Mesma proporção 4:5 da mídia do card, para a coleção parecer a mesma biblioteca vista de longe.
+Seguindo é o feed de reels (o Explorar filtrado); repetir o formato aqui daria duas telas iguais com conteúdos diferentes. De uma coleção se quer bater o olho e **reconhecer** — daí a grade 2×, mídia grande, nome da loja e preço. Mesma proporção 4:5 da mídia do card, para a coleção parecer a mesma biblioteca vista de longe.
 
 - **Toque abre a loja** (`/loja/[slug]`): é onde a curtida vira compra, e não existe tela de detalhe de post.
 - **Toque longo remove**, com `Alert` — mesmo gesto do rail de Seguindo. O coração do tile é selo de estado, não botão: se fosse botão, competiria com o toque que abre a loja.

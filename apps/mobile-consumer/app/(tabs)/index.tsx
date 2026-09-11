@@ -20,17 +20,23 @@ import Svg, {
 } from 'react-native-svg'
 import { supabase } from '@/lib/supabase'
 import { BannerCarousel } from '@/components/BannerCarousel'
-import { LojaCardH } from '@/components/LojaCardH'
+import {
+  FachadaLoja,
+  FachadaApagada,
+  FACHADA_W,
+  FACHADA_GAP,
+} from '@/components/home/FachadaLoja'
 import { NotificacoesPopup } from '@/components/NotificacoesPopup'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import {
   Marquise,
   useFontesMarquee,
-  type VitrineLoja,
+  type VitrinePost,
 } from '@/components/home/Marquise'
 import { Concierge } from '@/components/home/Concierge'
-import { Diretorio, ICONE_POR_PISO } from '@/components/home/Diretorio'
+import { SeletorEnderecoHome } from '@/components/home/SeletorEnderecoHome'
+import { Diretorio } from '@/components/home/Diretorio'
 import { Vidro } from '@/components/ui/Vidro'
 import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -38,8 +44,10 @@ import { useOrderStore } from '@/store/useOrderStore'
 import { useSeguidas } from '@/store/useSeguidas'
 import { formatarReais, PISOS } from '@mallevo/lib'
 import { consumerDesign, saudacaoPorHorario } from '@/lib/consumer-design'
+import { enderecoPadrao } from '@/lib/enderecos'
 import { metaDoStatus, ehAtivo } from '@/lib/status-pedido'
 import { BANNERS_MOCK } from '@/lib/banners-mock'
+import { carregarPosts, type Post } from '@/lib/posts'
 
 const { colors, radius, spacing, shadow, motion } = consumerDesign
 
@@ -47,10 +55,15 @@ interface Loja {
   id: string
   nome: string
   slug: string | null
+  descricao: string | null
   logo_url: string | null
+  banner_url: string | null
   taxa_entrega: number
   tempo_entrega: number | null
   categoria_slug: string | null
+  categoria_nome: string | null
+  /** `stores.theme` cru — a fachada resolve a pele da loja a partir dele. */
+  theme: unknown
 }
 
 /**
@@ -80,6 +93,7 @@ const SECOES = [...PISOS]
   .sort((a, b) => a.ordem - b.ordem)
   .map((piso) => ({
     slug: piso.slug,
+    ordem: piso.ordem,
     titulo: piso.nome,
     subtitulo: SUBTITULO_POR_PISO[piso.slug] ?? '',
   }))
@@ -124,8 +138,8 @@ const SECAO_POR_CATEGORIA: Record<string, number> = (() => {
 })()
 
 /** Quantas lojas entram na fileira de vitrines da marquise. */
-const MAX_VITRINES_SEGUIDAS = 12
-const MAX_VITRINES_ALTA = 8
+/** Quantos posts recentes acendem na marquise. */
+const MAX_VITRINES = 10
 
 // ─────────────────────────────────────────────────────────
 // Sub-componentes locais
@@ -298,23 +312,27 @@ function CardPedidoVivo({
 }
 
 /**
- * Corredor de um piso. O cabeçalho é o "letreiro de corredor": placa de
- * sinalização com o ícone de linha do piso (a mesma da placa do diretório,
- * para o olho reconhecer aonde o elevador o trouxe), nome completo na
- * fonte-assinatura, subtítulo com o que se encontra ali e a contagem de
- * lojas no canto — tudo monocromático, identidade sem 9 matizes.
+ * Corredor de um piso: letreiro + fileira HORIZONTAL de FACHADAS de loja,
+ * cada uma vestindo a pele da própria loja (FachadaLoja). Caminhar pelo
+ * piso é rolar de lado, fachada a fachada — o scroll pagina por card
+ * (`snapToInterval`), com a próxima loja espiando na borda.
+ *
+ * O letreiro é só texto (sobrelinha, nome na fonte-assinatura, subtítulo,
+ * contagem) — sem placa com ícone: a cor e a imagem ficam para as fachadas.
  *
  * `aoMedir` devolve o y do corredor (relativo à folha) para o scroll
  * ancorado do diretório.
  */
 function SecaoLojas({
   slug,
+  ordem,
   titulo,
   subtitulo,
   lojas,
   aoMedir,
 }: {
   slug: string
+  ordem: number
   titulo: string
   subtitulo: string
   lojas: Loja[]
@@ -327,7 +345,7 @@ function SecaoLojas({
 
   return (
     <View
-      style={{ paddingTop: 30 }}
+      style={{ paddingTop: 34 }}
       onLayout={(e) => aoMedir(e.nativeEvent.layout.y)}
     >
       <View
@@ -336,28 +354,23 @@ function SecaoLojas({
           alignItems: 'center',
           gap: 12,
           paddingHorizontal: 24,
-          marginBottom: 14,
+          marginBottom: 16,
         }}
       >
-        {/* Placa do corredor — mesmo vidro das placas do diretório. */}
-        <Vidro raio={radius.sm}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ConsumerIcon
-              name={ICONE_POR_PISO[slug] ?? 'store'}
-              size={19}
-              color={colors.ink}
-              strokeWidth={1.8}
-            />
-          </View>
-        </Vidro>
         <View style={{ flex: 1 }}>
+          <Text
+            style={{
+              fontSize: 10.5,
+              fontWeight: '700',
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              color: colors.inkSoft,
+              marginBottom: 3,
+            }}
+            numberOfLines={1}
+          >
+            Caminhando pelo piso {ordem}
+          </Text>
           <Text
             style={[
               fontes.letreiro,
@@ -394,16 +407,30 @@ function SecaoLojas({
           {lojas.length} {lojas.length === 1 ? 'LOJA' : 'LOJAS'}
         </Text>
       </View>
+
+      {/* paddingVertical + margin negativa: a sombra da fachada vaza além do
+          card e o ScrollView recorta nos limites. Alinhamento: cada fachada
+          é uma "página" — snap no passo card+gap, freio rápido. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+        snapToInterval={FACHADA_W + FACHADA_GAP}
+        snapToAlignment="start"
+        decelerationRate="fast"
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingVertical: 10,
+          gap: FACHADA_GAP,
+        }}
+        style={{ marginVertical: -10 }}
       >
         {lojas.map((loja) => (
-          <LojaCardH
+          <FachadaLoja
             key={loja.id}
             loja={loja}
-            onPress={() => router.push(`/loja/${loja.slug}`)}
+            pisoSlug={slug}
+            pisoOrdem={ordem}
+            aoEntrar={() => router.push(`/loja/${loja.slug}`)}
           />
         ))}
       </ScrollView>
@@ -477,19 +504,20 @@ function SkeletonSecao() {
           marginBottom: 14,
         }}
       >
-        <Skeleton largura={44} altura={44} raio={radius.sm} />
         <View style={{ flex: 1, gap: 8 }}>
+          <Skeleton largura="30%" altura={10} raio={4} />
           <Skeleton largura="55%" altura={20} raio={6} />
           <Skeleton largura="40%" altura={13} raio={4} />
         </View>
       </View>
       <ScrollView
         horizontal
+        scrollEnabled={false}
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 12 }}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: FACHADA_GAP }}
       >
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Skeleton key={i} largura={220} altura={200} raio={radius.lg} />
+        {Array.from({ length: 2 }).map((_, i) => (
+          <FachadaApagada key={i} />
         ))}
       </ScrollView>
     </View>
@@ -508,6 +536,7 @@ export default function TelaHome() {
   // Busca = overlay Concierge sobre a própria home, nunca navegação: fechar
   // devolve a tela exatamente onde estava (scroll, estado, tudo).
   const [buscaAberta, setBuscaAberta] = useState(false)
+  const [seletorEnderecoAberto, setSeletorEnderecoAberto] = useState(false)
 
   // Scroll ancorado do diretório: o y de cada corredor (relativo à folha) +
   // o y da folha (relativo ao conteúdo do ScrollView) = destino do elevador.
@@ -533,19 +562,28 @@ export default function TelaHome() {
     }, []),
   )
 
+  // ── Posts da marquise ──
+  // Os posts recentes das lojas seguidas (ou do shopping inteiro, para
+  // quem não segue ninguém — ou cujas seguidas ainda não publicaram).
+  // `null` = carregando. Independente do catálogo: a fachada acende mesmo
+  // que a folha demore.
+  const [vitrinePosts, setVitrinePosts] = useState<Post[] | null>(null)
+  const [modoVitrines, setModoVitrines] = useState<'seguidas' | 'alta'>('alta')
+
   const totalItens = useCartStore((s) => s.totalItens())
   const total = useCartStore((s) => s.total())
   const consumer = useAuthStore((s) => s.consumer)
   const pedidoAtivoId = useOrderStore((s) => s.pedidoAtivoId)
   const statusAtual = useOrderStore((s) => s.statusAtual)
   const seguidasMap = useSeguidas((s) => s.seguidas)
+  const seguidasHidratado = useSeguidas((s) => s.hidratado)
   const primeiroNome = consumer?.nome?.split(' ')[0] ?? ''
 
   async function carregarDados() {
     const { data } = await supabase
       .from('stores')
       .select(
-        'id, nome, slug, logo_url, taxa_entrega, tempo_entrega, categoria:categories(slug)',
+        'id, nome, slug, descricao, logo_url, banner_url, taxa_entrega, tempo_entrega, theme, categoria:categories(slug, nome)',
       )
       .eq('ativo', true)
       // Teto alto de propósito: a home distribui o resultado nos 9 pisos, e
@@ -558,7 +596,11 @@ export default function TelaHome() {
     setLojas(
       (data ?? []).map((r: any) => ({
         ...r,
+        descricao: r.descricao ?? null,
+        banner_url: r.banner_url ?? null,
+        theme: r.theme ?? null,
         categoria_slug: r.categoria?.slug ?? null,
+        categoria_nome: r.categoria?.nome ?? null,
       })),
     )
     setCarregando(false)
@@ -566,12 +608,6 @@ export default function TelaHome() {
 
   useEffect(() => {
     carregarDados()
-  }, [])
-
-  const onRefresh = useCallback(async () => {
-    setAtualizando(true)
-    await carregarDados()
-    setAtualizando(false)
   }, [])
 
   // Cada loja entra em UM piso só — o da sua categoria (nunca duplica nem desalinha).
@@ -593,38 +629,85 @@ export default function TelaHome() {
       ),
     [lojas],
   )
-  const listaSeguidas = useMemo(
-    () =>
-      Object.values(seguidasMap).sort((a, b) => b.seguidoEm - a.seguidoEm),
+  const slugsSeguidos = useMemo(
+    () => Object.keys(seguidasMap).sort(),
     [seguidasMap],
   )
-  const modoVitrines = listaSeguidas.length > 0 ? 'seguidas' : 'alta'
-  const vitrines: VitrineLoja[] =
-    modoVitrines === 'seguidas'
-      ? listaSeguidas.slice(0, MAX_VITRINES_SEGUIDAS).map((s) => {
-          const loja = porSlug.get(s.slug)
-          return {
-            slug: s.slug,
-            nome: loja?.nome ?? s.nome,
-            logoUrl: loja?.logo_url ?? null,
-            tempoEntrega: loja?.tempo_entrega ?? null,
-            seguida: true,
-          }
+  // Chave estável do conjunto seguido — recarrega só quando muda de fato.
+  const chaveSeguidos = slugsSeguidos.join(',')
+
+  const carregarVitrines = useCallback(async () => {
+    try {
+      if (slugsSeguidos.length > 0) {
+        const deSeguidas = await carregarPosts({
+          lojas: slugsSeguidos,
+          limite: MAX_VITRINES,
         })
-      : lojas
-          .filter((l) => l.slug)
-          .slice(0, MAX_VITRINES_ALTA)
-          .map((l) => ({
-            slug: l.slug!,
-            nome: l.nome,
-            logoUrl: l.logo_url,
-            tempoEntrega: l.tempo_entrega,
-            seguida: false,
-          }))
+        if (deSeguidas.length > 0) {
+          setVitrinePosts(deSeguidas)
+          setModoVitrines('seguidas')
+          return
+        }
+      }
+      setVitrinePosts(await carregarPosts({ limite: MAX_VITRINES }))
+      setModoVitrines('alta')
+    } catch {
+      // Sem feed, a fachada mostra a fileira vazia — a home segue viva.
+      setVitrinePosts([])
+    }
+    // `chaveSeguidos` resume `slugsSeguidos`.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chaveSeguidos])
+
+  useEffect(() => {
+    if (!seguidasHidratado) return
+    setVitrinePosts(null)
+    void carregarVitrines()
+  }, [seguidasHidratado, carregarVitrines])
+
+  // Cada post veste a pele da loja que o publicou (accent na sobrelinha) e
+  // leva o logo dela como mídia de reserva — join pelo slug no catálogo.
+  const vitrines: VitrinePost[] = useMemo(
+    () =>
+      (vitrinePosts ?? []).map((post) => {
+        const loja = porSlug.get(post.loja_slug)
+        return { post, theme: loja?.theme ?? null, logoUrl: loja?.logo_url ?? null }
+      }),
+    [vitrinePosts, porSlug],
+  )
+
+  /**
+   * Tocar num post leva DIRETO a ele: no Seguindo (o explorar curado)
+   * quando a fileira é das lojas seguidas; no Explorar quando é do
+   * shopping — o Seguindo não teria esse post. Ambas as telas leem `post`
+   * e rolam até ele.
+   */
+  function abrirPost(item: VitrinePost) {
+    router.navigate({
+      pathname: modoVitrines === 'seguidas' ? '/(tabs)/seguindo' : '/(tabs)/explorar',
+      params: { post: item.post.id },
+    })
+  }
+  const abrirFeed = () =>
+    router.navigate(modoVitrines === 'seguidas' ? '/(tabs)/seguindo' : '/(tabs)/explorar')
+
+  const onRefresh = useCallback(async () => {
+    setAtualizando(true)
+    await Promise.all([carregarDados(), carregarVitrines()])
+    setAtualizando(false)
+  }, [carregarVitrines])
 
   const saudacao = primeiroNome
     ? `${saudacaoPorHorario()}, ${primeiroNome}`
     : saudacaoPorHorario()
+
+  // "Entregar em" mostra o endereço padrão (o mesmo que o checkout
+  // pré-seleciona). Sem nenhum salvo, vira convite para cadastrar — a folha
+  // abre direto no formulário nesse caso.
+  const enderecoAtual = enderecoPadrao(consumer?.enderecos ?? [])
+  const textoLocalizacao = enderecoAtual
+    ? enderecoAtual.apelido ?? `${enderecoAtual.rua}, ${enderecoAtual.numero}`
+    : 'Adicionar endereço'
 
   const mostraPedidoAtivo = pedidoAtivoId && statusAtual && ehAtivo(statusAtual)
   const espacoFinal =
@@ -662,13 +745,13 @@ export default function TelaHome() {
           saudacao={saudacao}
           vitrines={vitrines}
           modoVitrines={modoVitrines}
-          carregandoVitrines={carregando}
-          aoTocarLocalizacao={() => {
-            /* TODO: abrir seletor de endereço (deferido) */
-          }}
+          carregandoVitrines={vitrinePosts === null}
+          localizacao={textoLocalizacao}
+          aoTocarLocalizacao={() => setSeletorEnderecoAberto(true)}
           aoTocarBusca={() => setBuscaAberta(true)}
           aoTocarSino={() => setNotificacoesAbertas(true)}
-          aoTocarVitrine={(slug) => router.push(`/loja/${slug}`)}
+          aoTocarVitrine={abrirPost}
+          aoTocarVerTudo={abrirFeed}
           aoTocarDescobrir={() => router.push('/(tabs)/explorar')}
         >
           {mostraPedidoAtivo && (
@@ -721,6 +804,7 @@ export default function TelaHome() {
                   <SecaoLojas
                     key={meta.slug}
                     slug={meta.slug}
+                    ordem={meta.ordem}
                     titulo={meta.titulo}
                     subtitulo={meta.subtitulo}
                     lojas={lojasDaSecao}
@@ -775,6 +859,11 @@ export default function TelaHome() {
       <NotificacoesPopup
         visivel={notificacoesAbertas}
         onFechar={() => setNotificacoesAbertas(false)}
+      />
+
+      <SeletorEnderecoHome
+        visivel={seletorEnderecoAberto}
+        onFechar={() => setSeletorEnderecoAberto(false)}
       />
     </View>
   )

@@ -2,7 +2,6 @@ import { ReactNode, useEffect, useRef } from 'react'
 import {
   View,
   Text,
-  Image,
   ScrollView,
   TouchableOpacity,
   Animated,
@@ -19,6 +18,11 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans'
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
+import {
+  VitrineCard,
+  VitrineApagada,
+  type VitrinePost,
+} from '@/components/home/VitrineCard'
 import { useNaoLidas } from '@/store/useNotificacoes'
 import { consumerDesign } from '@/lib/consumer-design'
 
@@ -29,37 +33,41 @@ import { consumerDesign } from '@/lib/consumer-design'
  * (zinco quente) com o degradê lima-profundo do brand web vazando por trás
  * (SVG radial — o mesmo do painel do lojista), saudação de portaria,
  * statement em Plus Jakarta Sans com a última linha acesa em itálico no
- * accent, busca em vidro fumê e a fileira de vitrines circulares (lojas
- * seguidas — ou as em alta, para quem ainda não segue ninguém). O conteúdo
- * claro sobe por cima como uma folha arredondada: sair da fachada e entrar
- * no shopping.
+ * accent, busca em vidro fumê e a fileira de vitrines — os POSTS recentes
+ * dos parceiros (VitrineCard: o status que o lojista publicou vinculado a
+ * um produto), das lojas seguidas ou, para quem ainda não segue ninguém,
+ * do shopping inteiro — sob o letreiro "Ao vivo no shopping". Tocar leva
+ * direto ao post no Seguindo (ou no Explorar). O conteúdo claro sobe por
+ * cima como uma folha arredondada: sair da fachada e entrar no shopping.
  *
  * Spec: docs/system-design/consumer/07-telas.md §1
  */
 
 const { colors, radius, motion } = consumerDesign
 
-/** Loja exibida na fileira de vitrines. */
-export interface VitrineLoja {
-  slug: string
-  nome: string
-  logoUrl: string | null
-  tempoEntrega: number | null
-  seguida: boolean
-}
+// Re-export: a tela do home monta a lista com este tipo.
+export type { VitrinePost }
 
 interface MarquiseProps {
   /** "Boa noite, Pedro" — já montada (saudacaoPorHorario + nome). */
   saudacao: string
-  vitrines: VitrineLoja[]
-  /** De onde a fileira veio: lojas seguidas ou as "em alta" (fallback). */
+  vitrines: VitrinePost[]
+  /** De onde a fileira veio: posts das lojas seguidas ou do shopping (fallback). */
   modoVitrines: 'seguidas' | 'alta'
-  /** Enquanto o catálogo carrega, a fileira mostra vitrines apagadas. */
+  /** Enquanto os posts carregam, a fileira mostra vitrines apagadas. */
   carregandoVitrines: boolean
+  /**
+   * Texto da portaria ("Entregar em …"): apelido ou rua do endereço padrão.
+   * Sem endereço salvo, o chamador manda o convite ("Adicionar endereço").
+   */
+  localizacao?: string
   aoTocarLocalizacao?: () => void
   aoTocarBusca: () => void
   aoTocarSino: () => void
-  aoTocarVitrine: (slug: string) => void
+  /** Toque num post — leva ao post no Seguindo/Explorar. */
+  aoTocarVitrine: (item: VitrinePost) => void
+  /** "Ver tudo" — Seguindo (modo seguidas) ou Explorar (modo alta). */
+  aoTocarVerTudo: () => void
   aoTocarDescobrir: () => void
   /** Cartão de pedido ao vivo (renderizado no pé da fachada). */
   children?: ReactNode
@@ -105,10 +113,12 @@ export function Marquise({
   vitrines,
   modoVitrines,
   carregandoVitrines,
+  localizacao,
   aoTocarLocalizacao,
   aoTocarBusca,
   aoTocarSino,
   aoTocarVitrine,
+  aoTocarVerTudo,
   aoTocarDescobrir,
   children,
 }: MarquiseProps) {
@@ -169,7 +179,16 @@ export function Marquise({
           onPress={aoTocarLocalizacao}
           disabled={!aoTocarLocalizacao}
           activeOpacity={consumerDesign.opacity.pressedSoft}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Entregar em ${localizacao ?? 'Divinópolis'}. Trocar endereço`}
+          // flexShrink + paddingRight: endereço longo trunca antes do sino.
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            flexShrink: 1,
+            paddingRight: 16,
+          }}
         >
           {/* Pin nu — a portaria não usa moedas de vidro: chrome zero no topo,
               vidro da fachada fica para busca, vitrines e cartão ao vivo. */}
@@ -179,7 +198,7 @@ export function Marquise({
             color={colors.accent}
             strokeWidth={2}
           />
-          <View>
+          <View style={{ flexShrink: 1 }}>
             <Text style={estilos.microMudo}>Entregar em</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <Text
@@ -188,9 +207,11 @@ export function Marquise({
                   fontWeight: '800',
                   color: colors.white,
                   letterSpacing: -0.3,
+                  flexShrink: 1,
                 }}
+                numberOfLines={1}
               >
-                Divinópolis
+                {localizacao ?? 'Divinópolis'}
               </Text>
               {aoTocarLocalizacao && (
                 <ConsumerIcon
@@ -292,56 +313,117 @@ export function Marquise({
         </TouchableOpacity>
       </Animated.View>
 
-      {/* Vitrines acesas */}
-      <View style={{ paddingTop: 26 }}>
+      {/* Vitrines acesas — letreiro de seção + cartazes em retrato */}
+      <Animated.View style={[{ paddingTop: 30 }, janela(0.2, 0.65)]}>
         <View
           style={{
             flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
             paddingHorizontal: 24,
-            marginBottom: 14,
+            marginBottom: 16,
           }}
         >
-          <ConsumerIcon
-            name={modoVitrines === 'seguidas' ? 'users' : 'spark'}
-            size={12}
-            color={colors.accent}
-          />
-          <Text style={estilos.microMudo}>
-            {modoVitrines === 'seguidas' ? 'Suas lojas' : 'Em alta agora'}
-          </Text>
+          <View style={{ flexShrink: 1, paddingRight: 12 }}>
+            {/* Sobrelinha acesa: o accent marca o "ao vivo", como a
+                sobrelinha de cada cartaz marca a categoria. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <ConsumerIcon
+                name={modoVitrines === 'seguidas' ? 'users' : 'spark'}
+                size={11}
+                color={colors.accent}
+                strokeWidth={2.4}
+              />
+              <Text style={[estilos.microMudo, { color: colors.accent }]}>
+                Ao vivo no shopping
+              </Text>
+            </View>
+            <Text
+              style={[
+                fontes.letreiro,
+                {
+                  fontSize: 21,
+                  letterSpacing: -0.4,
+                  color: colors.white,
+                  marginTop: 6,
+                },
+              ]}
+              numberOfLines={1}
+            >
+              {modoVitrines === 'seguidas'
+                ? 'Novidades das suas lojas'
+                : 'Novidades na passarela'}
+            </Text>
+          </View>
+
+          <TouchableOpacity
+            onPress={aoTocarVerTudo}
+            activeOpacity={consumerDesign.opacity.pressedSoft}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={
+              modoVitrines === 'seguidas'
+                ? 'Ver todas as novidades das lojas que você segue'
+                : 'Explorar todas as novidades'
+            }
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 2,
+              paddingBottom: 3,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontWeight: '700',
+                color: colors.marqueeInkSoft,
+              }}
+            >
+              Ver tudo
+            </Text>
+            <ConsumerIcon
+              name="chevron-right"
+              size={14}
+              color={colors.marqueeInkSoft}
+              strokeWidth={2.2}
+            />
+          </TouchableOpacity>
         </View>
 
+        {/* paddingVertical: o halo colorido dos cartazes vaza além do card e
+            o ScrollView recorta nos limites — sem respiro, o halo some. */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20, gap: 16 }}
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingVertical: 14,
+            gap: 12,
+          }}
+          style={{ marginVertical: -14 }}
         >
-          <Animated.View style={janela(0.2, 0.65)}>
-            <SlotDescobrir aoTocar={aoTocarDescobrir} />
-          </Animated.View>
-
           {carregandoVitrines && vitrines.length === 0
-            ? Array.from({ length: 4 }).map((_, i) => (
+            ? Array.from({ length: 3 }).map((_, i) => (
                 <VitrineApagada key={i} />
               ))
-            : vitrines.map((loja, i) => {
+            : vitrines.map((item, i) => {
                 const passo = Math.min(i, STAGGER_MAX)
                 return (
                   <Animated.View
-                    key={loja.slug}
+                    key={item.post.id}
                     style={janela(0.25 + passo * 0.07, 0.7 + passo * 0.05)}
                   >
-                    <VitrineAvatar
-                      loja={loja}
-                      aoTocar={() => aoTocarVitrine(loja.slug)}
+                    <VitrineCard
+                      item={item}
+                      letreiro={fontes.letreiro}
+                      aoTocar={() => aoTocarVitrine(item)}
                     />
                   </Animated.View>
                 )
               })}
         </ScrollView>
-      </View>
+      </Animated.View>
 
       {children && (
         <View style={{ paddingHorizontal: 16, paddingTop: 24 }}>{children}</View>
@@ -423,135 +505,6 @@ function SinoNoturno({ aoTocar }: { aoTocar: () => void }) {
   )
 }
 
-/** Primeiro slot da fileira: descobrir lojas novas para seguir. */
-function SlotDescobrir({ aoTocar }: { aoTocar: () => void }) {
-  return (
-    <TouchableOpacity
-      onPress={aoTocar}
-      activeOpacity={consumerDesign.opacity.pressedSoft}
-      style={{ alignItems: 'center', width: 68 }}
-    >
-      <View
-        style={{
-          width: 62,
-          height: 62,
-          borderRadius: 31,
-          borderWidth: 1.5,
-          borderStyle: 'dashed',
-          borderColor: colors.marqueeInkMuted,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <ConsumerIcon name="plus" size={20} color={colors.accent} />
-      </View>
-      <Text style={estilos.nomeVitrine} numberOfLines={1}>
-        Descobrir
-      </Text>
-      <Text style={estilos.subVitrine} numberOfLines={1}>
-        lojas novas
-      </Text>
-    </TouchableOpacity>
-  )
-}
-
-function VitrineAvatar({
-  loja,
-  aoTocar,
-}: {
-  loja: VitrineLoja
-  aoTocar: () => void
-}) {
-  const inicial = loja.nome.charAt(0).toUpperCase()
-
-  return (
-    <TouchableOpacity
-      onPress={aoTocar}
-      activeOpacity={consumerDesign.opacity.pressed}
-      style={{ alignItems: 'center', width: 68 }}
-    >
-      {/* Loja seguida ganha o aro aceso — vitrine com o neon ligado. */}
-      <View
-        style={{
-          width: 62,
-          height: 62,
-          borderRadius: 31,
-          borderWidth: 1.5,
-          borderColor: loja.seguida ? colors.accentRing : colors.marqueeLine,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        {loja.logoUrl ? (
-          <Image
-            source={{ uri: loja.logoUrl }}
-            style={{
-              width: 54,
-              height: 54,
-              borderRadius: 27,
-              backgroundColor: colors.marqueeGlassStrong,
-            }}
-            resizeMode="cover"
-          />
-        ) : (
-          <View
-            style={{
-              width: 54,
-              height: 54,
-              borderRadius: 27,
-              backgroundColor: colors.marqueeGlassStrong,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: colors.accent,
-                fontSize: 21,
-                fontWeight: '800',
-                letterSpacing: -0.5,
-              }}
-            >
-              {inicial}
-            </Text>
-          </View>
-        )}
-      </View>
-      <Text style={estilos.nomeVitrine} numberOfLines={1}>
-        {loja.nome}
-      </Text>
-      <Text style={estilos.subVitrine} numberOfLines={1}>
-        {loja.tempoEntrega !== null ? `${loja.tempoEntrega} min` : 'Ver loja'}
-      </Text>
-    </TouchableOpacity>
-  )
-}
-
-/** Placeholder enquanto o catálogo carrega — vitrine ainda apagada. */
-function VitrineApagada() {
-  return (
-    <View style={{ alignItems: 'center', width: 68 }}>
-      <View
-        style={{
-          width: 62,
-          height: 62,
-          borderRadius: 31,
-          backgroundColor: colors.marqueeGlass,
-        }}
-      />
-      <View
-        style={{
-          width: 44,
-          height: 9,
-          borderRadius: 5,
-          marginTop: 10,
-          backgroundColor: colors.marqueeGlass,
-        }}
-      />
-    </View>
-  )
-}
-
 const estilos = StyleSheet.create({
   microMudo: {
     fontSize: 11,
@@ -559,18 +512,5 @@ const estilos = StyleSheet.create({
     color: colors.marqueeInkMuted,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-  },
-  nomeVitrine: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.white,
-    marginTop: 8,
-    maxWidth: 68,
-  },
-  subVitrine: {
-    fontSize: 10.5,
-    fontWeight: '500',
-    color: colors.marqueeInkMuted,
-    marginTop: 2,
   },
 })
