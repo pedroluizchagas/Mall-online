@@ -75,6 +75,21 @@ export const consumerDesign = {
     danger: '#FF6D5E',
     info: '#5BB7FF',
   },
+  // Luz do dia — a tinta que bate na folha clara do Início conforme o sol
+  // de Divinópolis (lib/luz-do-dia.ts). Fora de `colors` de propósito: a
+  // paleta das lojas (StoreColors) espelha as chaves de `colors` como
+  // strings, e a luz não é cor de UI — é atmosfera. NUNCA muda o canvas:
+  // entra como véu de alpha baixo (≤ 14%) no VidroFosco, dissolvendo até
+  // o canvas limpo. Uma cor por fase; entre fases o módulo interpola.
+  luz: {
+    madrugada: '#5B6B9E',
+    amanhecer: '#F4B36F',
+    manha: '#FFE9B8',
+    meioDia: '#FFFFFF',
+    tarde: '#FFD08A',
+    entardecer: '#E9855A',
+    noite: '#4A5A8F',
+  },
   radius: {
     sm: 14,
     md: 20,

@@ -1,5 +1,13 @@
 import { useState, useCallback } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, Alert, RefreshControl } from 'react-native'
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  RefreshControl,
+  Switch,
+} from 'react-native'
 import { router } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -17,6 +25,7 @@ import { Card } from '@/components/ui/Card'
 import { Botao } from '@/components/ui/Botao'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
+import { usePreferencias } from '@/store/usePreferencias'
 
 const { colors, radius, spacing } = consumerDesign
 
@@ -27,6 +36,8 @@ export default function TelaPerfil() {
   const { limparCarrinho } = useCartStore()
   const { limpar: limparOrder } = useOrderStore()
   const [secaoAtiva, setSecaoAtiva] = useState<SecaoAtiva>(null)
+  const luzDoDia = usePreferencias((s) => s.luzDoDia)
+  const setLuzDoDia = usePreferencias((s) => s.setLuzDoDia)
   const [atualizando, setAtualizando] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
 
@@ -246,6 +257,27 @@ export default function TelaPerfil() {
           <GerenciarEnderecos enderecos={consumer?.enderecos ?? []} />
         )}
 
+        {/* Início — aparência da home */}
+        <Secao titulo="INÍCIO">
+          <View
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: radius.lg,
+              borderWidth: 1,
+              borderColor: colors.line,
+              overflow: 'hidden',
+            }}
+          >
+            <ItemInterruptor
+              icone="spark"
+              rotulo="Luz do dia"
+              descricao="A folha do Início acompanha o sol de Divinópolis"
+              valor={luzDoDia}
+              aoMudar={setLuzDoDia}
+            />
+          </View>
+        </Secao>
+
         {/* Ajuda */}
         <Secao titulo="AJUDA">
           <View
@@ -345,6 +377,65 @@ function Secao({
         {titulo}
       </Text>
       <View style={{ paddingHorizontal: 16 }}>{children}</View>
+    </View>
+  )
+}
+
+/** Linha de preferência com interruptor — mesma anatomia do ItemPerfil. */
+function ItemInterruptor({
+  icone,
+  rotulo,
+  descricao,
+  valor,
+  aoMudar,
+}: {
+  icone: ConsumerIconName
+  rotulo: string
+  descricao: string
+  valor: boolean
+  aoMudar: (v: boolean) => void
+}) {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+      }}
+    >
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: radius.sm,
+          backgroundColor: valor ? colors.accentSoft : colors.canvasAlt,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <ConsumerIcon name={icone} size={18} color={valor ? colors.accent : colors.ink} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.ink }}>
+          {rotulo}
+        </Text>
+        <Text
+          style={{ fontSize: 12.5, fontWeight: '500', color: colors.inkMuted, marginTop: 2 }}
+          numberOfLines={2}
+        >
+          {descricao}
+        </Text>
+      </View>
+      <Switch
+        value={valor}
+        onValueChange={aoMudar}
+        trackColor={{ false: colors.canvasAlt, true: colors.accent }}
+        thumbColor={colors.white}
+        ios_backgroundColor={colors.canvasAlt}
+        accessibilityLabel={rotulo}
+      />
     </View>
   )
 }

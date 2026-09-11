@@ -262,6 +262,16 @@ Bloco com `borderTopLeft/RightRadius: radius.md`, `marginTop: -24` sobre a facha
 
 Contém BannerCarousel + seções. A status bar do Início é **light** apenas com a tela em foco (`useFocusEffect` + `<StatusBar style="light">` condicional); as demais abas seguem escuras.
 
+
+#### Luz do dia (2026-09-10)
+
+A folha clara acompanha o sol; a marquise **não muda** (é a fachada noturna, sempre acesa — o contraste entre fachada fixa e salão vivo é o que faz a ideia ler). Implementação:
+
+- `lib/luz-do-dia.ts` calcula nascer, meio-dia solar e pôr para **Divinópolis** (NOAA simplificado, lat −20,1386 / lon −44,8839, sem pedir localização) e ancora sete quadros-chave neles: madrugada (`nascer − 100 min`, azul-frio, intensidade 0,5, sem sol) → amanhecer (`nascer + 5`, âmbar, 1,0, sol a leste) → manhã (`nascer + 110`, dourado claro, 0,55) → meio-dia (`meioDia`, branco neutro, 0,35, sol no zênite) → tarde (`por − 130`, dourado, 0,6) → entardecer (`por + 5`, cobre, 1,0, sol a oeste) → noite (`por + 100`, azul-profundo, 0,6, sem sol). Entre quadros a luz **interpola** (cor em RGB, intensidade, posição e força do sol); a lista é cíclica e atravessa a meia-noite sem salto. `luzDoDia(agora)` devolve `{ fase, cor, intensidade, solX, solForca }`.
+- Cores por fase são tokens em `consumerDesign.luz` (fora de `colors`: a paleta das lojas espelha `colors` como strings, e luz é atmosfera, não cor de UI).
+- `useLuzDoDia(ativa)` recalcula a cada minuto e ao voltar ao app (`AppState` → `active`).
+- O `VidroFosco` da home ganha duas camadas na cor da fase, por cima das nuvens: o **véu** (linear do topo, `0.14 × intensidade` → `0.06` a 28% → 0 a 62%) e o **sol** (radial em `cx = solX`, `cy = 4%`, `r 46%`, `0.18 × solForca` → 0), que caminha de leste a oeste e se apaga à noite. **O canvas nunca muda** e os alphas ficam ≤ 14%: cards, fios e placas leem como sempre. À noite a folha segue clara — mais fria e um degrau mais fumê, como um salão aceso por dentro; dark de verdade seria outra tela.
+- Preferência: Perfil → **Início → "Luz do dia"** (`store/usePreferencias.ts`, persistido, padrão ligado). Desligada, a folha volta ao vidro fosco neutro.
 ### Mudanças vs redesign anterior
 
 | Antes (redesign 1) | Depois (Marquise) |

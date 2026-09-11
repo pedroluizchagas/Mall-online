@@ -207,6 +207,20 @@ export function softColor(hex: string) {
 
 > `info` é a **única cor exclusiva do consumer**. Está documentada e centralizada para evitar regravação ad-hoc nas telas.
 
+### 3.1 Luz do dia (`consumerDesign.luz`, 2026-09-10)
+
+Fora de `colors` de propósito — `StoreColors` (lib/store-theme.tsx) espelha as chaves de `colors` como strings, e a luz não é cor de UI: é a **atmosfera** que o `VidroFosco` da home pinta sobre o canvas conforme o sol de Divinópolis (`lib/luz-do-dia.ts`). Nunca é usada como cor de texto, fundo ou borda; entra só como `stopColor` de gradientes com alpha ≤ 14%.
+
+| Token | Hex | Fase |
+|---|---|---|
+| `luz.madrugada` | `#5B6B9E` | azul-frio, antes do sol |
+| `luz.amanhecer` | `#F4B36F` | âmbar do nascer |
+| `luz.manha` | `#FFE9B8` | dourado claro |
+| `luz.meioDia` | `#FFFFFF` | neutro |
+| `luz.tarde` | `#FFD08A` | dourado quente |
+| `luz.entardecer` | `#E9855A` | cobre do pôr |
+| `luz.noite` | `#4A5A8F` | azul-profundo |
+
 ## 4. Tabela de raio
 
 | Token | Valor (px) | Uso típico |
