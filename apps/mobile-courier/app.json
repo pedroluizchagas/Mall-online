@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#D8FF3E"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.mallevo.courier",
@@ -51,6 +46,17 @@
           "locationAlwaysAndWhenInUsePermission": "A Mallevo usa sua localização durante entregas ativas para mostrar sua posição ao consumidor.",
           "isAndroidBackgroundLocationEnabled": true,
           "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "expo-video",
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#D8FF3E",
+          "enableFullScreenImage_legacy": true
         }
       ]
     ],

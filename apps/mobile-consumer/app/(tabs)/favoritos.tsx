@@ -246,13 +246,13 @@ function TileFavorito({
       {imagem ? (
         <Image
           source={{ uri: imagem }}
-          style={StyleSheet.absoluteFillObject}
+          style={StyleSheet.absoluteFill}
           resizeMode="cover"
         />
       ) : (
         <View
           style={[
-            StyleSheet.absoluteFillObject,
+            StyleSheet.absoluteFill,
             { alignItems: 'center', justifyContent: 'center' },
           ]}
         >

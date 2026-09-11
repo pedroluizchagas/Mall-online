@@ -144,7 +144,7 @@ export function BannerCarousel({ banners, intervalo = 4000 }: Props) {
                 <>
                   <Image
                     source={{ uri: banner.foto }}
-                    style={StyleSheet.absoluteFillObject}
+                    style={StyleSheet.absoluteFill}
                     resizeMode="cover"
                   />
                   <VeuBanner cor={corFundo} />

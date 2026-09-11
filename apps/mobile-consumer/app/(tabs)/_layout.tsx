@@ -141,13 +141,12 @@ function TabBar({ state, navigation }: TabBarProps) {
           position: 'absolute',
           left: 16,
           right: 16,
-          // Pé da cápsula: um pouco DENTRO da safe area (inset - 8), não
-          // acima dela — em iPhone com inset 34 (12/14/15 Pro Max etc.) o
-          // `inset + 4` antigo deixava a barra alta demais e o topo dela
-          // passava da reserva `spacing.tabBarHeight`, cobrindo o fim das
-          // listas. O indicador de home ocupa só os ~13px finais; 26px de
-          // pé não colidem. Piso de 12 preserva aparelhos sem inset.
-          bottom: Math.max(insets.bottom - 8, 12),
+          // Pé da cápsula: o vão de baixo ecoa o das laterais (16) — a
+          // moldura fica igual nos três lados. Em aparelhos com gesture nav
+          // isso deixa a barra bem DENTRO da safe area (inset 34 → pé 18),
+          // sem colisão: o indicador de home ocupa só os ~13px finais.
+          // O piso de 16 vale para aparelhos sem inset.
+          bottom: Math.max(insets.bottom - 16, 16),
           height: 70,
           // Cápsula de vidro escuro: ink translúcido + fio de luz na borda —
           // o conteúdo passa por baixo e a barra "flutua" de verdade.

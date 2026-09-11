@@ -329,7 +329,7 @@ export function ProdutoEditorial({ produto, loja, onFechar }: Props) {
           <BlurView
             intensity={45}
             tint="light"
-            experimentalBlurMethod="dimezisBlurView"
+            blurMethod="dimezisBlurView"
           >
             <View
               style={{

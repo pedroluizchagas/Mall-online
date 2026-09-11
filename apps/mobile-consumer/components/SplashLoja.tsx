@@ -144,7 +144,7 @@ export function SplashLoja({ nome, logoUrl, design, pronto, onFim }: Props) {
     <Animated.View
       pointerEvents="auto"
       style={[
-        StyleSheet.absoluteFillObject,
+        StyleSheet.absoluteFill,
         {
           zIndex: 100,
           elevation: 100,
@@ -158,7 +158,7 @@ export function SplashLoja({ nome, logoUrl, design, pronto, onFim }: Props) {
     >
       <Animated.View
         style={[
-          StyleSheet.absoluteFillObject,
+          StyleSheet.absoluteFill,
           { backgroundColor: colors.accent, opacity: accentOpacity },
         ]}
       />

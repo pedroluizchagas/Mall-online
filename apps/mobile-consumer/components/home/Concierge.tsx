@@ -267,7 +267,7 @@ export function Concierge({ aoFechar }: { aoFechar: () => void }) {
     <Animated.View
       accessibilityViewIsModal
       style={[
-        StyleSheet.absoluteFillObject,
+        StyleSheet.absoluteFill,
         {
           backgroundColor: colors.marquee,
           paddingTop: insets.top + 10,
@@ -542,7 +542,7 @@ function LinhaProduto({
         {produto.foto_url ? (
           <Image
             source={{ uri: produto.foto_url }}
-            style={StyleSheet.absoluteFillObject}
+            style={StyleSheet.absoluteFill}
             resizeMode="cover"
           />
         ) : (

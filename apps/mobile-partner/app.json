@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#D8FF3E"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.mallevo.partner",
@@ -45,7 +40,18 @@
         }
       ],
       "react-native-compressor",
-      "expo-audio"
+      "expo-audio",
+      "expo-video",
+      "expo-web-browser",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#D8FF3E",
+          "enableFullScreenImage_legacy": true
+        }
+      ]
     ],
     "scheme": "mallevo-partner",
     "extra": {

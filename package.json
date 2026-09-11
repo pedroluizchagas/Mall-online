@@ -21,10 +21,8 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0"
   },
-  "pnpm": {
-    "overrides": {
-      "react-native-worklets": "0.5.1"
-    }
-  },
-  "workspaces": ["apps/*", "packages/*"]
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
 }

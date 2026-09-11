@@ -159,7 +159,7 @@ export function ComentariosLive({ post, visivel, onFechar }: Props) {
 
   return (
     <View
-      style={StyleSheet.absoluteFillObject}
+      style={StyleSheet.absoluteFill}
       pointerEvents={visivel ? 'box-none' : 'none'}
     >
       {/* Véu extra: o stream ocupa metade da tela e precisa de mais

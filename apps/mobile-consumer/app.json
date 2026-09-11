@@ -6,11 +6,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#111216"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.mallevo.consumer",
@@ -51,7 +46,16 @@
         }
       ],
       "expo-video",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#111216",
+          "enableFullScreenImage_legacy": true
+        }
+      ]
     ],
     "scheme": "mallevo-consumer",
     "extra": {

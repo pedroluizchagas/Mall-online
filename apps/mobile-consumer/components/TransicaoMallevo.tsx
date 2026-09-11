@@ -133,7 +133,7 @@ export function TransicaoMallevo() {
     <Animated.View
       pointerEvents="auto"
       style={[
-        StyleSheet.absoluteFillObject,
+        StyleSheet.absoluteFill,
         { zIndex: 200, elevation: 200, opacity: veuOp },
       ]}
     >
@@ -153,7 +153,7 @@ export function TransicaoMallevo() {
       {/* Paleta Mallevo assumindo por cima, já com a tela coberta */}
       <Animated.View
         style={[
-          StyleSheet.absoluteFillObject,
+          StyleSheet.absoluteFill,
           { backgroundColor: colors.canvas, opacity: camadaMallevo },
         ]}
       />
