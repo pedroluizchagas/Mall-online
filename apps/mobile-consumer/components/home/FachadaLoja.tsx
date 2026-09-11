@@ -53,6 +53,8 @@ export const FACHADA_GAP = 12
  * página), deixando ~34px da próxima espiando — o convite para rolar.
  */
 export const FACHADA_W = width - 16 - 34
+/** Largura na pilha VERTICAL (corredor expandido em "Ver todas"): tela − gutter. */
+export const FACHADA_W_VERTICAL = width - 16 * 2
 const HERO_H = 224
 /**
  * A partir de que fração do hero a foto começa a se dissolver no fundo do
@@ -63,12 +65,11 @@ const DISSOLVE_DE = 0.42
 /** Quanto o tijolo do logo sobe para dentro da zona dissolvida do hero. */
 const LOGO_SOBRE_HERO = 44
 const LOGO = 60
-/** Largura de cada tile de produto: 3 por linha com gap 10 e padding 16. */
 const PAD = 16
-const TILE_W = Math.floor((FACHADA_W - PAD * 2 - 10 * 2) / 3)
 /** Respiro interno da caixinha do produto; a foto ocupa o que sobra. */
 const TILE_PAD = 10
-const TILE_FOTO = TILE_W - TILE_PAD * 2
+/** Largura de cada tile de produto: 3 por linha com gap 10 e padding 16. */
+const tileW = (largura: number) => Math.floor((largura - PAD * 2 - 10 * 2) / 3)
 
 /**
  * Raios FIXOS (tokens Mallevo), não a escala de forma do arquétipo: a
@@ -123,11 +124,21 @@ interface Props {
   pisoSlug: string
   pisoOrdem: number
   aoEntrar: () => void
+  /** `FACHADA_W` na fileira horizontal; `FACHADA_W_VERTICAL` na pilha. */
+  largura?: number
 }
 
-export function FachadaLoja({ loja, pisoSlug, pisoOrdem, aoEntrar }: Props) {
+export function FachadaLoja({
+  loja,
+  pisoSlug,
+  pisoOrdem,
+  aoEntrar,
+  largura = FACHADA_W,
+}: Props) {
   const design = useStoreDesignFromTheme(loja.theme)
   const { colors } = design
+  const TILE_W = tileW(largura)
+  const TILE_FOTO = TILE_W - TILE_PAD * 2
   const voz = VOZ_POR_PISO[pisoSlug] ?? VOZ_PADRAO
   const destaques = useDestaquesLoja(loja.id)
 
@@ -146,7 +157,7 @@ export function FachadaLoja({ loja, pisoSlug, pisoOrdem, aoEntrar }: Props) {
       accessibilityLabel={`${loja.nome}${loja.categoria_nome ? `, ${loja.categoria_nome}` : ''}. Entrar na loja`}
       style={({ pressed }) => [
         {
-          width: FACHADA_W,
+          width: largura,
           borderRadius: RAIO.card,
           backgroundColor: fundo,
           overflow: 'hidden',
@@ -420,6 +431,7 @@ export function FachadaLoja({ loja, pisoSlug, pisoOrdem, aoEntrar }: Props) {
 
 /** Fachada apagada enquanto o catálogo carrega. */
 export function FachadaApagada() {
+  const TILE_W = tileW(FACHADA_W)
   return (
     <View
       style={{

@@ -24,6 +24,7 @@ import {
   FachadaLoja,
   FachadaApagada,
   FACHADA_W,
+  FACHADA_W_VERTICAL,
   FACHADA_GAP,
 } from '@/components/home/FachadaLoja'
 import { NotificacoesPopup } from '@/components/NotificacoesPopup'
@@ -312,16 +313,23 @@ function CardPedidoVivo({
 }
 
 /**
- * Corredor de um piso: letreiro + fileira HORIZONTAL de FACHADAS de loja,
- * cada uma vestindo a pele da própria loja (FachadaLoja). Caminhar pelo
- * piso é rolar de lado, fachada a fachada — o scroll pagina por card
- * (`snapToInterval`), com a próxima loja espiando na borda.
+ * Corredor de um piso: letreiro + FACHADAS de loja, cada uma vestindo a
+ * pele da própria loja (FachadaLoja). Dois modos, no mesmo lugar:
  *
- * O letreiro é só texto (sobrelinha, nome na fonte-assinatura, subtítulo,
- * contagem) — sem placa com ícone: a cor e a imagem ficam para as fachadas.
+ * - fileira HORIZONTAL (padrão): caminhar pelo piso é rolar de lado,
+ *   fachada a fachada — o scroll pagina por card (`snapToInterval`), com a
+ *   próxima loja espiando na borda;
+ * - pilha VERTICAL ("Ver todas" no letreiro): o piso se apresenta inteiro,
+ *   uma fachada sob a outra, na largura da tela. "Recolher" volta à
+ *   fileira e devolve o scroll ao topo do corredor (`aoRecolher`), para o
+ *   usuário não ficar perdido lá embaixo.
+ *
+ * O letreiro é só texto (sobrelinha, nome na fonte-assinatura, subtítulo)
+ * — sem placa com ícone: a cor e a imagem ficam para as fachadas.
  *
  * `aoMedir` devolve o y do corredor (relativo à folha) para o scroll
- * ancorado do diretório.
+ * ancorado do diretório; o onLayout dispara de novo quando um corredor
+ * acima expande, então o destino nunca fica desatualizado.
  */
 function SecaoLojas({
   slug,
@@ -330,6 +338,7 @@ function SecaoLojas({
   subtitulo,
   lojas,
   aoMedir,
+  aoRecolher,
 }: {
   slug: string
   ordem: number
@@ -337,11 +346,22 @@ function SecaoLojas({
   subtitulo: string
   lojas: Loja[]
   aoMedir: (y: number) => void
+  aoRecolher: () => void
 }) {
   // Letreiro de corredor: mesma fonte-assinatura da marquise.
   const fontes = useFontesMarquee()
+  const [expandido, setExpandido] = useState(false)
 
   if (lojas.length === 0) return null
+
+  function alternar() {
+    if (expandido) {
+      setExpandido(false)
+      aoRecolher()
+    } else {
+      setExpandido(true)
+    }
+  }
 
   return (
     <View
@@ -396,44 +416,99 @@ function SecaoLojas({
             {subtitulo}
           </Text>
         </View>
-        <Text
-          style={{
-            fontSize: 11,
-            fontWeight: '700',
-            letterSpacing: 0.8,
-            color: colors.inkSoft,
-          }}
-        >
-          {lojas.length} {lojas.length === 1 ? 'LOJA' : 'LOJAS'}
-        </Text>
+        {/* Só aparece com mais de uma loja: um piso de uma loja já está
+            inteiro na tela. */}
+        {lojas.length > 1 && (
+          <TouchableOpacity
+            onPress={alternar}
+            activeOpacity={consumerDesign.opacity.pressedSoft}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: expandido }}
+            accessibilityLabel={
+              expandido
+                ? `Recolher as lojas de ${titulo}`
+                : `Ver todas as ${lojas.length} lojas de ${titulo}`
+            }
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '700', color: colors.ink }}>
+              {expandido ? 'Recolher' : 'Ver todas'}
+            </Text>
+            <ConsumerIcon
+              name={expandido ? 'chevron-up' : 'chevron-right'}
+              size={14}
+              color={colors.ink}
+              strokeWidth={2.2}
+            />
+          </TouchableOpacity>
+        )}
       </View>
 
-      {/* paddingVertical + margin negativa: a sombra da fachada vaza além do
-          card e o ScrollView recorta nos limites. Alinhamento: cada fachada
-          é uma "página" — snap no passo card+gap, freio rápido. */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={FACHADA_W + FACHADA_GAP}
-        snapToAlignment="start"
-        decelerationRate="fast"
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          gap: FACHADA_GAP,
-        }}
-        style={{ marginVertical: -10 }}
-      >
-        {lojas.map((loja) => (
-          <FachadaLoja
-            key={loja.id}
-            loja={loja}
-            pisoSlug={slug}
-            pisoOrdem={ordem}
-            aoEntrar={() => router.push(`/loja/${loja.slug}`)}
-          />
-        ))}
-      </ScrollView>
+      {expandido ? (
+        // Pilha vertical: o piso inteiro, uma fachada sob a outra.
+        <View style={{ paddingHorizontal: 16, gap: 14 }}>
+          {lojas.map((loja) => (
+            <FachadaLoja
+              key={loja.id}
+              loja={loja}
+              pisoSlug={slug}
+              pisoOrdem={ordem}
+              largura={FACHADA_W_VERTICAL}
+              aoEntrar={() => router.push(`/loja/${loja.slug}`)}
+            />
+          ))}
+          <TouchableOpacity
+            onPress={alternar}
+            activeOpacity={consumerDesign.opacity.pressedSoft}
+            accessibilityRole="button"
+            accessibilityLabel={`Recolher as lojas de ${titulo}`}
+            style={{
+              height: 46,
+              borderRadius: radius.pill,
+              borderWidth: 1,
+              borderColor: colors.line,
+              backgroundColor: colors.surface,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+            }}
+          >
+            <Text style={{ fontSize: 13.5, fontWeight: '700', color: colors.ink }}>
+              Recolher {titulo}
+            </Text>
+            <ConsumerIcon name="chevron-up" size={14} color={colors.ink} strokeWidth={2.2} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        // paddingVertical + margin negativa: a sombra da fachada vaza além
+        // do card e o ScrollView recorta nos limites. Alinhamento: cada
+        // fachada é uma "página" — snap no passo card+gap, freio rápido.
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={FACHADA_W + FACHADA_GAP}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            gap: FACHADA_GAP,
+          }}
+          style={{ marginVertical: -10 }}
+        >
+          {lojas.map((loja) => (
+            <FachadaLoja
+              key={loja.id}
+              loja={loja}
+              pisoSlug={slug}
+              pisoOrdem={ordem}
+              aoEntrar={() => router.push(`/loja/${loja.slug}`)}
+            />
+          ))}
+        </ScrollView>
+      )}
     </View>
   )
 }
@@ -811,6 +886,7 @@ export default function TelaHome() {
                     aoMedir={(y) => {
                       posicaoPorPiso.current[meta.slug] = y
                     }}
+                    aoRecolher={() => irParaPiso(meta.slug)}
                   />
                 )
               })}
