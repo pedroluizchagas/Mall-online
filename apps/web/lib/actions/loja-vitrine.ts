@@ -3,7 +3,15 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { ARQUETIPOS, getPaleta, type ArquetipoCodigo } from '@mallevo/lib'
+import {
+  ARQUETIPOS,
+  CONTEUDO_LIMITES,
+  getPaleta,
+  hasConteudo,
+  storeConteudoSchema,
+  type ArquetipoCodigo,
+  type StoreConteudo,
+} from '@mallevo/lib'
 
 const BUCKET = 'store-assets'
 const TAMANHO_MAX_BYTES = 5 * 1024 * 1024
@@ -60,7 +68,7 @@ async function uploadAsset(
   supabase: ReturnType<typeof createSupabaseServer>,
   tenantId: string,
   arquivo: File,
-  nomeBase: 'logo' | 'banner'
+  nomeBase: 'logo' | 'banner' | 'casa'
 ): Promise<{ url: string } | { erro: string }> {
   const ext = extensaoSegura(arquivo.type, nomeBase === 'logo' ? 'png' : 'jpg')
   const id = crypto.randomUUID()
@@ -144,6 +152,13 @@ export async function publicarVitrine(formData: FormData): Promise<ResultadoAcao
     atualizacao.banner_url = resultado.url
   }
 
+  // Conteúdo editorial (StoreConteudo v1): texto validado pelo schema da lib;
+  // fotos da casa = mantidas + novas (bucket store-assets, `casa-*`);
+  // destaques filtrados para produtos DESTA loja.
+  const conteudoResultado = await montarConteudo(supabase, tenant.id, loja.id, formData)
+  if ('erro' in conteudoResultado) return { erro: conteudoResultado.erro }
+  atualizacao.conteudo = conteudoResultado.conteudo
+
   const { error } = await supabase
     .from('stores')
     .update(atualizacao)
@@ -155,6 +170,70 @@ export async function publicarVitrine(formData: FormData): Promise<ResultadoAcao
   revalidatePath('/minha-loja')
 
   return { sucesso: true }
+}
+
+async function montarConteudo(
+  supabase: ReturnType<typeof createSupabaseServer>,
+  tenantId: string,
+  storeId: string,
+  formData: FormData,
+): Promise<{ conteudo: StoreConteudo | null } | { erro: string }> {
+  const bruto = formData.get('conteudo')
+  if (typeof bruto !== 'string' || !bruto) return { conteudo: null }
+
+  let texto: unknown
+  try {
+    texto = JSON.parse(bruto)
+  } catch {
+    return { erro: 'Falha ao ler o conteúdo da vitrine' }
+  }
+
+  // Fotos da casa: mantidas (URLs já publicadas) + novas (upload).
+  let mantidas: string[] = []
+  const brutoMantidas = formData.get('galeria_casa_mantida')
+  if (typeof brutoMantidas === 'string' && brutoMantidas) {
+    try {
+      const lista = JSON.parse(brutoMantidas)
+      if (Array.isArray(lista)) {
+        mantidas = lista.filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u))
+      }
+    } catch {
+      return { erro: 'Falha ao ler as fotos da casa' }
+    }
+  }
+  const novas = formData.getAll('galeria_casa').filter((f): f is File => f instanceof File && f.size > 0)
+  const urls: string[] = []
+  for (const foto of novas) {
+    const erroValidacao = validarArquivo(foto, 'Foto da casa')
+    if (erroValidacao) return { erro: erroValidacao }
+    const resultado = await uploadAsset(supabase, tenantId, foto, 'casa')
+    if ('erro' in resultado) return { erro: resultado.erro }
+    urls.push(resultado.url)
+  }
+  const galeria_casa = [...mantidas, ...urls].slice(0, CONTEUDO_LIMITES.galeriaCasa)
+
+  const candidato = {
+    ...(texto && typeof texto === 'object' ? (texto as Record<string, unknown>) : {}),
+    v: 1,
+    ...(galeria_casa.length > 0 ? { galeria_casa } : { galeria_casa: undefined }),
+  }
+  const parsed = storeConteudoSchema.safeParse(candidato)
+  if (!parsed.success) return { erro: `Conteúdo da vitrine: ${parsed.error.errors[0].message}` }
+
+  // Destaques só podem apontar para produtos desta loja.
+  let conteudo = parsed.data
+  if (conteudo.destaques && conteudo.destaques.length > 0) {
+    const { data: validos } = await supabase
+      .from('products')
+      .select('id')
+      .eq('store_id', storeId)
+      .in('id', conteudo.destaques)
+    const ids = new Set((validos ?? []).map((p: { id: string }) => p.id))
+    const filtrados = conteudo.destaques.filter((id) => ids.has(id))
+    conteudo = { ...conteudo, destaques: filtrados.length > 0 ? filtrados : undefined }
+  }
+
+  return { conteudo: hasConteudo(conteudo) ? conteudo : null }
 }
 
 export async function alternarStatusLoja(ativo: boolean): Promise<ResultadoAcao> {

@@ -17,12 +17,16 @@
    Do instead: os WARNs de rota e o erro de ErrorBoundary são consequência do `lib/supabase.ts` lançar no import — não caçar default exports. Copiar `.env.local.example` → `.env.local` (os 3 apps mobile usam o MESMO projeto Supabase; URL/anon key vêm do mobile-consumer) e reiniciar com `npx expo start --clear` (env é inlinado pelo babel e fica no cache do Metro).
 
 ## Shell & Command Reliability
-1. **[2026-09-19] Storefront: mover rotas deixa `.next/types` obsoleto e o `tsc` acusa módulos inexistentes; `pkill -f "<trecho do comando>"` mata o próprio shell**
+1. **[2026-09-19] Revisão visual do storefront sem Playwright: Firefox headless**
+   Do instead: `firefox --headless --no-remote --profile <perfil-scratch> --window-size=480,900 --screenshot out.png "http://<slug>.mallevo.localhost:3002/?preset=X&categoria=Y"` (Firefox resolve `*.localhost` sozinho; servidor com `STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true`). Âncoras `#id` NÃO rolam a captura — use viewport alto (480×3200) para ver a página toda. Imagens `loading="lazy"` não bloqueiam o `load` e saem vazias na captura: pôr `user_pref("dom.image-lazy-loading.enabled", false);` no `user.js` do perfil de QA. Hero nunca é lazy (LCP). Ler o PNG com a ferramenta Read.
+2. **[2026-09-19] Storefront: mover rotas deixa `.next/types` obsoleto e o `tsc` acusa módulos inexistentes; `pkill -f "<trecho do comando>"` mata o próprio shell**
    Do instead: após mover páginas em `apps/storefront/app`, `rm -rf apps/storefront/.next` antes do `tsc`/`next build`. Para derrubar o `next start`, `fuser -k 3002/tcp` (nunca `pkill -f` com texto que está na própria linha de comando — exit 144). Smoke test real: `next build && next start -p 3002`, depois `curl -H "Host: <slug>.mallevo.localhost" localhost:3002/` — o `.env.local` do storefront aponta para o Supabase REAL (slugs via REST `public_catalog_stores?select=slug`), então o que se vê é produção.
 1. **[2026-08-08] Downloads sequenciais de imagem (Unsplash/picsum) estagnam no sandbox**
    Do instead: paralelizar com subshells + `curl --max-time 15` e `sleep` de coleta; `curl -I` (HEAD) responde rápido para validar URLs antes.
 
 ## Domain Behavior Guardrails
+0. **[2026-09-19] Vitrine web nova = porte da RN em `apps/storefront/components/vitrines/<codigo>/Vitrine<Codigo>.tsx` + registro em `vitrines/index.ts`**
+   Do instead: `'use client'`, props `VitrineWebProps`, detalhe via `ProdutoModalHost` (render-prop `abrir(id)`), sacola via `_base/Sacola` (sem FAB, sem barra de 4 abas), fonte-DNA via `_base/FonteDna`, relógio via `_base/StatusAberto`. `Store.tempo_entrega` é NÚMERO (minutos). QA: `STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true next start` + `?preset=<arquetipo>&categoria=<slug>` numa loja real — o teste de guarda `vitrines/__tests__/registro.test.ts` exige arquivo no disco para cada código registrado.
 1. **[2026-09-10] Explorar e Seguindo = a MESMA tela de reels (`components/explorar/FeedReels.tsx`)**
    Do instead: mexer em reel (player, overlay, comentários, galeria, `?post=`) → FeedReels; as rotas `(tabs)/explorar.tsx` e `(tabs)/seguindo.tsx` são casca (`titulo`, `lojas`, `aoVoltar`, `vazio`, `cabecalhoGaleria`). Seguindo = Explorar filtrado por `useSeguidas` — o usuário decidiu isso; não voltar ao feed de cards (CardPost foi removido). Rail das seguidas vive na galeria (pele escura), com `Avatar` embutido.
 2. **[2026-08-18] Busca do consumidor = overlay Concierge no Início, não rota**

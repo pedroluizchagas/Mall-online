@@ -91,7 +91,7 @@ export function AbaIdentificacao({ loja, emailComercial }: Props) {
               className="px-3 py-2.5 text-sm flex-shrink-0"
               style={{ background: 'var(--bg-2)', color: 'var(--ink-3)', borderRight: '1px solid var(--line)' }}
             >
-              mallevo.app/
+              https://
             </span>
             <input
               name="slug"
@@ -102,6 +102,12 @@ export function AbaIdentificacao({ loja, emailComercial }: Props) {
                 e.target.value = sanitizarSlug(e.target.value)
               }}
             />
+            <span
+              className="px-3 py-2.5 text-sm flex-shrink-0"
+              style={{ background: 'var(--bg-2)', color: 'var(--ink-3)', borderLeft: '1px solid var(--line)' }}
+            >
+              .mallevo.com.br
+            </span>
           </div>
           <p className="text-xs text-ink-3 mt-1">
             URL pública da sua loja. Só letras minúsculas, números e hífens.

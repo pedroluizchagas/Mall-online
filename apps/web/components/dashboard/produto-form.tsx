@@ -1,6 +1,7 @@
 'use client'
 
 import { useFormState, useFormStatus } from 'react-dom'
+import { MidiaVitrine, type VitrineProduto } from '@/components/dashboard/produto-midia-vitrine'
 import { useState, type KeyboardEvent } from 'react'
 import { useTemplateOrGeneric, type CampoExtraDef } from '@mallevo/lib'
 import {
@@ -366,6 +367,26 @@ export function ProdutoForm({
   const [novaTag, setNovaTag] = useState('')
 
   // Estado dos campos extras genéricos (pet/pharmacy/generic).
+  // Mídia e vitrine (galeria/recorte/especificações/unidade) — contrato de
+  // `products.metadata` em @mallevo/lib, lido pelas vitrines do app e do web.
+  const mostraUnidade = template.codigo === 'food' || template.codigo === 'generic'
+  const [vitrine, setVitrine] = useState<VitrineProduto>(() => {
+    const m = metadataInicial as Record<string, unknown>
+    return {
+      galeriaMantida: Array.isArray(m.galeria) ? (m.galeria as string[]).filter((u) => typeof u === 'string') : [],
+      especificacoes: Array.isArray(m.especificacoes)
+        ? (m.especificacoes as unknown[])
+            .filter((p): p is [string, string] => Array.isArray(p) && p.length === 2)
+            .map((p) => [String(p[0]), String(p[1])] as [string, string])
+        : [],
+      unidade: typeof m.unidade === 'string' ? m.unidade : '',
+      removerRecorte: false,
+    }
+  })
+  const recorteAtual = typeof (metadataInicial as Record<string, unknown>).recorte === 'string'
+    ? ((metadataInicial as Record<string, unknown>).recorte as string)
+    : null
+
   // Inicializa a partir de produto.metadata pré-existente.
   const [metadataExtras, setMetadataExtras] = useState<Record<string, unknown>>(() => {
     if (!mostraSecaoExtras) return {}
@@ -494,6 +515,9 @@ export function ProdutoForm({
     })),
   )
 
+  const especificacoesLimpas = vitrine.especificacoes
+    .map(([r, v]) => [r.trim(), v.trim()] as [string, string])
+    .filter(([r, v]) => r && v)
   const metadataPayload = JSON.stringify({
     ...(metadataInicial || {}),
     ...(ehFood
@@ -503,6 +527,10 @@ export function ProdutoForm({
           tags,
         }
       : metadataExtras),
+    // Vitrine: `galeria`/`recorte` são decididos no servidor (uploads +
+    // `galeria_mantida`/`remover_recorte`); aqui só o que é texto.
+    especificacoes: especificacoesLimpas.length > 0 ? especificacoesLimpas : undefined,
+    unidade: mostraUnidade && vitrine.unidade ? vitrine.unidade : undefined,
   })
 
   return (
@@ -603,6 +631,13 @@ export function ProdutoForm({
         />
         <p className="text-xs text-ink-3 mt-1">JPEG, PNG ou WebP. Máximo 5MB.</p>
       </div>
+
+      <MidiaVitrine
+        valor={vitrine}
+        onChange={setVitrine}
+        recorteAtual={recorteAtual}
+        mostraUnidade={mostraUnidade}
+      />
 
       <div className="flex items-center justify-between">
         <div>

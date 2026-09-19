@@ -12,8 +12,19 @@ import {
   resolveTheme,
   type ArquetipoCodigo,
   type ThemeTokens,
+  resolveVitrine,
+  getVitrineDoArquetipo,
+  VITRINES,
+  normalizeStoreConteudo,
 } from '@mallevo/lib'
 import { publicarVitrine } from '@/lib/actions/loja-vitrine'
+import {
+  ConteudoVitrine,
+  conteudoInicial,
+  conteudoParaPayload,
+  type ConteudoEditavel,
+  type ProdutoParaDestaque,
+} from '@/components/dashboard/conteudo-vitrine'
 import { extrairCoresDaLogo } from '@/lib/cor-da-logo'
 import { showToast } from '@/components/ui/toast'
 import { PageHeader } from '@/components/dashboard/page-header'
@@ -92,6 +103,8 @@ export interface LojaEditorInicial {
   slug: string | null
   /** Slug da categoria — sugere o arquétipo default no editor. */
   categoriaSlug: string | null
+  /** `stores.conteudo` cru (StoreConteudo v1) — voz da vitrine. */
+  conteudo?: unknown | null
 }
 
 const TAMANHO_MAX_BYTES = 5 * 1024 * 1024
@@ -117,13 +130,15 @@ export interface ProdutoEditorInicial {
 interface Props {
   loja: LojaEditorInicial
   produtos: ProdutoEditorInicial[]
+  /** Catálogo para o seletor de destaques (id, nome, foto). */
+  catalogo?: ProdutoParaDestaque[]
 }
 
 type TabPreview = 'home' | 'produto' | 'carrinho'
 
 // ─── Editor principal ─────────────────────────────────────────────────────────
 
-export function MinhaLojaEditor({ loja, produtos }: Props) {
+export function MinhaLojaEditor({ loja, produtos, catalogo = [] }: Props) {
   const presetInicial: ArquetipoCodigo =
     loja.theme && typeof loja.theme.preset === 'string' && loja.theme.preset in ARQUETIPOS
       ? (loja.theme.preset as ArquetipoCodigo)
@@ -134,6 +149,9 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
     typeof loja.theme?.palette === 'string' ? loja.theme.palette : null
 
   const [preset, setPreset] = useState<ArquetipoCodigo>(presetInicial)
+  const [conteudo, setConteudo] = useState<ConteudoEditavel>(() =>
+    conteudoInicial(normalizeStoreConteudo(loja.conteudo ?? null)),
+  )
   // Paleta curada do arquétipo (null = original). Trocar de estilo reseta.
   const [paleta, setPaleta] = useState<string | null>(paletaInicial)
   const [accent, setAccent] = useState<string | null>(accentInicial)
@@ -237,6 +255,9 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
     formData.set('tagline', tagline)
     if (logoFile) formData.set('logo', logoFile)
     if (bannerFile) formData.set('banner', bannerFile)
+    formData.set('conteudo', JSON.stringify(conteudoParaPayload(conteudo)))
+    formData.set('galeria_casa_mantida', JSON.stringify(conteudo.galeriaMantida))
+    conteudo.galeriaNovas.forEach((f) => formData.append('galeria_casa', f))
 
     const resultado = await publicarVitrine(formData)
     setSaving(false)
@@ -252,6 +273,7 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
 
     setLogoFile(null)
     setBannerFile(null)
+    setConteudo((c) => ({ ...c, galeriaNovas: [] }))
     showToast({ tipo: 'sucesso', titulo: 'Vitrine publicada' })
     setSaved(true)
     setTimeout(() => setSaved(false), 2500)
@@ -302,6 +324,7 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
               Sugeridos para a sua categoria — escolha o que combina com o tom da
               sua marca. Você pode mudar quando quiser.
             </p>
+            <AvisoVitrine preset={preset} categoriaSlug={loja.categoriaSlug} />
             <div className="space-y-3">
               {recomendados.map((code) => (
                 <ArquetipoCard
@@ -604,6 +627,11 @@ export function MinhaLojaEditor({ loja, produtos }: Props) {
               className="hidden"
               onChange={handleBannerChange}
             />
+          </Secao>
+
+          {/* ── CONTEÚDO DA VITRINE ──────────────────────────── */}
+          <Secao titulo="CONTEÚDO DA VITRINE">
+            <ConteudoVitrine valor={conteudo} onChange={setConteudo} catalogo={catalogo} />
           </Secao>
         </div>
       </div>
@@ -1479,6 +1507,59 @@ function CarrinhoScreen({
           Finalizar pedido
         </div>
       </div>
+    </div>
+  )
+}
+
+
+/**
+ * O que o estilo escolhido ATIVA de layout no app e no storefront — a mesma
+ * tabela `VITRINES` que as duas superfícies leem. Antes disto o lojista
+ * escolhia um arquétipo sem saber que ele podia trocar a fachada inteira da
+ * loja (ou não).
+ */
+function AvisoVitrine({
+  preset,
+  categoriaSlug,
+}: {
+  preset: ArquetipoCodigo
+  categoriaSlug: string | null
+}) {
+  const ativa = resolveVitrine(preset, categoriaSlug)
+  const doEstilo = getVitrineDoArquetipo(preset)
+  const humanizar = (slug: string) => slug.replace(/-/g, ' ')
+
+  if (ativa) {
+    const v = VITRINES[ativa]
+    return (
+      <div
+        className="mb-4 rounded-xl px-4 py-3 text-xs"
+        style={{ background: 'var(--brick-lt)', color: 'var(--ink)' }}
+      >
+        <p className="font-semibold">Vitrine ativada: {v.nome}</p>
+        <p className="mt-0.5" style={{ color: 'var(--ink-2)' }}>
+          {v.descricao} Sua loja veste esse layout no app e em{' '}
+          <span className="font-medium">seusite.mallevo.com.br</span>.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      className="mb-4 rounded-xl px-4 py-3 text-xs"
+      style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
+    >
+      <p className="font-semibold" style={{ color: 'var(--ink)' }}>
+        Layout padrão
+      </p>
+      <p className="mt-0.5">
+        {doEstilo
+          ? `Este estilo tem a vitrine ${doEstilo.nome} em ${doEstilo.categorias
+              .map(humanizar)
+              .join(', ')}. Na sua categoria, ele veste a loja só com as cores e a tipografia.`
+          : 'Este estilo veste a loja com cores, tipografia e forma sobre o layout padrão.'}
+      </p>
     </div>
   )
 }

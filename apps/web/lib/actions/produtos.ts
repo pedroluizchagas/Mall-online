@@ -166,6 +166,83 @@ function parseMetadataPayload(raw: FormDataEntryValue | null): {
   }
 }
 
+/**
+ * Mídia da vitrine (`metadata.galeria` e `metadata.recorte`) a partir do
+ * formulário: sobe os arquivos novos em `product-images/{tenant}/…`, honra as
+ * fotos MANTIDAS (`galeria_mantida`, JSON) e a remoção do recorte
+ * (`remover_recorte`). Devolve o `metadata` já com os campos resolvidos —
+ * o contrato é o `metadataProdutoSchema` de @mallevo/lib, o mesmo que as
+ * vitrines do consumer e do storefront leem.
+ */
+async function aplicarMidiaVitrine(
+  supabase: Awaited<ReturnType<typeof createSupabaseServer>>,
+  tenantId: string,
+  formData: FormData,
+  metadata: MetadataProduto,
+): Promise<{ metadata: MetadataProduto; erro?: string }> {
+  const TIPOS_FOTO = new Set(['image/jpeg', 'image/png', 'image/webp'])
+  const TIPOS_RECORTE = new Set(['image/png', 'image/webp'])
+  const MAX = 5 * 1024 * 1024
+
+  async function subir(arquivo: File, prefixo: string): Promise<string | null> {
+    const extensao = (arquivo.name.split('.').pop() || 'jpg').toLowerCase()
+    const caminho = `${tenantId}/${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`
+    const { error } = await supabase.storage
+      .from('product-images')
+      .upload(caminho, arquivo, { contentType: arquivo.type })
+    if (error) return null
+    return supabase.storage.from('product-images').getPublicUrl(caminho).data.publicUrl
+  }
+
+  const resultado: MetadataProduto = { ...metadata }
+
+  // Galeria: mantidas (na ordem do lojista) + novas.
+  let mantidas: string[] = []
+  const brutoMantidas = formData.get('galeria_mantida')
+  if (typeof brutoMantidas === 'string' && brutoMantidas) {
+    try {
+      const lista = JSON.parse(brutoMantidas)
+      if (Array.isArray(lista)) {
+        mantidas = lista.filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u))
+      }
+    } catch {
+      return { metadata, erro: 'Falha ao ler a galeria' }
+    }
+  }
+  const novas = formData
+    .getAll('galeria')
+    .filter((f): f is File => f instanceof File && f.size > 0)
+  for (const f of novas) {
+    if (!TIPOS_FOTO.has(f.type) || f.size > MAX) {
+      return { metadata, erro: 'Galeria: use JPEG, PNG ou WebP até 5MB.' }
+    }
+  }
+  const urlsNovas: string[] = []
+  for (const f of novas) {
+    const url = await subir(f, 'galeria')
+    if (!url) return { metadata, erro: 'Erro ao fazer upload da galeria' }
+    urlsNovas.push(url)
+  }
+  const galeria = [...mantidas, ...urlsNovas].slice(0, 10)
+  if (galeria.length > 0) resultado.galeria = galeria
+  else delete resultado.galeria
+
+  // Recorte: novo arquivo substitui; `remover_recorte` apaga.
+  const recorte = formData.get('recorte')
+  if (recorte instanceof File && recorte.size > 0) {
+    if (!TIPOS_RECORTE.has(recorte.type) || recorte.size > MAX) {
+      return { metadata, erro: 'Recorte: PNG ou WebP com fundo transparente, até 5MB.' }
+    }
+    const url = await subir(recorte, 'recorte')
+    if (!url) return { metadata, erro: 'Erro ao fazer upload do recorte' }
+    resultado.recorte = url
+  } else if (formData.get('remover_recorte') === 'true') {
+    delete resultado.recorte
+  }
+
+  return { metadata: resultado }
+}
+
 // Sincroniza grupos de modificadores e seus itens com o banco.
 // Estratégia: inserir novos, atualizar existentes, deletar os que sumiram.
 // Sem transação explícita (Supabase JS client não expõe BEGIN/COMMIT). Em caso
@@ -688,8 +765,10 @@ export async function criarProduto(store_id: string, formData: FormData) {
     return { erro: dados.error.errors[0].message }
   }
 
-  const { metadata, erro: erroMeta } = parseMetadataPayload(formData.get('metadata'))
+  const { metadata: metadataBase, erro: erroMeta } = parseMetadataPayload(formData.get('metadata'))
   if (erroMeta) return { erro: erroMeta }
+  const { metadata, erro: erroMidia } = await aplicarMidiaVitrine(supabase, tenant.id, formData, metadataBase)
+  if (erroMidia) return { erro: erroMidia }
 
   const { grupos, erro: erroGrupos } = parseGruposPayload(formData.get('modifier_groups'))
   if (erroGrupos) return { erro: erroGrupos }
@@ -809,8 +888,10 @@ export async function atualizarProduto(
 
   if (!dados.success) return { erro: dados.error.errors[0].message }
 
-  const { metadata, erro: erroMeta } = parseMetadataPayload(formData.get('metadata'))
+  const { metadata: metadataBase, erro: erroMeta } = parseMetadataPayload(formData.get('metadata'))
   if (erroMeta) return { erro: erroMeta }
+  const { metadata, erro: erroMidia } = await aplicarMidiaVitrine(supabase, tenant.id, formData, metadataBase)
+  if (erroMidia) return { erro: erroMidia }
 
   const { grupos, erro: erroGrupos } = parseGruposPayload(formData.get('modifier_groups'))
   if (erroGrupos) return { erro: erroGrupos }

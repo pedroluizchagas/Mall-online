@@ -25,12 +25,22 @@ export default async function PaginaMinhaLoja() {
   // Slug da categoria → sugere o arquétipo (pele) no editor.
   const { data: lojaCat } = await supabase
     .from('stores')
-    .select('categoria:categories(slug)')
+    .select('conteudo, categoria:categories(slug)')
     .eq('id', loja.id)
     .single()
   const categoriaSlug =
     (lojaCat as { categoria?: { slug?: string | null } | null } | null)?.categoria
       ?.slug ?? null
+  const conteudo = (lojaCat as { conteudo?: unknown } | null)?.conteudo ?? null
+
+  // Catálogo inteiro (leve) para o seletor de destaques do conteúdo.
+  const { data: catalogoRaw } = await supabase
+    .from('products')
+    .select('id, nome, foto_url')
+    .eq('tenant_id', tenant.id)
+    .eq('disponivel', true)
+    .order('nome', { ascending: true })
+    .limit(200)
 
   return (
     <MinhaLojaEditor
@@ -43,8 +53,10 @@ export default async function PaginaMinhaLoja() {
         ativo: loja.ativo ?? true,
         slug: loja.slug ?? null,
         categoriaSlug,
+        conteudo,
       }}
       produtos={produtos}
+      catalogo={(catalogoRaw ?? []) as { id: string; nome: string; foto_url: string | null }[]}
     />
   )
 }
