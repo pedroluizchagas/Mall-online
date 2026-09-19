@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { View, Text, TouchableOpacity, Alert } from 'react-native'
 import type { Endereco } from '@mallevo/types'
-import { Card } from '@/components/ui/Card'
-import { Botao } from '@/components/ui/Botao'
 import { FolhaModal } from '@/components/ui/FolhaModal'
 import { FormularioEndereco } from '@/components/FormularioEndereco'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
@@ -13,9 +11,10 @@ import {
   removerEndereco,
   definirPadrao,
   iconePorTipo,
+  rotuloPorTipo,
 } from '@/lib/enderecos'
 
-const { colors, radius } = consumerDesign
+const { colors, radius, shadow } = consumerDesign
 
 interface Props {
   enderecos: Endereco[]
@@ -31,6 +30,12 @@ type Edicao = null | 'novo' | number
  *
  * A escrita toda passa por lib/enderecos.ts, que também atualiza o store —
  * por isso este componente não recebe callback de atualização.
+ *
+ * Visual (2026-09-12): vive dentro de um `SecaoFolha` do Perfil, então
+ * fala a língua da folha — cartões `surface` sem borda, moeda `ink` com o
+ * ícone do tipo em accent, selo "PADRÃO", ações em pílulas discretas e a
+ * linha tracejada de "novo endereço" (a mesma do "Entregar em" do Início).
+ * A edição abre no `FolhaModal` com o `FormularioEndereco`.
  */
 export function GerenciarEnderecos({ enderecos }: Props) {
   const [edicao, setEdicao] = useState<Edicao>(null)
@@ -93,6 +98,7 @@ export function GerenciarEnderecos({ enderecos }: Props) {
   const folha = (
     <FolhaModal
       visivel={edicao !== null}
+      sobrelinha={edicao === 'novo' ? 'Cadastrar' : 'Editar'}
       titulo={edicao === 'novo' ? 'Novo endereço' : 'Editar endereço'}
       onFechar={() => !salvando && setEdicao(null)}
     >
@@ -110,120 +116,114 @@ export function GerenciarEnderecos({ enderecos }: Props) {
     </FolhaModal>
   )
 
-  if (enderecos.length === 0) {
-    return (
-      <View style={{ paddingHorizontal: 24, paddingTop: 8, gap: 12 }}>
-        <Card preenchimento="md" sombra="none">
-          <View style={{ alignItems: 'center', paddingVertical: 16, gap: 6 }}>
-            <View
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                backgroundColor: colors.accentSoft,
-                alignItems: 'center',
-                justifyContent: 'center',
-                marginBottom: 4,
-              }}
-            >
-              <ConsumerIcon name="pin" size={20} color={colors.accent} />
-            </View>
-            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
-              Nenhum endereço salvo
-            </Text>
-            <Text
-              style={{
-                fontSize: 13,
-                color: colors.inkMuted,
-                textAlign: 'center',
-                fontWeight: '500',
-              }}
-            >
-              Cadastre onde você quer receber seus pedidos.
-            </Text>
-          </View>
-        </Card>
-
-        <Botao
-          label="Adicionar endereço"
-          variante="secundario"
-          tamanho="md"
-          iconeEsquerda="plus"
-          onPress={() => setEdicao('novo')}
-        />
-
-        {folha}
+  const linhaNovo = (
+    <TouchableOpacity
+      onPress={() => setEdicao('novo')}
+      disabled={escrevendo}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
+      accessibilityRole="button"
+      accessibilityLabel="Adicionar novo endereço"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        padding: 14,
+        borderRadius: radius.md,
+        borderWidth: 1.5,
+        borderStyle: 'dashed',
+        borderColor: colors.inkSoft,
+        opacity: escrevendo ? consumerDesign.opacity.disabled : 1,
+      }}
+    >
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: radius.sm,
+          backgroundColor: colors.surface,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <ConsumerIcon name="plus" size={18} color={colors.ink} strokeWidth={2.2} />
       </View>
-    )
-  }
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 14.5, fontWeight: '700', color: colors.ink, letterSpacing: -0.2 }}>
+          {enderecos.length === 0 ? 'Cadastrar meu primeiro endereço' : 'Novo endereço'}
+        </Text>
+        <Text style={{ fontSize: 12.5, fontWeight: '500', color: colors.inkMuted, marginTop: 2 }}>
+          {enderecos.length === 0
+            ? 'Onde você quer receber seus pedidos'
+            : 'Casa, trabalho ou onde você estiver'}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  )
 
   return (
-    <View style={{ paddingHorizontal: 24, paddingTop: 8, gap: 8 }}>
+    <View style={{ gap: 12 }}>
       {enderecos.map((end, i) => {
         // Toda a lista trava durante qualquer escrita (ver `ocupado`); só a
         // linha em operação esmaece, para mostrar onde está acontecendo.
         const desabilitado = escrevendo
         const emOperacao = ocupado === i
         return (
-          <Card key={i} preenchimento="md" sombra="none">
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                gap: 12,
+          <View
+            key={i}
+            style={[
+              {
+                backgroundColor: colors.surface,
+                borderRadius: radius.md,
+                padding: 14,
                 opacity: emOperacao ? consumerDesign.opacity.disabled : 1,
-              }}
-            >
+              },
+              shadow.soft,
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 18,
-                  backgroundColor: colors.accentSoft,
+                  width: 40,
+                  height: 40,
+                  borderRadius: radius.sm,
+                  backgroundColor: colors.ink,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
                 <ConsumerIcon
                   name={iconePorTipo(end.tipo)}
-                  size={16}
+                  size={18}
                   color={colors.accent}
+                  strokeWidth={2}
                 />
               </View>
 
-              <View style={{ flex: 1, gap: 2 }}>
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                    flexWrap: 'wrap',
-                  }}
-                >
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <Text
-                    style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}
+                    style={{
+                      fontSize: 14.5,
+                      fontWeight: '700',
+                      color: colors.ink,
+                      letterSpacing: -0.2,
+                      flexShrink: 1,
+                    }}
+                    numberOfLines={1}
                   >
-                    {end.apelido ?? end.rua}
+                    {end.apelido ?? rotuloPorTipo(end.tipo)}
                   </Text>
                   {end.padrao && <SeloPadrao />}
                 </View>
                 <Text
-                  style={{
-                    fontSize: 13,
-                    color: colors.inkMuted,
-                    fontWeight: '500',
-                  }}
+                  style={{ fontSize: 13, color: colors.inkMuted, marginTop: 2, fontWeight: '500' }}
                   numberOfLines={1}
                 >
                   {end.rua}, {end.numero}
                   {end.complemento ? ` — ${end.complemento}` : ''}
                 </Text>
                 <Text
-                  style={{
-                    fontSize: 12,
-                    color: colors.inkSoft,
-                    fontWeight: '500',
-                  }}
+                  style={{ fontSize: 12, color: colors.inkSoft, fontWeight: '500' }}
                   numberOfLines={1}
                 >
                   {end.bairro} — {end.cidade}
@@ -246,8 +246,7 @@ export function GerenciarEnderecos({ enderecos }: Props) {
               {!end.padrao && (
                 <AcaoEndereco
                   icone="star"
-                  rotulo="Padrão"
-                  cor={colors.ink}
+                  rotulo="Tornar padrão"
                   desabilitado={desabilitado}
                   aoTocar={() => handleDefinirPadrao(i)}
                 />
@@ -255,78 +254,66 @@ export function GerenciarEnderecos({ enderecos }: Props) {
               <AcaoEndereco
                 icone="edit"
                 rotulo="Editar"
-                cor={colors.ink}
                 desabilitado={desabilitado}
                 aoTocar={() => setEdicao(i)}
               />
+              <View style={{ flex: 1 }} />
               <AcaoEndereco
                 icone="trash"
                 rotulo="Remover"
-                cor={colors.danger}
+                perigo
                 desabilitado={desabilitado}
                 aoTocar={() => handleRemover(i)}
               />
             </View>
-          </Card>
+          </View>
         )
       })}
 
-      <Botao
-        label="Adicionar endereço"
-        variante="secundario"
-        tamanho="md"
-        iconeEsquerda="plus"
-        onPress={() => setEdicao('novo')}
-      />
+      {linhaNovo}
 
       {folha}
     </View>
   )
 }
 
-/** Pílula "Padrão" ao lado do apelido. */
+/** Selo "PADRÃO" ao lado do apelido — tinta escura sobre accent. */
 function SeloPadrao() {
   return (
-    <View
+    <Text
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 3,
+        fontSize: 9.5,
+        fontWeight: '800',
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+        color: colors.ink,
+        backgroundColor: colors.accent,
         paddingHorizontal: 7,
         paddingVertical: 2,
         borderRadius: radius.pill,
-        backgroundColor: softColor(colors.accent),
+        overflow: 'hidden',
       }}
     >
-      <ConsumerIcon name="star" size={10} color={colors.accent} strokeWidth={2.4} />
-      <Text
-        style={{
-          fontSize: 10,
-          fontWeight: '700',
-          color: colors.accent,
-          letterSpacing: 0.4,
-          textTransform: 'uppercase',
-        }}
-      >
-        Padrão
-      </Text>
-    </View>
+      Padrão
+    </Text>
   )
 }
 
+/** Ação discreta em pílula: fumê com tinta `ink`; `perigo` = danger suave. */
 function AcaoEndereco({
   icone,
   rotulo,
-  cor,
+  perigo = false,
   desabilitado,
   aoTocar,
 }: {
   icone: 'star' | 'edit' | 'trash'
   rotulo: string
-  cor: string
+  perigo?: boolean
   desabilitado: boolean
   aoTocar: () => void
 }) {
+  const cor = perigo ? colors.danger : colors.ink
   return (
     <TouchableOpacity
       onPress={aoTocar}
@@ -338,21 +325,14 @@ function AcaoEndereco({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 5,
-        paddingHorizontal: 10,
-        paddingVertical: 6,
+        height: 30,
+        paddingHorizontal: 11,
         borderRadius: radius.pill,
-        backgroundColor: softColor(cor),
+        backgroundColor: perigo ? softColor(colors.danger) : colors.surfaceMuted,
       }}
     >
-      <ConsumerIcon name={icone} size={13} color={cor} strokeWidth={2} />
-      <Text
-        style={{
-          color: cor,
-          fontSize: 11,
-          fontWeight: '700',
-          letterSpacing: 0.3,
-        }}
-      >
+      <ConsumerIcon name={icone} size={13} color={cor} strokeWidth={2.1} />
+      <Text style={{ color: cor, fontSize: 12, fontWeight: '700', letterSpacing: 0.2 }}>
         {rotulo}
       </Text>
     </TouchableOpacity>

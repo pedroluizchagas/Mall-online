@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { View, Text } from 'react-native'
 import { Input } from '@/components/ui/Input'
+import { SecaoFolha } from '@/components/ui/SecaoFolha'
 import { consumerDesign } from '@/lib/consumer-design'
 
 const { colors } = consumerDesign
@@ -105,20 +106,7 @@ export function FormularioCartao({ onChange }: Props) {
   const erroCvv = tocado.cvv && !cvvOk ? 'CVV inválido.' : undefined
 
   return (
-    <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: '700',
-          color: colors.inkMuted,
-          letterSpacing: 0.5,
-          textTransform: 'uppercase',
-          marginBottom: 12,
-        }}
-      >
-        Dados do cartão
-      </Text>
-
+    <SecaoFolha sobrelinha="Cartão de crédito" titulo="Dados do cartão">
       <View style={{ gap: 12 }}>
         <Input
           valor={numero}
@@ -182,6 +170,6 @@ export function FormularioCartao({ onChange }: Props) {
           nossos servidores armazenam o número do cartão.
         </Text>
       </View>
-    </View>
+    </SecaoFolha>
   )
 }

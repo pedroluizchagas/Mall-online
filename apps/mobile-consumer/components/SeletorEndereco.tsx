@@ -5,6 +5,7 @@ import { Botao } from '@/components/ui/Botao'
 import { FolhaModal } from '@/components/ui/FolhaModal'
 import { FormularioEndereco } from '@/components/FormularioEndereco'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { SecaoFolha } from '@/components/ui/SecaoFolha'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
 import { adicionarEndereco, iconePorTipo, mesmoEndereco } from '@/lib/enderecos'
 
@@ -52,20 +53,7 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
   }
 
   return (
-    <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: '700',
-          color: colors.inkMuted,
-          letterSpacing: 0.5,
-          textTransform: 'uppercase',
-          marginBottom: 12,
-        }}
-      >
-        Endereço de entrega
-      </Text>
-
+    <SecaoFolha sobrelinha="Onde chega" titulo="Endereço de entrega">
       {selecionado ? (
         <TouchableOpacity
           onPress={() => setModalAberto(true)}
@@ -76,10 +64,8 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
               alignItems: 'center',
               gap: 12,
               backgroundColor: colors.surface,
-              borderRadius: radius.lg,
+              borderRadius: radius.md,
               padding: 16,
-              borderWidth: 1,
-              borderColor: colors.line,
             },
             shadow.soft,
           ]}
@@ -88,8 +74,8 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
             style={{
               width: 40,
               height: 40,
-              borderRadius: 20,
-              backgroundColor: colors.accentSoft,
+              borderRadius: radius.sm,
+              backgroundColor: colors.ink,
               alignItems: 'center',
               justifyContent: 'center',
             }}
@@ -241,6 +227,6 @@ export function SeletorEndereco({ enderecos, selecionado, onSelecionar }: Props)
           </>
         )}
       </FolhaModal>
-    </View>
+    </SecaoFolha>
   )
 }

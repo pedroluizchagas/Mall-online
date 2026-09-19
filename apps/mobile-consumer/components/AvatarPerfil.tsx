@@ -29,7 +29,14 @@ const { colors, radius } = consumerDesign
  * bucket por outra via, mas `foto_url` continua na tabela. Sem ele o
  * círculo ficaria vazio; com ele volta para a inicial.
  */
-export function AvatarPerfil({ tamanho = 56 }: { tamanho?: number }) {
+export function AvatarPerfil({
+  tamanho = 56,
+  corAro = colors.surfaceDark,
+}: {
+  tamanho?: number
+  /** Cor do aro do selo de câmera — a do fundo onde o avatar pousa. */
+  corAro?: string
+}) {
   const { consumer, setConsumer } = useAuthStore()
   const [enviando, setEnviando] = useState(false)
   const [erroImagem, setErroImagem] = useState(false)
@@ -177,7 +184,7 @@ export function AvatarPerfil({ tamanho = 56 }: { tamanho?: number }) {
           borderRadius: radius.pill,
           backgroundColor: colors.accent,
           borderWidth: 2,
-          borderColor: colors.surfaceDark,
+          borderColor: corAro,
           alignItems: 'center',
           justifyContent: 'center',
         }}

@@ -1,148 +1,262 @@
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
-import { StatusBar } from 'expo-status-bar'
+import { Alert, Switch, Text, TouchableOpacity, View } from 'react-native'
 import { router, type Href } from 'expo-router'
-import { PartnerIcon } from '@/components/PartnerIcon'
+import { supabase } from '@/lib/supabase'
+import { useAuthStore } from '@/store/useAuthStore'
+import { usePreferencias } from '@/store/usePreferencias'
+import { PartnerIcon, type PartnerIconName } from '@/components/PartnerIcon'
 import { SeletorLoja } from '@/components/SeletorLoja'
+import { TijoloLoja } from '@/components/TijoloLoja'
+import { TelaMarquise } from '@/components/marquise/TelaMarquise'
+import { Portaria, estiloMicroMudo, useFontesMarquee } from '@/components/marquise/Marquise'
+import { SecaoFolha, CartaoFolha } from '@/components/ui/SecaoFolha'
+import { Botao } from '@/components/ui/Botao'
 import { partnerDesign } from '@/lib/partner-design'
 
-// Hub dos módulos de gestão (rotas stack). No Stage 6 vira a versão
-// definitiva com badges (mensagens/avaliações não lidas) e estados.
-
-type Icone = 'box' | 'chart' | 'wallet' | 'store' | 'star' | 'chat' | 'calendar' | 'bike' | 'gear' | 'user' | 'help'
+/**
+ * Menu — o "perfil" do lojista, na arquitetura do Perfil do consumer:
+ * MARQUISE com a identidade (tijolo da loja, nome, responsável) e o
+ * seletor de loja; FOLHA com os módulos de gestão em cartões sem borda
+ * sob letreiros, a aparência e a saída.
+ *
+ * Moedas dos itens são monocromáticas (`canvasAlt` + ícone `ink`) — o
+ * módulo fala pelo nome, não por uma cor.
+ */
 
 interface Entrada {
   titulo: string
-  icone: Icone
+  descricao: string
+  icone: PartnerIconName
   href: Href
 }
 
 interface Secao {
-  legenda: string
+  sobrelinha: string
+  titulo: string
   entradas: Entrada[]
 }
 
 const SECOES: Secao[] = [
   {
-    legenda: 'Catálogo',
+    sobrelinha: 'O que você vende',
+    titulo: 'Catálogo',
     entradas: [
-      { titulo: 'Produtos',      icone: 'box',      href: '/produtos' },
-      { titulo: 'Categorias',    icone: 'box',      href: '/categorias' },
-      { titulo: 'Estoque',       icone: 'box',      href: '/estoque' },
+      { titulo: 'Produtos', descricao: 'Cadastro, preços e disponibilidade', icone: 'box', href: '/produtos' },
+      { titulo: 'Categorias', descricao: 'Organização do cardápio', icone: 'tag', href: '/categorias' },
+      { titulo: 'Estoque', descricao: 'Quantidades e alertas', icone: 'package', href: '/estoque' },
     ],
   },
   {
-    legenda: 'Desempenho',
+    sobrelinha: 'Como a loja vai',
+    titulo: 'Desempenho',
     entradas: [
-      { titulo: 'Financeiro',    icone: 'wallet',   href: '/financeiro' },
-      { titulo: 'Relatórios',    icone: 'chart',    href: '/relatorios' },
+      { titulo: 'Financeiro', descricao: 'Saldo, repasses e antecipação', icone: 'wallet', href: '/financeiro' },
+      { titulo: 'Relatórios', descricao: 'Vendas, itens e pagamentos', icone: 'chart', href: '/relatorios' },
     ],
   },
   {
-    legenda: 'Operação',
+    sobrelinha: 'O dia a dia',
+    titulo: 'Operação',
     entradas: [
-      { titulo: 'Minha loja',    icone: 'store',    href: '/minha-loja' },
-      { titulo: 'Avaliações',    icone: 'star',     href: '/avaliacoes' },
-      { titulo: 'Mensagens',     icone: 'chat',     href: '/mensagens' },
-      { titulo: 'Agenda',        icone: 'calendar', href: '/agenda' },
-      { titulo: 'Entregadores',  icone: 'bike',     href: '/entregadores' },
+      { titulo: 'Minha loja', descricao: 'Dados, horários, entrega e pagamento', icone: 'store', href: '/minha-loja' },
+      { titulo: 'Avaliações', descricao: 'O que os clientes disseram', icone: 'star', href: '/avaliacoes' },
+      { titulo: 'Mensagens', descricao: 'Conversas com clientes', icone: 'chat', href: '/mensagens' },
+      { titulo: 'Agenda', descricao: 'Atendimentos agendados', icone: 'calendar', href: '/agenda' },
+      { titulo: 'Entregadores', descricao: 'Sua equipe de entrega', icone: 'bike', href: '/entregadores' },
     ],
   },
   {
-    legenda: 'Conta',
+    sobrelinha: 'Você e a Mallevo',
+    titulo: 'Conta',
     entradas: [
-      { titulo: 'Configurações', icone: 'gear',     href: '/configuracoes' },
-      { titulo: 'Minha conta',   icone: 'user',     href: '/minha-conta' },
-      { titulo: 'Ajuda',         icone: 'help',     href: '/ajuda' },
+      { titulo: 'Configurações', descricao: 'No app e no Dashboard', icone: 'gear', href: '/configuracoes' },
+      { titulo: 'Minha conta', descricao: 'Dados, senha e assinatura', icone: 'user', href: '/minha-conta' },
+      { titulo: 'Ajuda', descricao: 'Dúvidas e suporte', icone: 'help', href: '/ajuda' },
     ],
   },
 ]
 
+const { colors, radius } = partnerDesign
+
 export default function TelaMenu() {
-  const { colors, radius, spacing, typography } = partnerDesign
+  const { tenant, lojas, lojaAtivaId, user } = useAuthStore()
+  const luzDoDia = usePreferencias((s) => s.luzDoDia)
+  const setLuzDoDia = usePreferencias((s) => s.setLuzDoDia)
+  const fontes = useFontesMarquee()
+
+  const loja = lojas.find((l) => l.id === lojaAtivaId) ?? lojas[0]
+
+  function handleSair() {
+    Alert.alert('Sair da conta', 'Você precisará entrar de novo para usar o app.', [
+      { text: 'Voltar', style: 'cancel' },
+      { text: 'Sair', style: 'destructive', onPress: () => void supabase.auth.signOut() },
+    ])
+  }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-      <StatusBar style="dark" />
-      <ScrollView
-        contentContainerStyle={{
-          paddingTop: 72,
-          paddingHorizontal: spacing.lg,
-          paddingBottom: spacing.tabBarHeight + spacing.lg,
-        }}
-      >
-        <Text
-          style={{
-            color: colors.ink,
-            fontSize: typography.h1.size,
-            fontWeight: typography.h1.weight,
-            letterSpacing: typography.h1.tracking,
-            marginBottom: spacing.lg,
-          }}
-        >
-          Menu
-        </Text>
+    <TelaMarquise
+      marquise={
+        <>
+          <Portaria
+            esquerda={<Text style={estiloMicroMudo}>Menu</Text>}
+            direita={lojas.length > 1 ? <SeletorLoja escuro /> : undefined}
+          />
 
-        <View style={{ marginBottom: spacing['2xl'] }}>
-          <SeletorLoja />
-        </View>
-
-        {SECOES.map((secao) => (
-          <View key={secao.legenda} style={{ marginBottom: spacing['2xl'] }}>
-            <Text
-              style={{
-                color: colors.inkSoft,
-                fontSize: typography.micro.size,
-                fontWeight: typography.micro.weight,
-                letterSpacing: typography.micro.tracking,
-                textTransform: 'uppercase',
-                marginBottom: spacing.sm,
-                marginLeft: spacing.xs,
-              }}
-            >
-              {secao.legenda}
-            </Text>
-            <View
-              style={{
-                backgroundColor: colors.surface,
-                borderRadius: radius.md,
-                overflow: 'hidden',
-              }}
-            >
-              {secao.entradas.map((entrada, i) => (
-                <TouchableOpacity
-                  key={entrada.titulo}
-                  activeOpacity={0.7}
-                  onPress={() => router.push(entrada.href)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 14,
-                    paddingHorizontal: spacing.lg,
-                    borderTopWidth: i === 0 ? 0 : 1,
-                    borderTopColor: colors.line,
-                  }}
-                >
-                  <PartnerIcon name={entrada.icone} size={20} color={colors.inkMuted} />
-                  <Text
-                    style={{
-                      flex: 1,
-                      marginLeft: spacing.md,
-                      color: colors.ink,
-                      fontSize: typography.bodyLg.size,
-                      fontWeight: typography.bodyLg.weight,
-                    }}
-                  >
-                    {entrada.titulo}
-                  </Text>
-                  <View style={{ transform: [{ scaleX: -1 }] }}>
-                    <PartnerIcon name="back" size={16} color={colors.inkSoft} />
-                  </View>
-                </TouchableOpacity>
-              ))}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 16,
+              paddingHorizontal: 24,
+              paddingTop: 18,
+            }}
+          >
+            <TijoloLoja nome={loja?.nome ?? 'Loja'} logoUrl={loja?.logo_url} tamanho={68} raio={radius.md} />
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[
+                  fontes.statement,
+                  { fontSize: 24, lineHeight: 28, color: colors.white, letterSpacing: -0.5 },
+                ]}
+                numberOfLines={2}
+              >
+                {loja?.nome ?? 'Sua loja'}
+              </Text>
+              <Text
+                style={{ fontSize: 13.5, fontWeight: '500', color: colors.marqueeInkSoft, marginTop: 4 }}
+                numberOfLines={1}
+              >
+                {tenant?.nome_responsavel ?? user?.email ?? ''}
+              </Text>
             </View>
           </View>
-        ))}
-      </ScrollView>
-    </View>
+        </>
+      }
+    >
+      {SECOES.map((secao) => (
+        <SecaoFolha key={secao.titulo} sobrelinha={secao.sobrelinha} titulo={secao.titulo}>
+          <CartaoFolha padding={0}>
+            {secao.entradas.map((entrada, i) => (
+              <ItemMenu
+                key={entrada.titulo}
+                {...entrada}
+                ultimo={i === secao.entradas.length - 1}
+                aoTocar={() => router.push(entrada.href)}
+              />
+            ))}
+          </CartaoFolha>
+        </SecaoFolha>
+      ))}
+
+      <SecaoFolha sobrelinha="Aparência" titulo="Salão">
+        <CartaoFolha padding={0}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              paddingVertical: 12,
+              paddingHorizontal: 16,
+            }}
+          >
+            <View
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: radius.sm,
+                backgroundColor: luzDoDia ? colors.accentSoft : colors.canvasAlt,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <PartnerIcon name="clock" size={18} color={luzDoDia ? colors.accent : colors.ink} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '600', color: colors.ink }}>Luz do dia</Text>
+              <Text
+                style={{ fontSize: 12.5, fontWeight: '500', color: colors.inkMuted, marginTop: 2 }}
+                numberOfLines={2}
+              >
+                A folha clara acompanha o sol de Divinópolis
+              </Text>
+            </View>
+            <Switch
+              value={luzDoDia}
+              onValueChange={setLuzDoDia}
+              trackColor={{ false: colors.canvasAlt, true: colors.accent }}
+              thumbColor={colors.white}
+              ios_backgroundColor={colors.canvasAlt}
+              accessibilityLabel="Luz do dia"
+            />
+          </View>
+        </CartaoFolha>
+      </SecaoFolha>
+
+      <View style={{ paddingHorizontal: 24 }}>
+        <Botao
+          label="Sair da conta"
+          variante="danger"
+          tamanho="md"
+          iconeEsquerda="logout"
+          onPress={handleSair}
+        />
+        <Text
+          style={{
+            fontSize: 11,
+            color: colors.inkSoft,
+            textAlign: 'center',
+            marginTop: 14,
+            letterSpacing: 0.3,
+            fontWeight: '500',
+          }}
+        >
+          Mallevo Parceiro · versão 1.0.0
+        </Text>
+      </View>
+    </TelaMarquise>
+  )
+}
+
+function ItemMenu({
+  titulo,
+  descricao,
+  icone,
+  aoTocar,
+  ultimo,
+}: Entrada & { aoTocar: () => void; ultimo: boolean }) {
+  return (
+    <TouchableOpacity
+      onPress={aoTocar}
+      activeOpacity={partnerDesign.opacity.pressedSoft}
+      accessibilityRole="button"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+        paddingVertical: 13,
+        paddingHorizontal: 16,
+        borderBottomWidth: ultimo ? 0 : 1,
+        borderBottomColor: colors.line,
+      }}
+    >
+      <View
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: radius.sm,
+          backgroundColor: colors.canvasAlt,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <PartnerIcon name={icone} size={18} color={colors.ink} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 15, fontWeight: '600', color: colors.ink }}>{titulo}</Text>
+        <Text style={{ fontSize: 12.5, fontWeight: '500', color: colors.inkMuted, marginTop: 1 }}>
+          {descricao}
+        </Text>
+      </View>
+      <PartnerIcon name="chevron-right" size={16} color={colors.inkSoft} />
+    </TouchableOpacity>
   )
 }

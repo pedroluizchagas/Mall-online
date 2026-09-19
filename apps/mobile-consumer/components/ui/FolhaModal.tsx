@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
+import { useFontesMarquee } from '@/components/home/Marquise'
 import { consumerDesign } from '@/lib/consumer-design'
 
 const { colors, radius } = consumerDesign
@@ -14,18 +15,35 @@ const { colors, radius } = consumerDesign
 interface Props {
   visivel: boolean
   titulo: string
+  /** Sobrelinha em micro caps acima do título ("Onde você está"). */
+  sobrelinha?: string
+  /** `surface` (formulários) ou `canvas` (listas de cartões claros). */
+  fundo?: 'surface' | 'canvas'
   onFechar: () => void
   children: React.ReactNode
 }
 
 /**
- * Folha que sobe pela base — o chrome que o modal de endereços do checkout
- * já usava, extraído para servir também ao perfil.
+ * Folha que sobe pela base — o chrome do modal de endereços, extraído para
+ * servir ao checkout, ao perfil e à marquise do Início.
  *
- * Véu tocável fecha; `maxHeight` de 85% garante que sempre sobre um pedaço
- * do fundo, para a folha ser lida como camada e não como tela nova.
+ * Fala a voz da casa: alça, sobrelinha opcional em micro caps e título na
+ * fonte-assinatura (`useFontesMarquee().letreiro`), sem fio abaixo do
+ * cabeçalho — o sistema não usa risco. Véu tocável fecha; `maxHeight` de
+ * 85% garante que sempre sobre um pedaço do fundo, para a folha ser lida
+ * como camada e não como tela nova.
  */
-export function FolhaModal({ visivel, titulo, onFechar, children }: Props) {
+export function FolhaModal({
+  visivel,
+  titulo,
+  sobrelinha,
+  fundo = 'surface',
+  onFechar,
+  children,
+}: Props) {
+  const fontes = useFontesMarquee()
+  const corFundo = fundo === 'canvas' ? colors.canvas : colors.surface
+
   return (
     <Modal
       visible={visivel}
@@ -52,9 +70,9 @@ export function FolhaModal({ visivel, titulo, onFechar, children }: Props) {
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={{
-            backgroundColor: colors.surface,
-            borderTopLeftRadius: radius.xl,
-            borderTopRightRadius: radius.xl,
+            backgroundColor: corFundo,
+            borderTopLeftRadius: radius.lg,
+            borderTopRightRadius: radius.lg,
             maxHeight: '85%',
             overflow: 'hidden',
           }}
@@ -72,22 +90,30 @@ export function FolhaModal({ visivel, titulo, onFechar, children }: Props) {
             />
           </View>
 
-          <View
-            style={{
-              paddingHorizontal: 20,
-              paddingTop: 12,
-              paddingBottom: 12,
-              borderBottomWidth: 1,
-              borderBottomColor: colors.line,
-            }}
-          >
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}>
+          <View style={{ paddingHorizontal: 24, paddingTop: 14, paddingBottom: 6 }}>
+            {sobrelinha ? (
+              <Text
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: '700',
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  color: colors.inkSoft,
+                  marginBottom: 3,
+                }}
+              >
+                {sobrelinha}
+              </Text>
+            ) : null}
+            <Text
+              style={[fontes.letreiro, { fontSize: 22, color: colors.ink, letterSpacing: -0.4 }]}
+            >
               {titulo}
             </Text>
           </View>
 
           <ScrollView
-            contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 12 }}
+            contentContainerStyle={{ padding: 16, paddingTop: 14, paddingBottom: 40, gap: 12 }}
             keyboardShouldPersistTaps="handled"
           >
             {children}

@@ -24,9 +24,11 @@ interface Props {
   item: ItemCarrinho
   /** Esconde os controles +/-/remover (usado em pedido/[id].tsx). */
   readonly?: boolean
+  /** Última linha do cartão — sem divisor embaixo. */
+  ultimo?: boolean
 }
 
-export function ItemCarrinhoCard({ item, readonly = false }: Props) {
+export function ItemCarrinhoCard({ item, readonly = false, ultimo = false }: Props) {
   const { aumentarQuantidade, diminuirQuantidade, removerItem } = useCartStore()
   const precoExtra =
     item.modifiers?.reduce((acc, m) => acc + m.preco_extra, 0) ?? 0
@@ -49,7 +51,7 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
         gap: 12,
         paddingHorizontal: 16,
         paddingVertical: 14,
-        borderBottomWidth: 1,
+        borderBottomWidth: ultimo ? 0 : 1,
         borderBottomColor: colors.line,
       }}
     >
@@ -61,12 +63,15 @@ export function ItemCarrinhoCard({ item, readonly = false }: Props) {
           {item.nome}
         </Text>
         {resumoAgendamento && (
-          <Text
-            style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '600' }}
-            numberOfLines={2}
-          >
-            📅 {resumoAgendamento}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <ConsumerIcon name="clock" size={12} color={colors.inkMuted} strokeWidth={2} />
+            <Text
+              style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '600', flexShrink: 1 }}
+              numberOfLines={2}
+            >
+              {resumoAgendamento}
+            </Text>
+          </View>
         )}
         {rotuloVariant && (
           <Text

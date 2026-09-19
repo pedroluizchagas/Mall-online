@@ -50,7 +50,7 @@ export function CardSeparacao({
   editavel,
   onVolumesAtualizados,
 }: Props) {
-  const { colors, radius, typography } = partnerDesign
+  const { colors, radius, typography, shadow } = partnerDesign
   const [qtd, setQtd] = useState(volumes ?? 1)
   const [salvando, setSalvando] = useState(false)
 
@@ -89,14 +89,15 @@ export function CardSeparacao({
 
   return (
     <View
-      style={{
-        backgroundColor: colors.surface,
-        borderRadius: radius.md,
-        borderWidth: 1,
-        borderColor: colors.line,
-        padding: 14,
-        gap: 12,
-      }}
+      style={[
+        {
+          backgroundColor: colors.surface,
+          borderRadius: radius.md,
+          padding: 16,
+          gap: 12,
+        },
+        shadow.soft,
+      ]}
     >
       {/* Porte */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -120,7 +121,7 @@ export function CardSeparacao({
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: colors.surface, fontWeight: '800' }}>{porte}</Text>
+          <Text style={{ color: colors.accent, fontWeight: '800' }}>{porte}</Text>
         </View>
       </View>
 
@@ -134,7 +135,7 @@ export function CardSeparacao({
                 borderColor: f.cor,
                 paddingHorizontal: 9,
                 paddingVertical: 3,
-                borderRadius: 999,
+                borderRadius: radius.pill,
               }}
             >
               <Text style={{ color: f.cor, fontSize: 11, fontWeight: '700' }}>{f.texto}</Text>

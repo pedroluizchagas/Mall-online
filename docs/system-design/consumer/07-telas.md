@@ -246,7 +246,7 @@ O home **não usa mais** `<HeaderTela>`. A `<Marquise>` desenha:
 - saudação (`saudacaoPorHorario()` + primeiro nome) em micro caps;
 - statement fixo "A cidade inteira, / na sua mão." + slogan oficial;
 - busca em `marqueeGlass` com borda `marqueeLine` e moeda `accent` à direita (toca → abre o **Concierge**, overlay de busca sobre a própria home — §4; nunca navega);
-- fileira de vitrines (2026-09-10, referência "Novidades na Passarela") = **posts recentes dos parceiros** — o "marketing orgânico": o status que o lojista publica vinculado a um produto (mesma view `public_explore_feed` de Explorar/Seguindo, via `carregarPosts` em `lib/posts.ts`). Fonte: posts das lojas seguidas (`carregarPosts({ lojas, limite: 10 })`); sem seguidas — ou seguidas sem post — cai para os 10 mais recentes do shopping (`modoVitrines: 'alta'`). Carrega quando `useSeguidas.hidratado`, independente do catálogo; recarrega no pull-to-refresh. Letreiro: sobrelinha `AO VIVO NO SHOPPING` em `accent` + título "Novidades das suas lojas" / "Novidades na passarela" (`letreiro` 21) + link "Ver tudo ›" (`marqueeInkSoft`) → Seguindo (modo seguidas) ou Explorar (modo alta). **Toque no card leva DIRETO ao post**: `router.navigate({ pathname: '/(tabs)/seguindo' | '/(tabs)/explorar', params: { post: id } })`; as duas telas leem `useLocalSearchParams().post`, rolam até o índice (Seguindo: `scrollToIndex` + `onScrollToIndexFailed` porque os cards têm altura variável; Explorar: `setAtivo` + `scrollToIndex` com `getItemLayout`) e limpam o param (`router.setParams({ post: '' })`) — o mesmo post tocado de novo rola de novo. Cada card é um `VitrineCard` (`components/home/VitrineCard.tsx`, recebe `VitrinePost = { post, theme, logoUrl }` — theme/logo da loja vêm do join por `loja_slug` no catálogo da home): cartaz em retrato `round(width*0.46) × 1.62`, `radius.md`, fundo = `marquee` clareado 5%, fio neutro 1px `marqueeLine` — **sem halo nem fio colorido**. Mídia do post em **toda a layer** (foto → `thumb_url` do vídeo → logo da loja → monograma; `media_url` de vídeo nunca vai a um `<Image>`); a leitura vem de uma **sombra** que sobe do pé na cor do fundo (SVG: transparente a 46% → 0.32 → 0.78 → 0.96 na base) — a mídia nunca é cortada. Legenda: sobrelinha = `loja_nome` em micro caps na cor de **accent da própria loja** (`colorsFromTheme(theme).accent`, só se `contrastRatio ≥ 3` sobre o fundo — senão branco); título = `produto.nome` (sem produto: `descricao`) na `letreiro` 15/19, 2 linhas; sublinha = preço (sem produto: "há 3 sem"). Pílula de **momento** derivada do POST (30px, 11.5/700 caps): publicado < 48h → "Novo" + spark `success`; `curtidas ≥ 1000` → "Em alta" + trend `warning`; vídeo → duração "0:28" + play em `inkGlass`; senão sem pílula. Toque: `Pressable` + spring scale 0.97. O ScrollView leva `paddingVertical: 14` + `marginVertical: -14`. A query da home pede `banner_url` e `categoria:categories(slug, nome)`;
+- fileira de vitrines (2026-09-10, referência "Novidades na Passarela") = **posts recentes dos parceiros** — o "marketing orgânico": o status que o lojista publica vinculado a um produto (mesma view `public_explore_feed` de Explorar/Seguindo, via `carregarPosts` em `lib/posts.ts`). Fonte: posts das lojas seguidas (`carregarPosts({ lojas, limite: 10 })`); sem seguidas — ou seguidas sem post — cai para os 10 mais recentes do shopping (`modoVitrines: 'alta'`). Carrega quando `useSeguidas.hidratado`, independente do catálogo; recarrega no pull-to-refresh. Letreiro: sobrelinha `AO VIVO NO SHOPPING` em `accent` + título "Novidades das suas lojas" / "Novidades na passarela" (`letreiro` 21) + link "Ver tudo ›" (`marqueeInkSoft`) → Seguindo (modo seguidas) ou Explorar (modo alta). **Toque no card leva DIRETO ao post**: `router.navigate({ pathname: '/(tabs)/seguindo' | '/(tabs)/explorar', params: { post: id } })`; as duas telas leem `useLocalSearchParams().post`, rolam até o índice (Seguindo: `scrollToIndex` + `onScrollToIndexFailed` porque os cards têm altura variável; Explorar: `setAtivo` + `scrollToIndex` com `getItemLayout`) e limpam o param (`router.setParams({ post: '' })`) — o mesmo post tocado de novo rola de novo. Cada card é um `VitrineCard` (`components/home/VitrineCard.tsx`, recebe `VitrinePost = { post, theme, logoUrl }` — theme/logo da loja vêm do join por `loja_slug` no catálogo da home): cartaz em retrato com largura derivada de **2,45 cards visíveis** (`(width − 24 − 10×2) / 2.45` ≈ 37% da tela; dois inteiros e ~45% do terceiro, o convite para rolar), altura `× 1.56`, gutter 24 (alinha com o letreiro), gap 10, `radius.md`, fundo = `marquee` clareado 5%, fio neutro 1px `marqueeLine` — **sem halo nem fio colorido**. Mídia do post em **toda a layer** (foto → `thumb_url` do vídeo → logo da loja → monograma; `media_url` de vídeo nunca vai a um `<Image>`); a leitura vem de uma **sombra** que sobe do pé na cor do fundo (SVG: transparente a 46% → 0.32 → 0.78 → 0.96 na base) — a mídia nunca é cortada. Legenda: sobrelinha = `loja_nome` em micro caps na cor de **accent da própria loja** (`colorsFromTheme(theme).accent`, só se `contrastRatio ≥ 3` sobre o fundo — senão branco); título = `produto.nome` (sem produto: `descricao`) na `letreiro` 14/18, 2 linhas; sublinha = preço 12 (sem produto: "há 3 sem"). Legenda com padding 12. Pílula de **momento** derivada do POST (26px, 10.5/700 caps, a 10px do canto): publicado < 48h → "Novo" + spark `success`; `curtidas ≥ 1000` → "Em alta" + trend `warning`; vídeo → duração "0:28" + play em `inkGlass`; senão sem pílula. Toque: `Pressable` + spring scale 0.97. O ScrollView leva `paddingVertical: 14` + `marginVertical: -14`. A query da home pede `banner_url` e `categoria:categories(slug, nome)`;
 - entrada com stagger: um `Animated.Value` único, cada peça lê uma janela do intervalo (statement → busca → vitrines).
 
 #### Cartão de pedido ao vivo
@@ -480,170 +480,96 @@ O contador do ícone soma o que foi escrito no app ao número da view — mesmo 
 ## 6. Pedidos (`(tabs)/pedidos.tsx`)
 
 ### Propósito
-Lista de pedidos do usuário com filtro por status (todos / ativos / histórico).
+Os pedidos do usuário, na **mesma arquitetura do Início** (2026-09-12): marquise escura em cima com o que está AO VIVO, folha clara embaixo com o histórico. Uma tela existe para acompanhar o que está chegando e guardar o que já chegou — e as duas perguntas convivem na mesma rolagem, sem filtro.
 
-### Wireframe alvo
+### Wireframe
 
 ```
 ┌─────────────────────────────────────────┐
-│ HeaderTela variante="simples"           │
-│  Meus pedidos                           │
-│                                          │
-│  ◉ Todos  ○ Ativos  ○ Histórico         │  ← Chips de filtro
-│                                          │
-│  Ativos                                  │  ← label uppercase (só se houver)
-│  ┌──────────────────────────────────┐  │
-│  │ PedidoCard escuro                 │  │
-│  └──────────────────────────────────┘  │
-│                                          │
-│  Histórico                               │  ← label uppercase
-│  ┌──────────────────────────────────┐  │
-│  │ PedidoCard claro                  │  │
-│  └──────────────────────────────────┘  │
-│  ...                                     │
+│ ▓▓ marquee + GlowNeon ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
+│  MEUS PEDIDOS                            │  ← micro marqueeInkMuted
+│  Do balcão                               │  ← statement 30 white
+│  até a sua porta.                        │  ← acento itálico accent
+│  1 em andamento · 7 no histórico         │  ← marqueeInkSoft
+│ ┌─ CartaoPedidoVivo (vidro) ───────────┐ │
+│ │ • AO VIVO · CAFÉ AROMA          52% │ │  ← ponto pulsando (reduce motion → fixo)
+│ │ Em preparo                          │ │  ← statement 20 white
+│ │ Seu pedido está sendo preparado.    │ │
+│ │ ▓▓▓▓▓▓▓▓░░░░░░░░ barra accent       │ │
+│ │ 2× Cappuccino…   R$ 24,90  Acompanhar›│ │
+│ └─────────────────────────────────────┘ │
+│ ╭──────── folha (VidroFosco + luz) ─────╮
+│ │  PEDIDOS ANTERIORES          7 PEDIDOS │  ← letreiro: sobrelinha + "Histórico" (Jakarta 700 21)
+│ │  Histórico                             │
+│ │  SETEMBRO DE 2026                      │  ← grupo por mês, micro inkSoft
+│ │ ┌─ PedidoCard (recibo) ──────────────┐ │
+│ │ │ [UW] Atelier Urban Woods  R$ 389,00│ │  ← tijolo com a pele da loja
+│ │ │      1× Moletom Terra   Ontem, 20:15│ │
+│ │ │ ─────────────────────────────────── │ │
+│ │ │ (✓ Entregue)          Ver detalhes ›│ │
+│ │ └────────────────────────────────────┘ │
+│ ╰────────────────────────────────────────╯
 └─────────────────────────────────────────┘
 ```
 
 ### Estrutura
 
-```tsx
-<View style={{ flex: 1, backgroundColor: colors.canvas }}>
-  <HeaderTela variante="simples" titulo="Meus pedidos" />
+- **Marquise**: `marquee` + `GlowNeon` (exportado da Marquise do Início), status bar clara só com a aba em foco (`useFocusEffect`), céu `marquee` atrás do overscroll. Sobrelinha "MEUS PEDIDOS", statement "Do balcão / até a sua porta." (`useFontesMarquee().statement` + `acento`), linha-resumo ("N em andamento · M no histórico"). Depois, um `CartaoPedidoVivo` (`components/pedidos/CartaoPedidoVivo.tsx`) por pedido em curso: vidro `marqueeGlass` + fio `marqueeLine`, ponto accent pulsando (respeita reduce motion), "AO VIVO · LOJA" + `%`, `rotuloLongo` do status em statement 20, `descricao`, barra de progresso accent animada (`META_STATUS.progresso`), rodapé com itens, total e "Acompanhar ›" (→ `/pedido/[id]`). Sem pedido em curso: `SemPedidoVivo`, uma linha de vidro ("Nada a caminho agora — As novidades do shopping estão no Início" → Início).
+- **Folha**: `marginTop: -24`, `radius.md` no topo, `VidroFosco` (extraído para `components/home/VidroFosco.tsx`) com a **luz do dia** (mesma preferência do Início). Letreiro "PEDIDOS ANTERIORES / Histórico" + contagem à direita. Pedidos finalizados agrupados **por mês** (rótulo `toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })` em micro caps), cada um um `PedidoCard` (§ 04-componentes-dominio §5).
+- **Dados**: `orders` com `stores (id, nome, slug)` + `order_items`; depois um `select` em `stores` por `.in('id', …)` traz `logo_url` e `theme` para o tijolo do recibo (o embed de `orders` não carrega tema — e o mock também não). Ativo = `ehAtivo(status)`.
+- **Estados**: carregando (cartão de vidro apagado na marquise + 3 recibos-skeleton na folha), sem pedido nenhum (`EmptyState` "Nenhum pedido ainda" + "Explorar o shopping"), com ativos mas sem histórico ("Histórico vazio").
 
-  <View style={{ flexDirection: 'row', gap: 8, paddingHorizontal: 24, paddingBottom: 16 }}>
-    <Chip rotulo="Todos" ativo={filtro === 'todos'} aoTocar={() => setFiltro('todos')} />
-    <Chip rotulo="Ativos" ativo={filtro === 'ativos'} aoTocar={() => setFiltro('ativos')} />
-    <Chip rotulo="Histórico" ativo={filtro === 'historico'} aoTocar={() => setFiltro('historico')} />
-  </View>
-
-  {carregando ? (
-    <LoadingState altura={200} />
-  ) : pedidosFiltrados.length === 0 ? (
-    <EmptyState
-      icone="orders"
-      titulo="Nada por aqui"
-      descricao="Quando você fizer um pedido, ele aparece nesta lista."
-      acao={{ label: 'Explorar lojas', aoTocar: () => router.push('/(tabs)') }}
-    />
-  ) : (
-    <FlatList
-      data={pedidosFiltrados}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: spacing.tabBarHeight, gap: 12 }}
-      renderItem={({ item }) => (
-        <PedidoCard pedido={item} aoTocar={() => router.push(`/pedido/${item.id}`)} />
-      )}
-      ItemSeparatorComponent={null}
-      refreshControl={<RefreshControl ... />}
-    />
-  )}
-</View>
-```
-
-### Mudanças vs hoje
-
-- `LABELS_STATUS`/`CORES_STATUS`/`PROGRESSO_STATUS` locais → consumo via `metaDoStatus()` em `<PedidoCard>`.
-- Filtros como botões custom → `<Chip>`.
-- Empty state custom → `<EmptyState>`.
-- `PackageSearch` lucide → `orders` ConsumerIcon.
+### O que saiu
+- Os chips "Todos / Ativos / Histórico": a divisão marquise/folha já responde as três perguntas de uma vez.
+- `HeaderTela variante="simples"` e o badge "N ativos" no cabeçalho: a marquise assume o cabeçalho, e a contagem vive na linha-resumo.
+- O `PedidoCard` escuro para ativos: pedido em curso é `CartaoPedidoVivo`.
 
 ---
 
 ## 7. Perfil (`(tabs)/perfil.tsx`)
 
 ### Propósito
-Avatar + nome + lista de seções (endereços, editar, pedidos, documentos, segurança, sair).
+Identidade, coleções e conta do usuário, na **mesma arquitetura do Início** (2026-09-12): marquise escura com quem você é e o que é seu no shopping; folha clara com conta, aparência e ajuda.
 
-### Wireframe alvo
+### Wireframe
 
 ```
 ┌─────────────────────────────────────────┐
-│ HeaderTela variante="simples"           │
-│  Perfil                       [edit]    │
-│                                          │
-│ ┌──────────────────────────────────┐  │
-│ │ [P]   Pedro Chagas                │  │  ← Card escuro de identidade
-│ │       pedro@email.com             │  │
-│ └──────────────────────────────────┘  │
-│                                          │
-│ CONTA                                    │  ← label uppercase
-│ ┌──────────────────────────────────┐  │
-│ │ [pin] Endereços          (3)  ▷  │  │
-│ │ [edit] Editar perfil          ▷  │  │
-│ │ [orders] Meus pedidos         ▷  │  │
-│ └──────────────────────────────────┘  │
-│                                          │
-│ AJUDA                                    │
-│ ┌──────────────────────────────────┐  │
-│ │ [file] Termos                  ▷  │  │
-│ │ [shield] Privacidade           ▷  │  │
-│ └──────────────────────────────────┘  │
-│                                          │
-│ [   Sair da conta   ]                   │  ← Botao danger
+│ ▓▓ marquee + GlowNeon ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
+│  MEU PERFIL                              │  ← micro marqueeInkMuted
+│  (◯📷)  Pedro Chagas                     │  ← AvatarPerfil 68 (aro `marquee`) · statement 24
+│         (37) 99999-0000                  │  ← telefone mascarado, ou e-mail
+│ ┌ 👥 3 ─────┐ ┌ ♥ 12 ────┐ ┌ 📍 2 ────┐ │  ← MoedaColecao: vidro, ícone accent,
+│ │ Lojas seg. │ │ Favoritos│ │ Endereços│ │     número 20/800, rótulo; toque navega
+│ └────────────┘ └──────────┘ └──────────┘ │     (Endereços expande na folha)
+│ ╭──────── folha (VidroFosco + luz) ─────╮
+│ │  SEUS DADOS / Conta                    │  ← letreiro (sobrelinha + Jakarta 700 21)
+│ │  ┌ [edit] Editar perfil            ▾ ┐ │  ← cartão surface sem borda
+│ │  │ [pin]  Endereços             2  › │ │
+│ │  │ [orders] Meus pedidos           › │ │
+│ │  └────────────────────────────────────┘ │
+│ │  (EditarPerfil / GerenciarEnderecos      │
+│ │   inline abaixo do cartão, quando aberto)│
+│ │  APARÊNCIA / Início                    │
+│ │  ┌ [spark] Luz do dia          (●━) ┐ │  ← ItemInterruptor (Switch accent)
+│ │  SOBRE O APP / Ajuda                   │
+│ │  ┌ Termos de uso · Política de priv. ┐ │
+│ │  [ Sair da conta ]  Excluir minha conta│
+│ │  Versão 1.0.0                          │
+│ ╰────────────────────────────────────────╯
 └─────────────────────────────────────────┘
 ```
 
 ### Estrutura
 
-```tsx
-<ScrollView style={{ flex: 1, backgroundColor: colors.canvas }} contentContainerStyle={{ paddingBottom: spacing.tabBarHeight }}>
-  <HeaderTela variante="simples" titulo="Perfil" />
-
-  <View style={{ paddingHorizontal: 16 }}>
-    <Card variante="escuro" raio="lg" preenchimento="lg">
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-        <View style={{ width: 56, height: 56, borderRadius: radius.pill, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 24, fontWeight: '800', color: colors.ink }}>{primeiraLetra}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 18, fontWeight: '800', color: colors.white }}>{nomeExibido}</Text>
-          <Text style={{ fontSize: 13, color: colors.inkSoft, marginTop: 2 }}>{user?.email}</Text>
-        </View>
-      </View>
-    </Card>
-  </View>
-
-  <Secao titulo="CONTA">
-    <ItemPerfil icone="pin" rotulo="Endereços" badge={qtdEnderecos} aoTocar={() => abrirEnderecos()} />
-    <ItemPerfil icone="edit" rotulo="Editar perfil" aoTocar={() => abrirEditar()} />
-    <ItemPerfil icone="orders" rotulo="Meus pedidos" aoTocar={() => router.push('/(tabs)/pedidos')} />
-  </Secao>
-
-  <Secao titulo="AJUDA">
-    <ItemPerfil icone="file" rotulo="Termos de uso" aoTocar={...} />
-    <ItemPerfil icone="shield" rotulo="Privacidade" aoTocar={...} />
-  </Secao>
-
-  <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
-    <Botao label="Sair da conta" variante="danger" tamanho="md" iconeEsquerda="logout" onPress={handleSair} />
-  </View>
-</ScrollView>
-```
-
-`<ItemPerfil>` (interno à tela):
-```tsx
-<TouchableOpacity onPress={aoTocar} activeOpacity={0.75} style={{
-  flexDirection: 'row', alignItems: 'center', gap: 12,
-  paddingVertical: 14, paddingHorizontal: 16,
-  borderBottomWidth: 1, borderBottomColor: colors.line,
-}}>
-  <View style={{ width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.canvasAlt, alignItems: 'center', justifyContent: 'center' }}>
-    <ConsumerIcon name={icone} size={18} color={colors.ink} />
-  </View>
-  <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.ink }}>{rotulo}</Text>
-  {badge !== undefined && (
-    <Text style={{ fontSize: 13, color: colors.inkMuted }}>({badge})</Text>
-  )}
-  <ConsumerIcon name="chevron-right" size={16} color={colors.inkSoft} />
-</TouchableOpacity>
-```
-
-### Mudanças vs hoje
-
-- Avatar `bg-verde-profundo` com inicial → quadrado `accent` com inicial em `ink`, dentro de Card escuro de identidade.
-- Ícones lucide (`Edit3`, `MapPin`, `ClipboardList`, `FileText`, `Shield`, `LogOut`) → `ConsumerIcon`.
-- Botão "Sair" texto vermelho linkado → `Botao variante="danger"` real.
-- Seções inline → componente local `<Secao>` simples (label + lista).
-- `EditarPerfil` e `GerenciarEnderecos` aparecem **em modais bottom-sheet** (vez de empurrar a tela). Refactor desses 2 componentes detalhado em [`04-componentes-dominio.md` §12](./04-componentes-dominio.md#12-editarperfil-e-gerenciarenderecos).
+- **Marquise**: `marquee` + `GlowNeon`, status bar clara com a aba em foco, céu atrás do overscroll, `RefreshControl` branco (re-hidrata o consumer via `garantirConsumer`). Sobrelinha "MEU PERFIL"; `AvatarPerfil` 68 com `corAro={colors.marquee}` (o selo de câmera abre o aro na cor do fundo); nome em `useFontesMarquee().statement` 24; telefone mascarado (`mascaraTelefone`) ou e-mail em `marqueeInkSoft`. Abaixo, três **moedas de coleção** (`MoedaColecao`, vidro `marqueeGlass` + fio `marqueeLine`, ícone accent, número 20/800, rótulo com plural certo): Lojas seguidas (`useTotalSeguidas` → Seguindo), Favoritos (`useTotalFavoritos` → Favoritos), Endereços (`consumer.enderecos.length` → expande `GerenciarEnderecos` na folha; a moeda fica `marqueeGlassStrong` + fio `accentRing` enquanto aberta).
+- **Folha**: `marginTop: -24`, `radius.md`, `VidroFosco` + luz do dia. Seções com letreiro (`Secao`: sobrelinha micro `inkSoft` + `letreiro` 21) e `Cartao` (`surface`, `radius.md`, `shadow.soft`, sem borda) com `ItemPerfil` (moeda `canvasAlt`/`accentSoft`, rótulo 15/600, badge, chevron):
+  - **Endereços** (expande **abaixo do cartão de Conta**, como o editor de perfil — seja pela moeda da marquise ou pelo item da lista): `GerenciarEnderecos` (2026-09-12) — cartões `surface` sem borda com moeda `ink` + ícone do tipo em accent, apelido (ou `rotuloPorTipo`) + selo "PADRÃO" (tinta `ink` sobre accent), rua e bairro; ações em pílulas fumê ("Tornar padrão", "Editar") e "Remover" em danger suave, alinhado à direita; a linha tracejada "Novo endereço" (ou "Cadastrar meu primeiro endereço" quando a lista está vazia) substitui o botão e o card de vazio. Edição no `FolhaModal` (sobrelinha "Cadastrar"/"Editar") com o `FormularioEndereco`: tipo em chips da casa (`ink` + accent quando ativo, `surfaceMuted` senão), rótulos de grupo em micro caps ("Tipo de endereço", "Endereço").
+  - **Conta** ("SEUS DADOS"): Editar perfil (expande `EditarPerfil` logo abaixo do cartão), Endereços (badge = contagem), Meus pedidos. "Lojas que sigo" e "Favoritos" saíram da lista — viraram as moedas da marquise.
+  - **Início** ("APARÊNCIA"): `ItemInterruptor` "Luz do dia" (`usePreferencias`).
+  - **Ajuda** ("SOBRE O APP"): Termos de uso e Política de privacidade (`abrirLink`).
+  - **Sair da conta** (`Botao danger`) e o link discreto **Excluir minha conta** (dupla confirmação; exigência das lojas de apps), versão.
+- **O que saiu**: `HeaderTela variante="simples"` e o `Card escuro` de identidade — a marquise assume os dois.
 
 ---
 
@@ -753,265 +679,92 @@ Detalhe da loja: header animado, lista de produtos por categoria, botão flutuan
 ## 9. Checkout (`checkout.tsx`)
 
 ### Propósito
-Revisão do carrinho + endereço + pagamento + observações + botão fazer pedido.
+Revisão do carrinho + endereço + pagamento + observações + pagar, na **mesma arquitetura do Início** (2026-09-12): marquise escura com a identidade do pedido, folha clara com as decisões. A lógica de pagamento (gateway-only, aviso de distância, trava de reentrada, fluxos cartão/Pix) não mudou.
 
-### Wireframe alvo
+### Wireframe
 
 ```
 ┌─────────────────────────────────────────┐
-│ HeaderTela variante="voltar"            │
-│  ← Finalizar pedido                     │
-│                                          │
-│  Burguer do Bairro                       │  ← h3 nome da loja
-│                                          │
-│  SEUS ITENS                              │
-│  ┌──────────────────────────────────┐  │
-│  │ ItemCarrinhoCard                  │  │
-│  │ ItemCarrinhoCard                  │  │
-│  └──────────────────────────────────┘  │
-│                                          │
-│  SeletorEndereco                         │
-│                                          │
-│  SeletorPagamento                        │
-│                                          │
-│  Observações                             │
-│  ┌──────────────────────────────────┐  │
-│  │ Input multilinha                  │  │
-│  └──────────────────────────────────┘  │
-│                                          │
-│  Subtotal               R$ 38,90         │
-│  Entrega                R$  4,90         │
-│  ─────────────────────────────           │
-│  TOTAL                  R$ 43,80         │
-│                                          │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│  [   Fazer pedido — R$ 43,80    ]      │  ← Botao primario fixo no fundo
+│ ▓▓ marquee + GlowNeon ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
+│ (‹)                                      │  ← voltar em moeda de vidro
+│  SEU PEDIDO EM                           │  ← micro marqueeInkMuted
+│  [UW] Atelier Urban Woods                │  ← TijoloLoja 52 (pele da loja) · statement 24
+│       3 itens · Frete grátis             │  ← marqueeInkSoft (agendamento: "atendimento na loja")
+│  chega em cerca de 35 min.               │  ← acento itálico accent (só entrega, com tempo_entrega)
+│ ╭──────── folha (VidroFosco + luz) ─────╮
+│ │  O QUE VAI / Seus itens        3 ITENS │  ← SecaoFolha (sobrelinha + Jakarta 700 21 + direita)
+│ │  ┌ ItemCarrinhoCard ×N (último sem fio)┐│  ← CartaoFolha padding 0
+│ │  QUANDO / Seu horário (só agendamento) │  ← linhas com ícone clock/store — sem emoji
+│ │  ONDE CHEGA / Endereço de entrega      │  ← SeletorEndereco (card surface sem borda, moeda ink+pin accent)
+│ │  COMO VOCÊ PAGA / Pagamento            │  ← SeletorPagamento (opções com fio de estado)
+│ │  CARTÃO DE CRÉDITO / Dados do cartão   │  ← FormularioCartao
+│ │  EM QUANTAS VEZES / Parcelamento       │  ← SeletorParcelas
+│ │  ALGUM RECADO? / Observações           │  ← Input multilinha
+│ │  FECHANDO A CONTA / Resumo             │  ← CartaoFolha: Subtotal · Taxa (Grátis em success) · Total
+│ ╰────────────────────────────────────────╯
+│ ┌ surface, radius.md no topo, shadow.floating ┐
+│ │ [ Pagar R$ 43,80 em 1× ]                    │  ← Botao primário lg (Pix: "Gerar Pix de …")
 └─────────────────────────────────────────┘
 ```
 
 ### Estrutura
 
-```tsx
-<View style={{ flex: 1, backgroundColor: colors.canvas }}>
-  <HeaderTela variante="voltar" titulo="Finalizar pedido" />
-
-  <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-    <Text style={{ fontSize: 18, fontWeight: '800', color: colors.ink, paddingHorizontal: 24 }}>
-      {store_nome}
-    </Text>
-
-    <Secao titulo="SEUS ITENS">
-      <Card preenchimento="sm">
-        {itens.map((item) => <ItemCarrinhoCard key={item.product_id} item={item} />)}
-      </Card>
-    </Secao>
-
-    <SeletorEndereco
-      enderecoSelecionado={enderecoSelecionado}
-      enderecos={consumer?.enderecos ?? []}
-      aoSelecionar={setEnderecoSelecionado}
-      aoAdicionar={salvarEndereco}
-    />
-
-    <SeletorPagamento
-      metodoSelecionado={formaPagamento}
-      aoSelecionar={setFormaPagamento}
-    />
-
-    {formaPagamento === 'dinheiro' && (
-      <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
-        <Input
-          rotulo="Troco para"
-          tipo="numero"
-          valor={trocoPara}
-          aoMudar={setTrocoPara}
-          placeholder="R$ 50,00"
-        />
-      </View>
-    )}
-
-    <View style={{ paddingHorizontal: 24, paddingTop: 16 }}>
-      <Input
-        rotulo="Observações"
-        valor={observacoes}
-        aoMudar={setObservacoes}
-        multilinha
-        placeholder="Ex.: tirar a cebola, deixar na portaria..."
-      />
-    </View>
-
-    <ResumoPreco subtotal={subtotal} entrega={store_taxa_entrega} total={total} />
-  </ScrollView>
-
-  <BotaoFixo>
-    <Botao
-      label={`Fazer pedido — ${formatarReais(total)}`}
-      variante="primario"
-      tamanho="lg"
-      iconeDireita="check"
-      carregando={processando}
-      onPress={handleFazerPedido}
-    />
-  </BotaoFixo>
-
-  {processando && <LoadingState modo="tela" variante="escuro" mensagem="Processando pagamento" />}
-</View>
-```
-
-`<BotaoFixo>` (interno):
-```tsx
-<View style={{
-  position: 'absolute', bottom: 0, left: 0, right: 0,
-  backgroundColor: colors.surface,
-  borderTopWidth: 1, borderTopColor: colors.line,
-  paddingHorizontal: 16, paddingTop: 12, paddingBottom: insets.bottom + 12,
-}}>
-  {children}
-</View>
-```
-
-`<ResumoPreco>` (interno):
-```tsx
-<View style={{ paddingHorizontal: 24, paddingTop: 24, gap: 8 }}>
-  <LinhaResumo rotulo="Subtotal" valor={formatarReais(subtotal)} />
-  <LinhaResumo rotulo="Entrega" valor={entrega === 0 ? 'Grátis' : formatarReais(entrega)} />
-  <View style={{ height: 1, backgroundColor: colors.line, marginVertical: 8 }} />
-  <LinhaResumo rotulo="Total" valor={formatarReais(total)} destacado />
-</View>
-```
-
-### Stripe — appearance
-
-A integração com Stripe Payment Sheet recebe um objeto `appearance`. Atualizar:
-
-```tsx
-appearance: {
-  colors: {
-    primary: consumerDesign.colors.accent,
-    background: consumerDesign.colors.canvas,
-    componentBackground: consumerDesign.colors.surface,
-    componentBorder: consumerDesign.colors.line,
-    componentText: consumerDesign.colors.ink,
-    primaryText: consumerDesign.colors.ink,
-    secondaryText: consumerDesign.colors.inkMuted,
-    placeholderText: consumerDesign.colors.inkSoft,
-    icon: consumerDesign.colors.ink,
-  },
-  shapes: {
-    borderRadius: 14, // radius.sm
-  },
-}
-```
-
-### Mudanças vs hoje
-
-- TextInput de troco/observações inline → `<Input>`.
-- Botão "Fazer pedido" inline grande verde profundo → `<Botao variante="primario">` no `<BotaoFixo>`.
-- Loading full-screen com Lottie cinza → `<LoadingState modo="tela" variante="escuro">`.
-- Stripe appearance com `#1A4D3A` → tokens.
+- **Marquise**: sem `HeaderTela` — moeda de vidro para voltar; sobrelinha "SEU PEDIDO EM"; `TijoloLoja` com `logo_url`/`theme` da loja (o `select` de `stores` pede também `tempo_entrega`, `logo_url`, `theme`); nome em `statement` 24; linha "N itens · Frete grátis | Frete R$ x" (agendamento: "atendimento na loja"); e a promessa em `acento` accent "chega em cerca de N min." quando é entrega e a loja tem `tempo_entrega`. `StatusBar` clara (stack screen).
+- **Folha**: `marginTop: -24`, `radius.md`, `VidroFosco` + luz do dia, `gap: 28`, `paddingBottom: 140 + inset` (espaço do CTA). Todas as seções usam `SecaoFolha`/`CartaoFolha` (`components/ui/SecaoFolha.tsx`) — inclusive os seletores (`SeletorEndereco`, `SeletorPagamento`, `SeletorParcelas`, `FormularioCartao`), que agora recebem o letreiro da casa em vez do rótulo antigo. `ItemCarrinhoCard` ganhou `ultimo` (sem divisor na última linha) e trocou o emoji 📅 por `clock`.
+- **CTA**: barra `surface` com `radius.md` no topo e `shadow.floating` — sem o fio de cima. Rótulo como antes (cartão: "Pagar R$ X em N×"; Pix: "Gerar Pix de R$ X"; agendamento: "Confirmar agendamento — R$ X").
+- **Vazio** (carrinho sem itens): a mesma marquise + `EmptyState` na folha. **Processando**: `LoadingState` escuro.
 
 ---
 
 ## 10. Pedido — tracking (`pedido/[id].tsx`)
 
 ### Propósito
-Acompanhar pedido: timeline de status, mapa do entregador (se em rota), itens, contatos.
+Acompanhar um pedido, na **mesma arquitetura do Início e da tela de Pedidos** (2026-09-12): marquise escura com o que está ao vivo, folha clara com o que é registro. Dados, realtime e ETA não mudaram.
 
-### Wireframe alvo
+### Wireframe
 
 ```
 ┌─────────────────────────────────────────┐
-│ HeaderTela variante="voltar"            │
-│  ← Acompanhamento                       │
-│                                          │
-│ ┌──────────────────────────────────┐   │
-│ │  [chef accent]                    │   │  ← Card escuro de status atual
-│ │   EM PREPARO                       │   │
-│ │   Seu pedido está sendo preparado.│   │
-│ └──────────────────────────────────┘   │
-│                                          │
-│ Timeline:                                │
-│  ✓ Pedido recebido                       │  ← concluido (accent + check)
-│  ✓ Confirmado                            │
-│  ● Em preparo (atual, com pulse)         │
-│  ○ Aguardando entregador                 │
-│  ○ Saiu para entrega                     │
-│  ○ Entregue                              │
-│                                          │
-│ ┌──────────────────────────────────┐   │
-│ │  [Mapa h: 240]                    │   │  ← só se status === 'saiu_para_entrega'
-│ └──────────────────────────────────┘   │
-│                                          │
-│ ENTREGADOR                               │
-│ ┌──────────────────────────────────┐   │
-│ │ João da Silva    [phone] [chat]  │   │
-│ └──────────────────────────────────┘   │
-│                                          │
-│ ITENS                                    │
-│ ┌──────────────────────────────────┐   │
-│ │ ItemCarrinhoCard (read-only)      │   │
-│ └──────────────────────────────────┘   │
-│                                          │
-│ Subtotal · Entrega · Total               │
+│ ▓▓ marquee + GlowNeon ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓ │
+│ (‹)                              (💬)   │  ← voltar em vidro · falar com a loja (ativo)
+│  • AO VIVO · CAFÉ AROMA                  │  ← ponto pulsando (reduce motion → fixo)
+│  Saiu para entrega                       │  ← rotuloLongo, statement 30 white
+│  entre 19:40 e 19:52                     │  ← faixaEta em acento itálico accent
+│  Seu pedido está a caminho. 2ª parada…   │  ← descricao (+ posição na rota)
+│  ▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 88%                   │  ← barra accent (success se entregue)
+│ ┌─ vidro ─────────────────────────────┐ │
+│ │ (J) ENTREGADOR / João da Silva  (📞)│ │  ← só em saiu_para_entrega
+│ └─────────────────────────────────────┘ │
+│ ┌─ mapa emoldurado (radius.lg, escuro) ┐ │  ← só com localização + endereço
+│ ╭──────── folha (VidroFosco + luz) ─────╮
+│ │  PASSO A PASSO / Acompanhamento        │  ← letreiro (sobrelinha + Jakarta 700 21)
+│ │  ┌ cartão ┐ ✓ ✓ ● ○ ○ ○ timeline       │
+│ │  PEDIDO · HOJE, 19:42 / Recibo         │
+│ │  ┌ [UW] Café Aroma · 3 itens · Pix  Ver loja ›│  ← tijolo com a pele da loja
+│ │  │ 2× Cappuccino …          R$ 19,80   │
+│ │  │ Subtotal · Taxa · Total             │
+│ │  SERVIÇO / Agendamento (só serviços)   │
+│ │  ONDE CHEGA / Endereço de entrega      │
+│ │  [Falar com a loja] [Voltar ao início] │
+│ ╰────────────────────────────────────────╯
 └─────────────────────────────────────────┘
 ```
 
 ### Estrutura
 
-```tsx
-<View style={{ flex: 1, backgroundColor: colors.canvas }}>
-  <HeaderTela variante="voltar" titulo="Acompanhamento" />
-
-  <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
-    <View style={{ paddingHorizontal: 16 }}>
-      <Card variante="escuro" raio="lg" preenchimento="lg">
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-          <CirculoIconeStatus meta={meta} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ ...typography.label, color: colors.inkSoft }}>{meta.rotuloLongo.toUpperCase()}</Text>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.white, marginTop: 4 }}>
-              {meta.rotuloLongo}
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.inkSoft, marginTop: 4, lineHeight: 20 }}>
-              {meta.descricao}
-            </Text>
-          </View>
-        </View>
-      </Card>
-    </View>
-
-    <TimelinePedido statusAtual={statusAtual} />
-
-    {statusAtual === 'saiu_para_entrega' && courierLocalizacao && (
-      <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-        <Card preenchimento="sm" semBorda>
-          <MapaEntregador localizacao={courierLocalizacao} enderecoEntrega={pedido.endereco} />
-        </Card>
-      </View>
-    )}
-
-    {pedido.delivery_assignments?.[0] && <BlocoEntregador entregador={...} />}
-
-    <Secao titulo="ITENS">
-      <Card preenchimento="sm">
-        {pedido.order_items.map((item) => <ItemCarrinhoCard key={item.product_id} item={item} readonly />)}
-      </Card>
-    </Secao>
-
-    <ResumoPreco subtotal={pedido.subtotal} entrega={pedido.taxa_entrega} total={pedido.total} />
-  </ScrollView>
-</View>
-```
-
-`<TimelinePedido>` consome `timelineDoStatus(statusAtual)` e renderiza conforme [`06-status-pedido.md` §5](./06-status-pedido.md#5-como-cada-tela-consome).
-
-### Mudanças vs hoje
-
-- `LABELS_STATUS`/`DESCRICAO_STATUS`/`ORDEM_STATUS` locais → `metaDoStatus()`/`timelineDoStatus()`.
-- Card de status atual com cor de status → Card escuro com ícone em `softColor(meta.cor)`.
-- Mapa do entregador com `pinColor: '#1A4D3A'` → tokens.
-- `ItemCarrinhoCard` ganha prop `readonly` (boolean) que oculta botões `+`/`-`.
+- **Sem `HeaderTela`**: a marquise assume o topo — voltar em moeda de vidro (`router.back()`, ou Pedidos se não há pilha) e, com pedido ativo e telefone da loja, uma moeda "Falar com a loja" (WhatsApp). `StatusBar` clara enquanto a tela está montada (stack screen — o expo-status-bar restaura ao sair).
+- **Sobrelinha**: "AO VIVO · LOJA" com ponto pulsando (`PontoAoVivo`, respeita reduce motion); entregue/cancelado trocam o texto e apagam o ponto.
+- **Statement**: `meta.rotuloLongo` em `useFontesMarquee().statement` 30; com `faixaEta` (só em `aguardando_entregador`/`saiu_para_entrega`, da PRÓPRIA parada — docs/31 §5), a segunda linha "entre HH:MM e HH:MM" acende em `acento` accent. Abaixo, `meta.descricao` + `rotuloPosicaoNaRota` quando o pedido foi agrupado.
+- **Barra** (`BarraProgresso`): 4px `marqueeGlassStrong`, fill animado até `META_STATUS.progresso`, accent (success quando entregue) + `%`. Cancelado: sem barra; motivo num bloco `softColor(danger)`.
+- **Entregador** (só `saiu_para_entrega` com courier): vidro `marqueeGlass`, avatar-inicial em accent, nome, moeda accent de telefone.
+- **Mapa** (só com `localizacao` do courier e `endereco_entrega`): `MapaEntregador` com `escuro` (`userInterfaceStyle="dark"` no iOS) emoldurado em `radius.lg` + fio `marqueeLine`, dentro da marquise.
+- **Folha**: `marginTop: -24`, `radius.md`, `VidroFosco` + luz do dia. Seções com letreiro (sobrelinha micro `inkSoft` + `letreiro` 21) e cartão `surface` sem borda (`shadow.soft`, `radius.md`, padding 16):
+  - **Acompanhamento** (oculto se cancelado): `PassoTimeline` — concluído = círculo accent + check ink; atual = círculo `meta.cor` + ícone branco, descrição abaixo; pendente = `canvasAlt`.
+  - **Recibo** (sobrelinha "PEDIDO · data"): cabeçalho com `TijoloLoja` (pele da loja: iniciais `accentInk` sobre `accent` na display do arquétipo, ou o logo — vem de um `select` à parte em `stores` por id), nome, "N itens · forma de pagamento", link "Ver loja ›"; itens com variação/modificadores/observação; Subtotal · Taxa · Total.
+  - **Agendamento** (só `tipo === 'agendamento'`): linhas com ícone (`clock`, `user`, `store`) — sem emoji.
+  - **Endereço de entrega** (só entrega): moeda `ink` com pin accent + rua/número/complemento e bairro/cidade.
+  - **Ações**: `Botao` secundário "Falar com a loja" (ativo + telefone) e primário "Voltar ao início" (entregue).
+- **Carregando**: marquise com skeletons (sobrelinha, statement, descrição, barra) em vez do `LoadingState` claro.
 
 ---
 

@@ -149,7 +149,7 @@ function SplashAnimacao({ onConcluido }: { onConcluido: () => void }) {
   }, [])
 
   return (
-    <Animated.View style={[styles.overlay, { backgroundColor: colors.splash }, estiloAnimado]}>
+    <Animated.View style={[styles.overlay, { backgroundColor: colors.marquee }, estiloAnimado]}>
       <VideoView
         player={player}
         style={StyleSheet.absoluteFill}

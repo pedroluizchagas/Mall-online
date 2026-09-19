@@ -54,9 +54,21 @@ export interface VitrinePost {
 }
 
 const { width } = Dimensions.get('window')
-/** Retrato alto — ~2,3 cards por tela, o próximo "espiando". */
-export const VITRINE_W = Math.round(width * 0.46)
-export const VITRINE_H = Math.round(VITRINE_W * 1.62)
+/** Margem da fileira — a mesma do letreiro, para os cards alinharem com o título. */
+export const VITRINE_GUTTER = 24
+/** Passo entre cards. */
+export const VITRINE_GAP = 10
+/**
+ * Quantos cards cabem na tela: dois inteiros e ~45% do terceiro — o card
+ * cortado é o convite para rolar. A largura sai daí (referência: card com
+ * ~37% da tela), então a composição é a mesma em qualquer aparelho.
+ */
+const CARDS_VISIVEIS = 2.45
+export const VITRINE_W = Math.round(
+  (width - VITRINE_GUTTER - VITRINE_GAP * 2) / CARDS_VISIVEIS,
+)
+/** Retrato ~1:1,56 (referência). */
+export const VITRINE_H = Math.round(VITRINE_W * 1.56)
 /** A partir de que fração do card a sombra começa a subir. */
 const SOMBRA_DE = 0.46
 /** Opacidade da sombra no pé do card — quase sólida, nunca chapada. */
@@ -90,7 +102,7 @@ interface Momento {
 function momentoDoPost(post: Post): Momento | null {
   const publicado = Date.parse(post.publicado_em)
   if (Number.isFinite(publicado) && Date.now() - publicado < JANELA_NOVO_MS) {
-    return { rotulo: 'Novo', icone: 'spark', cor: colors.success }
+    return { rotulo: 'Novo', cor: colors.success }
   }
   if (post.curtidas >= LIMIAR_EM_ALTA) {
     return { rotulo: 'Em alta', icone: 'trend', cor: colors.warning }
@@ -185,18 +197,18 @@ export function VitrineCard({
             left: 0,
             right: 0,
             bottom: 0,
-            paddingHorizontal: 14,
-            paddingBottom: 14,
+            paddingHorizontal: 12,
+            paddingBottom: 12,
           }}
         >
           <Text
             style={{
-              fontSize: 10.5,
+              fontSize: 10,
               fontWeight: '700',
-              letterSpacing: 1.2,
+              letterSpacing: 1.1,
               textTransform: 'uppercase',
               color: corSobrelinha,
-              marginBottom: 5,
+              marginBottom: 4,
             }}
             numberOfLines={1}
           >
@@ -206,8 +218,8 @@ export function VitrineCard({
             style={[
               letreiro,
               {
-                fontSize: 15,
-                lineHeight: 19,
+                fontSize: 14,
+                lineHeight: 18,
                 letterSpacing: -0.3,
                 color: colors.white,
               },
@@ -218,10 +230,10 @@ export function VitrineCard({
           </Text>
           <Text
             style={{
-              fontSize: 12.5,
+              fontSize: 12,
               fontWeight: '500',
               color: colors.marqueeInkSoft,
-              marginTop: 5,
+              marginTop: 4,
             }}
             numberOfLines={1}
           >
@@ -245,8 +257,8 @@ export function VitrineApagada() {
         borderWidth: 1,
         borderColor: colors.marqueeLine,
         justifyContent: 'flex-end',
-        padding: 14,
-        gap: 8,
+        padding: 12,
+        gap: 7,
       }}
     >
       <Linha largura="45%" altura={8} />
@@ -301,30 +313,30 @@ function Pilula({ momento }: { momento: Momento }) {
     <View
       style={{
         position: 'absolute',
-        top: 12,
-        left: 12,
-        height: 30,
-        paddingHorizontal: 13,
+        top: 10,
+        left: 10,
+        height: 26,
+        paddingHorizontal: 11,
         borderRadius: radius.pill,
         backgroundColor: colorida ? momento.cor! : colors.inkGlass,
         borderWidth: colorida ? 0 : 1,
         borderColor: colors.marqueeLine,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
+        gap: 4,
       }}
     >
       {momento.icone && (
         <ConsumerIcon
           name={momento.icone}
-          size={12}
+          size={11}
           color={corTexto}
           strokeWidth={2.4}
         />
       )}
       <Text
         style={{
-          fontSize: 11.5,
+          fontSize: 10.5,
           fontWeight: '700',
           letterSpacing: 1,
           textTransform: 'uppercase',
@@ -362,12 +374,12 @@ function Monograma({ inicial }: { inicial: string }) {
       <Text
         style={{
           color: colors.accent,
-          fontSize: 80,
+          fontSize: 64,
           fontWeight: '800',
-          letterSpacing: -3,
+          letterSpacing: -2,
           opacity: 0.55,
           // Sobe: a legenda ocupa a base.
-          marginBottom: 56,
+          marginBottom: 48,
         }}
       >
         {inicial.toUpperCase()}

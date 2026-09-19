@@ -1,5 +1,7 @@
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Badge } from '@/components/ui/Badge'
 import { partnerDesign } from '@/lib/partner-design'
 
 // Placeholder padrão do scaffold (Stage 1). Cada stage substitui os stubs
@@ -12,53 +14,14 @@ interface Props {
 }
 
 export function TelaStub({ titulo, stage, descricao }: Props) {
-  const { colors, radius, typography } = partnerDesign
+  const { colors } = partnerDesign
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.canvas, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <View style={{ flex: 1, backgroundColor: colors.canvas, justifyContent: 'center' }}>
       <StatusBar style="dark" />
-      <Text
-        style={{
-          color: colors.ink,
-          fontSize: typography.h2.size,
-          fontWeight: typography.h2.weight,
-          letterSpacing: typography.h2.tracking,
-          marginBottom: 8,
-        }}
-      >
-        {titulo}
-      </Text>
-      {descricao ? (
-        <Text
-          style={{
-            color: colors.inkMuted,
-            fontSize: typography.body.size,
-            textAlign: 'center',
-            marginBottom: 16,
-          }}
-        >
-          {descricao}
-        </Text>
-      ) : null}
-      <View
-        style={{
-          backgroundColor: colors.accentSoft,
-          borderRadius: radius.pill,
-          paddingVertical: 6,
-          paddingHorizontal: 14,
-        }}
-      >
-        <Text
-          style={{
-            color: colors.ink,
-            fontSize: typography.micro.size,
-            fontWeight: typography.micro.weight,
-            letterSpacing: typography.micro.tracking,
-            textTransform: 'uppercase',
-          }}
-        >
-          Em construção — {stage}
-        </Text>
+      <EmptyState icone="box" titulo={titulo} descricao={descricao} />
+      <View style={{ alignItems: 'center' }}>
+        <Badge rotulo={`Em construção — ${stage}`} cor={colors.warning} tamanho="md" />
       </View>
     </View>
   )

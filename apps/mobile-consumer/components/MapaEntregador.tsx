@@ -6,12 +6,15 @@ const { colors } = consumerDesign
 interface Props {
   localizacao: { latitude: number; longitude: number }
   enderecoEntrega?: { latitude?: number; longitude?: number } | null
+  /** Sobre a marquise: mapa em modo escuro (iOS; Android segue o sistema). */
+  escuro?: boolean
 }
 
-export function MapaEntregador({ localizacao, enderecoEntrega }: Props) {
+export function MapaEntregador({ localizacao, enderecoEntrega, escuro = false }: Props) {
   return (
     <MapView
       style={{ height: 220 }}
+      userInterfaceStyle={escuro ? 'dark' : 'light'}
       region={{
         latitude: localizacao.latitude,
         longitude: localizacao.longitude,

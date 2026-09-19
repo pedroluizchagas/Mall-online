@@ -1,18 +1,27 @@
 import Svg, { Circle, Path, Rect } from 'react-native-svg'
 
-// Espelha CourierIcon/ConsumerIcon: ícones stroke 24x24 desenhados à mão,
-// mesmos strokeWidth/linecap para a DNA visual compartilhada.
-
-type IconName =
+/**
+ * Biblioteca de ícones SVG do mobile-partner.
+ * Espelha ConsumerIcon/CourierIcon: mesmos paths, mesmo stroke.
+ *
+ * Convenções (não-negociáveis):
+ * - viewBox 0 0 24 24
+ * - stroke-only (fill="none")
+ * - strokeLinecap/Linejoin: 'round'
+ * - strokeWidth default 1.9
+ *
+ * Regra da casa: moeda monocromática com ícone de LINHA; accent só no
+ * ponto/rótulo de estado. `spark` fica restrito a onboarding/vitrines.
+ */
+export type PartnerIconName =
+  // Navegação (tabs)
   | 'home'
   | 'orders'
   | 'plus'
   | 'gallery'
   | 'menu'
+  // Gestão (menu e módulos)
   | 'store'
-  | 'back'
-  | 'user'
-  | 'camera'
   | 'chart'
   | 'wallet'
   | 'star'
@@ -22,13 +31,54 @@ type IconName =
   | 'gear'
   | 'help'
   | 'box'
+  | 'user'
+  | 'users'
+  | 'camera'
+  // Comuns (espelho do consumer/courier)
+  | 'back'
+  | 'search'
+  | 'pin'
+  | 'clock'
+  | 'package'
+  | 'phone'
+  | 'check'
+  | 'check-double'
+  | 'check-circle'
+  | 'close'
+  | 'close-circle'
+  | 'logout'
+  | 'shield'
+  | 'spark'
   | 'eye'
   | 'eye-off'
-  | 'logout'
-  | 'spark'
+  | 'cash'
+  | 'trend'
+  | 'power'
+  | 'route'
+  | 'bell'
+  | 'truck'
+  | 'tag'
+  | 'heart'
+  | 'comment'
+  | 'send'
+  | 'play'
+  | 'volume'
+  | 'volume-off'
+  | 'edit'
+  | 'trash'
+  | 'file'
+  | 'info'
+  | 'bag'
+  | 'chef'
+  | 'chevron-down'
+  | 'chevron-right'
+  | 'chevron-left'
+  | 'chevron-up'
+  | 'minus'
+  | 'external'
 
 interface Props {
-  name: IconName
+  name: PartnerIconName
   size?: number
   color?: string
   strokeWidth?: number
@@ -47,7 +97,7 @@ export function PartnerIcon({
   )
 }
 
-function renderIcon(name: IconName, color: string, strokeWidth: number) {
+function renderIcon(name: PartnerIconName, color: string, strokeWidth: number) {
   const common = {
     stroke: color,
     strokeWidth,
@@ -56,26 +106,28 @@ function renderIcon(name: IconName, color: string, strokeWidth: number) {
   }
 
   switch (name) {
+    // ─────────────────────────────────────────────────────────
+    // Navegação (tabs)
+    // ─────────────────────────────────────────────────────────
     case 'home':
       return (
-        <Path {...common} d="M3.5 10.5L12 3.5l8.5 7v9a1 1 0 0 1-1 1h-4.5v-5.5h-6V20.5H4.5a1 1 0 0 1-1-1v-9z" />
+        <Path
+          {...common}
+          d="M3.5 10.5L12 3.5l8.5 7v9a1 1 0 0 1-1 1h-4.5v-5.5h-6V20.5H4.5a1 1 0 0 1-1-1v-9z"
+        />
       )
     case 'orders':
       return (
         <>
-          <Path {...common} d="M6 3.5h12v17l-2.4-1.6L13.2 20.5 12 19.4l-1.2 1.1-2.4-1.6L6 20.5v-17z" />
-          <Path {...common} d="M9 8h6" />
-          <Path {...common} d="M9 11.5h6" />
-          <Path {...common} d="M9 15h4" />
+          <Path
+            {...common}
+            d="M6 3.5h12v17l-2.4-1.6L13.2 20.5 12 19.4l-1.2 1.1-2.4-1.6L6 20.5v-17z"
+          />
+          <Path {...common} d="M9 8h6M9 11.5h6M9 15h4" />
         </>
       )
     case 'plus':
-      return (
-        <>
-          <Path {...common} d="M12 5.5v13" />
-          <Path {...common} d="M5.5 12h13" />
-        </>
-      )
+      return <Path {...common} d="M12 5v14M5 12h14" />
     case 'gallery':
       return (
         <>
@@ -86,50 +138,28 @@ function renderIcon(name: IconName, color: string, strokeWidth: number) {
         </>
       )
     case 'menu':
-      return (
-        <>
-          <Path {...common} d="M4 6.5h16" />
-          <Path {...common} d="M4 12h16" />
-          <Path {...common} d="M4 17.5h10" />
-        </>
-      )
+      return <Path {...common} d="M4 6.5h16M4 12h16M4 17.5h10" />
+
+    // ─────────────────────────────────────────────────────────
+    // Gestão
+    // ─────────────────────────────────────────────────────────
     case 'store':
       return (
         <>
           <Path {...common} d="M4.5 9.5L6 4.5h12l1.5 5" />
-          <Path {...common} d="M4.5 9.5a2.4 2.4 0 0 0 4.8 0 2.4 2.4 0 0 0 4.8 0 2.4 2.4 0 0 0 4.8 0" />
+          <Path
+            {...common}
+            d="M4.5 9.5a2.4 2.4 0 0 0 4.8 0 2.4 2.4 0 0 0 4.8 0 2.4 2.4 0 0 0 4.8 0"
+          />
           <Path {...common} d="M5.5 12v7.5h13V12" />
           <Path {...common} d="M9.5 19.5v-5h5v5" />
-        </>
-      )
-    case 'back':
-      return (
-        <>
-          <Path {...common} d="M14.5 5.5L8 12l6.5 6.5" />
-        </>
-      )
-    case 'user':
-      return (
-        <>
-          <Circle {...common} cx="12" cy="8" r="3.25" />
-          <Path {...common} d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
-        </>
-      )
-    case 'camera':
-      return (
-        <>
-          <Path {...common} d="M4.5 7.5h3l1.5-2h6l1.5 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z" />
-          <Circle {...common} cx="12" cy="13" r="3.25" />
         </>
       )
     case 'chart':
       return (
         <>
-          <Path {...common} d="M4 20V4" />
-          <Path {...common} d="M4 20h16" />
-          <Path {...common} d="M8 16v-5" />
-          <Path {...common} d="M12.5 16V7.5" />
-          <Path {...common} d="M17 16v-3" />
+          <Path {...common} d="M4 20V4M4 20h16" />
+          <Path {...common} d="M8 16v-5M12.5 16V7.5M17 16v-3" />
         </>
       )
     case 'wallet':
@@ -141,39 +171,44 @@ function renderIcon(name: IconName, color: string, strokeWidth: number) {
       )
     case 'star':
       return (
-        <Path {...common} d="M12 4l2.35 4.9 5.35.7-3.95 3.7.95 5.3L12 16.05 7.3 18.6l.95-5.3L4.3 9.6l5.35-.7L12 4z" />
+        <Path
+          {...common}
+          d="M12 3.75l2.6 5.27 5.82.85-4.21 4.1.99 5.79L12 17.03l-5.2 2.73.99-5.79-4.21-4.1 5.82-.85L12 3.75z"
+        />
       )
     case 'chat':
       return (
         <>
           <Path {...common} d="M4.5 5.5h15v10.5h-8l-4 3.5v-3.5h-3V5.5z" />
-          <Path {...common} d="M8.5 9.5h7" />
-          <Path {...common} d="M8.5 12.5h4.5" />
+          <Path {...common} d="M8.5 9.5h7M8.5 12.5h4.5" />
         </>
       )
     case 'calendar':
       return (
         <>
           <Rect {...common} x="4" y="5.5" width="16" height="14" rx="2" />
-          <Path {...common} d="M4 9.5h16" />
-          <Path {...common} d="M8.5 3.5v3" />
-          <Path {...common} d="M15.5 3.5v3" />
+          <Path {...common} d="M4 9.5h16M8.5 3.5v3M15.5 3.5v3" />
         </>
       )
     case 'bike':
       return (
         <>
-          <Circle {...common} cx="6" cy="16.5" r="3" />
-          <Circle {...common} cx="18" cy="16.5" r="3" />
-          <Path {...common} d="M6 16.5l3.5-6h5" />
-          <Path {...common} d="M13 7.5h2.5l2.5 9" />
+          <Circle {...common} cx="5.5" cy="17" r="3.25" />
+          <Circle {...common} cx="18.5" cy="17" r="3.25" />
+          <Path
+            {...common}
+            d="M5.5 17l3.5-7h5l3.5 7M9 10l-1.5-3.5H5M14 10l1-3.5h2.5"
+          />
         </>
       )
     case 'gear':
       return (
         <>
           <Circle {...common} cx="12" cy="12" r="3" />
-          <Path {...common} d="M12 3.5v2.5M12 18v2.5M20.5 12H18M6 12H3.5M18 6l-1.8 1.8M7.8 16.2L6 18M18 18l-1.8-1.8M7.8 7.8L6 6" />
+          <Path
+            {...common}
+            d="M12 3.5v2.5M12 18v2.5M20.5 12H18M6 12H3.5M18 6l-1.8 1.8M7.8 16.2L6 18M18 18l-1.8-1.8M7.8 7.8L6 6"
+          />
         </>
       )
     case 'help':
@@ -188,8 +223,137 @@ function renderIcon(name: IconName, color: string, strokeWidth: number) {
       return (
         <>
           <Path {...common} d="M4 8l8-4.5L20 8v8l-8 4.5L4 16V8z" />
-          <Path {...common} d="M4 8l8 4.5L20 8" />
-          <Path {...common} d="M12 12.5v8" />
+          <Path {...common} d="M4 8l8 4.5L20 8M12 12.5v8" />
+        </>
+      )
+    case 'user':
+      return (
+        <>
+          <Circle {...common} cx="12" cy="8" r="3.25" />
+          <Path {...common} d="M5.5 19.5a6.5 6.5 0 0 1 13 0" />
+        </>
+      )
+    case 'users':
+      return (
+        <>
+          <Circle {...common} cx="9.5" cy="8.5" r="3.25" />
+          <Path {...common} d="M3.5 19.5a6 6 0 0 1 12 0" />
+          <Path {...common} d="M16.25 5.9a3.25 3.25 0 0 1 0 5.2" />
+          <Path {...common} d="M17.75 14.4a6 6 0 0 1 2.75 5.1" />
+        </>
+      )
+    case 'camera':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M4.5 7.5h3l1.5-2h6l1.5 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1z"
+          />
+          <Circle {...common} cx="12" cy="13" r="3.25" />
+        </>
+      )
+
+    // ─────────────────────────────────────────────────────────
+    // Comuns (espelho do consumer/courier)
+    // ─────────────────────────────────────────────────────────
+    case 'back':
+      return <Path {...common} d="M14.75 5.5L8.25 12l6.5 6.5" />
+    case 'search':
+      return (
+        <>
+          <Circle {...common} cx="10.5" cy="10.5" r="5.75" />
+          <Path {...common} d="M15 15l4.5 4.5" />
+        </>
+      )
+    case 'pin':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M12 20.25s5.25-4.75 5.25-9a5.25 5.25 0 1 0-10.5 0c0 4.25 5.25 9 5.25 9z"
+          />
+          <Circle {...common} cx="12" cy="11.25" r="1.9" />
+        </>
+      )
+    case 'clock':
+      return (
+        <>
+          <Circle {...common} cx="12" cy="12" r="8.25" />
+          <Path {...common} d="M12 7.75v4.75l3.5 2" />
+        </>
+      )
+    case 'package':
+      return (
+        <>
+          <Path {...common} d="M12 3.75l7 3.75v9L12 20.25 5 16.5v-9l7-3.75z" />
+          <Path {...common} d="M12 20.25V12" />
+          <Path {...common} d="M5.25 7.75L12 12l6.75-4.25" />
+        </>
+      )
+    case 'phone':
+      return (
+        <Path
+          {...common}
+          d="M8.2 5.5h2.6l1.1 3.2-1.6 1.45a13 13 0 0 0 3.7 3.7l1.45-1.6 3.2 1.1v2.6a1.6 1.6 0 0 1-1.6 1.6c-6.35 0-11.5-5.15-11.5-11.5A1.6 1.6 0 0 1 8.2 5.5z"
+        />
+      )
+    case 'check':
+      return <Path {...common} d="M5.5 12.5l4 4 9-9" />
+    case 'check-double':
+      return (
+        <>
+          <Path {...common} d="M3 12.5l4 4 9-9" />
+          <Path {...common} d="M9 16.5l4 4 9-9" />
+        </>
+      )
+    case 'check-circle':
+      return (
+        <>
+          <Circle {...common} cx="12" cy="12" r="8.25" />
+          <Path {...common} d="M8.5 12.5l3 3 4-5" />
+        </>
+      )
+    case 'close':
+      return <Path {...common} d="M5 5l14 14M19 5L5 19" />
+    case 'close-circle':
+      return (
+        <>
+          <Circle {...common} cx="12" cy="12" r="8.25" />
+          <Path {...common} d="M9 9l6 6M15 9l-6 6" />
+        </>
+      )
+    case 'logout':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M10 5H6.5A1.5 1.5 0 0 0 5 6.5v11A1.5 1.5 0 0 0 6.5 19H10"
+          />
+          <Path {...common} d="M13.5 8.5l4 3.5-4 3.5" />
+          <Path {...common} d="M9 12h8" />
+        </>
+      )
+    case 'shield':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M12 3.75l6 2.25v5.25c0 4-2.55 6.75-6 9-3.45-2.25-6-5-6-9V6l6-2.25z"
+          />
+          <Path {...common} d="M9.5 12.25l1.75 1.75 3.5-4" />
+        </>
+      )
+    case 'spark':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M12 3.5l1.2 4.3 4.3 1.2-4.3 1.2L12 14.5l-1.2-4.3-4.3-1.2 4.3-1.2L12 3.5z"
+          />
+          <Path
+            {...common}
+            d="M18 14.5l.65 2.35L21 17.5l-2.35.65L18 20.5l-.65-2.35L15 17.5l2.35-.65L18 14.5z"
+          />
         </>
       )
     case 'eye':
@@ -202,21 +366,175 @@ function renderIcon(name: IconName, color: string, strokeWidth: number) {
     case 'eye-off':
       return (
         <>
-          <Path {...common} d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+          <Path
+            {...common}
+            d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
+          />
           <Path {...common} d="M1 1l22 22" />
         </>
       )
-    case 'logout':
+    case 'cash':
       return (
         <>
-          <Path {...common} d="M9 20.5H5.5a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1H9" />
-          <Path {...common} d="M15.5 16l4-4-4-4" />
-          <Path {...common} d="M19.5 12H9.5" />
+          <Rect {...common} x="3.5" y="6.5" width="17" height="11" rx="2.5" />
+          <Circle {...common} cx="12" cy="12" r="2.5" />
+          <Path {...common} d="M7 10v0M17 14v0" />
         </>
       )
-    case 'spark':
+    case 'trend':
       return (
-        <Path {...common} d="M13 2.5L5 13.5h5.5L11 21.5l8-11h-5.5L13 2.5z" />
+        <>
+          <Path {...common} d="M4.5 17.5l5.5-5.5 3.5 3.5 6-7" />
+          <Path {...common} d="M15.5 5h4.5v4.5" />
+        </>
       )
+    case 'power':
+      return (
+        <>
+          <Path {...common} d="M12 3.5v7" />
+          <Path {...common} d="M7.25 6.75a6.5 6.5 0 1 0 9.5 0" />
+        </>
+      )
+    case 'route':
+      return (
+        <>
+          <Circle {...common} cx="6" cy="18" r="2.25" />
+          <Circle {...common} cx="18" cy="6" r="2.25" />
+          <Path {...common} d="M8.5 17.5h3a4 4 0 0 0 4-4v-3" />
+          <Path {...common} d="M14.25 8H18V4.25" />
+        </>
+      )
+    case 'bell':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M6 9.5a6 6 0 1 1 12 0c0 4 1.5 5.5 2 6.5H4c.5-1 2-2.5 2-6.5z"
+          />
+          <Path {...common} d="M10 19.5a2 2 0 0 0 4 0" />
+        </>
+      )
+    case 'truck':
+      return (
+        <>
+          <Rect {...common} x="2.5" y="7.5" width="11" height="9" rx="1.5" />
+          <Path {...common} d="M13.5 10.5h4l3 3.5v2.5h-7" />
+          <Circle {...common} cx="7" cy="17" r="2" />
+          <Circle {...common} cx="17" cy="17" r="2" />
+        </>
+      )
+    case 'tag':
+      return (
+        <>
+          <Path {...common} d="M3.5 11.5V4.5h7L20.5 14.5l-6 6L3.5 11.5z" />
+          <Circle {...common} cx="8" cy="8" r="1.25" />
+        </>
+      )
+    case 'heart':
+      return (
+        <Path
+          {...common}
+          d="M12 20.5s-7.5-4.5-7.5-10A4 4 0 0 1 12 7.5 4 4 0 0 1 19.5 10.5c0 5.5-7.5 10-7.5 10z"
+        />
+      )
+    case 'comment':
+      return (
+        <Path
+          {...common}
+          d="M20.5 12c0 4.5-3.5 7.5-8.5 7.5a10 10 0 0 1-3.5-.6L4 20.5l1.6-4.4A8 8 0 0 1 3.5 12c0-4.5 3.5-7.5 8.5-7.5s8.5 3 8.5 7.5z"
+        />
+      )
+    case 'send':
+      return (
+        <>
+          <Path {...common} d="M21 3.5L3 11l7.5 2 2 7.5L21 3.5z" />
+          <Path {...common} d="M10.5 13L21 3.5" />
+        </>
+      )
+    case 'play':
+      return <Path {...common} d="M7 4.5v15l13-7.5L7 4.5z" />
+    case 'volume':
+      return (
+        <>
+          <Path {...common} d="M4.5 9.5h3l5-4v13l-5-4h-3v-5z" />
+          <Path {...common} d="M16 8.5a5 5 0 0 1 0 7M18.5 5.5a8.5 8.5 0 0 1 0 13" />
+        </>
+      )
+    case 'volume-off':
+      return (
+        <>
+          <Path {...common} d="M4.5 9.5h3l5-4v13l-5-4h-3v-5z" />
+          <Path {...common} d="M17 9l5 5M22 9l-5 5" />
+        </>
+      )
+    case 'edit':
+      return (
+        <>
+          <Path {...common} d="M4 20l1-4 11-11 3 3-11 11-4 1z" />
+          <Path {...common} d="M14 7l3 3" />
+        </>
+      )
+    case 'trash':
+      return (
+        <>
+          <Path {...common} d="M4.5 6.5h15" />
+          <Path {...common} d="M9.5 6.5V4.75h5V6.5" />
+          <Path {...common} d="M6.5 6.5l.9 13a1 1 0 0 0 1 .95h7.2a1 1 0 0 0 1-.95l.9-13" />
+          <Path {...common} d="M10.5 10.5v6M13.5 10.5v6" />
+        </>
+      )
+    case 'file':
+      return (
+        <>
+          <Path {...common} d="M6 3.5h7l5 5v12H6v-17z" />
+          <Path {...common} d="M13 3.5v5h5M9 12.5h6M9 16h6" />
+        </>
+      )
+    case 'info':
+      return (
+        <>
+          <Circle {...common} cx="12" cy="12" r="8.25" />
+          <Path {...common} d="M12 11v5M12 8v0.01" />
+        </>
+      )
+    case 'bag':
+      return (
+        <>
+          <Path {...common} d="M5 7.5h14l-1 13H6l-1-13z" />
+          <Path {...common} d="M9 10V7a3 3 0 0 1 6 0v3" />
+        </>
+      )
+    case 'chef':
+      return (
+        <>
+          <Path
+            {...common}
+            d="M6 11a3.5 3.5 0 1 1 1.5-6.6A4 4 0 0 1 16.5 4.4 3.5 3.5 0 1 1 18 11v3H6v-3z"
+          />
+          <Path {...common} d="M6 14h12v5.5H6z" />
+        </>
+      )
+    case 'chevron-down':
+      return <Path {...common} d="M6 9.5l6 6 6-6" />
+    case 'chevron-right':
+      return <Path {...common} d="M9.5 6l6 6-6 6" />
+    case 'chevron-left':
+      return <Path {...common} d="M14.5 6l-6 6 6 6" />
+    case 'chevron-up':
+      return <Path {...common} d="M6 14.5l6-6 6 6" />
+    case 'minus':
+      return <Path {...common} d="M5 12h14" />
+    /** Abre no Dashboard (web) — seta saindo da caixa. */
+    case 'external':
+      return (
+        <>
+          <Path {...common} d="M14 4.5h5.5V10" />
+          <Path {...common} d="M19.5 4.5L11 13" />
+          <Path {...common} d="M17 13.5v5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5" />
+        </>
+      )
+
+    default:
+      return null
   }
 }

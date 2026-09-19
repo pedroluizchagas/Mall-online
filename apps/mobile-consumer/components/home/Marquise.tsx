@@ -21,6 +21,8 @@ import { ConsumerIcon } from '@/components/ConsumerIcon'
 import {
   VitrineCard,
   VitrineApagada,
+  VITRINE_GUTTER,
+  VITRINE_GAP,
   type VitrinePost,
 } from '@/components/home/VitrineCard'
 import { useNaoLidas } from '@/store/useNotificacoes'
@@ -329,7 +331,7 @@ export function Marquise({
                 sobrelinha de cada cartaz marca a categoria. */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <ConsumerIcon
-                name={modoVitrines === 'seguidas' ? 'users' : 'spark'}
+                name={modoVitrines === 'seguidas' ? 'users' : 'trend'}
                 size={11}
                 color={colors.accent}
                 strokeWidth={2.4}
@@ -397,9 +399,9 @@ export function Marquise({
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{
-            paddingHorizontal: 20,
+            paddingHorizontal: VITRINE_GUTTER,
             paddingVertical: 14,
-            gap: 12,
+            gap: VITRINE_GAP,
           }}
           style={{ marginVertical: -14 }}
         >

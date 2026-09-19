@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router'
-import { View, ActivityIndicator } from 'react-native'
 import { useAuthStore } from '@/store/useAuthStore'
+import { LoadingState } from '@/components/ui/LoadingState'
 import { partnerDesign } from '@/lib/partner-design'
 
 // Garante que `entrar` (login) seja sempre a rota base deste grupo — mesma
@@ -12,11 +12,7 @@ export default function LayoutAuth() {
   const { colors } = partnerDesign
 
   if (carregando) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceDark }}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    )
+    return <LoadingState modo="tela" variante="escuro" />
   }
 
   if (user) {
@@ -25,5 +21,13 @@ export default function LayoutAuth() {
     return <Redirect href="/(tabs)" />
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />
+  // Quem não entrou vive na fachada escura; ao entrar, tudo vira canvas.
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.marquee },
+      }}
+    />
+  )
 }

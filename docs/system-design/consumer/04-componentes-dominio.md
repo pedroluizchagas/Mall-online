@@ -23,7 +23,7 @@
 | `SeletorEndereco.tsx` | `SeletorEndereco.tsx` (refactor) | usa `<Input>`, `<Card>`, `<Botao>` |
 | `SeletorPagamento.tsx` | `SeletorPagamento.tsx` (refactor) | usa `<Card>` e `<ConsumerIcon>` |
 | `MapaEntregador.tsx` | `MapaEntregador.tsx` (refactor mínimo) | `pinColor` deriva dos tokens |
-| `NotificacoesPopup.tsx` | `NotificacoesPopup.tsx` (refactor) | bottom-sheet dark, ícones via `ConsumerIcon` |
+| `NotificacoesPopup.tsx` | `NotificacoesPopup.tsx` (revisto) | folha `marquee` + glow, cartões de vidro, grupos Hoje/Ontem/Antes |
 | `EditarPerfil.tsx`, `GerenciarEnderecos.tsx` | refactor in-place | usa primitivos `Input`/`Card`/`Botao` |
 | `CategoriaChip.tsx` | **deletado** | substituído por `<Chip>` direto |
 
@@ -198,86 +198,41 @@ interface ItemCarrinhoCardProps {
 
 ---
 
-## 5. `PedidoCard` (novo)
+## 5. `PedidoCard` (recibo do histórico) + `CartaoPedidoVivo`
 
-Hoje vive como `CardPedido` interno em `pedidos.tsx`. Promovido a componente.
+(2026-09-12) Dois cards, um por zona da tela de Pedidos (07-telas §6):
 
-### Visual alvo (resumido)
+### `components/pedidos/CartaoPedidoVivo.tsx` — pedido em curso, na marquise
+Vidro `marqueeGlass` + fio `marqueeLine`, `radius.lg`, padding 18. Ponto accent 7px pulsando (`motion.pulse`, respeita reduce motion) + "AO VIVO · LOJA" (micro `marqueeInkMuted`) + `%` accent; `rotuloLongo` em `useFontesMarquee().statement` 20 white; `descricao` `marqueeInkSoft` 13; barra 4px `marqueeGlassStrong` com fill accent animado até `progresso`; rodapé: itens (1 linha) · total white 14/800 · "Acompanhar ›" accent. Toque → `/pedido/[id]`.
+
+### `components/PedidoCard.tsx` — recibo do histórico, na folha
+Mesma linguagem das fachadas do Início: `surface` **sem borda** (elevação por luminosidade), `radius.md`, `shadow.soft`, padding 14, `Pressable` com scale 0.985.
 
 ```
-┌─────────────────────────────────────────────────┐
-│ [chef icon]  Burguer do Bairro          [→]    │
-│              2 itens · R$ 47,80                  │
-│                                                  │
-│  [▓▓▓▓▓▓░░░░░░░░░░░░░] 52%                     │
-│                                                  │
-│  [EM PREPARO]                  Hoje, 19:42       │
-└─────────────────────────────────────────────────┘
+┌────────────────────────────────────────┐
+│ [UW]  Atelier Urban Woods    R$ 389,00 │  ← tijolo 46 com a pele da loja · nome 15/700 · total 15/800
+│       1× Moletom Terra      Ontem, 20:15│  ← itens 12.5 inkMuted · data 11 inkSoft
+│ ────────────────────────────────────── │  ← line
+│ (✓ Entregue)             Ver detalhes ›│  ← Badge soft do status · inkMuted 12.5/700
+└────────────────────────────────────────┘
 ```
+
+**Tijolo** (`TijoloLoja`): `useStoreDesignFromTheme(stores.theme)` — logo sobre `surface` da loja com fio `line`, ou 2 iniciais `accentInk` sobre `accent` na fonte de display do arquétipo (`fontStyle(design.display, 700)`). Loja sem tema cai no Mallevo.
 
 ### API
 
 ```tsx
-interface PedidoCardProps {
-  pedido: {
-    id: string
-    status: string
-    total: number
-    criado_em: string
-    stores: { nome: string } | null
-    order_items: { nome: string; quantidade: number }[]
-  }
-  aoTocar: () => void
+interface LojaDoPedido { id?: string; nome: string; slug?: string | null; logo_url?: string | null; theme?: unknown }
+interface PedidoCardModel {
+  id: string; status: string; total: number; criado_em: string
+  stores: LojaDoPedido | null
+  order_items: { nome: string; quantidade: number }[]
 }
+<PedidoCard pedido aoTocar? />          // default: router.push(`/pedido/${id}`)
+<CartaoPedidoVivo pedido aoTocar />
 ```
 
-### Comportamento visual
-
-| Elemento | Spec |
-|---|---|
-| Container | `Card raio="lg" preenchimento="md"` |
-| Card de pedido ativo | `Card variante="escuro"` ao invés de `claro` (decisão: ver §abaixo) |
-| Ícone de status (top-left) | círculo 44x44, `borderRadius: 22`, background `softColor(meta.cor)`, ícone `meta.icone` 20px em `meta.cor` |
-| Nome da loja | fontSize 16, fontWeight 700, color `ink` (ou `white` se ativo dark) |
-| Resumo de itens | fontSize 13, color `inkMuted`, format: `"2 itens · R$ 47,80"` |
-| Chevron | `<ConsumerIcon name="chevron-right" size={18} color={colors.inkSoft} />` |
-| Barra de progresso | altura 6, `borderRadius: 3`, track `colors.canvasAlt`, fill `meta.cor`, width: `${meta.progresso * 100}%` |
-| Status badge | `<Badge rotulo={meta.rotuloCurto} cor={meta.cor} icone={meta.icone} tamanho="sm" />` |
-| Data | fontSize 11, fontWeight 700, color `inkSoft`, letterSpacing 1.2, uppercase |
-
-### Decisão: pedido ativo é `escuro`?
-
-**Sim.** Critério: se `ehAtivo(pedido.status)`, usar `Card variante="escuro"`. Senão, `claro`. Motivo: hierarquia visual — pedido em curso é o que importa agora, então ganha o canvas dark.
-
-```tsx
-const meta = metaDoStatus(pedido.status)
-const ativo = ehAtivo(pedido.status)
-
-<Card variante={ativo ? 'escuro' : 'claro'} raio="lg" preenchimento="md">
-  {/* ... */}
-</Card>
-```
-
-### Migração
-
-`pedidos.tsx` antes:
-```tsx
-function CardPedido({ item, ativo }: { item: Pedido; ativo: boolean }) { ... }
-
-<FlatList renderItem={({ item }) => <CardPedido item={item} ativo={...} />} />
-```
-
-`pedidos.tsx` depois:
-```tsx
-import { PedidoCard } from '@/components/PedidoCard'
-import { ehAtivo } from '@/lib/status-pedido'
-
-<FlatList renderItem={({ item }) => (
-  <PedidoCard pedido={item} aoTocar={() => router.push(`/pedido/${item.id}`)} />
-)} />
-```
-
-(`ativo` é derivado dentro do `PedidoCard` via `ehAtivo(pedido.status)` — não vem mais como prop.)
+`formatarData(iso)` ("Hoje, 19:42" · "Ontem, 12:10" · "03 set, 20:15") é exportada de `PedidoCard.tsx`.
 
 ---
 
@@ -579,29 +534,27 @@ import { consumerDesign } from '@/lib/consumer-design'
 
 ## 11. `NotificacoesPopup`
 
-Bottom-sheet de notificações.
+Folha de notificações que sobe do sino da marquise (revista 2026-09-12). Vem da fachada, então é feita do **mesmo material** dela.
 
-### Visual alvo
+### Visual
 
-- Sheet `colors.surfaceDark`, `borderTopLeftRadius/Right: radius.xl`, com handle.
-- Lista de notificações: cada item é um `<Card variante="escuro">` com `softColor(corPorTipo)` no ícone-circle e texto branco.
-- Botão "Marcar todas como lidas" (`<Botao variante="ghost" iconeEsquerda="check-double" />`).
-- Botão fechar superior direito (`<ConsumerIcon name="close" size={20} color={colors.inkSoft} />`).
+- Véu `BlurView` (`tint="dark"`, `intensity={28}`), toque fecha. Folha `colors.marquee` + `GlowNeon`, `radius.lg` no topo, alça `marqueeGlassStrong`, `maxHeight` 84%. Entrada/saída animadas com `motion` (slide + fade).
+- **Letreiro**: sobrelinha micro `marqueeInkMuted` ("N NÃO LIDAS" / "TUDO EM DIA") + "Notificações" em `useFontesMarquee().letreiro` 24 white. À direita, "Marcar lidas" em pílula de vidro (`marqueeGlass` + fio `marqueeLine`, ícone `check-double` accent — só com não lidas) e a moeda de fechar.
+- **Grupos** Hoje / Ontem / Antes, rótulo em micro caps `marqueeInkMuted` (a lista já vem mais recente primeiro).
+- **Cartão** (`CartaoNotificacao`): vidro `marqueeGlass` + fio `marqueeLine`; **não lida** = `marqueeGlassStrong` + fio `accentRing`, título 14.5/800 white e ponto 7px accent; **lida** = título 600 `marqueeInkSoft`, corpo `marqueeInkMuted`. Moeda do tipo = círculo 40px de vidro (`marqueeGlassStrong` + fio) com ícone de linha **monocromático** (white / `marqueeInkSoft`, stroke 1.8) — sem tijolo colorido por tipo (cara de app genérico) nem faísca (cara de IA); o tipo fala pelo rótulo do rodapé em micro caps "TIPO · há N" (accent quando não lida). Toque = `marcarLida`.
+- **Vazio**: sino accent em moeda de vidro, "Tudo em dia" + "Quando o shopping tiver novidades para você, elas aparecem aqui."
 
-### Mapa de tipos → ícone + cor
+### Mapa de tipos → ícone + rótulo (sem cor por tipo)
 
-| `tipo` | `ConsumerIcon` | Cor |
+| `tipo` | `ConsumerIcon` | Rótulo |
 |---|---|---|
-| `pedido` | `bike` | `colors.info` |
-| `promo` | `tag` | `colors.warning` |
-| `novidade` | `spark` | `colors.accent` |
-| `sistema` | `info` | `colors.inkSoft` |
+| `pedido` | `package` | Pedido |
+| `promo` | `tag` | Promoção |
+| `novidade` | `store` | Novidade |
+| `sistema` | `info` | Mallevo |
+| `comentario` | `comment` | Comentário |
 
-### Migração
-
-- Hoje usa `BlurView` do `expo-blur` por cima de uma view escura. Manter o BlurView, ajustar `tint="dark"` e `intensity={40}` para casar com o `surfaceDark`.
-- Mock data permanece neste PR; conexão com backend é trabalho futuro fora do escopo do redesign.
-- Constante `NOTIFICACOES_NAO_LIDAS` exportada permanece (consumida pelo bell badge no header da home).
+Fonte: `store/useNotificacoes.ts` (lista persistida, `marcarLida`, `marcarTodasLidas`, `useNaoLidas` para o badge do sino).
 
 ---
 

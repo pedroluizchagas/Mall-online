@@ -1,27 +1,53 @@
 /**
  * Tokens de design do mobile-partner (App do Lojista).
- * Single source of truth visual: cores, raio, tipografia, spacing, motion, shadow, opacity.
+ * Single source of truth visual: cores, raio, tipografia, spacing, motion,
+ * shadow, opacity.
  *
- * Espelha apps/mobile-courier/lib/courier-design.ts e
- * apps/mobile-consumer/lib/consumer-design.ts para que os três apps
- * compartilhem a mesma DNA. Detalhamento e justificativas em
- * docs/system-design/consumer/01-tokens.md.
+ * Espelho fiel de apps/mobile-consumer/lib/consumer-design.ts (que por sua
+ * vez espelha o courier): os três apps falam a mesma língua — marquise
+ * escura (`marquee` + glow lima-profundo, o degradê do painel web do
+ * lojista) em cima, folha clara zinco-fumê embaixo, accent lima caro.
+ * Extração do sistema em docs/system-design/partner/00-sistema.md.
  *
  * Regra: nenhum hex literal pode existir em código de UI fora deste arquivo
- * (exceções documentadas em 01-tokens.md §11).
+ * (exceções: overlays sobre vídeo/foto, app.json, cor de LED da notificação).
  */
 export const partnerDesign = {
   colors: {
-    // Backgrounds claros
-    canvas: '#F3F3F1',
-    canvasAlt: '#E8E8E3',
+    // Backgrounds claros — família zinco ("vidro fumê"), casada com o
+    // marquee #18181B e a escala do painel web do lojista. O fumê mora no
+    // canvas; a surface branca acende sobre ele — elevação por
+    // luminosidade, não por sombra nem borda.
+    canvas: '#F1F1F3',
+    canvasAlt: '#E7E7EA',
     surface: '#FFFFFF',
-    surfaceMuted: '#ECECE9',
+    surfaceMuted: '#ECECEF',
 
-    // Backgrounds escuros (destaque; telas de captura/preview usam base ink)
+    // Backgrounds escuros (destaque; captura/preview usam base ink)
     surfaceDark: '#2F3034',
     surfaceDarkSoft: '#3A3B40',
-    splash: '#1A4D3A',
+
+    // Marquise — a fachada escura no topo de cada tela principal. Base
+    // zinco-quente + brilho lima-profundo: o MESMO degradê do painel web
+    // (apps/web, (auth)/entrar) — dois blobs de `marqueeGlow` difusos sobre
+    // `marquee` criam o verde-oliva da marca.
+    marquee: '#18181B',
+    // Lima-profundo do brand web — SÓ atmosfera (GlowNeon, alpha ≤ 22%).
+    // Interação continua no `accent`.
+    marqueeGlow: '#C1F148',
+    marqueeGlass: 'rgba(255, 255, 255, 0.08)',
+    marqueeGlassStrong: 'rgba(255, 255, 255, 0.13)',
+    marqueeLine: 'rgba(255, 255, 255, 0.10)',
+    marqueeInkSoft: 'rgba(255, 255, 255, 0.66)',
+    marqueeInkMuted: 'rgba(255, 255, 255, 0.42)',
+
+    // Ink translúcido — cápsula de vidro da tab bar sobre o conteúdo
+    inkGlass: 'rgba(17, 18, 22, 0.95)',
+
+    // Vidro claro — placas sobre o canvas fumê (espelho claro do marqueeGlass)
+    glass: 'rgba(255, 255, 255, 0.55)',
+    glassStrong: 'rgba(255, 255, 255, 0.78)',
+    glassEdge: 'rgba(255, 255, 255, 0.85)',
 
     // Texto
     ink: '#111216',
@@ -29,13 +55,14 @@ export const partnerDesign = {
     inkSoft: '#8B8E94',
 
     // Linhas
-    line: '#E5E5E0',
+    line: '#E4E4E7',
     lineDark: '#4A4B50',
 
     // Accent (CTA primário)
     accent: '#D8FF3E',
     accentStrong: '#C8F22E',
     accentSoft: 'rgba(216, 255, 62, 0.18)',
+    accentRing: 'rgba(216, 255, 62, 0.34)',
 
     // Neutro
     white: '#FFFFFF',
@@ -45,6 +72,19 @@ export const partnerDesign = {
     success: '#8ED14F',
     danger: '#FF6D5E',
     info: '#5BB7FF',
+  },
+  // Luz do dia — a tinta que bate na folha clara conforme o sol de
+  // Divinópolis (lib/luz-do-dia.ts). Fora de `colors` de propósito: luz não
+  // é cor de UI, é atmosfera. Entra só como véu de alpha baixo (≤ 14%) no
+  // VidroFosco; o canvas nunca muda.
+  luz: {
+    madrugada: '#5B6B9E',
+    amanhecer: '#F4B36F',
+    manha: '#FFE9B8',
+    meioDia: '#FFFFFF',
+    tarde: '#FFD08A',
+    entardecer: '#E9855A',
+    noite: '#4A5A8F',
   },
   radius: {
     sm: 14,
@@ -62,7 +102,10 @@ export const partnerDesign = {
     '2xl': 24,
     '3xl': 32,
     '4xl': 40,
-    tabBarHeight: 96, // 68 (altura) + 16 (bottom inset folga) + 12 (margem extra)
+    // Reserva de rolagem sob a tab bar, dimensionada pelo PIOR caso real:
+    // iPhone com inset 34 → pé max(34-16,16)=18 + altura 70 = topo a 88px
+    // do rodapé, + 20 de folga = 108 (mesmo valor do consumer).
+    tabBarHeight: 108,
   },
   typography: {
     display: { size: 32, weight: '800', tracking: -0.5 },
@@ -98,7 +141,7 @@ export const partnerDesign = {
     },
     medium: {
       shadowColor: '#000',
-      shadowOpacity: 0.10,
+      shadowOpacity: 0.1,
       shadowRadius: 18,
       shadowOffset: { width: 0, height: 8 },
       elevation: 4,
@@ -145,12 +188,46 @@ export function formatarMomentoCurto(data?: string | null) {
 }
 
 /**
+ * "agora", "12 min", "3 h", "5 d", "2 sem", "12 jun".
+ * Data no futuro cai em "agora" em vez de "-3 h".
+ */
+export function tempoRelativo(iso: string) {
+  const instante = Date.parse(iso)
+  if (!Number.isFinite(instante)) return ''
+
+  const minutos = Math.floor((Date.now() - instante) / 60000)
+  if (minutos < 1) return 'agora'
+  if (minutos < 60) return `${minutos} min`
+
+  const horas = Math.floor(minutos / 60)
+  if (horas < 24) return `${horas} h`
+
+  const dias = Math.floor(horas / 24)
+  if (dias < 7) return `${dias} d`
+  if (dias < 30) return `${Math.floor(dias / 7)} sem`
+
+  return new Date(instante).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+  })
+}
+
+/**
+ * Aplica um alpha arbitrário (0–1) em uma cor hex sólida dos tokens.
+ * Deriva fios e halos na cor de um momento sem criar hex novo:
+ * `corComAlpha(colors.success, 0.55)`.
+ */
+export function corComAlpha(hex: string, alpha: number) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+/**
  * Aplica alpha 18% em uma cor hex sólida.
  * Usado em backgrounds de status badge: `softColor(colors.warning)`.
  */
 export function softColor(hex: string) {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r}, ${g}, ${b}, 0.18)`
+  return corComAlpha(hex, 0.18)
 }

@@ -12,6 +12,7 @@
     "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
+    "@expo-google-fonts/plus-jakarta-sans": "0.4.1",
     "@expo/metro-runtime": "^57.0.15",
     "@mallevo/lib": "workspace:*",
     "@mallevo/types": "workspace:*",
@@ -24,6 +25,7 @@
     "expo-constants": "~57.0.17",
     "expo-device": "~57.0.1",
     "expo-file-system": "~57.0.6",
+    "expo-font": "~57.0.3",
     "expo-haptics": "~57.0.2",
     "expo-image-manipulator": "~57.0.16",
     "expo-image-picker": "~57.0.16",

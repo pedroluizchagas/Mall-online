@@ -1,29 +1,45 @@
-import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Text, TouchableOpacity, View } from 'react-native'
 import { router } from 'expo-router'
 import { PartnerIcon } from '@/components/PartnerIcon'
+import { Botao } from '@/components/ui/Botao'
+import { Chip as ChipUI } from '@/components/ui/Chip'
+import { Input } from '@/components/ui/Input'
 import { partnerDesign } from '@/lib/partner-design'
 
-// Primitivos das telas de gestão (base clara/canvas) — todos nos tokens.
+/**
+ * Primitivos das telas de gestão (módulos atrás do Menu, base clara).
+ *
+ * Fachada de compatibilidade: a API antiga (CabecalhoTela, Cartao, Legenda,
+ * CampoTexto, BotaoPrimario, Chip) continua, mas por baixo tudo é feito
+ * dos primitivos de `components/ui/` — assim os ~20 módulos de gestão
+ * herdam o system design (cartão sem borda com elevação por luminosidade,
+ * Input da casa, Botao pílula, Chip ink/accent) sem reescrita.
+ */
 
-const { colors, radius, spacing, typography } = partnerDesign
+const { colors, radius, spacing, typography, shadow } = partnerDesign
 
 export function CabecalhoTela({ titulo, children }: { titulo: string; children?: React.ReactNode }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xl }}>
       <TouchableOpacity
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/menu'))}
-        activeOpacity={0.7}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: radius.pill,
-          backgroundColor: colors.surface,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginRight: spacing.md,
-        }}
+        activeOpacity={partnerDesign.opacity.pressedSoft}
+        accessibilityRole="button"
+        accessibilityLabel="Voltar"
+        style={[
+          {
+            width: 40,
+            height: 40,
+            borderRadius: radius.pill,
+            backgroundColor: colors.surface,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: spacing.md,
+          },
+          shadow.soft,
+        ]}
       >
-        <PartnerIcon name="back" size={18} color={colors.ink} />
+        <PartnerIcon name="back" size={18} color={colors.ink} strokeWidth={2.1} />
       </TouchableOpacity>
       <Text
         style={{
@@ -33,6 +49,7 @@ export function CabecalhoTela({ titulo, children }: { titulo: string; children?:
           fontWeight: typography.h2.weight,
           letterSpacing: typography.h2.tracking,
         }}
+        numberOfLines={1}
       >
         {titulo}
       </Text>
@@ -41,30 +58,35 @@ export function CabecalhoTela({ titulo, children }: { titulo: string; children?:
   )
 }
 
+/** Cartão claro — `surface` SEM borda, `radius.md`, `shadow.soft`. */
 export function Cartao({ children, semPadding }: { children: React.ReactNode; semPadding?: boolean }) {
   return (
     <View
-      style={{
-        backgroundColor: colors.surface,
-        borderRadius: radius.md,
-        padding: semPadding ? 0 : spacing.lg,
-        marginBottom: spacing.lg,
-        overflow: 'hidden',
-      }}
+      style={[
+        {
+          backgroundColor: colors.surface,
+          borderRadius: radius.md,
+          padding: semPadding ? 0 : spacing.lg,
+          marginBottom: spacing.lg,
+          overflow: 'hidden',
+        },
+        shadow.soft,
+      ]}
     >
       {children}
     </View>
   )
 }
 
+/** Sobrelinha de seção em micro caps `inkSoft` (a mesma do SecaoFolha). */
 export function Legenda({ children }: { children: string }) {
   return (
     <Text
       style={{
         color: colors.inkSoft,
-        fontSize: typography.micro.size,
-        fontWeight: typography.micro.weight,
-        letterSpacing: typography.micro.tracking,
+        fontSize: 10.5,
+        fontWeight: '700',
+        letterSpacing: 1.2,
         textTransform: 'uppercase',
         marginBottom: spacing.sm,
         marginLeft: spacing.xs,
@@ -92,33 +114,13 @@ export function CampoTexto({
 }) {
   return (
     <View style={{ marginBottom: spacing.md }}>
-      <Text
-        style={{
-          color: colors.inkMuted,
-          fontSize: typography.bodySm.size,
-          fontWeight: '700',
-          marginBottom: 6,
-        }}
-      >
-        {rotulo}
-      </Text>
-      <TextInput
-        value={valor}
-        onChangeText={aoMudar}
+      <Input
+        rotulo={rotulo}
+        valor={valor}
+        aoMudar={aoMudar}
         placeholder={placeholder}
-        placeholderTextColor={colors.inkSoft}
-        multiline={multiline}
-        keyboardType={teclado ?? 'default'}
-        style={{
-          backgroundColor: colors.surfaceMuted,
-          borderRadius: radius.sm,
-          paddingHorizontal: 14,
-          paddingVertical: multiline ? 12 : 0,
-          height: multiline ? 88 : 48,
-          textAlignVertical: multiline ? 'top' : 'center',
-          color: colors.ink,
-          fontSize: typography.bodyLg.size,
-        }}
+        multilinha={multiline}
+        tipo={teclado && teclado !== 'default' ? 'numero' : 'texto'}
       />
     </View>
   )
@@ -138,33 +140,20 @@ export function BotaoPrimario({
   destrutivo?: boolean
 }) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      disabled={carregando || desabilitado}
-      activeOpacity={0.85}
-      style={{
-        height: 54,
-        borderRadius: radius.pill,
-        backgroundColor: destrutivo ? colors.surface : colors.accent,
-        borderWidth: destrutivo ? 1.5 : 0,
-        borderColor: colors.danger,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: desabilitado ? 0.5 : 1,
-        marginBottom: spacing.sm,
-      }}
-    >
-      {carregando ? (
-        <ActivityIndicator color={destrutivo ? colors.danger : colors.ink} />
-      ) : (
-        <Text style={{ color: destrutivo ? colors.danger : colors.ink, fontWeight: '800', fontSize: 15 }}>
-          {rotulo}
-        </Text>
-      )}
-    </TouchableOpacity>
+    <View style={{ marginBottom: spacing.sm }}>
+      <Botao
+        label={rotulo}
+        onPress={onPress}
+        variante={destrutivo ? 'danger' : 'primario'}
+        tamanho="md"
+        carregando={carregando}
+        desabilitado={desabilitado}
+      />
+    </View>
   )
 }
 
+/** Chip com as margens que as fileiras `flexWrap` dos módulos esperam. */
 export function Chip({
   rotulo,
   ativo,
@@ -175,27 +164,8 @@ export function Chip({
   onPress: () => void
 }) {
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      style={{
-        backgroundColor: ativo ? colors.ink : colors.surface,
-        borderRadius: radius.pill,
-        paddingVertical: 8,
-        paddingHorizontal: 14,
-        marginRight: 8,
-        marginBottom: 8,
-      }}
-    >
-      <Text
-        style={{
-          color: ativo ? colors.accent : colors.inkMuted,
-          fontSize: typography.bodySm.size,
-          fontWeight: '700',
-        }}
-      >
-        {rotulo}
-      </Text>
-    </TouchableOpacity>
+    <View style={{ marginRight: 8, marginBottom: 8 }}>
+      <ChipUI rotulo={rotulo} ativo={ativo} aoTocar={onPress} tamanho="sm" />
+    </View>
   )
 }

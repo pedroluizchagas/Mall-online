@@ -1,28 +1,75 @@
-import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Linking } from 'react-native'
+import { useEffect, useRef, useState } from 'react'
+import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
+  Linking,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
 import { useLocalSearchParams, router, Stack } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { formatarReais } from '@mallevo/lib'
 import { supabase } from '@/lib/supabase'
 import { useOrderStore } from '@/store/useOrderStore'
 import { useLocalizacaoCourier } from '@/hooks/useLocalizacaoCourier'
 import { MapaEntregador } from '@/components/MapaEntregador'
-import { HeaderTela } from '@/components/HeaderTela'
-import { Card } from '@/components/ui/Card'
+import { GlowNeon, useFontesMarquee } from '@/components/home/Marquise'
+import { VidroFosco } from '@/components/home/VidroFosco'
+import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
+import { TijoloLoja } from '@/components/TijoloLoja'
 import { Botao } from '@/components/ui/Botao'
-import { LoadingState } from '@/components/ui/LoadingState'
-import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
-import { formatarReais } from '@mallevo/lib'
+import { SecaoFolha, CartaoFolha } from '@/components/ui/SecaoFolha'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
+import { useLuzDoDia } from '@/lib/luz-do-dia'
 import { metaDoStatus, timelineDoStatus, ehAtivo } from '@/lib/status-pedido'
 import { faixaDeEta, estimarFaixaPelaRota, rotuloPosicaoNaRota } from '@/lib/eta'
+import { formatarData } from '@/components/PedidoCard'
+import { usePreferencias } from '@/store/usePreferencias'
 
-const { colors, radius } = consumerDesign
+/**
+ * Acompanhamento do pedido — a mesma arquitetura do Início e da tela de
+ * pedidos: MARQUISE escura com o que está ao vivo, FOLHA clara com o
+ * que é registro.
+ *
+ * Marquise: ponto pulsando + "AO VIVO · LOJA", o status por extenso na
+ * fonte-statement, a previsão de chegada acesa em accent (ou a descrição
+ * do passo), a barra de progresso; e, quando o pedido saiu, o entregador
+ * em vidro e o mapa emoldurado. Cancelado: sem pulso, motivo em danger.
+ *
+ * Folha (vidro fosco + luz do dia): a linha do tempo, o recibo com a pele
+ * da loja no tijolo, agendamento (serviços), endereço e ações.
+ *
+ * Dados, realtime e ETA não mudaram: ETA é da PRÓPRIA parada (docs/31 §5),
+ * mapa só com localização do entregador em "saiu para entrega".
+ *
+ * Spec: docs/system-design/consumer/07-telas.md §10
+ */
+
+const { colors, radius, motion } = consumerDesign
+
+/** Pele da loja para o tijolo do recibo (join à parte — o embed não traz). */
+interface LojaSkin {
+  logo_url: string | null
+  theme: unknown
+}
 
 export default function TelaAcompanhamento() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { setStatusAtual } = useOrderStore()
+  const insets = useSafeAreaInsets()
+  const fontes = useFontesMarquee()
 
   const [pedido, setPedido] = useState<any>(null)
+  const [skin, setSkin] = useState<LojaSkin | null>(null)
   const [carregando, setCarregando] = useState(true)
+
+  const luzAtiva = usePreferencias((s) => s.luzDoDia)
+  const luz = useLuzDoDia(luzAtiva)
 
   const courierId = pedido?.delivery_assignments?.[0]?.courier_id ?? null
   const localizacao = useLocalizacaoCourier(courierId)
@@ -71,6 +118,16 @@ export default function TelaAcompanhamento() {
       setPedido(data)
       setStatusAtual(data.status)
       setCarregando(false)
+
+      // Pele da loja (logo + tema) para o tijolo do recibo.
+      if (data.stores?.id) {
+        const { data: loja } = await supabase
+          .from('stores')
+          .select('logo_url, theme')
+          .eq('id', data.stores.id)
+          .single()
+        if (loja) setSkin(loja as LojaSkin)
+      }
     }
 
     carregarPedido()
@@ -115,18 +172,32 @@ export default function TelaAcompanhamento() {
 
   if (carregando) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
+      <View style={{ flex: 1, backgroundColor: colors.marquee }}>
         <Stack.Screen options={{ headerShown: false }} />
-        <LoadingState modo="tela" mensagem="Carregando pedido..." />
+        <StatusBar style="light" animated />
+        <GlowNeon />
+        <View style={{ paddingTop: insets.top + 10, paddingHorizontal: 24 }}>
+          <BotaoVoltar />
+          <View style={{ marginTop: 26, gap: 12 }}>
+            <Skeleton largura="40%" altura={9} raio={4} />
+            <Skeleton largura="75%" altura={28} raio={8} />
+            <Skeleton largura="55%" altura={14} raio={5} />
+            <Skeleton largura="100%" altura={4} raio={2} />
+          </View>
+        </View>
       </View>
     )
   }
 
-  const statusAtual = pedido?.status ?? 'novo'
+  const statusAtual: string = pedido?.status ?? 'novo'
   const meta = metaDoStatus(statusAtual)
   const passos = timelineDoStatus(statusAtual)
   const courier = pedido?.delivery_assignments?.[0]?.couriers
   const enderecoEntrega = pedido?.endereco_entrega
+  const ativo = ehAtivo(statusAtual)
+  const isCancelado = statusAtual === 'cancelado'
+  const isEntregue = statusAtual === 'entregue'
+  const nomeLoja: string = pedido?.stores?.nome ?? 'Loja'
 
   // ETA da PRÓPRIA parada (docs/31 §5). Em rota agrupada o consumidor vê o
   // seu drop, nunca a rota inteira — agrupar não pode piorar o que ele vê.
@@ -148,133 +219,160 @@ export default function TelaAcompanhamento() {
   )
   const exibirMapa =
     statusAtual === 'saiu_para_entrega' && localizacao && enderecoEntrega
-  const isCancelado = statusAtual === 'cancelado'
+
+  const sobrelinha = isCancelado
+    ? `Pedido cancelado · ${nomeLoja}`
+    : isEntregue
+      ? `Pedido entregue · ${nomeLoja}`
+      : `Ao vivo · ${nomeLoja}`
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
       <Stack.Screen options={{ headerShown: false }} />
+      <StatusBar style="light" animated />
 
-      <HeaderTela variante="voltar" titulo="Acompanhamento" />
+      {/* Céu atrás do overscroll superior (iOS rubber-band). */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 480,
+          backgroundColor: colors.marquee,
+        }}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{ flexGrow: 1 }}
       >
-        {/* Mapa do entregador */}
-        {exibirMapa && (
-          <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-            <Card preenchimento="sm" semBorda>
-              <MapaEntregador
-                localizacao={localizacao!}
-                enderecoEntrega={enderecoEntrega}
+        {/* ── Marquise: o pedido ao vivo ── */}
+        <View
+          style={{
+            backgroundColor: colors.marquee,
+            paddingTop: insets.top + 10,
+            // 24 extras ficam escondidos atrás da folha que sobe por cima.
+            paddingBottom: 48,
+            overflow: 'hidden',
+          }}
+        >
+          <GlowNeon />
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 24,
+            }}
+          >
+            <BotaoVoltar />
+            {pedido?.stores?.telefone && ativo && (
+              <MoedaVidro
+                icone="comment"
+                rotulo={`Falar com ${nomeLoja}`}
+                aoTocar={abrirWhatsApp}
               />
-            </Card>
+            )}
           </View>
-        )}
 
-        {/* Card de status atual em destaque */}
-        <View style={{ paddingHorizontal: 16, paddingTop: 8 }}>
-          <Card variante="escuro" raio="lg" preenchimento="lg">
-            <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}
-            >
-              <View
-                style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 28,
-                  backgroundColor: softColor(meta.cor),
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <ConsumerIcon name={meta.icone} size={26} color={meta.cor} />
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: '700',
-                    color: colors.inkSoft,
-                    letterSpacing: 1.2,
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {isCancelado ? 'Pedido cancelado' : 'Status atual'}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: '800',
-                    color: colors.white,
-                    marginTop: 4,
-                    letterSpacing: -0.3,
-                  }}
-                >
-                  {meta.rotuloLongo}
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: colors.inkSoft,
-                    marginTop: 4,
-                    lineHeight: 20,
-                    fontWeight: '500',
-                  }}
-                >
-                  {faixaEta ? `Chega entre ${faixaEta.texto}` : meta.descricao}
-                </Text>
-              </View>
+          <View style={{ paddingHorizontal: 24, paddingTop: 26 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {ativo && <PontoAoVivo />}
+              <Text style={estilos.microMudo} numberOfLines={1}>
+                {sobrelinha}
+              </Text>
             </View>
 
-            {/* Posição na rota: só aparece quando o pedido foi agrupado.
-                Transparência sem alarme — o cliente entende a ordem sem
-                que isso vire promessa de horário exato. */}
-            {posicaoNaRota && !isCancelado && (
-              <View
-                style={{
-                  marginTop: 12,
-                  paddingTop: 12,
-                  borderTopWidth: 1,
-                  borderTopColor: 'rgba(255,255,255,0.10)',
-                }}
-              >
-                <Text style={{ fontSize: 12, color: colors.inkSoft, fontWeight: '600' }}>
-                  {posicaoNaRota}
+            <Text
+              style={[
+                fontes.statement,
+                {
+                  fontSize: 30,
+                  lineHeight: 35,
+                  color: colors.white,
+                  letterSpacing: -0.7,
+                  marginTop: 8,
+                },
+              ]}
+            >
+              {meta.rotuloLongo}
+              {faixaEta ? (
+                <Text style={[fontes.acento, { color: colors.accent }]}>
+                  {'\n'}entre {faixaEta.texto}
                 </Text>
-              </View>
-            )}
+              ) : null}
+            </Text>
 
-            {isCancelado && pedido?.motivo_cancelamento && (
+            <Text
+              style={{
+                fontSize: 13.5,
+                fontWeight: '500',
+                color: colors.marqueeInkSoft,
+                marginTop: 8,
+                lineHeight: 19,
+              }}
+            >
+              {faixaEta ? meta.descricao : isCancelado ? 'Sentimos muito.' : meta.descricao}
+              {posicaoNaRota && !isCancelado ? ` ${posicaoNaRota}` : ''}
+            </Text>
+
+            {/* Barra de progresso — a mesma dos cartões ao vivo. */}
+            {!isCancelado && (
               <View
                 style={{
-                  marginTop: 12,
-                  padding: 12,
-                  borderRadius: radius.md,
-                  backgroundColor: softColor(colors.danger),
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginTop: 18,
                 }}
               >
+                <BarraProgresso valor={meta.progresso} cor={isEntregue ? colors.success : colors.accent} />
                 <Text
                   style={{
                     fontSize: 12,
-                    color: colors.danger,
-                    fontWeight: '600',
+                    fontWeight: '800',
+                    color: isEntregue ? colors.success : colors.accent,
                   }}
                 >
-                  Motivo: {pedido.motivo_cancelamento}
+                  {Math.round(meta.progresso * 100)}%
                 </Text>
               </View>
             )}
-          </Card>
-        </View>
 
-        {/* Entregador */}
-        {statusAtual === 'saiu_para_entrega' && courier && (
-          <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
-            <Card preenchimento="md">
+            {isCancelado && pedido?.motivo_cancelamento ? (
               <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
+                style={{
+                  marginTop: 16,
+                  padding: 14,
+                  borderRadius: radius.md,
+                  backgroundColor: softColor(colors.danger),
+                  borderWidth: 1,
+                  borderColor: softColor(colors.danger),
+                }}
+              >
+                <Text style={{ fontSize: 12.5, color: colors.danger, fontWeight: '700' }}>
+                  Motivo: {pedido.motivo_cancelamento}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+
+          {/* Entregador — só quando o pedido saiu. */}
+          {statusAtual === 'saiu_para_entrega' && courier && (
+            <View style={{ paddingHorizontal: 16, paddingTop: 20 }}>
+              <View
+                style={{
+                  backgroundColor: colors.marqueeGlass,
+                  borderWidth: 1,
+                  borderColor: colors.marqueeLine,
+                  borderRadius: radius.lg,
+                  padding: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 12,
+                }}
               >
                 <View
                   style={{
@@ -286,356 +384,413 @@ export default function TelaAcompanhamento() {
                     justifyContent: 'center',
                   }}
                 >
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: '800',
-                      color: colors.ink,
-                    }}
-                  >
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: colors.ink }}>
                     {courier.nome?.charAt(0).toUpperCase() ?? '?'}
                   </Text>
                 </View>
                 <View style={{ flex: 1 }}>
+                  <Text style={estilos.microMudo}>Entregador</Text>
                   <Text
-                    style={{
-                      fontSize: 11,
-                      fontWeight: '700',
-                      color: colors.inkSoft,
-                      letterSpacing: 1.2,
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    Entregador
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 16,
-                      fontWeight: '700',
-                      color: colors.ink,
-                      marginTop: 2,
-                    }}
+                    style={{ fontSize: 16, fontWeight: '700', color: colors.white, marginTop: 2 }}
+                    numberOfLines={1}
                   >
                     {courier.nome}
                   </Text>
                 </View>
                 {courier.telefone && (
-                  <BotaoIconeCircular
+                  <MoedaVidro
                     icone="phone"
-                    aoTocar={() =>
-                      Linking.openURL(`tel:${courier.telefone}`)
-                    }
+                    rotulo={`Ligar para ${courier.nome}`}
+                    aoTocar={() => Linking.openURL(`tel:${courier.telefone}`)}
+                    accent
                   />
                 )}
               </View>
-            </Card>
-          </View>
-        )}
-
-        {/* Timeline */}
-        {!isCancelado && (
-          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: '700',
-                color: colors.inkMuted,
-                letterSpacing: 0.5,
-                textTransform: 'uppercase',
-                marginBottom: 16,
-              }}
-            >
-              Acompanhamento
-            </Text>
-
-            {passos.map((passo, i) => (
-              <PassoTimeline
-                key={passo.meta.status}
-                passo={passo}
-                ultimo={i === passos.length - 1}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* Itens */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: '700',
-              color: colors.inkMuted,
-              letterSpacing: 0.5,
-              textTransform: 'uppercase',
-              marginBottom: 12,
-            }}
-          >
-            Itens do pedido
-          </Text>
-
-          <Card preenchimento="md">
-            {pedido?.order_items?.map((item: any, idx: number) => {
-              const modifiers = (item.modifiers ?? []) as Array<{
-                modifier_id: string
-                nome: string
-                preco_extra: number
-              }>
-              const refsVariant =
-                item?.product_variants?.product_variant_options ?? []
-              const valoresVariant = (refsVariant as any[])
-                .map((vo: any) => vo?.product_options?.valor)
-                .filter(
-                  (v: unknown): v is string =>
-                    typeof v === 'string' && v.length > 0
-                )
-              const rotuloVariant =
-                valoresVariant.length > 0
-                  ? valoresVariant.join(' × ')
-                  : null
-              return (
-                <View
-                  key={item.id}
-                  style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    paddingVertical: 8,
-                    gap: 12,
-                    borderBottomWidth:
-                      idx < (pedido.order_items.length - 1) ? 1 : 0,
-                    borderBottomColor: colors.line,
-                  }}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 14,
-                        color: colors.ink,
-                        fontWeight: '500',
-                      }}
-                    >
-                      {item.quantidade}× {item.nome}
-                    </Text>
-                    {rotuloVariant && (
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: colors.inkMuted,
-                          fontWeight: '600',
-                          marginTop: 2,
-                        }}
-                      >
-                        {rotuloVariant}
-                      </Text>
-                    )}
-                    {modifiers.length > 0 && (
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: colors.inkMuted,
-                          fontWeight: '500',
-                          marginTop: 2,
-                        }}
-                      >
-                        {modifiers.map((m) => m.nome).join(', ')}
-                      </Text>
-                    )}
-                    {item.observacoes && (
-                      <Text
-                        style={{
-                          fontSize: 12,
-                          color: colors.inkMuted,
-                          fontStyle: 'italic',
-                          marginTop: 2,
-                        }}
-                      >
-                        &ldquo;{item.observacoes}&rdquo;
-                      </Text>
-                    )}
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      color: colors.inkMuted,
-                      fontWeight: '600',
-                    }}
-                  >
-                    {formatarReais(item.subtotal)}
-                  </Text>
-                </View>
-              )
-            })}
-
-            <View
-              style={{
-                borderTopWidth: 1,
-                borderTopColor: colors.line,
-                marginTop: 8,
-                paddingTop: 12,
-                gap: 6,
-              }}
-            >
-              <LinhaResumo
-                rotulo="Subtotal"
-                valor={formatarReais(pedido?.subtotal ?? 0)}
-              />
-              {(pedido?.taxa_entrega ?? 0) > 0 && (
-                <LinhaResumo
-                  rotulo="Taxa de entrega"
-                  valor={formatarReais(pedido.taxa_entrega)}
-                />
-              )}
-              <LinhaResumo
-                rotulo="Total"
-                valor={formatarReais(pedido?.total ?? 0)}
-                destacado
-              />
             </View>
-          </Card>
-        </View>
-
-        {/* Agendamento (services) */}
-        {pedido?.tipo === 'agendamento' && pedido?.agendamento_inicio_at && (
-          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: '700',
-                color: colors.inkMuted,
-                letterSpacing: 0.5,
-                textTransform: 'uppercase',
-                marginBottom: 12,
-              }}
-            >
-              Agendamento
-            </Text>
-            <Card preenchimento="md">
-              <Text
-                style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}
-              >
-                📅 {formatarAgendamentoBruto(
-                  pedido.agendamento_inicio_at,
-                  pedido.agendamento_fim_at,
-                )}
-              </Text>
-              {pedido?.service_staff?.nome && (
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: colors.inkMuted,
-                    marginTop: 4,
-                    fontWeight: '500',
-                  }}
-                >
-                  👤 {pedido.service_staff.nome}
-                </Text>
-              )}
-              {pedido?.stores?.nome && (
-                <Text
-                  style={{
-                    fontSize: 13,
-                    color: colors.inkMuted,
-                    marginTop: 6,
-                    fontWeight: '500',
-                  }}
-                >
-                  Local: {pedido.stores.nome}
-                </Text>
-              )}
-            </Card>
-          </View>
-        )}
-
-        {/* Endereço de entrega (apenas pedidos do tipo entrega) */}
-        {pedido?.tipo !== 'agendamento' && (
-          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: '700',
-                color: colors.inkMuted,
-                letterSpacing: 0.5,
-                textTransform: 'uppercase',
-                marginBottom: 12,
-              }}
-            >
-              Endereço de entrega
-            </Text>
-            <Card preenchimento="md">
-              <View
-                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}
-              >
-                <View
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 20,
-                    backgroundColor: colors.accentSoft,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <ConsumerIcon name="pin" size={18} color={colors.accent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 14,
-                      fontWeight: '700',
-                      color: colors.ink,
-                    }}
-                  >
-                    {enderecoEntrega?.rua}, {enderecoEntrega?.numero}
-                    {enderecoEntrega?.complemento
-                      ? ` — ${enderecoEntrega.complemento}`
-                      : ''}
-                  </Text>
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      color: colors.inkMuted,
-                      marginTop: 2,
-                      fontWeight: '500',
-                    }}
-                  >
-                    {enderecoEntrega?.bairro} — {enderecoEntrega?.cidade}
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          </View>
-        )}
-
-        {/* Ações */}
-        <View
-          style={{
-            paddingHorizontal: 24,
-            paddingTop: 24,
-            gap: 12,
-          }}
-        >
-          {pedido?.stores?.telefone && ehAtivo(statusAtual) && (
-            <Botao
-              label={`Falar com ${pedido.stores.nome}`}
-              variante="secundario"
-              tamanho="md"
-              iconeEsquerda="comment"
-              onPress={abrirWhatsApp}
-            />
           )}
 
-          {statusAtual === 'entregue' && (
-            <Botao
-              label="Voltar ao início"
-              variante="primario"
-              tamanho="lg"
-              onPress={() => router.replace('/(tabs)')}
-            />
+          {/* Mapa emoldurado, na marquise — o entregador a caminho. */}
+          {exibirMapa && (
+            <View style={{ paddingHorizontal: 16, paddingTop: 12 }}>
+              <View
+                style={{
+                  borderRadius: radius.lg,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: colors.marqueeLine,
+                }}
+              >
+                <MapaEntregador
+                  localizacao={localizacao!}
+                  enderecoEntrega={enderecoEntrega}
+                  escuro
+                />
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* ── Folha: registro ── */}
+        <View
+          style={{
+            flex: 1,
+            marginTop: -24,
+            backgroundColor: colors.canvas,
+            borderTopLeftRadius: radius.md,
+            borderTopRightRadius: radius.md,
+            paddingTop: 30,
+            paddingBottom: 40 + insets.bottom,
+            overflow: 'hidden',
+            gap: 28,
+          }}
+        >
+          <VidroFosco luz={luz} />
+
+          {/* Linha do tempo */}
+          {!isCancelado && (
+            <SecaoFolha sobrelinha="Passo a passo" titulo="Acompanhamento">
+              <CartaoFolha>
+                {passos.map((passo, i) => (
+                  <PassoTimeline
+                    key={passo.meta.status}
+                    passo={passo}
+                    ultimo={i === passos.length - 1}
+                  />
+                ))}
+              </CartaoFolha>
+            </SecaoFolha>
+          )}
+
+          {/* Recibo */}
+          <SecaoFolha
+            sobrelinha={`Pedido · ${formatarData(pedido?.criado_em ?? new Date().toISOString())}`}
+            titulo="Recibo"
+          >
+            <CartaoFolha>
+              {/* Cabeçalho: a loja, com a própria pele */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+                <TijoloLoja nome={nomeLoja} logoUrl={skin?.logo_url} theme={skin?.theme} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 15, fontWeight: '700', color: colors.ink, letterSpacing: -0.2 }}
+                    numberOfLines={1}
+                  >
+                    {nomeLoja}
+                  </Text>
+                  <Text style={{ fontSize: 12.5, fontWeight: '500', color: colors.inkMuted, marginTop: 2 }}>
+                    {pedido?.order_items?.length ?? 0}{' '}
+                    {(pedido?.order_items?.length ?? 0) === 1 ? 'item' : 'itens'}
+                    {pedido?.forma_pagamento ? ` · ${rotuloPagamento(pedido.forma_pagamento)}` : ''}
+                  </Text>
+                </View>
+                {pedido?.stores?.slug && (
+                  <TouchableOpacity
+                    onPress={() => router.push(`/loja/${pedido.stores.slug}`)}
+                    activeOpacity={consumerDesign.opacity.pressedSoft}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Abrir a loja ${nomeLoja}`}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}
+                  >
+                    <Text style={{ fontSize: 12.5, fontWeight: '700', color: colors.ink }}>
+                      Ver loja
+                    </Text>
+                    <ConsumerIcon name="chevron-right" size={13} color={colors.ink} strokeWidth={2.2} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {pedido?.order_items?.map((item: any, idx: number) => {
+                const modifiers = (item.modifiers ?? []) as Array<{
+                  modifier_id: string
+                  nome: string
+                  preco_extra: number
+                }>
+                const refsVariant =
+                  item?.product_variants?.product_variant_options ?? []
+                const valoresVariant = (refsVariant as any[])
+                  .map((vo: any) => vo?.product_options?.valor)
+                  .filter(
+                    (v: unknown): v is string =>
+                      typeof v === 'string' && v.length > 0
+                  )
+                const rotuloVariant =
+                  valoresVariant.length > 0 ? valoresVariant.join(' × ') : null
+                return (
+                  <View
+                    key={item.id}
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      paddingVertical: 10,
+                      gap: 12,
+                      borderTopWidth: 1,
+                      borderTopColor: colors.line,
+                    }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, color: colors.ink, fontWeight: '600' }}>
+                        {item.quantidade}× {item.nome}
+                      </Text>
+                      {rotuloVariant && (
+                        <Text style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '600', marginTop: 2 }}>
+                          {rotuloVariant}
+                        </Text>
+                      )}
+                      {modifiers.length > 0 && (
+                        <Text style={{ fontSize: 12, color: colors.inkMuted, fontWeight: '500', marginTop: 2 }}>
+                          {modifiers.map((m) => m.nome).join(', ')}
+                        </Text>
+                      )}
+                      {item.observacoes && (
+                        <Text style={{ fontSize: 12, color: colors.inkMuted, fontStyle: 'italic', marginTop: 2 }}>
+                          &ldquo;{item.observacoes}&rdquo;
+                        </Text>
+                      )}
+                    </View>
+                    <Text style={{ fontSize: 14, color: colors.inkMuted, fontWeight: '600' }}>
+                      {formatarReais(item.subtotal)}
+                    </Text>
+                  </View>
+                )
+              })}
+
+              <View
+                style={{
+                  borderTopWidth: 1,
+                  borderTopColor: colors.line,
+                  paddingTop: 12,
+                  gap: 6,
+                }}
+              >
+                <LinhaResumo rotulo="Subtotal" valor={formatarReais(pedido?.subtotal ?? 0)} />
+                {(pedido?.taxa_entrega ?? 0) > 0 && (
+                  <LinhaResumo rotulo="Taxa de entrega" valor={formatarReais(pedido.taxa_entrega)} />
+                )}
+                <LinhaResumo rotulo="Total" valor={formatarReais(pedido?.total ?? 0)} destacado />
+              </View>
+            </CartaoFolha>
+          </SecaoFolha>
+
+          {/* Agendamento (services) */}
+          {pedido?.tipo === 'agendamento' && pedido?.agendamento_inicio_at && (
+            <SecaoFolha sobrelinha="Serviço" titulo="Agendamento">
+              <CartaoFolha>
+                <LinhaIcone
+                  icone="clock"
+                  texto={formatarAgendamentoBruto(
+                    pedido.agendamento_inicio_at,
+                    pedido.agendamento_fim_at,
+                  )}
+                  forte
+                />
+                {pedido?.service_staff?.nome && (
+                  <LinhaIcone icone="user" texto={pedido.service_staff.nome} />
+                )}
+                <LinhaIcone icone="store" texto={nomeLoja} />
+              </CartaoFolha>
+            </SecaoFolha>
+          )}
+
+          {/* Endereço de entrega (apenas pedidos do tipo entrega) */}
+          {pedido?.tipo !== 'agendamento' && enderecoEntrega && (
+            <SecaoFolha sobrelinha="Onde chega" titulo="Endereço de entrega">
+              <CartaoFolha>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 12 }}>
+                  <View
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: radius.sm,
+                      backgroundColor: colors.ink,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <ConsumerIcon name="pin" size={18} color={colors.accent} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14.5, fontWeight: '700', color: colors.ink }}>
+                      {enderecoEntrega?.rua}, {enderecoEntrega?.numero}
+                      {enderecoEntrega?.complemento ? ` — ${enderecoEntrega.complemento}` : ''}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: colors.inkMuted, marginTop: 2, fontWeight: '500' }}>
+                      {enderecoEntrega?.bairro} — {enderecoEntrega?.cidade}
+                    </Text>
+                  </View>
+                </View>
+              </CartaoFolha>
+            </SecaoFolha>
+          )}
+
+          {/* Ações */}
+          {(isEntregue || (pedido?.stores?.telefone && ativo)) && (
+            <View style={{ paddingHorizontal: 24, gap: 12 }}>
+              {pedido?.stores?.telefone && ativo && (
+                <Botao
+                  label={`Falar com ${nomeLoja}`}
+                  variante="secundario"
+                  tamanho="md"
+                  iconeEsquerda="comment"
+                  onPress={abrirWhatsApp}
+                />
+              )}
+              {isEntregue && (
+                <Botao
+                  label="Voltar ao início"
+                  variante="primario"
+                  tamanho="lg"
+                  onPress={() => router.replace('/(tabs)')}
+                />
+              )}
+            </View>
           )}
         </View>
       </ScrollView>
     </View>
   )
 }
+
+// ─────────────────────────────────────────────────────────
+// Peças da marquise
+// ─────────────────────────────────────────────────────────
+
+function BotaoVoltar() {
+  return (
+    <TouchableOpacity
+      onPress={() => (router.canGoBack() ? router.back() : router.navigate('/(tabs)/pedidos'))}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
+      accessibilityRole="button"
+      accessibilityLabel="Voltar"
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.marqueeGlass,
+        borderWidth: 1,
+        borderColor: colors.marqueeLine,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <ConsumerIcon name="chevron-left" size={18} color={colors.white} strokeWidth={2.2} />
+    </TouchableOpacity>
+  )
+}
+
+/** Moeda de vidro com ícone — ação secundária sobre a marquise. */
+function MoedaVidro({
+  icone,
+  rotulo,
+  aoTocar,
+  accent = false,
+}: {
+  icone: ConsumerIconName
+  rotulo: string
+  aoTocar: () => void
+  accent?: boolean
+}) {
+  return (
+    <TouchableOpacity
+      onPress={aoTocar}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
+      accessibilityRole="button"
+      accessibilityLabel={rotulo}
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: accent ? colors.accent : colors.marqueeGlass,
+        borderWidth: accent ? 0 : 1,
+        borderColor: colors.marqueeLine,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <ConsumerIcon
+        name={icone}
+        size={18}
+        color={accent ? colors.ink : colors.white}
+        strokeWidth={2}
+      />
+    </TouchableOpacity>
+  )
+}
+
+/** Ponto accent respirando — respeita o reduce motion do aparelho. */
+function PontoAoVivo() {
+  const pulso = useRef(new Animated.Value(1)).current
+  useEffect(() => {
+    let ciclo: Animated.CompositeAnimation | undefined
+    let vivo = true
+    AccessibilityInfo.isReduceMotionEnabled().then((reduzido) => {
+      if (!vivo || reduzido) return
+      ciclo = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulso, {
+            toValue: 0.3,
+            duration: motion.pulse / 2,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulso, {
+            toValue: 1,
+            duration: motion.pulse / 2,
+            easing: Easing.inOut(Easing.quad),
+            useNativeDriver: true,
+          }),
+        ]),
+      )
+      ciclo.start()
+    })
+    return () => {
+      vivo = false
+      ciclo?.stop()
+    }
+  }, [])
+  return (
+    <Animated.View
+      style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent, opacity: pulso }}
+    />
+  )
+}
+
+/** Barra de progresso animada — mesma dos cartões ao vivo. */
+function BarraProgresso({ valor, cor }: { valor: number; cor: string }) {
+  const progresso = useRef(new Animated.Value(0)).current
+  useEffect(() => {
+    Animated.timing(progresso, {
+      toValue: valor,
+      duration: motion.slow * 2,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false, // anima width (layout)
+    }).start()
+  }, [valor])
+  return (
+    <View
+      style={{
+        flex: 1,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: colors.marqueeGlassStrong,
+        overflow: 'hidden',
+      }}
+    >
+      <Animated.View
+        style={{
+          height: '100%',
+          borderRadius: 2,
+          backgroundColor: cor,
+          width: progresso.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+        }}
+      />
+    </View>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+// Peças da folha
+// ─────────────────────────────────────────────────────────
 
 function PassoTimeline({
   passo,
@@ -647,25 +802,14 @@ function PassoTimeline({
   const { meta, estado } = passo
 
   const corCirculo =
-    estado === 'concluido'
-      ? colors.accent
-      : estado === 'atual'
-      ? meta.cor
-      : colors.canvasAlt
+    estado === 'concluido' ? colors.accent : estado === 'atual' ? meta.cor : colors.canvasAlt
   const corIcone =
-    estado === 'concluido'
-      ? colors.ink
-      : estado === 'atual'
-      ? colors.white
-      : colors.inkSoft
-  const corLinha =
-    estado === 'concluido' ? colors.accent : colors.line
-  const corTitulo =
-    estado === 'pendente' ? colors.inkSoft : colors.ink
+    estado === 'concluido' ? colors.ink : estado === 'atual' ? colors.white : colors.inkSoft
+  const corLinha = estado === 'concluido' ? colors.accent : colors.line
+  const corTitulo = estado === 'pendente' ? colors.inkSoft : colors.ink
   const pesoTitulo: '500' | '700' | '800' =
     estado === 'atual' ? '800' : estado === 'concluido' ? '700' : '500'
-  const iconeMostrar: ConsumerIconName =
-    estado === 'concluido' ? 'check' : meta.icone
+  const iconeMostrar: ConsumerIconName = estado === 'concluido' ? 'check' : meta.icone
 
   return (
     <View style={{ flexDirection: 'row', gap: 14 }}>
@@ -678,43 +822,23 @@ function PassoTimeline({
             backgroundColor: corCirculo,
             alignItems: 'center',
             justifyContent: 'center',
-            transform: [{ scale: estado === 'atual' ? 1.05 : 1 }],
           }}
         >
           <ConsumerIcon name={iconeMostrar} size={16} color={corIcone} strokeWidth={2.2} />
         </View>
         {!ultimo && (
           <View
-            style={{
-              width: 2,
-              flex: 1,
-              minHeight: 24,
-              marginTop: 4,
-              backgroundColor: corLinha,
-            }}
+            style={{ width: 2, flex: 1, minHeight: 22, marginTop: 4, backgroundColor: corLinha }}
           />
         )}
       </View>
 
-      <View style={{ flex: 1, paddingBottom: ultimo ? 0 : 18 }}>
-        <Text
-          style={{
-            fontSize: 14,
-            fontWeight: pesoTitulo,
-            color: corTitulo,
-          }}
-        >
+      <View style={{ flex: 1, paddingBottom: ultimo ? 0 : 16, paddingTop: 6 }}>
+        <Text style={{ fontSize: 14, fontWeight: pesoTitulo, color: corTitulo }}>
           {meta.rotuloLongo}
         </Text>
         {estado === 'atual' && (
-          <Text
-            style={{
-              fontSize: 12,
-              color: colors.inkMuted,
-              marginTop: 2,
-              fontWeight: '500',
-            }}
-          >
+          <Text style={{ fontSize: 12, color: colors.inkMuted, marginTop: 2, fontWeight: '500' }}>
             {meta.descricao}
           </Text>
         )}
@@ -744,16 +868,49 @@ function LinhaResumo({
         {rotulo}
       </Text>
       <Text
-        style={{
-          fontSize: destacado ? 16 : 14,
-          fontWeight: destacado ? '800' : '600',
-          color: colors.ink,
-        }}
+        style={{ fontSize: destacado ? 16 : 14, fontWeight: destacado ? '800' : '600', color: colors.ink }}
       >
         {valor}
       </Text>
     </View>
   )
+}
+
+function LinhaIcone({
+  icone,
+  texto,
+  forte = false,
+}: {
+  icone: ConsumerIconName
+  texto: string
+  forte?: boolean
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}>
+      <ConsumerIcon name={icone} size={16} color={forte ? colors.ink : colors.inkMuted} strokeWidth={2} />
+      <Text
+        style={{
+          fontSize: forte ? 14.5 : 13.5,
+          fontWeight: forte ? '700' : '500',
+          color: forte ? colors.ink : colors.inkMuted,
+        }}
+      >
+        {texto}
+      </Text>
+    </View>
+  )
+}
+
+/** "pix" → "Pix", "cartao_online" → "Cartão online", etc. */
+function rotuloPagamento(forma: string): string {
+  const mapa: Record<string, string> = {
+    pix: 'Pix',
+    dinheiro: 'Dinheiro',
+    cartao_maquininha: 'Cartão na entrega',
+    cartao_online: 'Cartão online',
+    cartao: 'Cartão',
+  }
+  return mapa[forma] ?? forma.replace(/_/g, ' ')
 }
 
 const DIAS_CURTOS_PT = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
@@ -772,27 +929,13 @@ function formatarAgendamentoBruto(
   return `${sem} ${dia}/${mes} às ${horaIni} — ${horaFim}`
 }
 
-function BotaoIconeCircular({
-  icone,
-  aoTocar,
-}: {
-  icone: ConsumerIconName
-  aoTocar: () => void
-}) {
-  return (
-    <TouchableOpacity
-      onPress={aoTocar}
-      activeOpacity={consumerDesign.opacity.pressedSoft}
-      style={{
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: colors.ink,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <ConsumerIcon name={icone} size={18} color={colors.accent} />
-    </TouchableOpacity>
-  )
+const estilos = {
+  microMudo: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: colors.marqueeInkMuted,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
+    flexShrink: 1,
+  },
 }

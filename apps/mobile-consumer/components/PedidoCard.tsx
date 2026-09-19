@@ -1,27 +1,43 @@
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, Text, Pressable } from 'react-native'
 import { router } from 'expo-router'
 import { formatarReais } from '@mallevo/lib'
-import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
-import { consumerDesign, softColor } from '@/lib/consumer-design'
-import { metaDoStatus, ehAtivo } from '@/lib/status-pedido'
+import { TijoloLoja } from '@/components/TijoloLoja'
+import { consumerDesign } from '@/lib/consumer-design'
+import { metaDoStatus } from '@/lib/status-pedido'
 
 /**
- * Card de pedido na lista. Pedidos ativos viram <Card variante="escuro">,
- * finalizados/cancelados ficam em <Card claro>.
+ * Card de pedido do HISTÓRICO — o recibo, na folha clara da tela de
+ * pedidos. Pedidos em andamento não usam este card: viram
+ * `CartaoPedidoVivo` na marquise.
+ *
+ * Mesma linguagem das fachadas do Início: superfície branca sem borda
+ * (elevação por luminosidade), raio 20, e a loja presente pela própria
+ * pele — o tijolo do logo (imagem, ou as iniciais em `accentInk` sobre o
+ * `accent` do tema da loja, na fonte de display dela). O resto é a voz da
+ * casa: nome, itens, total, data e o selo do desfecho.
  *
  * Spec: docs/system-design/consumer/04-componentes-dominio.md §5
  */
 
-const { colors } = consumerDesign
+const { colors, radius, shadow } = consumerDesign
+
+export interface LojaDoPedido {
+  id?: string
+  nome: string
+  slug?: string | null
+  logo_url?: string | null
+  /** `stores.theme` cru — o tijolo veste a pele da loja. */
+  theme?: unknown
+}
 
 export interface PedidoCardModel {
   id: string
   status: string
   total: number
   criado_em: string
-  stores: { nome: string } | null
+  stores: LojaDoPedido | null
   order_items: { nome: string; quantidade: number }[]
 }
 
@@ -30,17 +46,14 @@ interface Props {
   aoTocar?: () => void
 }
 
-function formatarData(iso: string) {
+/** "Hoje, 19:42" · "Ontem, 12:10" · "03 set, 20:15". */
+export function formatarData(iso: string) {
   const d = new Date(iso)
   const hoje = new Date()
   const ontem = new Date()
   ontem.setDate(ontem.getDate() - 1)
 
-  const hora = d.toLocaleTimeString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
+  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
   if (d.toDateString() === hoje.toDateString()) return `Hoje, ${hora}`
   if (d.toDateString() === ontem.toDateString()) return `Ontem, ${hora}`
   return `${d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}, ${hora}`
@@ -48,145 +61,75 @@ function formatarData(iso: string) {
 
 export function PedidoCard({ pedido, aoTocar }: Props) {
   const meta = metaDoStatus(pedido.status)
-  const ativo = ehAtivo(pedido.status)
-  const variante = ativo ? 'escuro' : 'claro'
-
-  const itensTexto = pedido.order_items
-    ?.map((i) => `${i.quantidade}× ${i.nome}`)
-    .join(', ') ?? ''
-
-  const corTitulo = ativo ? colors.white : colors.ink
-  const corSecundario = ativo ? colors.inkSoft : colors.inkMuted
-  const corMeta = ativo ? colors.inkSoft : colors.inkSoft
-  const corLinha = ativo ? colors.lineDark : colors.line
+  const itens =
+    pedido.order_items?.map((i) => `${i.quantidade}× ${i.nome}`).join(', ') ?? ''
 
   return (
-    <TouchableOpacity
+    <Pressable
       onPress={aoTocar ?? (() => router.push(`/pedido/${pedido.id}`))}
-      activeOpacity={consumerDesign.opacity.pressed}
-      style={{ marginBottom: 12 }}
+      accessibilityRole="button"
+      accessibilityLabel={`${pedido.stores?.nome ?? 'Loja'}, ${meta.rotuloCurto}, ${formatarReais(pedido.total)}. Ver detalhes`}
+      style={({ pressed }) => [
+        {
+          backgroundColor: colors.surface,
+          borderRadius: radius.md,
+          padding: 14,
+          transform: [{ scale: pressed ? 0.985 : 1 }],
+        },
+        shadow.soft,
+      ]}
     >
-      <Card variante={variante} raio="lg" preenchimento="md">
-        {/* Topo: ícone status + nome loja + chevron */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <View
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 22,
-              backgroundColor: softColor(meta.cor),
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <ConsumerIcon name={meta.icone} size={20} color={meta.cor} />
-          </View>
-
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: '700',
-                color: corTitulo,
-                letterSpacing: -0.2,
-              }}
-              numberOfLines={1}
-            >
-              {pedido.stores?.nome ?? 'Loja'}
-            </Text>
-            <Text
-              style={{
-                fontSize: 12,
-                color: corSecundario,
-                marginTop: 2,
-                fontWeight: '500',
-              }}
-              numberOfLines={1}
-            >
-              {itensTexto}
-            </Text>
-          </View>
-
-          <ConsumerIcon
-            name="chevron-right"
-            size={16}
-            color={ativo ? colors.inkSoft : colors.inkSoft}
-          />
-        </View>
-
-        {/* Barra de progresso (apenas em pedidos ativos não cancelados) */}
-        {ativo && (
-          <View
-            style={{
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: ativo
-                ? `rgba(255,255,255,0.12)`
-                : colors.canvasAlt,
-              overflow: 'hidden',
-              marginTop: 12,
-            }}
-          >
-            <View
-              style={{
-                height: '100%',
-                width: `${meta.progresso * 100}%`,
-                backgroundColor: meta.cor,
-                borderRadius: 2,
-              }}
-            />
-          </View>
-        )}
-
-        {/* Divider */}
-        <View
-          style={{
-            height: 1,
-            backgroundColor: corLinha,
-            marginVertical: 12,
-          }}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <TijoloLoja
+          nome={pedido.stores?.nome ?? 'Loja'}
+          logoUrl={pedido.stores?.logo_url}
+          theme={pedido.stores?.theme}
         />
 
-        {/* Rodapé: badge + total + data */}
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 8,
-          }}
-        >
-          <Badge
-            rotulo={meta.rotuloCurto}
-            cor={meta.cor}
-            icone={meta.icone}
-            tamanho="sm"
-          />
-
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: '800',
-                color: corTitulo,
-                letterSpacing: -0.2,
-              }}
-            >
-              {formatarReais(pedido.total)}
-            </Text>
-            <Text
-              style={{
-                fontSize: 11,
-                color: corMeta,
-                marginTop: 2,
-                fontWeight: '500',
-              }}
-            >
-              {formatarData(pedido.criado_em)}
-            </Text>
-          </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            style={{ fontSize: 15, fontWeight: '700', color: colors.ink, letterSpacing: -0.2 }}
+            numberOfLines={1}
+          >
+            {pedido.stores?.nome ?? 'Loja'}
+          </Text>
+          <Text
+            style={{ fontSize: 12.5, fontWeight: '500', color: colors.inkMuted, marginTop: 2 }}
+            numberOfLines={1}
+          >
+            {itens}
+          </Text>
         </View>
-      </Card>
-    </TouchableOpacity>
+
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={{ fontSize: 15, fontWeight: '800', color: colors.ink, letterSpacing: -0.2 }}>
+            {formatarReais(pedido.total)}
+          </Text>
+          <Text style={{ fontSize: 11, fontWeight: '500', color: colors.inkSoft, marginTop: 2 }}>
+            {formatarData(pedido.criado_em)}
+          </Text>
+        </View>
+      </View>
+
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginTop: 12,
+          paddingTop: 12,
+          borderTopWidth: 1,
+          borderTopColor: colors.line,
+        }}
+      >
+        <Badge rotulo={meta.rotuloCurto} cor={meta.cor} icone={meta.icone} tamanho="sm" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+          <Text style={{ fontSize: 12.5, fontWeight: '700', color: colors.inkMuted }}>
+            Ver detalhes
+          </Text>
+          <ConsumerIcon name="chevron-right" size={13} color={colors.inkMuted} strokeWidth={2.2} />
+        </View>
+      </View>
+    </Pressable>
   )
 }

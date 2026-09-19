@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, ScrollView, Alert } from 'react-native'
+import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native'
+import { StatusBar } from 'expo-status-bar'
 import { router } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
@@ -16,18 +17,36 @@ import {
   FormularioCartao,
   type DadosCartao,
 } from '@/components/FormularioCartao'
-import { HeaderTela } from '@/components/HeaderTela'
+import { GlowNeon, useFontesMarquee } from '@/components/home/Marquise'
+import { VidroFosco } from '@/components/home/VidroFosco'
+import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
+import { TijoloLoja } from '@/components/TijoloLoja'
 import { Botao } from '@/components/ui/Botao'
-import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { SecaoFolha, CartaoFolha } from '@/components/ui/SecaoFolha'
 import { consumerDesign } from '@/lib/consumer-design'
+import { useLuzDoDia } from '@/lib/luz-do-dia'
+import { usePreferencias } from '@/store/usePreferencias'
 import { enderecoPadrao } from '@/lib/enderecos'
 import { distanciaMetros, obterLocalizacaoAtual } from '@/lib/localizacao'
 import type { Endereco } from '@mallevo/types'
 
-const { colors } = consumerDesign
+/**
+ * Checkout ("Seu pedido") — a mesma arquitetura do Início: MARQUISE escura
+ * com a identidade do pedido (a loja, com a própria pele no tijolo, o que
+ * vai e a promessa de entrega acesa em accent), FOLHA clara (vidro fosco +
+ * luz do dia) com itens, endereço, pagamento, observações e resumo em
+ * letreiros da casa (`SecaoFolha`). CTA flutuante no pé.
+ *
+ * Toda a lógica de pagamento (gateway-only, aviso de distância, trava de
+ * reentrada, fluxos cartão/Pix) é a mesma de antes.
+ *
+ * Spec: docs/system-design/consumer/07-telas.md §9
+ */
+
+const { colors, radius, shadow } = consumerDesign
 
 // Gateway-only (política Mallevo): pagamento sempre via Pagar.me.
 // Dinheiro/maquininha removidos do mobile + storefront. As flags
@@ -63,6 +82,9 @@ export default function TelaCheckout() {
 
   const { consumer } = useAuthStore()
   const { setPedidoAtivo } = useOrderStore()
+  const fontes = useFontesMarquee()
+  const luzAtiva = usePreferencias((s) => s.luzDoDia)
+  const luz = useLuzDoDia(luzAtiva)
 
   const [loja, setLoja] = useState<any>(null)
   const [enderecoSelecionado, setEnderecoSelecionado] =
@@ -95,7 +117,7 @@ export default function TelaCheckout() {
       const { data } = await supabase
         .from('stores')
         .select(
-          'id, nome, taxa_entrega, aceita_pix, aceita_cartao_online'
+          'id, nome, taxa_entrega, tempo_entrega, aceita_pix, aceita_cartao_online, logo_url, theme'
         )
         .eq('id', store_id!)
         .single()
@@ -335,19 +357,87 @@ export default function TelaCheckout() {
     )
   }
 
+  const qtdTotal = itens.reduce((a, i) => a + i.quantidade, 0)
+  const freteGratis = store_taxa_entrega === 0
+
+  const marquise = (
+    <View
+      style={{
+        backgroundColor: colors.marquee,
+        paddingTop: insets.top + 10,
+        // 24 extras ficam escondidos atrás da folha que sobe por cima.
+        paddingBottom: 48,
+        overflow: 'hidden',
+      }}
+    >
+      <GlowNeon />
+      <View style={{ paddingHorizontal: 24 }}>
+        <BotaoVoltar />
+
+        <Text style={[estilos.microMudo, { marginTop: 24 }]}>Seu pedido em</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 10 }}>
+          <TijoloLoja
+            nome={store_nome ?? 'Loja'}
+            logoUrl={loja?.logo_url}
+            theme={loja?.theme}
+            tamanho={52}
+          />
+          <View style={{ flex: 1 }}>
+            <Text
+              style={[
+                fontes.statement,
+                { fontSize: 24, lineHeight: 28, color: colors.white, letterSpacing: -0.5 },
+              ]}
+              numberOfLines={2}
+            >
+              {store_nome}
+            </Text>
+            {itens.length > 0 && (
+              <Text
+                style={{ fontSize: 13.5, fontWeight: '500', color: colors.marqueeInkSoft, marginTop: 3 }}
+                numberOfLines={1}
+              >
+                {qtdTotal} {qtdTotal === 1 ? 'item' : 'itens'}
+                {ehAgendamento
+                  ? ' · atendimento na loja'
+                  : ` · ${freteGratis ? 'Frete grátis' : `Frete ${formatarReais(store_taxa_entrega)}`}`}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        {/* A promessa acesa: quanto tempo até chegar. */}
+        {!ehAgendamento && itens.length > 0 && loja?.tempo_entrega ? (
+          <Text
+            style={[
+              fontes.acento,
+              { fontSize: 20, lineHeight: 26, color: colors.accent, letterSpacing: -0.3, marginTop: 16 },
+            ]}
+          >
+            chega em cerca de {loja.tempo_entrega} min.
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  )
+
   if (itens.length === 0) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-        <HeaderTela variante="voltar" titulo="Seu pedido" />
-        <EmptyState
-          icone="bag"
-          titulo="Carrinho vazio"
-          descricao="Adicione itens para fazer um pedido."
-          acao={{
-            label: 'Voltar às lojas',
-            aoTocar: () => router.back(),
-          }}
-        />
+        <StatusBar style="light" animated />
+        {marquise}
+        <View style={{ flex: 1, marginTop: -24, backgroundColor: colors.canvas, borderTopLeftRadius: radius.md, borderTopRightRadius: radius.md, overflow: 'hidden' }}>
+          <VidroFosco luz={luz} />
+          <EmptyState
+            icone="bag"
+            titulo="Carrinho vazio"
+            descricao="Adicione itens para fazer um pedido."
+            acao={{
+              label: 'Voltar às lojas',
+              aoTocar: () => router.back(),
+            }}
+          />
+        </View>
       </View>
     )
   }
@@ -362,216 +452,155 @@ export default function TelaCheckout() {
     return `Gerar Pix de ${formatarReais(total())}`
   })()
 
-  const qtdTotal = itens.reduce((a, i) => a + i.quantidade, 0)
-
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-      <HeaderTela variante="voltar" titulo="Seu pedido" />
+      <StatusBar style="light" animated />
+
+      {/* Céu atrás do overscroll superior (iOS rubber-band). */}
+      <View
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 420, backgroundColor: colors.marquee }}
+      />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
       >
-        {/* Loja */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 4 }}>
-          <Text
-            style={{
-              fontSize: 11,
-              fontWeight: '700',
-              color: colors.inkSoft,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              marginBottom: 4,
-            }}
-          >
-            Pedido em
-          </Text>
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: '800',
-              color: colors.ink,
-              letterSpacing: -0.3,
-            }}
-          >
-            {store_nome}
-          </Text>
-        </View>
+        {marquise}
 
-        {/* Itens */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: '700',
-              color: colors.inkMuted,
-              letterSpacing: 0.5,
-              textTransform: 'uppercase',
-              marginBottom: 12,
-            }}
-          >
-            Seus itens
-          </Text>
-          <Card preenchimento="sm" sombra="soft">
-            {itens.map((item) => (
-              <ItemCarrinhoCard key={item.linha_id} item={item} />
-            ))}
-          </Card>
-        </View>
+        {/* ── Folha ── */}
+        <View
+          style={{
+            flex: 1,
+            marginTop: -24,
+            backgroundColor: colors.canvas,
+            borderTopLeftRadius: radius.md,
+            borderTopRightRadius: radius.md,
+            paddingTop: 30,
+            paddingBottom: 140 + insets.bottom,
+            overflow: 'hidden',
+            gap: 28,
+          }}
+        >
+          <VidroFosco luz={luz} />
 
-        {ehAgendamento && itemAgendamento?.agendamento && (
-          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: '700',
-                color: colors.inkMuted,
-                letterSpacing: 0.5,
-                textTransform: 'uppercase',
-                marginBottom: 12,
-              }}
-            >
-              Quando
-            </Text>
-            <Card preenchimento="md" sombra="soft">
-              <Text style={{ fontSize: 14, fontWeight: '700', color: colors.ink }}>
-                📅 {formatarAgendamento(itemAgendamento.agendamento)}
+          {/* Itens */}
+          <SecaoFolha
+            sobrelinha="O que vai"
+            titulo="Seus itens"
+            direita={
+              <Text style={{ fontSize: 11, fontWeight: '700', letterSpacing: 0.8, color: colors.inkSoft }}>
+                {qtdTotal} {qtdTotal === 1 ? 'ITEM' : 'ITENS'}
               </Text>
-            </Card>
-          </View>
-        )}
-
-        {ehAgendamento && (
-          <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-            <Text
-              style={{
-                fontSize: 12,
-                fontWeight: '700',
-                color: colors.inkMuted,
-                letterSpacing: 0.5,
-                textTransform: 'uppercase',
-                marginBottom: 12,
-              }}
-            >
-              Local
-            </Text>
-            <Card preenchimento="md" sombra="soft">
-              <Text style={{ fontSize: 14, fontWeight: '600', color: colors.ink }}>
-                {store_nome}
-              </Text>
-              <Text style={{ fontSize: 12, color: colors.inkMuted, marginTop: 4 }}>
-                Atendimento no estabelecimento.
-              </Text>
-            </Card>
-          </View>
-        )}
-
-        {!ehAgendamento && (
-          <SeletorEndereco
-            enderecos={consumer?.enderecos ?? []}
-            selecionado={enderecoSelecionado}
-            onSelecionar={(end) => {
-              setEnderecoSelecionado(end)
-              // Endereço novo, pergunta nova: a confirmação valia para o
-              // anterior.
-              confirmouDistancia.current = false
-            }}
-          />
-        )}
-
-        {loja && (
-          <SeletorPagamento
-            loja={loja}
-            selecionado={formaPagamento}
-            onSelecionar={setFormaPagamento}
-          />
-        )}
-
-        {formaPagamento === 'online_cartao' && (
-          <>
-            <FormularioCartao onChange={setDadosCartao} />
-            <SeletorParcelas
-              total={total()}
-              selecionado={installments}
-              onSelecionar={setInstallments}
-            />
-          </>
-        )}
-
-
-        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-          <Input
-            rotulo="Observações do pedido (opcional)"
-            valor={observacoes}
-            aoMudar={setObservacoes}
-            placeholder="Ex: interfone 201, deixar com porteiro..."
-            multilinha
-            maxLength={200}
-          />
-        </View>
-
-        {/* Resumo */}
-        <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: '700',
-              color: colors.inkMuted,
-              letterSpacing: 0.5,
-              textTransform: 'uppercase',
-              marginBottom: 12,
-            }}
+            }
           >
-            Resumo
-          </Text>
-          <Card preenchimento="md" sombra="soft">
-            <View style={{ gap: 8 }}>
-              <LinhaResumo
-                rotulo={`Subtotal (${qtdTotal} ${qtdTotal === 1 ? 'item' : 'itens'})`}
-                valor={formatarReais(subtotal())}
-              />
-              {!ehAgendamento && (
-                <LinhaResumo
-                  rotulo="Taxa de entrega"
-                  valor={
-                    store_taxa_entrega === 0
-                      ? 'Grátis'
-                      : formatarReais(store_taxa_entrega)
-                  }
-                  valorAccent={store_taxa_entrega === 0}
+            <CartaoFolha padding={0}>
+              {itens.map((item, idx) => (
+                <ItemCarrinhoCard
+                  key={item.linha_id}
+                  item={item}
+                  ultimo={idx === itens.length - 1}
                 />
-              )}
-              <View
-                style={{
-                  height: 1,
-                  backgroundColor: colors.line,
-                  marginVertical: 4,
-                }}
+              ))}
+            </CartaoFolha>
+          </SecaoFolha>
+
+          {ehAgendamento && itemAgendamento?.agendamento && (
+            <SecaoFolha sobrelinha="Quando" titulo="Seu horário">
+              <CartaoFolha>
+                <LinhaIcone
+                  icone="clock"
+                  texto={formatarAgendamento(itemAgendamento.agendamento)}
+                  forte
+                />
+                <LinhaIcone icone="store" texto={`${store_nome} · atendimento no estabelecimento`} />
+              </CartaoFolha>
+            </SecaoFolha>
+          )}
+
+          {!ehAgendamento && (
+            <SeletorEndereco
+              enderecos={consumer?.enderecos ?? []}
+              selecionado={enderecoSelecionado}
+              onSelecionar={(end) => {
+                setEnderecoSelecionado(end)
+                // Endereço novo, pergunta nova: a confirmação valia para o
+                // anterior.
+                confirmouDistancia.current = false
+              }}
+            />
+          )}
+
+          {loja && (
+            <SeletorPagamento
+              loja={loja}
+              selecionado={formaPagamento}
+              onSelecionar={setFormaPagamento}
+            />
+          )}
+
+          {formaPagamento === 'online_cartao' && (
+            <>
+              <FormularioCartao onChange={setDadosCartao} />
+              <SeletorParcelas
+                total={total()}
+                selecionado={installments}
+                onSelecionar={setInstallments}
               />
-              <LinhaResumo
-                rotulo="Total"
-                valor={formatarReais(total())}
-                destacado
-              />
-            </View>
-          </Card>
+            </>
+          )}
+
+          <SecaoFolha sobrelinha="Algum recado?" titulo="Observações">
+            <Input
+              rotulo="Para a loja ou o entregador (opcional)"
+              valor={observacoes}
+              aoMudar={setObservacoes}
+              placeholder="Ex: interfone 201, deixar com porteiro..."
+              multilinha
+              maxLength={200}
+            />
+          </SecaoFolha>
+
+          {/* Resumo */}
+          <SecaoFolha sobrelinha="Fechando a conta" titulo="Resumo">
+            <CartaoFolha>
+              <View style={{ gap: 8 }}>
+                <LinhaResumo
+                  rotulo={`Subtotal (${qtdTotal} ${qtdTotal === 1 ? 'item' : 'itens'})`}
+                  valor={formatarReais(subtotal())}
+                />
+                {!ehAgendamento && (
+                  <LinhaResumo
+                    rotulo="Taxa de entrega"
+                    valor={freteGratis ? 'Grátis' : formatarReais(store_taxa_entrega)}
+                    valorAccent={freteGratis}
+                  />
+                )}
+                <View style={{ height: 1, backgroundColor: colors.line, marginVertical: 4 }} />
+                <LinhaResumo rotulo="Total" valor={formatarReais(total())} destacado />
+              </View>
+            </CartaoFolha>
+          </SecaoFolha>
         </View>
       </ScrollView>
 
-      {/* CTA fixo */}
+      {/* CTA flutuante — surface sem risco, só sombra. */}
       <View
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          backgroundColor: colors.surface,
-          borderTopWidth: 1,
-          borderTopColor: colors.line,
-          paddingHorizontal: 16,
-          paddingTop: 12,
-          paddingBottom: insets.bottom + 12,
-        }}
+        style={[
+          {
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            backgroundColor: colors.surface,
+            borderTopLeftRadius: radius.md,
+            borderTopRightRadius: radius.md,
+            paddingHorizontal: 16,
+            paddingTop: 12,
+            paddingBottom: insets.bottom + 12,
+          },
+          shadow.floating,
+        ]}
       >
         <Botao
           label={labelBotao}
@@ -582,6 +611,59 @@ export default function TelaCheckout() {
           carregando={processando}
         />
       </View>
+    </View>
+  )
+}
+
+// ─────────────────────────────────────────────────────────
+// Peças
+// ─────────────────────────────────────────────────────────
+
+function BotaoVoltar() {
+  return (
+    <TouchableOpacity
+      onPress={() => router.back()}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
+      accessibilityRole="button"
+      accessibilityLabel="Voltar"
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: colors.marqueeGlass,
+        borderWidth: 1,
+        borderColor: colors.marqueeLine,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <ConsumerIcon name="chevron-left" size={18} color={colors.white} strokeWidth={2.2} />
+    </TouchableOpacity>
+  )
+}
+
+function LinhaIcone({
+  icone,
+  texto,
+  forte = false,
+}: {
+  icone: ConsumerIconName
+  texto: string
+  forte?: boolean
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }}>
+      <ConsumerIcon name={icone} size={16} color={forte ? colors.ink : colors.inkMuted} strokeWidth={2} />
+      <Text
+        style={{
+          flex: 1,
+          fontSize: forte ? 14.5 : 13.5,
+          fontWeight: forte ? '700' : '500',
+          color: forte ? colors.ink : colors.inkMuted,
+        }}
+      >
+        {texto}
+      </Text>
     </View>
   )
 }
@@ -619,4 +701,14 @@ function LinhaResumo({
       </Text>
     </View>
   )
+}
+
+const estilos = {
+  microMudo: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: colors.marqueeInkMuted,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
+  },
 }

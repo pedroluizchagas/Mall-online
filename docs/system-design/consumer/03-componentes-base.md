@@ -892,3 +892,25 @@ export function LoadingState({
 
 - [`04-componentes-dominio.md`](./04-componentes-dominio.md) consome estes primitivos pra construir LojaCard, ProdutoCard, PedidoCard, etc.
 - [`06-status-pedido.md`](./06-status-pedido.md) é o módulo que vai abastecer `<Badge>` em PedidoCard e na timeline.
+
+---
+
+## 8. `SecaoFolha` + `CartaoFolha` (`components/ui/SecaoFolha.tsx`, 2026-09-12)
+
+O letreiro de corredor da home aplicado a qualquer FOLHA clara. `SecaoFolha` = sobrelinha micro caps `inkSoft` (10.5/700, tracking 1.2) + título em `useFontesMarquee().letreiro` 21 (`ink`, tracking −0.4), `direita?` alinhado à base do título, conteúdo no gutter 16. `CartaoFolha` = `surface` **sem borda** (elevação por luminosidade), `radius.md`, `shadow.soft`, `padding` 16 (0 para listas com divisores próprios; `overflow: hidden` recorta no raio). Usados por Pedidos, Acompanhamento, Perfil e Checkout (inclusive nos seletores do checkout). **Regra**: uma tela que precisa de um letreiro usa este — não redesenha o rótulo.
+
+```tsx
+<SecaoFolha sobrelinha="Fechando a conta" titulo="Resumo" direita={<Text>…</Text>}>
+  <CartaoFolha>…</CartaoFolha>
+</SecaoFolha>
+```
+
+## 9. `TijoloLoja` (`components/TijoloLoja.tsx`, 2026-09-12)
+
+O tijolo do logo de uma loja com a pele dela (o mesmo das fachadas do Início): `logoUrl` sobre `surface` da loja com fio `line`, ou duas iniciais em `accentInk` sobre o `accent` do tema (`useStoreDesignFromTheme(theme)`), na fonte de display do arquétipo. `tamanho` default 46, `radius.sm`. Usado no recibo (PedidoCard, Acompanhamento) e na marquise do Checkout.
+
+## 10. `FolhaModal` (`components/ui/FolhaModal.tsx`, revisto 2026-09-12)
+
+Folha que sobe pela base (endereços do checkout e do perfil, "Entregar em" da marquise). Fala a voz da casa: alça, `sobrelinha?` em micro caps `inkSoft`, título em `useFontesMarquee().letreiro` 22, **sem fio** abaixo do cabeçalho; `radius.lg` no topo; `fundo` `surface` (formulários) ou `canvas` (listas de cartões claros sem borda); conteúdo no gutter 16; véu tocável fecha; `maxHeight` 85%.
+
+O **"Entregar em"** do Início (`components/home/SeletorEnderecoHome.tsx`) usa `fundo="canvas"` + sobrelinha "Onde você está": uma linha explicando que a escolha vira o padrão; cada endereço é um cartão `surface` sem borda (`shadow.soft`) com moeda `ink` + ícone do tipo em accent, apelido (ou `rotuloPorTipo`), rua e bairro; o atual leva fio `accentRing` 1.5, selo "ATUAL" accent e a moeda de check `ink`/accent; os outros, chevron. O último item é a linha tracejada "Novo endereço" (mesma gramática do slot "Descobrir"), que troca a folha para `surface` com o `FormularioEndereco`.

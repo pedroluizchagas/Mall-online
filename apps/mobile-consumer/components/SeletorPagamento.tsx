@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity } from 'react-native'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
+import { SecaoFolha } from '@/components/ui/SecaoFolha'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
 
 const { colors, radius } = consumerDesign
@@ -51,20 +52,7 @@ export function SeletorPagamento({ loja, selecionado, onSelecionar }: Props) {
   const opcoesDisponiveis = OPCOES.filter((op) => op.condicao(loja))
 
   return (
-    <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: '700',
-          color: colors.inkMuted,
-          letterSpacing: 0.5,
-          textTransform: 'uppercase',
-          marginBottom: 12,
-        }}
-      >
-        Pagamento
-      </Text>
-
+    <SecaoFolha sobrelinha="Como você paga" titulo="Pagamento">
       <View style={{ gap: 8 }}>
         {opcoesDisponiveis.map((opcao) => {
           const ativo = selecionado === opcao.id
@@ -142,6 +130,6 @@ export function SeletorPagamento({ loja, selecionado, onSelecionar }: Props) {
           </Text>
         )}
       </View>
-    </View>
+    </SecaoFolha>
   )
 }

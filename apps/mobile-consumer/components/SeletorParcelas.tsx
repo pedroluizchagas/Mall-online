@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native'
 import { formatarReais } from '@mallevo/lib'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
+import { SecaoFolha } from '@/components/ui/SecaoFolha'
 import { consumerDesign, softColor } from '@/lib/consumer-design'
 
 const { colors, radius } = consumerDesign
@@ -39,20 +40,7 @@ export function SeletorParcelas({
   })
 
   return (
-    <View style={{ paddingHorizontal: 24, paddingTop: 24 }}>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: '700',
-          color: colors.inkMuted,
-          letterSpacing: 0.5,
-          textTransform: 'uppercase',
-          marginBottom: 12,
-        }}
-      >
-        Parcelamento
-      </Text>
-
+    <SecaoFolha sobrelinha="Em quantas vezes" titulo="Parcelamento">
       <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 260 }}>
         <View style={{ gap: 8 }}>
           {opcoes.map((op) => {
@@ -136,6 +124,6 @@ export function SeletorParcelas({
       >
         Valores indicativos. O valor final pode variar conforme o emissor do cartão.
       </Text>
-    </View>
+    </SecaoFolha>
   )
 }

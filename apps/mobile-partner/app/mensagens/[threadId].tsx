@@ -151,7 +151,7 @@ export default function TelaConversa() {
                 </Text>
                 <Text
                   style={{
-                    color: minha ? '#8B8E94' : colors.inkSoft,
+                    color: minha ? colors.inkSoft : colors.inkSoft,
                     fontSize: typography.micro.size,
                     marginTop: 3,
                     textAlign: 'right',

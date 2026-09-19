@@ -107,7 +107,7 @@ export function CameraCaptura({
             <Text style={{ color: colors.white, fontSize: typography.h3.size, fontWeight: '700', marginTop: spacing.md, textAlign: 'center' }}>
               Precisamos da câmera
             </Text>
-            <Text style={{ color: '#A4A7AD', textAlign: 'center', marginTop: 6, marginBottom: spacing.xl }}>
+            <Text style={{ color: colors.marqueeInkSoft, textAlign: 'center', marginTop: 6, marginBottom: spacing.xl }}>
               Para fotografar e gravar vídeos da sua loja.
             </Text>
             {semPermissao ? (

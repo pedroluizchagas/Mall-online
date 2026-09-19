@@ -8,7 +8,9 @@ import {
   RefreshControl,
   Switch,
 } from 'react-native'
-import { router } from 'expo-router'
+import { router, useFocusEffect } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useCartStore } from '@/store/useCartStore'
@@ -20,12 +22,24 @@ import { EditarPerfil } from '@/components/EditarPerfil'
 import { AvatarPerfil } from '@/components/AvatarPerfil'
 import { garantirConsumer } from '@/lib/perfil'
 import { abrirLink, URL_TERMOS, URL_PRIVACIDADE } from '@/lib/links'
-import { HeaderTela } from '@/components/HeaderTela'
-import { Card } from '@/components/ui/Card'
+import { GlowNeon, useFontesMarquee } from '@/components/home/Marquise'
+import { VidroFosco } from '@/components/home/VidroFosco'
 import { Botao } from '@/components/ui/Botao'
+import { SecaoFolha, CartaoFolha } from '@/components/ui/SecaoFolha'
 import { ConsumerIcon, ConsumerIconName } from '@/components/ConsumerIcon'
 import { consumerDesign } from '@/lib/consumer-design'
+import { useLuzDoDia } from '@/lib/luz-do-dia'
+import { mascaraTelefone } from '@/lib/validacao'
 import { usePreferencias } from '@/store/usePreferencias'
+
+/**
+ * Perfil — a mesma arquitetura do Início: MARQUISE escura com a identidade
+ * e as coleções (lojas seguidas, favoritos, endereços — moedas de vidro
+ * com número), FOLHA clara (vidro fosco + luz do dia) com conta, aparência
+ * e ajuda em cartões sem borda sob letreiros.
+ *
+ * Spec: docs/system-design/consumer/07-telas.md §7
+ */
 
 const { colors, radius, spacing } = consumerDesign
 
@@ -38,6 +52,18 @@ export default function TelaPerfil() {
   const [secaoAtiva, setSecaoAtiva] = useState<SecaoAtiva>(null)
   const luzDoDia = usePreferencias((s) => s.luzDoDia)
   const setLuzDoDia = usePreferencias((s) => s.setLuzDoDia)
+  const luz = useLuzDoDia(luzDoDia)
+  const insets = useSafeAreaInsets()
+  const fontes = useFontesMarquee()
+
+  // A marquise é escura: status bar clara só enquanto a aba está em foco.
+  const [focado, setFocado] = useState(false)
+  useFocusEffect(
+    useCallback(() => {
+      setFocado(true)
+      return () => setFocado(false)
+    }, []),
+  )
   const [atualizando, setAtualizando] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
 
@@ -148,238 +174,302 @@ export default function TelaPerfil() {
   const qtdEnderecos = consumer?.enderecos?.length ?? 0
   const qtdSeguindo = useTotalSeguidas()
   const qtdFavoritos = useTotalFavoritos()
+  const contato = consumer?.telefone
+    ? mascaraTelefone(consumer.telefone)
+    : (user?.email ?? '')
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-      <HeaderTela variante="simples" titulo="Perfil" />
+      {focado && <StatusBar style="light" animated />}
+
+      {/* Céu atrás do overscroll superior (iOS rubber-band). */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 420,
+          backgroundColor: colors.marquee,
+        }}
+      />
 
       <ScrollView
-        contentContainerStyle={{ paddingBottom: spacing.tabBarHeight }}
+        contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={
           <RefreshControl
             refreshing={atualizando}
             onRefresh={onRefresh}
-            tintColor={colors.ink}
+            tintColor={colors.white}
           />
         }
       >
-        {/* Card de identidade */}
-        <View style={{ paddingHorizontal: 16 }}>
-          <Card variante="escuro" raio="lg" preenchimento="lg">
+        {/* ── Marquise: identidade + coleções ── */}
+        <View
+          style={{
+            backgroundColor: colors.marquee,
+            paddingTop: insets.top + 16,
+            // 24 extras ficam escondidos atrás da folha que sobe por cima.
+            paddingBottom: 48,
+            overflow: 'hidden',
+          }}
+        >
+          <GlowNeon />
+
+          <View style={{ paddingHorizontal: 24 }}>
+            <Text style={estilos.microMudo}>Meu perfil</Text>
+
             <View
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 14 }}
             >
-              <AvatarPerfil tamanho={56} />
+              <AvatarPerfil tamanho={68} corAro={colors.marquee} />
               <View style={{ flex: 1 }}>
                 <Text
-                  style={{
-                    fontSize: 18,
-                    fontWeight: '800',
-                    color: colors.white,
-                    letterSpacing: -0.3,
-                  }}
-                  numberOfLines={1}
+                  style={[
+                    fontes.statement,
+                    { fontSize: 24, lineHeight: 28, color: colors.white, letterSpacing: -0.5 },
+                  ]}
+                  numberOfLines={2}
                 >
                   {nomeExibido}
                 </Text>
                 <Text
                   style={{
-                    fontSize: 13,
-                    color: colors.inkSoft,
-                    marginTop: 2,
+                    fontSize: 13.5,
                     fontWeight: '500',
+                    color: colors.marqueeInkSoft,
+                    marginTop: 4,
                   }}
                   numberOfLines={1}
                 >
-                  {user?.email ?? ''}
+                  {contato}
                 </Text>
               </View>
             </View>
-          </Card>
-        </View>
+          </View>
 
-        {/* Conta */}
-        <Secao titulo="CONTA">
+          {/* Coleções: o que é seu no shopping — moedas de vidro. */}
           <View
             style={{
-              backgroundColor: colors.surface,
-              borderRadius: radius.lg,
-              borderWidth: 1,
-              borderColor: colors.line,
-              overflow: 'hidden',
+              flexDirection: 'row',
+              gap: 10,
+              paddingHorizontal: 16,
+              paddingTop: 22,
             }}
           >
-            <ItemPerfil
-              icone="pin"
-              rotulo="Endereços"
-              badge={String(qtdEnderecos)}
-              expandido={secaoAtiva === 'enderecos'}
-              aoTocar={() =>
-                setSecaoAtiva((s) => (s === 'enderecos' ? null : 'enderecos'))
-              }
-            />
-            <ItemPerfil
-              icone="edit"
-              rotulo="Editar perfil"
-              expandido={secaoAtiva === 'editar'}
-              aoTocar={() =>
-                setSecaoAtiva((s) => (s === 'editar' ? null : 'editar'))
-              }
-            />
-            <ItemPerfil
+            <MoedaColecao
               icone="users"
-              rotulo="Lojas que sigo"
-              badge={String(qtdSeguindo)}
+              numero={qtdSeguindo}
+              rotulo={qtdSeguindo === 1 ? 'Loja seguida' : 'Lojas seguidas'}
               aoTocar={() => router.push('/(tabs)/seguindo')}
             />
-            <ItemPerfil
+            <MoedaColecao
               icone="heart"
-              rotulo="Favoritos"
-              badge={String(qtdFavoritos)}
+              numero={qtdFavoritos}
+              rotulo={qtdFavoritos === 1 ? 'Favorito' : 'Favoritos'}
               aoTocar={() => router.push('/(tabs)/favoritos')}
             />
-            <ItemPerfil
-              icone="orders"
-              rotulo="Meus pedidos"
-              aoTocar={() => router.push('/(tabs)/pedidos')}
-              ultimo
+            <MoedaColecao
+              icone="pin"
+              numero={qtdEnderecos}
+              rotulo={qtdEnderecos === 1 ? 'Endereço' : 'Endereços'}
+              aoTocar={() => setSecaoAtiva((s) => (s === 'enderecos' ? null : 'enderecos'))}
+              ativo={secaoAtiva === 'enderecos'}
             />
           </View>
-        </Secao>
-
-        {/* Editor expandido */}
-        {secaoAtiva === 'editar' && (
-          <EditarPerfil onFechar={() => setSecaoAtiva(null)} />
-        )}
-
-        {/* Endereços expandido */}
-        {secaoAtiva === 'enderecos' && (
-          <GerenciarEnderecos enderecos={consumer?.enderecos ?? []} />
-        )}
-
-        {/* Início — aparência da home */}
-        <Secao titulo="INÍCIO">
-          <View
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: radius.lg,
-              borderWidth: 1,
-              borderColor: colors.line,
-              overflow: 'hidden',
-            }}
-          >
-            <ItemInterruptor
-              icone="spark"
-              rotulo="Luz do dia"
-              descricao="A folha do Início acompanha o sol de Divinópolis"
-              valor={luzDoDia}
-              aoMudar={setLuzDoDia}
-            />
-          </View>
-        </Secao>
-
-        {/* Ajuda */}
-        <Secao titulo="AJUDA">
-          <View
-            style={{
-              backgroundColor: colors.surface,
-              borderRadius: radius.lg,
-              borderWidth: 1,
-              borderColor: colors.line,
-              overflow: 'hidden',
-            }}
-          >
-            <ItemPerfil
-              icone="file"
-              rotulo="Termos de uso"
-              aoTocar={() => abrirLink(URL_TERMOS)}
-            />
-            <ItemPerfil
-              icone="shield"
-              rotulo="Política de privacidade"
-              aoTocar={() => abrirLink(URL_PRIVACIDADE)}
-              ultimo
-            />
-          </View>
-        </Secao>
-
-        {/* Sair */}
-        <View style={{ paddingHorizontal: 24, marginTop: 24 }}>
-          <Botao
-            label="Sair da conta"
-            variante="danger"
-            tamanho="md"
-            iconeEsquerda="logout"
-            onPress={handleSair}
-          />
         </View>
 
-        {/* Excluir conta — exigência de App Store e Play para app com
-            cadastro. Fica separado e discreto: é destrutivo e definitivo. */}
-        <View style={{ paddingHorizontal: 24, marginTop: 20 }}>
-          <TouchableOpacity
-            onPress={handleExcluirConta}
-            disabled={excluindo}
-            activeOpacity={consumerDesign.opacity.pressedSoft}
-            accessibilityRole="button"
-            style={{ alignItems: 'center', paddingVertical: 10 }}
-          >
-            <Text
-              style={{
-                fontSize: 13,
-                fontWeight: '600',
-                color: colors.inkMuted,
-                textDecorationLine: 'underline',
-              }}
-            >
-              {excluindo ? 'Excluindo conta...' : 'Excluir minha conta'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text
+        {/* ── Folha: conta, aparência, ajuda ── */}
+        <View
           style={{
-            fontSize: 11,
-            color: colors.inkSoft,
-            textAlign: 'center',
-            marginTop: 20,
-            letterSpacing: 0.3,
-            fontWeight: '500',
+            flex: 1,
+            marginTop: -24,
+            backgroundColor: colors.canvas,
+            borderTopLeftRadius: radius.md,
+            borderTopRightRadius: radius.md,
+            paddingTop: 30,
+            paddingBottom: spacing.tabBarHeight,
+            overflow: 'hidden',
+            gap: 28,
           }}
         >
-          Versão 1.0.0
-        </Text>
+          <VidroFosco luz={luz} />
+
+          <SecaoFolha sobrelinha="Seus dados" titulo="Conta">
+            <CartaoFolha padding={0}>
+              <ItemPerfil
+                icone="edit"
+                rotulo="Editar perfil"
+                expandido={secaoAtiva === 'editar'}
+                aoTocar={() =>
+                  setSecaoAtiva((s) => (s === 'editar' ? null : 'editar'))
+                }
+              />
+              <ItemPerfil
+                icone="pin"
+                rotulo="Endereços"
+                badge={String(qtdEnderecos)}
+                expandido={secaoAtiva === 'enderecos'}
+                aoTocar={() =>
+                  setSecaoAtiva((s) => (s === 'enderecos' ? null : 'enderecos'))
+                }
+              />
+              <ItemPerfil
+                icone="orders"
+                rotulo="Meus pedidos"
+                aoTocar={() => router.push('/(tabs)/pedidos')}
+                ultimo
+              />
+            </CartaoFolha>
+            {/* Expansões abrem logo abaixo do cartão, no mesmo lugar —
+                seja pelo item da lista ou pela moeda da marquise. */}
+            {secaoAtiva === 'editar' && (
+              <View style={{ marginTop: 12 }}>
+                <EditarPerfil onFechar={() => setSecaoAtiva(null)} />
+              </View>
+            )}
+            {secaoAtiva === 'enderecos' && (
+              <View style={{ marginTop: 12 }}>
+                <GerenciarEnderecos enderecos={consumer?.enderecos ?? []} />
+              </View>
+            )}
+          </SecaoFolha>
+
+          <SecaoFolha sobrelinha="Aparência" titulo="Início">
+            <CartaoFolha padding={0}>
+              <ItemInterruptor
+                icone="clock"
+                rotulo="Luz do dia"
+                descricao="A folha do Início acompanha o sol de Divinópolis"
+                valor={luzDoDia}
+                aoMudar={setLuzDoDia}
+              />
+            </CartaoFolha>
+          </SecaoFolha>
+
+          <SecaoFolha sobrelinha="Sobre o app" titulo="Ajuda">
+            <CartaoFolha padding={0}>
+              <ItemPerfil
+                icone="file"
+                rotulo="Termos de uso"
+                aoTocar={() => abrirLink(URL_TERMOS)}
+              />
+              <ItemPerfil
+                icone="shield"
+                rotulo="Política de privacidade"
+                aoTocar={() => abrirLink(URL_PRIVACIDADE)}
+                ultimo
+              />
+            </CartaoFolha>
+          </SecaoFolha>
+
+          {/* Sair */}
+          <View style={{ paddingHorizontal: 24 }}>
+            <Botao
+              label="Sair da conta"
+              variante="danger"
+              tamanho="md"
+              iconeEsquerda="logout"
+              onPress={handleSair}
+            />
+
+            {/* Excluir conta — exigência de App Store e Play para app com
+                cadastro. Fica separado e discreto: é destrutivo e definitivo. */}
+            <TouchableOpacity
+              onPress={handleExcluirConta}
+              disabled={excluindo}
+              activeOpacity={consumerDesign.opacity.pressedSoft}
+              accessibilityRole="button"
+              style={{ alignItems: 'center', paddingVertical: 10, marginTop: 16 }}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: '600',
+                  color: colors.inkMuted,
+                  textDecorationLine: 'underline',
+                }}
+              >
+                {excluindo ? 'Excluindo conta...' : 'Excluir minha conta'}
+              </Text>
+            </TouchableOpacity>
+
+            <Text
+              style={{
+                fontSize: 11,
+                color: colors.inkSoft,
+                textAlign: 'center',
+                marginTop: 12,
+                letterSpacing: 0.3,
+                fontWeight: '500',
+              }}
+            >
+              Versão 1.0.0
+            </Text>
+          </View>
+        </View>
       </ScrollView>
     </View>
   )
 }
 
-function Secao({
-  titulo,
-  children,
+// ─────────────────────────────────────────────────────────
+// Peças da marquise
+// ─────────────────────────────────────────────────────────
+
+/** Moeda de vidro com número grande — uma coleção do usuário no shopping. */
+function MoedaColecao({
+  icone,
+  numero,
+  rotulo,
+  aoTocar,
+  ativo = false,
 }: {
-  titulo: string
-  children: React.ReactNode
+  icone: ConsumerIconName
+  numero: number
+  rotulo: string
+  aoTocar: () => void
+  ativo?: boolean
 }) {
   return (
-    <View style={{ marginTop: 28 }}>
-      <Text
-        style={{
-          fontSize: 12,
-          fontWeight: '700',
-          color: colors.inkMuted,
-          letterSpacing: 0.5,
-          textTransform: 'uppercase',
-          paddingHorizontal: 24,
-          marginBottom: 10,
-        }}
-      >
-        {titulo}
-      </Text>
-      <View style={{ paddingHorizontal: 16 }}>{children}</View>
-    </View>
+    <TouchableOpacity
+      onPress={aoTocar}
+      activeOpacity={consumerDesign.opacity.pressedSoft}
+      accessibilityRole="button"
+      accessibilityLabel={`${numero} ${rotulo}`}
+      accessibilityState={{ expanded: ativo }}
+      style={{
+        flex: 1,
+        backgroundColor: ativo ? colors.marqueeGlassStrong : colors.marqueeGlass,
+        borderWidth: 1,
+        borderColor: ativo ? colors.accentRing : colors.marqueeLine,
+        borderRadius: radius.md,
+        paddingVertical: 14,
+        paddingHorizontal: 12,
+        gap: 8,
+      }}
+    >
+      <ConsumerIcon name={icone} size={16} color={colors.accent} strokeWidth={2} />
+      <View>
+        <Text
+          style={{ fontSize: 20, fontWeight: '800', color: colors.white, letterSpacing: -0.5 }}
+        >
+          {numero}
+        </Text>
+        <Text
+          style={{ fontSize: 11, fontWeight: '600', color: colors.marqueeInkSoft, marginTop: 1 }}
+          numberOfLines={1}
+        >
+          {rotulo}
+        </Text>
+      </View>
+    </TouchableOpacity>
   )
 }
+
+// ─────────────────────────────────────────────────────────
+// Peças da folha
+// ─────────────────────────────────────────────────────────
 
 /** Linha de preferência com interruptor — mesma anatomia do ItemPerfil. */
 function ItemInterruptor({
@@ -517,4 +607,14 @@ function ItemPerfil({
       />
     </TouchableOpacity>
   )
+}
+
+const estilos = {
+  microMudo: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: colors.marqueeInkMuted,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
+  },
 }

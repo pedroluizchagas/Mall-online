@@ -4,10 +4,20 @@ import type { Endereco, TipoEndereco } from '@mallevo/types'
 import { Botao } from '@/components/ui/Botao'
 import { Input } from '@/components/ui/Input'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
-import { consumerDesign, softColor } from '@/lib/consumer-design'
+import { consumerDesign } from '@/lib/consumer-design'
 import { iconePorTipo, rotuloPorTipo } from '@/lib/enderecos'
 
 const { colors, radius } = consumerDesign
+
+const estilos = {
+  rotulo: {
+    fontSize: 10.5,
+    fontWeight: '700' as const,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
+    color: colors.inkSoft,
+  },
+}
 
 const TIPOS: TipoEndereco[] = ['casa', 'trabalho', 'outro']
 
@@ -128,18 +138,9 @@ export function FormularioEndereco({
 
   return (
     <View style={{ gap: 12 }}>
-      {/* Tipo do local */}
+      {/* Tipo do local — chips da casa: ativo = ink com accent. */}
       <View style={{ gap: 8 }}>
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: '700',
-            color: colors.inkMuted,
-            letterSpacing: 0.3,
-          }}
-        >
-          Tipo de endereço
-        </Text>
+        <Text style={estilos.rotulo}>Tipo de endereço</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {TIPOS.map((t) => {
             const ativo = tipo === t
@@ -156,18 +157,14 @@ export function FormularioEndereco({
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 6,
-                  paddingVertical: 10,
-                  borderRadius: radius.md,
-                  borderWidth: ativo ? 1.5 : 1,
-                  borderColor: ativo ? colors.accent : colors.line,
-                  backgroundColor: ativo
-                    ? softColor(colors.accent)
-                    : colors.surface,
+                  height: 40,
+                  borderRadius: radius.pill,
+                  backgroundColor: ativo ? colors.ink : colors.surfaceMuted,
                 }}
               >
                 <ConsumerIcon
                   name={iconePorTipo(t)}
-                  size={16}
+                  size={15}
                   color={ativo ? colors.accent : colors.inkMuted}
                   strokeWidth={ativo ? 2.2 : 1.9}
                 />
@@ -192,6 +189,8 @@ export function FormularioEndereco({
         aoMudar={setApelido}
         placeholder="Ex.: Casa da praia, Escritório"
       />
+
+      <Text style={[estilos.rotulo, { marginTop: 6 }]}>Endereço</Text>
 
       <Input
         rotulo={buscandoCep ? 'CEP — buscando...' : 'CEP'}

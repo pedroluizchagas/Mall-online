@@ -59,7 +59,7 @@ export default function TelaPublicar() {
   }, [buscaProduto, buscando, lojaAtivaId])
 
   if (tenant && !tenantPodePublicar(tenant)) {
-    return <GatePublicacao />
+    return <GatePublicacao contexto="publicar" />
   }
 
   async function escolherDaGaleria() {
@@ -154,7 +154,7 @@ export default function TelaPublicar() {
         <Text style={{ color: colors.white, fontSize: typography.h2.size, fontWeight: '800', marginBottom: 6 }}>
           Publicado!
         </Text>
-        <Text style={{ color: '#A4A7AD', textAlign: 'center', marginBottom: spacing['3xl'] }}>
+        <Text style={{ color: colors.marqueeInkSoft, textAlign: 'center', marginBottom: spacing['3xl'] }}>
           Seu post já está no Explorar dos clientes.
         </Text>
         <TouchableOpacity
@@ -193,7 +193,7 @@ export default function TelaPublicar() {
           </Text>
           <SeletorLoja />
         </View>
-        <Text style={{ color: '#A4A7AD', paddingHorizontal: spacing.lg, marginTop: 4 }}>
+        <Text style={{ color: colors.marqueeInkSoft, paddingHorizontal: spacing.lg, marginTop: 4 }}>
           Fotos e vídeos de até 60s no Explorar dos seus clientes.
         </Text>
 
@@ -611,7 +611,7 @@ function OpcaoCaptura({
         <Text style={{ color: colors.white, fontSize: typography.h3.size, fontWeight: '700' }}>
           {titulo}
         </Text>
-        <Text style={{ color: '#A4A7AD', fontSize: typography.body.size }}>{descricao}</Text>
+        <Text style={{ color: colors.marqueeInkSoft, fontSize: typography.body.size }}>{descricao}</Text>
       </View>
     </TouchableOpacity>
   )
