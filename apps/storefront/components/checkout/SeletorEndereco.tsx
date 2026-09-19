@@ -306,7 +306,7 @@ export function SeletorEndereco({
                       type="button"
                       onClick={salvarEndereco}
                       disabled={salvando}
-                      className="h-12 flex-1 rounded-pill bg-accent text-sm font-extrabold text-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+                      className="h-12 flex-1 rounded-pill bg-accent text-sm font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
                     >
                       {salvando ? 'Salvando…' : 'Salvar'}
                     </button>

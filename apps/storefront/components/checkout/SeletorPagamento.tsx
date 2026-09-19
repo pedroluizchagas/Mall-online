@@ -109,7 +109,7 @@ export function SeletorPagamento({ loja, selecionado, onSelecionar }: Props) {
               <span
                 className={`flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 ${
                   ativo
-                    ? 'border-ink bg-ink text-accent'
+                    ? 'border-accent bg-accent text-accent-ink'
                     : 'border-line text-transparent'
                 }`}
               >

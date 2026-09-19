@@ -264,7 +264,7 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
         <button
           type="button"
           onClick={() => router.push('/')}
-          className="h-12 rounded-pill bg-accent px-6 text-sm font-extrabold text-ink"
+          className="h-12 rounded-pill bg-accent px-6 text-sm font-extrabold text-accent-ink"
         >
           Voltar às lojas
         </button>
@@ -442,7 +442,7 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
           type="button"
           onClick={handleFazerPedido}
           disabled={processando}
-          className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {processando ? 'Processando…' : labelBotao}
         </button>

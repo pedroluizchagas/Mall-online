@@ -6,12 +6,12 @@
   /* Paleta Mallevo padrão (fora de loja / loja sem preset v2). Os nomes das
      vars espelham a saída de toCssVars (@mallevo/lib) — uma loja com preset
      explícito sobrescreve estas no wrapper StoreThemeRoot. */
-  --bg: #f3f3f1;
+  --bg: #f1f1f3;
   --surface: #ffffff;
-  --surface-alt: #ecece9;
+  --surface-alt: #e7e7ea;
   --ink: #111216;
   --ink-muted: #5e6168;
-  --line: #e5e5e0;
+  --line: #e4e4e7;
   --accent: #d8ff3e;
   --accent-ink: #111216;
   --accent-soft: rgba(216, 255, 62, 0.18);
@@ -47,7 +47,8 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-jakarta), system-ui, sans-serif;
+  /* Corpo segue a pele da loja (StoreThemeRoot sobrescreve --font-body). */
+  font-family: var(--font-body), var(--font-jakarta), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

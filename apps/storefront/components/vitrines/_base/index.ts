@@ -1,0 +1,4 @@
+export { HeroLoja } from './HeroLoja'
+export { StatusAberto } from './StatusAberto'
+export { NavSecoes, idDaSecao, type SecaoNav } from './NavSecoes'
+export { FechoLoja } from './FechoLoja'

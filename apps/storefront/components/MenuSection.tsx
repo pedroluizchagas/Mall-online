@@ -12,10 +12,13 @@ import { ProductCard, type ProductCardModel } from '@/components/ProductCard'
  * Spec: docs/storefront/05-stage-3-storefront.md §3a (MenuSection).
  */
 export function MenuSection({
+  id,
   titulo,
   produtos,
   onSelect,
 }: {
+  /** Âncora da régua de seções (`NavSecoes`). */
+  id?: string
   titulo: string
   produtos: ProductCardModel[]
   /**
@@ -25,7 +28,7 @@ export function MenuSection({
   onSelect?: (id: string) => void
 }) {
   return (
-    <section className="mt-section px-screen-x">
+    <section id={id} className="mt-section scroll-mt-16 px-screen-x">
       <h2 className="mb-1 font-display text-display-sm font-extrabold tracking-tight text-ink">
         {titulo}
       </h2>

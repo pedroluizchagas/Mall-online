@@ -64,9 +64,9 @@ export function VerificarClient({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-surfaceDark px-6 pb-8 pt-24">
+    <div className="flex min-h-screen flex-col bg-canvas px-6 pb-8 pt-24">
       <div className="mb-8 flex flex-col items-center text-center">
-        <span className="mb-6 flex h-20 w-20 items-center justify-center rounded-pill bg-accent-soft text-accent">
+        <span className="mb-6 flex h-20 w-20 items-center justify-center rounded-pill bg-accent text-accent-ink">
           <svg
             width="36"
             height="36"
@@ -82,17 +82,17 @@ export function VerificarClient({
             <path d="M8.5 12.5l2.5 2.5 4.5-5" />
           </svg>
         </span>
-        <h1 className="mb-3 text-[26px] font-extrabold tracking-tight text-white">
+        <h1 className="mb-3 text-[26px] font-extrabold tracking-tight text-ink">
           Verifique seu email
         </h1>
-        <p className="text-[15px] font-medium leading-relaxed text-ink-soft">
+        <p className="text-[15px] font-medium leading-relaxed text-ink-muted">
           Enviamos um código de 6 dígitos para{' '}
-          <span className="font-bold text-white">{email}</span>
+          <span className="font-bold text-ink">{email}</span>
         </p>
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-bold text-ink-soft">
+        <label className="mb-1.5 block text-xs font-bold text-ink-muted">
           Código de verificação
         </label>
         <input
@@ -104,7 +104,7 @@ export function VerificarClient({
           }}
           placeholder="000000"
           maxLength={6}
-          className="h-12 w-full rounded-md border border-line-dark bg-surfaceDarkSoft px-4 text-center text-lg font-bold tracking-[0.4em] text-white outline-none placeholder:text-ink-soft focus:border-accent"
+          className="h-12 w-full rounded-md border border-line bg-surface px-4 text-center text-lg font-bold tracking-[0.4em] text-ink outline-none placeholder:text-ink-muted focus:border-accent"
         />
         {erro && (
           <p role="alert" className="mt-1.5 text-[13px] text-danger">
@@ -120,7 +120,7 @@ export function VerificarClient({
           type="button"
           onClick={handleVerificar}
           disabled={carregando || codigo.length !== 6}
-          className="h-14 w-full rounded-pill bg-accent text-[15px] font-extrabold text-ink transition-opacity hover:opacity-90 disabled:opacity-50"
+          className="h-14 w-full rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-50"
         >
           {carregando ? 'Verificando…' : 'Confirmar'}
         </button>
@@ -128,14 +128,14 @@ export function VerificarClient({
           type="button"
           onClick={handleReenviar}
           disabled={reenviando}
-          className="h-11 w-full rounded-pill text-sm font-extrabold text-ink-soft transition-opacity hover:opacity-80 disabled:opacity-50"
+          className="h-11 w-full rounded-pill text-sm font-extrabold text-ink-muted transition-opacity hover:opacity-80 disabled:opacity-50"
         >
           {reenviando ? 'Reenviando…' : 'Reenviar código'}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="h-11 w-full rounded-pill text-sm font-extrabold text-ink-soft transition-opacity hover:opacity-80"
+          className="h-11 w-full rounded-pill text-sm font-extrabold text-ink-muted transition-opacity hover:opacity-80"
         >
           Voltar e trocar email
         </button>

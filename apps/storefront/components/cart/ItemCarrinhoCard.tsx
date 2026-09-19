@@ -146,7 +146,7 @@ function BotaoQty({
     variante === 'danger'
       ? 'bg-danger/15 text-danger'
       : variante === 'primario'
-      ? 'bg-ink text-accent'
+      ? 'bg-accent text-accent-ink'
       : 'bg-surfaceMuted text-ink'
 
   return (

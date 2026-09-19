@@ -173,7 +173,7 @@ export function PedidoClient({
 
       {/* Status atual em destaque (card escuro) */}
       <div className="px-4">
-        <div className="rounded-lg bg-surfaceDark p-6">
+        <div className="rounded-lg bg-ink p-6 text-canvas">
           <div className="flex items-center gap-4">
             <span
               className={`flex h-14 w-14 items-center justify-center rounded-full ${corBgSoft(
@@ -183,13 +183,13 @@ export function PedidoClient({
               <IconeStatusSvg nome={meta.icone} size={26} strokeWidth={2} />
             </span>
             <div className="flex-1">
-              <p className="text-[11px] font-bold uppercase tracking-widest text-ink-soft">
+              <p className="text-[11px] font-bold uppercase tracking-widest opacity-70">
                 {isCancelado ? 'Pedido cancelado' : 'Status atual'}
               </p>
-              <p className="mt-1 text-xl font-extrabold tracking-tight text-white">
+              <p className="mt-1 text-xl font-extrabold tracking-tight">
                 {meta.rotuloLongo}
               </p>
-              <p className="mt-1 text-sm font-medium leading-relaxed text-ink-soft">
+              <p className="mt-1 text-sm font-medium leading-relaxed opacity-70">
                 {meta.descricao}
               </p>
             </div>
@@ -209,7 +209,7 @@ export function PedidoClient({
       {statusAtual === 'saiu_para_entrega' && courier && (
         <div className="px-4 pt-3">
           <div className="flex items-center gap-3 rounded-lg bg-surface p-4 shadow-soft">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-base font-extrabold text-ink">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-accent text-base font-extrabold text-accent-ink">
               {courier.nome?.charAt(0).toUpperCase() ?? '?'}
             </span>
             <div className="flex-1">
@@ -224,7 +224,7 @@ export function PedidoClient({
               <a
                 href={`tel:${courier.telefone}`}
                 aria-label={`Ligar para ${courier.nome ?? 'entregador'}`}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-ink text-accent"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-accent-ink"
               >
                 <svg
                   width="18"
@@ -353,7 +353,7 @@ export function PedidoClient({
           <button
             type="button"
             onClick={() => router.replace('/')}
-            className="h-14 w-full rounded-pill bg-accent text-[15px] font-extrabold text-ink transition-opacity hover:opacity-90"
+            className="h-14 w-full rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90"
           >
             Voltar ao início
           </button>

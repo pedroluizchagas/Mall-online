@@ -20,7 +20,7 @@ export default function EntrarPage({
   searchParams: { next?: string }
 }) {
   return (
-    <main className="bg-surfaceDark">
+    <main className="bg-canvas">
       <EntrarClient next={destinoSeguro(searchParams.next)} />
     </main>
   )

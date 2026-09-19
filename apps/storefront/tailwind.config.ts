@@ -1,7 +1,8 @@
 import type { Config } from 'tailwindcss'
 
 /**
- * Tokens traduzidos de apps/mobile-consumer/lib/consumer-design.ts.
+ * Tokens traduzidos de apps/mobile-consumer/lib/consumer-design.ts (neutros
+ * sincronizados em 2026-09-19: canvas #F1F1F3, canvasAlt #E7E7EA, line #E4E4E7).
  * Copiados e adaptados (não compartilhados): RN elevation/shadowOffset não
  * mapeia para web — convertido para CSS box-shadow. Storefront é uma superfície
  * isolada (D1/D5), com seu próprio bundle e tema.
@@ -26,13 +27,10 @@ const config: Config = {
         // Sem tema injetado, o fallback reproduz exatamente a paleta Mallevo
         // (ver app/globals.css :root). Lojas com preset v2 sobrescrevem as vars
         // no wrapper StoreThemeRoot. Ver docs/store-theme/04 §4.3.
-        canvas: 'var(--bg, #F3F3F1)',
-        canvasAlt: 'var(--surface-alt, #E8E8E3)',
+        canvas: 'var(--bg, #F1F1F3)',
+        canvasAlt: 'var(--surface-alt, #E7E7EA)',
         surface: 'var(--surface, #FFFFFF)',
-        surfaceMuted: 'var(--surface-alt, #ECECE9)',
-        // Superfícies escuras fixas (banner/auth) — fora do escopo de tema.
-        surfaceDark: '#2F3034',
-        surfaceDarkSoft: '#3A3B40',
+        surfaceMuted: 'var(--surface-alt, #E7E7EA)',
         // Texto
         ink: {
           DEFAULT: 'var(--ink, #111216)',
@@ -41,8 +39,7 @@ const config: Config = {
         },
         // Linhas
         line: {
-          DEFAULT: 'var(--line, #E5E5E0)',
-          dark: '#4A4B50',
+          DEFAULT: 'var(--line, #E4E4E7)',
         },
         // Accent (CTA primário) + cor de texto legível sobre ele (accent-ink).
         accent: {

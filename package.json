@@ -12,7 +12,8 @@
     "lint": "pnpm --filter '*' lint",
     "types:generate": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/types/src/supabase.ts",
     "db:push": "supabase db push",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "test": "pnpm -r --if-present test"
   },
   "devDependencies": {
     "supabase": "^1.200.0",

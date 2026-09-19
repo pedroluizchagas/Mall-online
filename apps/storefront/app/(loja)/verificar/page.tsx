@@ -17,7 +17,7 @@ export default function VerificarPage({
   searchParams: { email?: string; next?: string }
 }) {
   return (
-    <main className="bg-surfaceDark">
+    <main className="bg-canvas">
       <VerificarClient
         email={searchParams.email ?? ''}
         next={destinoSeguro(searchParams.next)}

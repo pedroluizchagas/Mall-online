@@ -17,7 +17,7 @@ import { createSupabaseClient } from '@/lib/supabase/client'
  */
 
 const inputBase =
-  'h-12 w-full rounded-md border border-line-dark bg-surfaceDarkSoft px-4 text-sm font-medium text-white outline-none placeholder:text-ink-soft focus:border-accent'
+  'h-12 w-full rounded-md border border-line bg-surface px-4 text-sm font-medium text-ink outline-none placeholder:text-ink-muted focus:border-accent'
 
 export function EntrarClient({ next }: { next: string }) {
   const router = useRouter()
@@ -93,9 +93,9 @@ export function EntrarClient({ next }: { next: string }) {
       email
     )}&next=${encodeURIComponent(next)}`
     return (
-      <div className="flex min-h-screen flex-col bg-surfaceDark px-6 pb-8 pt-24">
+      <div className="flex min-h-screen flex-col bg-canvas px-6 pb-8 pt-24">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-6 flex h-20 w-20 items-center justify-center rounded-pill bg-accent-soft text-accent">
+          <span className="mb-6 flex h-20 w-20 items-center justify-center rounded-pill bg-accent text-accent-ink">
             <svg
               width="36"
               height="36"
@@ -111,12 +111,12 @@ export function EntrarClient({ next }: { next: string }) {
               <path d="M8.5 12.5l2.5 2.5 4.5-5" />
             </svg>
           </span>
-          <h1 className="mb-3 text-[26px] font-extrabold tracking-tight text-white">
+          <h1 className="mb-3 text-[26px] font-extrabold tracking-tight text-ink">
             Confirme seu email
           </h1>
-          <p className="text-[15px] font-medium leading-relaxed text-ink-soft">
+          <p className="text-[15px] font-medium leading-relaxed text-ink-muted">
             Enviamos um link de confirmação para{' '}
-            <span className="font-bold text-white">{email}</span>. Após
+            <span className="font-bold text-ink">{email}</span>. Após
             confirmar, volte aqui e faça login.
           </p>
         </div>
@@ -130,13 +130,13 @@ export function EntrarClient({ next }: { next: string }) {
               setModo('entrar')
               setSenha('')
             }}
-            className="h-14 w-full rounded-pill bg-accent text-[15px] font-extrabold text-ink transition-opacity hover:opacity-90"
+            className="h-14 w-full rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90"
           >
             Ir para o login
           </button>
           <a
             href={verificarHref}
-            className="flex h-11 w-full items-center justify-center rounded-pill text-sm font-extrabold text-ink-soft transition-opacity hover:opacity-80"
+            className="flex h-11 w-full items-center justify-center rounded-pill text-sm font-extrabold text-ink-muted transition-opacity hover:opacity-80"
           >
             Tenho um código de verificação
           </a>
@@ -146,8 +146,8 @@ export function EntrarClient({ next }: { next: string }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-surfaceDark px-6 pb-8 pt-14">
-      <span className="mb-8 flex h-14 w-14 items-center justify-center rounded-pill bg-accent-soft text-accent">
+    <div className="flex min-h-screen flex-col bg-canvas px-6 pb-8 pt-14">
+      <span className="mb-8 flex h-14 w-14 items-center justify-center rounded-pill bg-accent text-accent-ink">
         <svg
           width="24"
           height="24"
@@ -164,10 +164,10 @@ export function EntrarClient({ next }: { next: string }) {
         </svg>
       </span>
 
-      <h1 className="mb-2.5 whitespace-pre-line text-[30px] font-extrabold leading-tight tracking-tight text-white">
+      <h1 className="mb-2.5 whitespace-pre-line text-[30px] font-extrabold leading-tight tracking-tight text-ink">
         {modo === 'entrar' ? 'Bem-vindo\nde volta' : 'Criar\nconta'}
       </h1>
-      <p className="mb-9 text-[15px] font-medium leading-relaxed text-ink-soft">
+      <p className="mb-9 text-[15px] font-medium leading-relaxed text-ink-muted">
         {modo === 'entrar'
           ? 'Acesse sua conta com email e senha.'
           : 'Preencha seus dados para começar.'}
@@ -175,7 +175,7 @@ export function EntrarClient({ next }: { next: string }) {
 
       <div className="flex flex-col gap-3.5">
         <div>
-          <label className="mb-1.5 block text-xs font-bold text-ink-soft">
+          <label className="mb-1.5 block text-xs font-bold text-ink-muted">
             Email
           </label>
           <input
@@ -192,7 +192,7 @@ export function EntrarClient({ next }: { next: string }) {
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-bold text-ink-soft">
+          <label className="mb-1.5 block text-xs font-bold text-ink-muted">
             Senha
           </label>
           <input
@@ -219,7 +219,7 @@ export function EntrarClient({ next }: { next: string }) {
           type="button"
           onClick={handleSubmit}
           disabled={carregando}
-          className="mt-2 h-14 w-full rounded-pill bg-accent text-[15px] font-extrabold text-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+          className="mt-2 h-14 w-full rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {carregando
             ? 'Aguarde…'
@@ -234,7 +234,7 @@ export function EntrarClient({ next }: { next: string }) {
             setModo(modo === 'entrar' ? 'cadastrar' : 'entrar')
             setErro(null)
           }}
-          className="h-11 w-full rounded-pill text-sm font-extrabold text-ink-soft transition-opacity hover:opacity-80"
+          className="h-11 w-full rounded-pill text-sm font-extrabold text-ink-muted transition-opacity hover:opacity-80"
         >
           {modo === 'entrar'
             ? 'Não tem conta? Criar conta'
@@ -244,7 +244,7 @@ export function EntrarClient({ next }: { next: string }) {
 
       <div className="flex-1" />
 
-      <p className="mt-8 text-center text-xs font-medium leading-relaxed text-ink-soft">
+      <p className="mt-8 text-center text-xs font-medium leading-relaxed text-ink-muted">
         Ao continuar, você concorda com os Termos de Uso e a Política de
         Privacidade da plataforma.
       </p>

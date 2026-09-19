@@ -40,7 +40,7 @@ function PassoLinha({
   const atual = estado === 'atual'
 
   const circuloClasse = concluido
-    ? 'bg-accent text-ink'
+    ? 'bg-accent text-accent-ink'
     : atual
     ? `${corBg(meta.cor)} text-white`
     : 'bg-canvasAlt text-ink-soft'

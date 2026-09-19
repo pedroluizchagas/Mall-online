@@ -130,7 +130,7 @@ export function PixClient({ orderId }: { orderId: string | null }) {
         <button
           type="button"
           onClick={() => router.replace('/')}
-          className="h-12 rounded-pill bg-accent px-6 text-sm font-extrabold text-ink"
+          className="h-12 rounded-pill bg-accent px-6 text-sm font-extrabold text-accent-ink"
         >
           Voltar ao início
         </button>
@@ -219,7 +219,7 @@ export function PixClient({ orderId }: { orderId: string | null }) {
             <button
               type="button"
               onClick={compartilharCodigo}
-              className="h-12 w-full rounded-pill bg-accent text-sm font-extrabold text-ink transition-opacity hover:opacity-90"
+              className="h-12 w-full rounded-pill bg-accent text-sm font-extrabold text-accent-ink transition-opacity hover:opacity-90"
             >
               Copiar / Compartilhar código
             </button>

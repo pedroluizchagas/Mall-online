@@ -6,6 +6,7 @@ import { MenuSection } from '@/components/MenuSection'
 import type { ProductCardModel } from '@/components/ProductCard'
 import { ProductModal, type LojaModal } from '@/components/store/ProductModal'
 import { TrocaLojaDialog } from '@/components/cart/TrocaLojaDialog'
+import { NavSecoes, idDaSecao } from '@/components/vitrines/_base'
 import type {
   SecaoCatalogo,
   ProdutoCatalogo,
@@ -54,14 +55,20 @@ export function CatalogClient({
   return (
     <>
       {secoes.length > 0 ? (
-        secoes.map((s) => (
-          <MenuSection
-            key={s.chave}
-            titulo={s.titulo}
-            produtos={s.produtos.map(toCardModel)}
-            onSelect={setSelecionadoId}
-          />
-        ))
+        <>
+          <NavSecoes secoes={secoes.map((s) => ({ chave: s.chave, titulo: s.titulo }))} />
+          <div id="catalogo" className="scroll-mt-16">
+            {secoes.map((s) => (
+              <MenuSection
+                key={s.chave}
+                id={idDaSecao(s.chave)}
+                titulo={s.titulo}
+                produtos={s.produtos.map(toCardModel)}
+                onSelect={setSelecionadoId}
+              />
+            ))}
+          </div>
+        </>
       ) : (
         <p className="px-6 py-12 text-center text-sm font-medium text-ink-muted">
           Esta loja ainda não tem produtos disponíveis.
