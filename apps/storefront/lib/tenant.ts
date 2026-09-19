@@ -20,7 +20,8 @@ export type Store = {
   telefone: string | null
   horarios: unknown | null
   taxa_entrega: number | null
-  tempo_entrega: string | null
+  /** Minutos (inteiro na view). */
+  tempo_entrega: number | null
   // Gateway-only (storefront): `aceita_dinheiro`/`aceita_cartao_maquininha`
   // permanecem no schema mas não são expostas aqui — política Mallevo,
   // ver docs/storefront/05-stage-3-storefront.md §3d.
@@ -70,13 +71,31 @@ export const buscarStore = cache(async (slug: string | null): Promise<Store | nu
 
   if (error || !data) return null
   const row = data as Partial<Store>
-  return {
+  return aplicarOverrideDePreview({
     ...row,
     categoria_slug: row.categoria_slug ?? null,
     theme: row.theme ?? null,
     conteudo: row.conteudo ?? null,
-  } as Store
+  } as Store)
 })
+
+/**
+ * QA/preview: o middleware só emite `x-preview-*` quando
+ * STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true. Troca a pele (preset) e/ou a
+ * categoria da loja carregada, para ver qualquer vitrine sobre qualquer
+ * catálogo real sem tocar no banco. Nada disso persiste.
+ */
+function aplicarOverrideDePreview(store: Store): Store {
+  const h = headers()
+  const preset = h.get('x-preview-preset')
+  const categoria = h.get('x-preview-categoria')
+  if (!preset && !categoria) return store
+  return {
+    ...store,
+    theme: preset ? { v: 2, preset } : store.theme,
+    categoria_slug: categoria ?? store.categoria_slug,
+  }
+}
 
 /**
  * Loja obrigatória: ausente → `notFound()` → app/not-found.tsx

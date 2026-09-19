@@ -49,6 +49,19 @@ export async function middleware(request: NextRequest) {
     requestHeaders.delete('x-store-slug')
   }
 
+  // Override de QA (`?preset=slice&categoria=alimentos-bebidas`): só quando
+  // STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true no ambiente (nunca em produção).
+  // Vira header porque layouts não recebem searchParams; `lib/tenant.ts`
+  // aplica sobre a loja carregada. Base do `/_preview` da Fase 3.
+  requestHeaders.delete('x-preview-preset')
+  requestHeaders.delete('x-preview-categoria')
+  if (process.env.STOREFRONT_ALLOW_PREVIEW_OVERRIDE === 'true') {
+    const preset = request.nextUrl.searchParams.get('preset')
+    const categoria = request.nextUrl.searchParams.get('categoria')
+    if (preset) requestHeaders.set('x-preview-preset', preset)
+    if (categoria) requestHeaders.set('x-preview-categoria', categoria)
+  }
+
   // --- Cookie dance @supabase/ssr (mesmo bloco de apps/web/middleware.ts) ---
   // Renova o token do consumer a cada request. Sessão escopada ao host
   // exato (D5). Diferença-chave vs. web: o storefront NÃO faz rewrite.
