@@ -115,7 +115,7 @@ export default function PaginaLoja() {
           taxa_entrega, tempo_entrega, telefone,
           aceita_pix, aceita_cartao_online,
           horarios, tenant_id, theme,
-          categoria:categories(slug)
+          categoria:categories!stores_categoria_id_fkey(slug)
         `)
         .eq('slug', slug)
         .eq('ativo', true)

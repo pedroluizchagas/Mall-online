@@ -84,7 +84,7 @@ export default async function PaginaAgenda({ searchParams }: Props) {
 
   const { data: store } = (await supabase
     .from('stores')
-    .select('id, nome, horarios, categoria:categories(id, slug, nome, icone)')
+    .select('id, nome, horarios, categoria:categories!stores_categoria_id_fkey(id, slug, nome, icone)')
     .eq('tenant_id', tenant.id)
     .single()) as { data: StoreComCategoria | null }
 

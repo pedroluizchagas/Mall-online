@@ -29,7 +29,7 @@ export default async function PaginaTipoDeLoja() {
 
   const { data: loja } = (await supabase
     .from('stores')
-    .select('nome, categoria:categories(id, slug, nome, icone)')
+    .select('nome, categoria:categories!stores_categoria_id_fkey(id, slug, nome, icone)')
     .eq('tenant_id', tenant.id)
     .single()) as { data: StoreComCategoria | null }
 

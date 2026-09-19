@@ -604,7 +604,7 @@ export default function TelaHome() {
     const { data } = await supabase
       .from('stores')
       .select(
-        'id, nome, slug, descricao, logo_url, banner_url, taxa_entrega, tempo_entrega, theme, categoria:categories(slug, nome)',
+        'id, nome, slug, descricao, logo_url, banner_url, taxa_entrega, tempo_entrega, theme, categoria:categories!stores_categoria_id_fkey(slug, nome)',
       )
       .eq('ativo', true)
       // Teto alto de propósito: a home distribui o resultado nos 9 pisos, e

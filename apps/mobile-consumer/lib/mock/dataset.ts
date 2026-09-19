@@ -120,7 +120,7 @@ interface StoreRow {
   horarios: typeof HORARIOS
   tenant_id: string
   piso: string
-  // Embeds que algumas telas pedem (categoria:categories(slug) / categories(nome))
+  // Embeds que algumas telas pedem (categoria:categories!stores_categoria_id_fkey(slug) / categories(nome))
   categoria: { slug: string; nome: string }
   categories: { nome: string }
   // Tema visual (StoreThemeConfig v2) — faz a loja "vestir" seu design no app.

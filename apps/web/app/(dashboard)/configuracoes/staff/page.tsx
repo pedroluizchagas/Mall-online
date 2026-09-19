@@ -18,7 +18,7 @@ export default async function PaginaStaff() {
 
   const { data: store } = (await supabase
     .from('stores')
-    .select('id, nome, categoria:categories(id, slug, nome, icone)')
+    .select('id, nome, categoria:categories!stores_categoria_id_fkey(id, slug, nome, icone)')
     .eq('tenant_id', tenant.id)
     .single()) as { data: StoreComCategoria | null }
 
