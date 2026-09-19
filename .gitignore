@@ -7,3 +7,7 @@ dist/
 .expo/
 *.tsbuildinfo
 .turbo/
+
+# Playwright (apps/web e2e)
+apps/web/test-results/
+apps/web/playwright-report/

@@ -33,6 +33,9 @@ BEGIN
 END;
 $$;
 
+-- Replay limpo (2026-09-19): a 005 já cria este trigger; aqui ele é
+-- substituído pela versão nova em vez de duplicado.
+DROP TRIGGER IF EXISTS trigger_disponibilidade_estoque ON products;
 CREATE TRIGGER trigger_disponibilidade_estoque
   BEFORE UPDATE ON products
   FOR EACH ROW

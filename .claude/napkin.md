@@ -17,6 +17,8 @@
    Do instead: os WARNs de rota e o erro de ErrorBoundary são consequência do `lib/supabase.ts` lançar no import — não caçar default exports. Copiar `.env.local.example` → `.env.local` (os 3 apps mobile usam o MESMO projeto Supabase; URL/anon key vêm do mobile-consumer) e reiniciar com `npx expo start --clear` (env é inlinado pelo babel e fica no cache do Metro).
 
 ## Shell & Command Reliability
+0. **[2026-09-19] Verificar telas AUTENTICADAS do dashboard = `pnpm qa:local` (Supabase local + seed + Playwright), nunca página de QA dentro do app nem usuário em produção**
+   Do instead: exige Docker daemon (`sudo systemctl start docker` — pedir ao usuário). Runbook `docs/dev/qa-local.md`; login `qa@mallevo.local` / `mallevo-qa-2026`; loja `forno-demo`. Sem Docker, o máximo honesto é `tsc` + `playwright test --list`; dizer isso explicitamente em vez de improvisar.
 1. **[2026-09-19] Revisão visual do storefront sem Playwright: Firefox headless**
    Do instead: `firefox --headless --no-remote --profile <perfil-scratch> --window-size=480,900 --screenshot out.png "http://<slug>.mallevo.localhost:3002/?preset=X&categoria=Y"` (Firefox resolve `*.localhost` sozinho; servidor com `STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true`). Âncoras `#id` NÃO rolam a captura — use viewport alto (480×3200) para ver a página toda. Imagens `loading="lazy"` não bloqueiam o `load` e saem vazias na captura: pôr `user_pref("dom.image-lazy-loading.enabled", false);` no `user.js` do perfil de QA. Hero nunca é lazy (LCP). Ler o PNG com a ferramenta Read.
 2. **[2026-09-19] Storefront: mover rotas deixa `.next/types` obsoleto e o `tsc` acusa módulos inexistentes; `pkill -f "<trecho do comando>"` mata o próprio shell**
@@ -25,6 +27,8 @@
    Do instead: paralelizar com subshells + `curl --max-time 15` e `sleep` de coleta; `curl -I` (HEAD) responde rápido para validar URLs antes.
 
 ## Domain Behavior Guardrails
+00. **[2026-09-19] Embed `stores → categories` no PostgREST é AMBÍGUO: sempre `categoria:categories!stores_categoria_id_fkey(...)`**
+   Do instead: `categories` tem `store_id` (seções do cardápio) E `stores.categoria_id` (nicho) — `categories(slug)` sem `!fk` dá PGRST201 e o `data` vem null em silêncio (template genérico, badge "Layout padrão", consumer real sem lojas). O mock do consumer não parseia o select, por isso nunca apareceu. Guarda: `grep -rn "categoria[s]*:categories(" apps` deve devolver vazio.
 0. **[2026-09-19] Vitrine web nova = porte da RN em `apps/storefront/components/vitrines/<codigo>/Vitrine<Codigo>.tsx` + registro em `vitrines/index.ts`**
    Do instead: `'use client'`, props `VitrineWebProps`, detalhe via `ProdutoModalHost` (render-prop `abrir(id)`), sacola via `_base/Sacola` (sem FAB, sem barra de 4 abas), fonte-DNA via `_base/FonteDna`, relógio via `_base/StatusAberto`. `Store.tempo_entrega` é NÚMERO (minutos). QA: `STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true next start` + `?preset=<arquetipo>&categoria=<slug>` numa loja real — o teste de guarda `vitrines/__tests__/registro.test.ts` exige arquivo no disco para cada código registrado.
 1. **[2026-09-10] Explorar e Seguindo = a MESMA tela de reels (`components/explorar/FeedReels.tsx`)**
@@ -50,6 +54,8 @@
    Do instead: gate por `design.arquetipo` + categoria da loja (hoje hardcoded em `app/loja/[slug].tsx` L279-335; plano: `resolveVitrine` na lib) — nunca por slug. `EXPO_PUBLIC_USE_MOCK=true` no .env.local: `metadata.galeria/recorte/especificacoes/unidade/estoque` vêm de lib/mock/dataset.ts e NENHUM form do web grava — antes de julgar uma vitrine "pronta", conferir se o dado tem produtor real (plano em docs/dev/plano-convergencia-web-storefront-mobile.md). `metadata.estoque` → usar `stock_quantity`. 6 arquétipos sem vitrine (heritage, soft, tech, market, utility, playful) caem no layout padrão. Storefront NÃO tem vitrines (só pele) — paridade app↔web ainda não existe.
 
 ## User Directives
+0. **[2026-09-19] Minha Loja NÃO tem preview desenhado à mão — o preview é o storefront real em iframe (`/preview?draft=`)**
+   Do instead: mudança visual de vitrine se vê em `components/dashboard/preview-vitrine.tsx` + `apps/storefront/app/(loja)/preview`; não reintroduzir mockup JSX (o usuário rejeitou: "não mostra a vitrine, só o arquétipo"). Verificação de tela autenticada = `pnpm qa:local` (sobe web:3100 e storefront:3002 contra Supabase local), nunca página de QA no app.
 1. **[2026-08-26] Toda loja do consumer mostra a barra de navegação — sem exceção de arquétipo**
    Do instead: vitrine nova = `BarraMenu<Nome>` própria no arquivo (Início/Explorar/Pedidos/Perfil, Início aceso, `sairPara` na cor da casa). Molde A = fixa com fio (`LojaEditorial`); molde B = pílula flutuante quando a página troca de cor por seção (`LojaSmash`/`LojaForno`/`LojaRitual`). Nunca a TabBar de `(tabs)/_layout.tsx` — esse arquivo é intocável. Layout sem vitrine tem `BarraMenuPadrao` em `app/loja/[slug].tsx`. Teste-guarda em `packages/lib/.../store-theme.test.ts` quebra se faltar. Revogou o "sem barra de menu inferior" de ritual/horta/forno nos docs.
 2. **[2026-09-12] Ícones: nada de faísca (`spark` = cara de IA) nem tijolo colorido por tipo (cara de app genérico) nas peças da casa**

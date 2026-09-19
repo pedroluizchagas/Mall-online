@@ -13,7 +13,8 @@
     "types:generate": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/types/src/supabase.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
-    "test": "pnpm -r --if-present test"
+    "test": "pnpm -r --if-present test",
+    "qa:local": "bash scripts/qa-local.sh"
   },
   "devDependencies": {
     "supabase": "^1.200.0",
