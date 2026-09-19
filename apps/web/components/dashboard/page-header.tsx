@@ -31,8 +31,9 @@ export function PageHeader({ titulo, subtitulo, acoes, abas, abaAtiva, badgeCabe
 
   return (
     <header className="mb-6">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-6">
-        <div className="min-w-0">
+      {/* Ações largas quebram para baixo do título em vez de espremê-lo. */}
+      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-start sm:justify-between gap-3 sm:gap-x-6 sm:gap-y-3">
+        <div className="min-w-[240px] flex-1">
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="font-display text-[28px] sm:text-[32px] leading-tight m-0">{titulo}</h1>
             {badgeCabecalho && cores && (
@@ -46,7 +47,7 @@ export function PageHeader({ titulo, subtitulo, acoes, abas, abaAtiva, badgeCabe
           </div>
           {subtitulo && <p className="text-ink-3 text-[13px] mt-1.5 leading-relaxed">{subtitulo}</p>}
         </div>
-        {acoes && <div className="flex items-center gap-2 flex-wrap shrink-0">{acoes}</div>}
+        {acoes && <div className="flex items-center gap-2 flex-wrap sm:ml-auto">{acoes}</div>}
       </div>
 
       {abas && abas.length > 0 && (

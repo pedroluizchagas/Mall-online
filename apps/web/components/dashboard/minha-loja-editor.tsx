@@ -1,20 +1,14 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Check, Lock, Upload, Zap, ImagePlus } from 'lucide-react'
 import {
   ARQUETIPOS,
   PALETAS,
   RADIUS_STEPS_PX,
-  TYPE_SCALE_FACTOR,
   getArquetipoSugestao,
-  googleFontsHref,
   resolveTheme,
   type ArquetipoCodigo,
-  type ThemeTokens,
-  resolveVitrine,
-  getVitrineDoArquetipo,
-  VITRINES,
   normalizeStoreConteudo,
 } from '@mallevo/lib'
 import { publicarVitrine } from '@/lib/actions/loja-vitrine'
@@ -30,67 +24,9 @@ import { showToast } from '@/components/ui/toast'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { StoreStatusToggle } from '@/components/dashboard/store-status-toggle'
 import { LinkPublicoBotao } from '@/components/dashboard/link-publico-botao'
-
-// ─── Tema (forma consumida pelo preview) ───────────────────────────────────────
-
-type Tema = {
-  acento: string
-  acentoDk: string
-  acentoInk: string
-  bgTela: string
-  bgHeader: string
-  bgCard: string
-  textoPrimario: string
-  textoSecundario: string
-  linha: string
-  /** Raio (px, já na escala do preview) de cards/imagens. */
-  raioCard: number
-  /** Raio (px, escala do preview) de chips e CTAs "stadium". */
-  raioPill: number
-  /** Família display do arquétipo (carregada via Google Fonts no preview). */
-  fonteDisplay: string
-  /** Fator de escala dos títulos (typography.scale do arquétipo). */
-  fatorTipo: number
-}
-
-/** O phone mockup é ~55% do device real — raios acompanham a miniatura. */
-const ESCALA_PREVIEW = 0.55
-function raioPreview(px: number): number {
-  return px >= 999 ? 999 : Math.max(2, Math.round(px * ESCALA_PREVIEW))
-}
-
-/** Pilha de fonte do display no preview (fallback de sistema). */
-function fonteDisplayCss(tema: Tema): string {
-  return `"${tema.fonteDisplay}", system-ui, sans-serif`
-}
-
-/**
- * Deriva o `Tema` do preview a partir dos tokens resolvidos do StoreTheme — a
- * MESMA engine (`resolveTheme`, @mallevo/lib) que o storefront e o app usam,
- * incluindo forma (RADIUS_STEPS_PX) e tipografia (família display +
- * TYPE_SCALE_FACTOR). Garante "o que vejo é o que publico". Preço/realce em
- * `ink` (igual aos apps reais, onde o preço é renderizado em text-ink).
- */
-function temaFromTokens(t: ThemeTokens): Tema {
-  const raios = RADIUS_STEPS_PX[t.shape.radius]
-  return {
-    acento: t.color.accent,
-    acentoDk: t.color.ink,
-    acentoInk: t.color.accentInk,
-    bgTela: t.color.bg,
-    bgHeader: t.color.surface,
-    bgCard: t.color.surface,
-    textoPrimario: t.color.ink,
-    textoSecundario: t.color.inkMuted,
-    linha: t.color.line,
-    raioCard: raioPreview(raios.md),
-    raioPill: raioPreview(raios.pill),
-    fonteDisplay: t.typography.display.family,
-    fatorTipo: TYPE_SCALE_FACTOR[t.typography.scale],
-  }
-}
-
-// ─── Types ───────────────────────────────────────────────────────────────────
+import { PreviewVitrine } from '@/components/dashboard/preview-vitrine'
+import { PainelVitrine } from '@/components/dashboard/painel-vitrine'
+import type { RascunhoPreview } from '@/lib/storefront-url'
 
 export interface LojaEditorInicial {
   nome: string
@@ -120,25 +56,15 @@ function validarUpload(arquivo: File, rotulo: string): string | null {
   return null
 }
 
-export interface ProdutoEditorInicial {
-  id: string
-  nome: string
-  foto_url: string | null
-  preco: number
-}
-
 interface Props {
   loja: LojaEditorInicial
-  produtos: ProdutoEditorInicial[]
-  /** Catálogo para o seletor de destaques (id, nome, foto). */
+  /** Catálogo para o seletor de destaques e para o preview (id, nome, foto). */
   catalogo?: ProdutoParaDestaque[]
 }
 
-type TabPreview = 'home' | 'produto' | 'carrinho'
-
 // ─── Editor principal ─────────────────────────────────────────────────────────
 
-export function MinhaLojaEditor({ loja, produtos, catalogo = [] }: Props) {
+export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
   const presetInicial: ArquetipoCodigo =
     loja.theme && typeof loja.theme.preset === 'string' && loja.theme.preset in ARQUETIPOS
       ? (loja.theme.preset as ArquetipoCodigo)
@@ -161,7 +87,6 @@ export function MinhaLojaEditor({ loja, produtos, catalogo = [] }: Props) {
   const [bannerUrl, setBannerUrl] = useState<string | null>(loja.banner_url)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [bannerFile, setBannerFile] = useState<File | null>(null)
-  const [activeTab, setActiveTab] = useState<TabPreview>('home')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
@@ -195,16 +120,31 @@ export function MinhaLojaEditor({ loja, produtos, catalogo = [] }: Props) {
     }
   }, [logoUrl])
 
-  // Tema do preview derivado da engine real (preset + paleta + accent).
+  // Tokens resolvidos pela engine real — alimentam o seletor de cor e a
+  // tipografia mostrada; o preview em si é o storefront (abaixo).
   const tokens = resolveTheme({
     v: 2,
     preset,
     ...(paleta ? { palette: paleta } : {}),
     ...(accent ? { color: { accent } } : {}),
   })
-  const temaAtivo: Tema = temaFromTokens(tokens)
-  // Fonte display do arquétipo ativo — o preview tipografa como os apps reais.
-  const fontsHref = googleFontsHref(tokens)
+
+  // Rascunho que o storefront veste no preview (mesmo JSON que "Publicar" grava).
+  const rascunho = useMemo<RascunhoPreview>(
+    () => ({
+      theme: {
+        v: 2,
+        preset,
+        ...(paleta ? { palette: paleta } : {}),
+        ...(accent ? { color: { accent } } : {}),
+      },
+      conteudo: conteudoParaPayload(conteudo),
+      categoria: loja.categoriaSlug,
+    }),
+    [preset, paleta, accent, conteudo, loja.categoriaSlug],
+  )
+  const produtoPreviewId = conteudo.destaques[0] ?? catalogo[0]?.id ?? null
+  const temMidiaNaoPublicada = Boolean(logoFile || bannerFile || conteudo.galeriaNovas.length > 0)
 
   const sugestao = getArquetipoSugestao(loja.categoriaSlug)
   const recomendados: ArquetipoCodigo[] = [sugestao.default, ...sugestao.alternativas]
@@ -281,12 +221,6 @@ export function MinhaLojaEditor({ loja, produtos, catalogo = [] }: Props) {
 
   return (
     <div className="flex" style={{ height: '100%' }}>
-      {fontsHref && (
-        <>
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-          <link rel="stylesheet" href={fontsHref} />
-        </>
-      )}
       {/* ── Painel esquerdo (editor) ──────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-w-0">
         <div className="p-9 max-w-[720px]">
@@ -324,7 +258,14 @@ export function MinhaLojaEditor({ loja, produtos, catalogo = [] }: Props) {
               Sugeridos para a sua categoria — escolha o que combina com o tom da
               sua marca. Você pode mudar quando quiser.
             </p>
-            <AvisoVitrine preset={preset} categoriaSlug={loja.categoriaSlug} />
+            <PainelVitrine
+              preset={preset}
+              categoriaSlug={loja.categoriaSlug}
+              aoEscolherEstilo={(p) => {
+                setPreset(p)
+                setPaleta(null)
+              }}
+            />
             <div className="space-y-3">
               {recomendados.map((code) => (
                 <ArquetipoCard
@@ -636,11 +577,12 @@ export function MinhaLojaEditor({ loja, produtos, catalogo = [] }: Props) {
         </div>
       </div>
 
-      {/* ── Painel direito (preview) ──────────────────────────────── */}
+      {/* ── Painel direito: a loja real em preview ─────────────── */}
       <div
         className="flex-shrink-0 flex flex-col border-l overflow-y-auto"
         style={{
-          width: 308,
+          // Celular cabe em 360px; "Computador" ganha até 46% da largura.
+          width: 'clamp(360px, 46vw, 720px)',
           borderColor: 'var(--line)',
           background: 'var(--bg-2)',
           position: 'sticky',
@@ -655,44 +597,12 @@ export function MinhaLojaEditor({ loja, produtos, catalogo = [] }: Props) {
           >
             Preview ao vivo
           </p>
-
-          {/* Tab switcher */}
-          <div
-            className="flex gap-1 mb-5 p-1 rounded-xl"
-            style={{ background: 'var(--bg-3)' }}
-          >
-            {(['home', 'produto', 'carrinho'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className="flex-1 py-1.5 rounded-[10px] text-[11px] font-semibold capitalize transition-all"
-                style={{
-                  background: activeTab === tab ? 'var(--bg)' : 'transparent',
-                  color: activeTab === tab ? 'var(--ink)' : 'var(--ink-3)',
-                  boxShadow: activeTab === tab ? 'var(--shadow-sm)' : 'none',
-                }}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {/* Phone mockup */}
-          <div className="flex justify-center flex-1">
-            <PreviewPhone
-              tema={temaAtivo}
-              nome={nome}
-              tagline={tagline}
-              logoUrl={logoUrl}
-              bannerUrl={bannerUrl}
-              produtos={produtos}
-              tab={activeTab}
-            />
-          </div>
-
-          <p className="text-[11px] text-ink-3 text-center mt-4 leading-snug">
-            Este é o visual que seus clientes verão ao abrir sua loja no Mallevo.
-          </p>
+          <PreviewVitrine
+            slug={loja.slug}
+            rascunho={rascunho}
+            produtoId={produtoPreviewId}
+            temMidiaNaoPublicada={temMidiaNaoPublicada}
+          />
         </div>
       </div>
     </div>
@@ -771,10 +681,20 @@ function ArquetipoCard({
   onSelect: () => void
 }) {
   const arq = ARQUETIPOS[code]
-  const template = temaFromTokens(arq.tokens)
+  const t = arq.tokens
+  // Mini-tema do cartão: cores e forma vêm direto dos tokens do arquétipo.
+  const template = {
+    acento: t.color.accent,
+    bgTela: t.color.bg,
+    bgHeader: t.color.surface,
+    bgCard: t.color.surface,
+    linha: t.color.line,
+    textoPrimario: t.color.ink,
+    textoSecundario: t.color.inkMuted,
+  }
   // Mini-preview (~40% do phone): raio reduzido proporcionalmente para que o
   // DNA de forma do arquétipo (sharp/soft/round) apareça já na seleção.
-  const raioMini = Math.max(1, Math.round(template.raioCard * 0.6))
+  const raioMini = Math.max(1, Math.round(RADIUS_STEPS_PX[t.shape.radius].md * 0.33))
   return (
     <button
       onClick={onSelect}
@@ -873,693 +793,5 @@ function ArquetipoCard({
         </div>
       </div>
     </button>
-  )
-}
-
-// ─── Phone preview ────────────────────────────────────────────────────────────
-
-function PreviewPhone({
-  tema,
-  nome,
-  tagline,
-  logoUrl,
-  bannerUrl,
-  produtos,
-  tab,
-}: {
-  tema: Tema
-  nome: string
-  tagline: string
-  logoUrl: string | null
-  bannerUrl: string | null
-  produtos: ProdutoEditorInicial[]
-  tab: TabPreview
-}) {
-  const w = 224
-
-  return (
-    <div
-      style={{
-        width: w,
-        background: '#0a0a09',
-        borderRadius: 40,
-        padding: '12px 7px 22px',
-        boxShadow:
-          '0 40px 80px -20px rgba(0,0,0,0.55), inset 0 0 0 1.5px rgba(255,255,255,0.09), 0 0 0 1px rgba(0,0,0,0.95)',
-        flexShrink: 0,
-      }}
-    >
-      {/* Dynamic island */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-        <div
-          style={{
-            width: 88,
-            height: 12,
-            background: '#000',
-            borderRadius: 20,
-            border: '1px solid rgba(255,255,255,0.04)',
-          }}
-        />
-      </div>
-
-      {/* Screen */}
-      <div style={{ borderRadius: 28, overflow: 'hidden', minHeight: 420, background: tema.bgTela }}>
-        {tab === 'home' && (
-          <HomeScreen
-            tema={tema}
-            nome={nome}
-            tagline={tagline}
-            logoUrl={logoUrl}
-            bannerUrl={bannerUrl}
-            produtos={produtos}
-          />
-        )}
-        {tab === 'produto' && <ProdutoScreen tema={tema} produto={produtos[0] ?? null} />}
-        {tab === 'carrinho' && <CarrinhoScreen tema={tema} produtos={produtos.slice(0, 2)} />}
-      </div>
-
-      {/* Home indicator */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-        <div
-          style={{
-            width: 88,
-            height: 4,
-            background: 'rgba(255,255,255,0.20)',
-            borderRadius: 3,
-          }}
-        />
-      </div>
-    </div>
-  )
-}
-
-function Sb({ bg, textColor }: { bg: string; textColor: string }) {
-  const now = new Date()
-  const h = now.getHours().toString().padStart(2, '0')
-  const m = now.getMinutes().toString().padStart(2, '0')
-  return (
-    <div
-      style={{
-        height: 18,
-        background: bg,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 14px',
-      }}
-    >
-      <span style={{ fontSize: 7, fontWeight: 700, color: textColor, opacity: 0.65 }}>
-        {h}:{m}
-      </span>
-      <span style={{ fontSize: 6, color: textColor, opacity: 0.5 }}>◾◾◾</span>
-    </div>
-  )
-}
-
-function HomeScreen({
-  tema,
-  nome,
-  tagline,
-  logoUrl,
-  bannerUrl,
-  produtos,
-}: {
-  tema: Tema
-  nome: string
-  tagline: string
-  logoUrl: string | null
-  bannerUrl: string | null
-  produtos: ProdutoEditorInicial[]
-}) {
-  const cats = ['Todos', 'Hortifruti', 'Mercearia', 'Limpeza']
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', background: tema.bgTela, minHeight: 420 }}>
-      <Sb bg={tema.bgHeader} textColor={tema.textoPrimario} />
-
-      {/* App bar */}
-      <div
-        style={{
-          padding: '7px 12px 6px',
-          background: tema.bgHeader,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div
-          style={{
-            padding: '2px 9px',
-            borderRadius: tema.raioPill,
-            background: tema.acento,
-            fontSize: 9,
-            fontWeight: 800,
-            color: tema.acentoInk,
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Mallevo
-        </div>
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: 12,
-            background: 'rgba(0,0,0,0.1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 11,
-          }}
-        >
-          🔍
-        </div>
-      </div>
-
-      {/* Store header card */}
-      <div style={{ padding: '10px 12px', background: tema.bgCard, borderBottom: `1px solid ${tema.linha}` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: tagline ? 6 : 0 }}>
-          {/* Logo */}
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: tema.raioCard,
-              overflow: 'hidden',
-              flexShrink: 0,
-              background: tema.acento,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 15,
-              fontWeight: 800,
-              color: tema.acentoInk,
-            }}
-          >
-            {logoUrl ? (
-              <img src={logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              (nome || 'L').charAt(0).toUpperCase()
-            )}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div
-              style={{
-                fontSize: Math.round(11 * tema.fatorTipo),
-                fontWeight: 700,
-                fontFamily: fonteDisplayCss(tema),
-                color: tema.textoPrimario,
-                letterSpacing: '-0.02em',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {nome || 'Nome da loja'}
-            </div>
-            <div style={{ fontSize: 8, color: tema.textoSecundario, marginTop: 1 }}>
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: 5,
-                  height: 5,
-                  borderRadius: '50%',
-                  background: '#4fb025',
-                  marginRight: 3,
-                  verticalAlign: 'middle',
-                }}
-              />
-              Aberto · 8h–20h
-            </div>
-          </div>
-        </div>
-        {tagline && (
-          <div
-            style={{
-              fontSize: 8,
-              color: tema.textoSecundario,
-              lineHeight: 1.4,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {tagline}
-          </div>
-        )}
-        <div style={{ marginTop: 7 }}>
-          <div
-            style={{
-              display: 'inline-block',
-              padding: '4px 11px',
-              borderRadius: tema.raioPill,
-              background: tema.acento,
-              color: tema.acentoInk,
-              fontSize: 8,
-              fontWeight: 700,
-            }}
-          >
-            Ver ofertas
-          </div>
-        </div>
-      </div>
-
-      {/* Categories */}
-      <div
-        style={{
-          padding: '8px 12px 4px',
-          borderBottom: `1px solid ${tema.linha}`,
-        }}
-      >
-        <div
-          style={{
-            fontSize: 8,
-            fontWeight: 700,
-            color: tema.textoPrimario,
-            marginBottom: 6,
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-            opacity: 0.6,
-          }}
-        >
-          Categorias
-        </div>
-        <div style={{ display: 'flex', gap: 4, overflow: 'hidden' }}>
-          {cats.map((c, i) => (
-            <div
-              key={c}
-              style={{
-                padding: '2px 8px',
-                borderRadius: tema.raioPill,
-                fontSize: 7,
-                fontWeight: 600,
-                background: i === 0 ? tema.acento : 'rgba(128,128,128,0.12)',
-                color: i === 0 ? tema.acentoInk : tema.textoSecundario,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {c}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Products grid */}
-      <div style={{ padding: '10px 12px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-          {produtos.slice(0, 4).map((p) => (
-            <div
-              key={p.id}
-              style={{
-                background: tema.bgCard,
-                borderRadius: tema.raioCard,
-                overflow: 'hidden',
-                border: `1px solid ${tema.linha}`,
-              }}
-            >
-              <div style={{ height: 52, background: tema.linha, overflow: 'hidden', position: 'relative' }}>
-                {p.foto_url && (
-                  <img src={p.foto_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                )}
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 4,
-                    right: 4,
-                    width: 18,
-                    height: 18,
-                    borderRadius: '50%',
-                    background: tema.acento,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                    color: tema.acentoInk,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                  }}
-                >
-                  +
-                </div>
-              </div>
-              <div style={{ padding: '4px 6px 6px' }}>
-                <div
-                  style={{
-                    fontSize: 7,
-                    fontWeight: 600,
-                    color: tema.textoPrimario,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    marginBottom: 2,
-                  }}
-                >
-                  {p.nome}
-                </div>
-                <div style={{ fontSize: 8, fontWeight: 700, color: tema.acentoDk }}>
-                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(p.preco / 100)}
-                </div>
-              </div>
-            </div>
-          ))}
-          {produtos.length === 0 &&
-            [0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  height: 90,
-                  borderRadius: tema.raioCard,
-                  border: `1.5px dashed ${tema.linha}`,
-                }}
-              />
-            ))}
-        </div>
-      </div>
-
-      {/* Bottom nav */}
-      <div
-        style={{
-          marginTop: 'auto',
-          padding: '8px 0 4px',
-          borderTop: `1px solid ${tema.linha}`,
-          display: 'flex',
-          justifyContent: 'space-around',
-          background: tema.bgTela,
-        }}
-      >
-        {['🏠', '🔍', '🛒', '👤'].map((icon, i) => (
-          <div
-            key={i}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}
-          >
-            <span style={{ fontSize: 15 }}>{icon}</span>
-            {i === 0 && (
-              <div
-                style={{ width: 4, height: 4, borderRadius: '50%', background: tema.acento }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function ProdutoScreen({
-  tema,
-  produto,
-}: {
-  tema: Tema
-  produto: ProdutoEditorInicial | null
-}) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', background: tema.bgTela, minHeight: 420 }}>
-      <Sb bg={tema.bgTela} textColor={tema.textoPrimario} />
-
-      {/* Back + title */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '8px 12px',
-          borderBottom: `1px solid ${tema.linha}`,
-        }}
-      >
-        <span style={{ fontSize: 14, color: tema.textoSecundario }}>←</span>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 700,
-            fontFamily: fonteDisplayCss(tema),
-            color: tema.textoPrimario,
-          }}
-        >
-          {produto?.nome ?? 'Produto'}
-        </span>
-      </div>
-
-      {/* Product image */}
-      <div style={{ height: 130, background: tema.linha, overflow: 'hidden' }}>
-        {produto?.foto_url && (
-          <img
-            src={produto.foto_url}
-            alt=""
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        )}
-      </div>
-
-      {/* Product info */}
-      <div style={{ padding: '10px 12px', flex: 1 }}>
-        <div
-          style={{
-            fontSize: Math.round(13 * tema.fatorTipo),
-            fontWeight: 700,
-            fontFamily: fonteDisplayCss(tema),
-            color: tema.textoPrimario,
-            letterSpacing: '-0.02em',
-            marginBottom: 4,
-          }}
-        >
-          {produto?.nome ?? 'Nome do produto'}
-        </div>
-        <div style={{ fontSize: 14, fontWeight: 800, color: tema.acentoDk, marginBottom: 8 }}>
-          {produto
-            ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(produto.preco / 100)
-            : 'R$ 0,00'}
-        </div>
-
-        <div
-          style={{
-            fontSize: 8,
-            color: tema.textoSecundario,
-            lineHeight: 1.5,
-            marginBottom: 12,
-          }}
-        >
-          Descrição do produto aparece aqui. Ingredientes, informações nutricionais e observações para o cliente.
-        </div>
-
-        {/* Quantity */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '4px 10px',
-              borderRadius: tema.raioPill,
-              border: `1px solid ${tema.linha}`,
-              background: tema.bgCard,
-            }}
-          >
-            <span style={{ fontSize: 12, color: tema.textoSecundario }}>−</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: tema.textoPrimario }}>1</span>
-            <span style={{ fontSize: 12, color: tema.textoSecundario }}>+</span>
-          </div>
-        </div>
-
-        <div
-          style={{
-            padding: '9px 14px',
-            borderRadius: tema.raioPill,
-            background: tema.acento,
-            color: tema.acentoInk,
-            fontSize: 10,
-            fontWeight: 700,
-            textAlign: 'center',
-          }}
-        >
-          Adicionar ao carrinho
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function CarrinhoScreen({
-  tema,
-  produtos,
-}: {
-  tema: Tema
-  produtos: ProdutoEditorInicial[]
-}) {
-  const total = produtos.reduce((s, p) => s + p.preco, 0)
-  const fmt = (n: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n / 100)
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', background: tema.bgTela, minHeight: 420 }}>
-      <Sb bg={tema.bgTela} textColor={tema.textoPrimario} />
-
-      {/* Title */}
-      <div style={{ padding: '10px 12px 6px', borderBottom: `1px solid ${tema.linha}` }}>
-        <span
-          style={{
-            fontSize: Math.round(14 * tema.fatorTipo),
-            fontWeight: 700,
-            fontFamily: fonteDisplayCss(tema),
-            color: tema.textoPrimario,
-          }}
-        >
-          Meu carrinho
-        </span>
-      </div>
-
-      {/* Items */}
-      <div style={{ flex: 1, padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {produtos.length === 0 && (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 9,
-              color: tema.textoSecundario,
-            }}
-          >
-            Carrinho vazio
-          </div>
-        )}
-        {produtos.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              display: 'flex',
-              gap: 8,
-              background: tema.bgCard,
-              borderRadius: tema.raioCard,
-              padding: 7,
-              border: `1px solid ${tema.linha}`,
-              alignItems: 'center',
-            }}
-          >
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: Math.max(2, tema.raioCard - 2),
-                background: tema.linha,
-                overflow: 'hidden',
-                flexShrink: 0,
-              }}
-            >
-              {p.foto_url && (
-                <img src={p.foto_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              )}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: 8,
-                  fontWeight: 600,
-                  color: tema.textoPrimario,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {p.nome}
-              </div>
-              <div style={{ fontSize: 9, fontWeight: 700, color: tema.acentoDk, marginTop: 2 }}>
-                {fmt(p.preco)}
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '2px 7px',
-                borderRadius: tema.raioPill,
-                border: `1px solid ${tema.linha}`,
-                fontSize: 10,
-                color: tema.textoSecundario,
-              }}
-            >
-              − <span style={{ color: tema.textoPrimario, fontWeight: 700, fontSize: 9 }}>1</span> +
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Total + checkout */}
-      <div style={{ padding: '8px 12px 10px', borderTop: `1px solid ${tema.linha}`, background: tema.bgCard }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ fontSize: 9, color: tema.textoSecundario }}>Total</span>
-          <span style={{ fontSize: 11, fontWeight: 800, color: tema.textoPrimario }}>
-            {fmt(total)}
-          </span>
-        </div>
-        <div
-          style={{
-            padding: '9px 14px',
-            borderRadius: tema.raioPill,
-            background: tema.acento,
-            color: tema.acentoInk,
-            fontSize: 10,
-            fontWeight: 700,
-            textAlign: 'center',
-          }}
-        >
-          Finalizar pedido
-        </div>
-      </div>
-    </div>
-  )
-}
-
-
-/**
- * O que o estilo escolhido ATIVA de layout no app e no storefront — a mesma
- * tabela `VITRINES` que as duas superfícies leem. Antes disto o lojista
- * escolhia um arquétipo sem saber que ele podia trocar a fachada inteira da
- * loja (ou não).
- */
-function AvisoVitrine({
-  preset,
-  categoriaSlug,
-}: {
-  preset: ArquetipoCodigo
-  categoriaSlug: string | null
-}) {
-  const ativa = resolveVitrine(preset, categoriaSlug)
-  const doEstilo = getVitrineDoArquetipo(preset)
-  const humanizar = (slug: string) => slug.replace(/-/g, ' ')
-
-  if (ativa) {
-    const v = VITRINES[ativa]
-    return (
-      <div
-        className="mb-4 rounded-xl px-4 py-3 text-xs"
-        style={{ background: 'var(--brick-lt)', color: 'var(--ink)' }}
-      >
-        <p className="font-semibold">Vitrine ativada: {v.nome}</p>
-        <p className="mt-0.5" style={{ color: 'var(--ink-2)' }}>
-          {v.descricao} Sua loja veste esse layout no app e em{' '}
-          <span className="font-medium">seusite.mallevo.com.br</span>.
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <div
-      className="mb-4 rounded-xl px-4 py-3 text-xs"
-      style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
-    >
-      <p className="font-semibold" style={{ color: 'var(--ink)' }}>
-        Layout padrão
-      </p>
-      <p className="mt-0.5">
-        {doEstilo
-          ? `Este estilo tem a vitrine ${doEstilo.nome} em ${doEstilo.categorias
-              .map(humanizar)
-              .join(', ')}. Na sua categoria, ele veste a loja só com as cores e a tipografia.`
-          : 'Este estilo veste a loja com cores, tipografia e forma sobre o layout padrão.'}
-      </p>
-    </div>
   )
 }

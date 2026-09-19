@@ -125,7 +125,7 @@ Regra: nenhuma vitrine, em nenhuma superfície, inventa dado. O que não vier do
 
 **1d. Limpeza:** apagar `preview-loja.tsx`, `botao-copiar-link.tsx`, `atualizarImagensLoja`.
 
-**Status Fase 1 em 2026-09-19 — parcial:** feitos o badge "Vitrine ativada / Layout padrão" no editor (`AvisoVitrine` em `minha-loja-editor.tsx`, lendo `resolveVitrine`/`getVitrineDoArquetipo`), a URL única no campo de slug (`https://` + `.mallevo.com.br`, em vez de `mallevo.app/`) e a limpeza 1d. **1a feita em código (2026-09-19):** bloco "Mídia e vitrine" no formulário de produto (`components/dashboard/produto-midia-vitrine.tsx`): galeria (multi-upload, manter/remover, teto 10), recorte PNG/WebP (trocar/remover), ficha técnica em pares (teto 12) e unidade de venda (`UNIDADES_VENDA` da lib; só templates food/generic). Servidor: `aplicarMidiaVitrine` em `lib/actions/produtos.ts` sobe em `product-images/{tenant}/galeria-*|recorte-*` e resolve `metadata.galeria`/`metadata.recorte` honrando `galeria_mantida`/`remover_recorte`; `especificacoes`/`unidade` seguem no `metadata` JSON validado pelo `metadataProdutoSchema`. Validação: só `tsc` (o web não tem runner nem sessão de teste aqui) — **pendente testar ponta a ponta no dashboard**. **1b conteúdo feito em código (2026-09-19):** seção "Conteúdo da vitrine" em Minha Loja (`components/dashboard/conteudo-vitrine.tsx`): campanha (sobrelinha/título/subtítulo/botão com contadores dos `CONTEUDO_LIMITES`), texto da casa, destaques (busca no catálogo, ordem por setas, teto 6) e fotos da casa (upload, manter/remover, teto 8). `publicarVitrine` valida com `storeConteudoSchema`, sobe fotos em `store-assets/{tenant}/casa-*`, filtra destaques para produtos da própria loja e grava `stores.conteudo` (ou `null` quando vazio). A página carrega `conteudo` e um catálogo leve (200 itens) para o seletor. Só `tsc` — **pendente testar ponta a ponta**. Faltam slug no editor, saúde da loja e 1c (posts).
+**Status Fase 1 em 2026-09-19 — parcial:** feitos o badge "Vitrine ativada / Layout padrão" no editor (`AvisoVitrine` em `minha-loja-editor.tsx`, lendo `resolveVitrine`/`getVitrineDoArquetipo`), a URL única no campo de slug (`https://` + `.mallevo.com.br`, em vez de `mallevo.app/`) e a limpeza 1d. **1a feita em código (2026-09-19):** bloco "Mídia e vitrine" no formulário de produto (`components/dashboard/produto-midia-vitrine.tsx`): galeria (multi-upload, manter/remover, teto 10), recorte PNG/WebP (trocar/remover), ficha técnica em pares (teto 12) e unidade de venda (`UNIDADES_VENDA` da lib; só templates food/generic). Servidor: `aplicarMidiaVitrine` em `lib/actions/produtos.ts` sobe em `product-images/{tenant}/galeria-*|recorte-*` e resolve `metadata.galeria`/`metadata.recorte` honrando `galeria_mantida`/`remover_recorte`; `especificacoes`/`unidade` seguem no `metadata` JSON validado pelo `metadataProdutoSchema`. Validação: **e2e verde no dashboard real** (`pnpm qa:local`: Supabase local + seed + Playwright) — o produto Margherita do seed mostra galeria, recorte e ficha; adicionar uma linha e salvar persiste. **1b conteúdo feito em código (2026-09-19):** seção "Conteúdo da vitrine" em Minha Loja (`components/dashboard/conteudo-vitrine.tsx`): campanha (sobrelinha/título/subtítulo/botão com contadores dos `CONTEUDO_LIMITES`), texto da casa, destaques (busca no catálogo, ordem por setas, teto 6) e fotos da casa (upload, manter/remover, teto 8). `publicarVitrine` valida com `storeConteudoSchema`, sobe fotos em `store-assets/{tenant}/casa-*`, filtra destaques para produtos da própria loja e grava `stores.conteudo` (ou `null` quando vazio). A página carrega `conteudo` e um catálogo leve (200 itens) para o seletor. **e2e verde**: badge "Vitrine ativada: Forno", conteúdo do seed carregado, editar título + publicar + recarregar persiste. Faltam slug no editor, saúde da loja e 1c (posts).
 
 **Pronto quando:** um lojista sem celular consegue, só pelo web, montar uma loja que acende todos os elementos da sua vitrine no app.
 
@@ -178,6 +178,8 @@ Cada vitrine = `components/vitrines/<codigo>/{Vitrine,Pdp}.tsx`, server componen
 - Dashboard troca o celular JSX por um iframe (390px) com toggle desktop. "O que vejo é o que publico" passa a ser literal, com dados reais (horários, taxa, pagamentos, produtos do lojista).
 - Remove ~870 linhas de `minha-loja-editor.tsx`.
 
+**Status 2026-09-19 — ✅ implementada.** Storefront: rota `/preview` (`app/(loja)/preview/page.tsx` + `lib/rascunho.ts`) aplica `?draft=` (tema + conteúdo + categoria, base64url) só no request, `noindex`, CSP `frame-ancestors` restrito ao dashboard. Web: `components/dashboard/preview-vitrine.tsx` (iframe com molduras celular 390px e computador 1280px, telas Início/Produto, debounce de 600ms, aviso de mídia não publicada) substitui o celular JSX; `painel-vitrine.tsx` ("Sua vitrine": vitrine ativada ou, no padrão, quais estilos têm vitrine para a categoria, com atalho); `lib/storefront-url.ts` é a fonte única da URL pública (botão "Ver loja pública" incluso). O e2e sobe web + storefront contra o Supabase local e exige que o iframe carregue a vitrine com o rascunho (`pnpm qa:local`). O editor caiu de 1565 para ~790 linhas. O rascunho não carrega logo/banner/fotos novas (blobs locais) — aparecem após publicar, e o painel avisa.
+
 ### Fase 4 — Consumer sai do mock e converge · ~1 a 2 semanas · paralelo após a Fase 0
 
 - Seed SQL em `supabase/seed/` com 1 loja demo por vitrine, portado de `lib/mock/dataset.ts` (com galeria, recorte, especificações, unidade, conteúdo, posts). Serve ao consumer, ao storefront, ao Playwright e ao preview.
@@ -202,7 +204,7 @@ Decisão 2026-09-19: entra neste ciclo.
 
 ## 4. Transversais
 
-- **Seed demo** é infraestrutura de todas as fases: sem lojas reais com dados completos, nenhuma vitrine é testável fora do mock.
+- **Seed demo** é infraestrutura de todas as fases: sem lojas reais com dados completos, nenhuma vitrine é testável fora do mock. **Feito em 2026-09-19:** `supabase/seed.sql` (lojista QA + Forno Demo com catálogo, metadata e conteúdo) + `scripts/qa-local.sh` + Playwright em `apps/web/e2e/` — runbook em `docs/dev/qa-local.md`. Depende do Docker daemon local para rodar.
 - **CI**: adicionar `test` e `typecheck` ao `turbo.json`; hoje só `build/dev/lint`.
 - **Docs**: atualizar `docs/store-theme/07` (21/44, vitrines, `StoreDesignProvider`), criar §5.7 em `05` para o storefront, registrar `stores.conteudo` em `03-design-tokens-e-schema.md` e em `docs/03-schema`.
 
@@ -220,6 +222,14 @@ Decisão 2026-09-19: entra neste ciclo.
 10. Web 1c: módulo `/conteudo`.
 11. Storefront Fase 5: apex roteado + saguão (pisos, explorar, fachadas), em paralelo à onda 2 das vitrines.
 12. Storefront 2b ondas 2 e 3; Fase 3 (preview em iframe); Fase 4 (consumer fora do mock).
+
+## 5b. Achados do QA autenticado (2026-09-19)
+
+Rodar o dashboard de verdade, logado, contra um banco reproduzido do zero revelou três problemas que nenhum `tsc` pegaria:
+
+1. **Embed ambíguo `categoria:categories(...)` em `stores` (bug de PRODUÇÃO, corrigido).** Há duas relações entre `stores` e `categories` (a categoria da loja e as seções de cardápio), e o PostgREST devolve PGRST201 — confirmado também contra o projeto de produção. Efeitos: dashboard sempre no template genérico e badge sempre "Layout padrão"; onboarding sugerindo o arquétipo default; e no consumer fora do mock o select da loja falhava e a Home não carregava lojas. Correção: `categories!stores_categoria_id_fkey(...)` nos 8 pontos (web e consumer). O storefront nunca foi afetado (lê `categoria_slug` da view).
+2. **Histórico de migrations não reproduzia do zero** (`push_tokens` criada na 004 e na 011; trigger de estoque criado na 005 e na 012). Corrigido tornando 011 e 012 idempotentes — sem efeito em produção (CLI rastreia por versão), e `supabase db reset` volta a funcionar para qualquer dev.
+3. **Tutorial de boas-vindas bloqueia a interação** de tenant novo (modal). O seed marca `tutorial_template_visto` e os testes dispensam o tour se aparecer.
 
 ## 6. Riscos e mitigações
 

@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 
+import { urlDaLoja } from '@/lib/storefront-url'
+
 interface Props {
   slug: string | null
 }
@@ -44,7 +46,7 @@ export function LinkPublicoBotao({ slug }: Props) {
 
   return (
     <a
-      href={`https://${slug}.mallevo.com.br`}
+      href={urlDaLoja(slug)}
       target="_blank"
       rel="noopener noreferrer"
       className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold border hover:bg-bg-2 transition-colors"

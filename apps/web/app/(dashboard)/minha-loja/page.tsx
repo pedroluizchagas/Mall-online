@@ -2,7 +2,6 @@ import { getDadosLoja } from '@/lib/actions/lojas'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { MinhaLojaEditor } from '@/components/dashboard/minha-loja-editor'
-import type { ProdutoEditorInicial } from '@/components/dashboard/minha-loja-editor'
 
 export default async function PaginaMinhaLoja() {
   const supabase = createSupabaseServer()
@@ -12,20 +11,10 @@ export default async function PaginaMinhaLoja() {
 
   const { loja, tenant } = dados
 
-  const { data: produtosRaw } = await supabase
-    .from('products')
-    .select('id, nome, foto_url, preco')
-    .eq('tenant_id', tenant.id)
-    .eq('disponivel', true)
-    .order('criado_em', { ascending: false })
-    .limit(4)
-
-  const produtos = (produtosRaw ?? []) as ProdutoEditorInicial[]
-
   // Slug da categoria → sugere o arquétipo (pele) no editor.
   const { data: lojaCat } = await supabase
     .from('stores')
-    .select('conteudo, categoria:categories(slug)')
+    .select('conteudo, categoria:categories!stores_categoria_id_fkey(slug)')
     .eq('id', loja.id)
     .single()
   const categoriaSlug =
@@ -55,7 +44,6 @@ export default async function PaginaMinhaLoja() {
         categoriaSlug,
         conteudo,
       }}
-      produtos={produtos}
       catalogo={(catalogoRaw ?? []) as { id: string; nome: string; foto_url: string | null }[]}
     />
   )
