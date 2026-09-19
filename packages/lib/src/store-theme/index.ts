@@ -33,7 +33,19 @@ export {
   getArquetiposOferecidos,
 } from './mapping'
 
-export { hasExplicitPreset, normalizeThemeConfig, resolveTheme } from './resolve'
+export {
+  getPresetExplicito,
+  hasExplicitPreset,
+  normalizeThemeConfig,
+  resolveTheme,
+} from './resolve'
+export {
+  VITRINES,
+  ARQUETIPOS_SEM_VITRINE,
+  resolveVitrine,
+  getVitrineDoArquetipo,
+} from './vitrines'
+export type { Vitrine, VitrineCodigo, MoldeBarra } from './vitrines'
 export { toCssVars, RADIUS_PX } from './to-css-vars'
 export {
   DENSITY_SPACE_PX,
@@ -44,9 +56,3 @@ export type { DensitySpace, RadiusSteps } from './scales'
 export { googleFontsHref } from './google-fonts'
 export { coresDominantes } from './logo-palette'
 export { contrastRatio, ensureAccentInk, pickInkOn } from './contrast'
-
-export {
-  StoreThemeProvider,
-  useStoreTheme,
-} from './provider'
-export type { StoreThemeProviderProps } from './provider'

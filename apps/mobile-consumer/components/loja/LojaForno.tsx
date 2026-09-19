@@ -14,7 +14,7 @@ import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Archivo_900Black } from '@expo-google-fonts/archivo'
 import { useFonts } from 'expo-font'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, horarioDeHoje } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
@@ -72,9 +72,6 @@ const TINTA_OURO = '#1A150F'
 
 /** Frase do statement quando a casa não tem uma curta o bastante. */
 const STATEMENT_PADRAO = 'UMA EXPERIÊNCIA DE PIZZA INESQUECÍVEL'
-
-/** Dias na ordem de `Date.getDay()` — chaves de `stores.horarios`. */
-const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
 
 /** Altura da pílula de menu inferior (o inset entra por fora dela). */
 const ALTURA_BARRA_MENU = 58
@@ -999,7 +996,7 @@ function FechoForno({
     return () => clearInterval(id)
   }, [])
 
-  const hoje = horarios?.[DIAS[new Date().getDay()]]
+  const hoje = horarioDeHoje(horarios)
   const meta = [
     hoje ? `HOJE ${hoje.abre}–${hoje.fecha}` : 'ABERTO',
     tempo != null ? `${tempo} MIN` : null,

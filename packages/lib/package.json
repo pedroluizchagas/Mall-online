@@ -15,6 +15,7 @@
   "dependencies": {
     "@mallevo/types": "workspace:*",
     "@supabase/supabase-js": "^2.43.0",
+    "zod": "^3.23.0",
     "zustand": "^4.5.0"
   },
   "peerDependencies": {

@@ -10,7 +10,12 @@ import {
 import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
-import { formatarReais, getTemplateBySlug } from '@mallevo/lib'
+import {
+  abertoAgora,
+  formatarReais,
+  getTemplateBySlug,
+  resolveVitrine,
+} from '@mallevo/lib'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { SplashLoja } from '@/components/SplashLoja'
 import { ModalProduto } from '@/components/ModalProduto'
@@ -83,42 +88,6 @@ interface MetodoPagamento {
   rotulo: string
   ativo: boolean
 }
-
-/**
- * Categorias que ganham a vitrine editorial de moda quando a pele da loja é
- * o arquétipo `editorial` (docs/store-theme/02 §C). As demais categorias — e
- * os outros arquétipos — seguem no layout de catálogo padrão.
- */
-const CATEGORIAS_VITRINE_EDITORIAL = new Set([
-  'vestuario-calcados',
-  'beleza-cosmeticos',
-  'acessorios-joias',
-])
-
-/** Categorias da vitrine serena (arquétipo `serene` — beleza/joias delicadas). */
-const CATEGORIAS_VITRINE_SERENA = new Set([
-  'beleza-cosmeticos',
-  'acessorios-joias',
-  'saloes-estetica',
-])
-
-/** Categorias da vitrine artesã (arquétipo `artisan` — casa/decoração/flores). */
-const CATEGORIAS_VITRINE_ARTESA = new Set([
-  'casa-decoracao',
-  'floricultura-plantas',
-])
-
-/** Categorias da vitrine feira (arquétipo `fresh` — hortifruti/mercado fresco). */
-const CATEGORIAS_VITRINE_FEIRA = new Set([
-  'mercado-conveniencia',
-  'alimentos-bebidas',
-])
-
-/** Categorias da vitrine horta (arquétipo `garden` — comida saudável). */
-const CATEGORIAS_VITRINE_HORTA = new Set([
-  'alimentos-bebidas',
-  'saude-bem-estar',
-])
 
 export default function PaginaLoja() {
   const { slug } = useLocalSearchParams<{ slug: string }>()
@@ -267,6 +236,9 @@ export default function PaginaLoja() {
       origem: { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY },
     })
 
+  // Estado real de `stores.horarios` (null = loja não informou; mantém "Aberto").
+  const aberta = abertoAgora(loja?.horarios ?? null)
+
   // Loja de serviço (template `services`): o produto é agendado, não entregue.
   // Mesma checagem que o ModalProduto faz para montar o layout `agendamento`.
   const ehAgendamento =
@@ -274,83 +246,27 @@ export default function PaginaLoja() {
     'agendamento'
 
   // Vitrines por arquétipo: layout PRÓPRIO além da pele (docs/store-theme/05
-  // §5.6). Editorial cobre moda/beleza/acessórios; raw é streetwear puro;
-  // serene é beleza/joias delicadas.
-  const vitrineEditorial =
-    design.arquetipo === 'editorial' &&
-    CATEGORIAS_VITRINE_EDITORIAL.has(loja?.categoria_slug)
-  const vitrineRaw =
-    design.arquetipo === 'raw' && loja?.categoria_slug === 'vestuario-calcados'
-  const vitrineSerena =
-    design.arquetipo === 'serene' &&
-    CATEGORIAS_VITRINE_SERENA.has(loja?.categoria_slug)
-  const vitrineArtesa =
-    design.arquetipo === 'artisan' &&
-    CATEGORIAS_VITRINE_ARTESA.has(loja?.categoria_slug)
-  // Noir gastronômico: fine dining (restaurantes refinados escolhem a pele
-  // noir e ganham o cardápio-livro).
-  const vitrineNoir =
-    design.arquetipo === 'noir' && loja?.categoria_slug === 'alimentos-bebidas'
-  // Volt: fitness/esporte (vestuário esportivo e suplementos).
-  const vitrineVolt =
-    design.arquetipo === 'volt' &&
-    ['vestuario-calcados', 'saude-bem-estar'].includes(loja?.categoria_slug)
-  // Clínica: farmácia/saúde/vet — layout de utilidade (busca + lista densa).
-  const vitrineClinica =
-    design.arquetipo === 'clinic' &&
-    ['farmacia-medicamentos', 'saude-bem-estar', 'veterinaria'].includes(
-      loja?.categoria_slug,
-    )
-  // Torra: cafeterias/confeitarias (pôster retrô + cardápio âmbar).
-  const vitrineTorra =
-    design.arquetipo === 'roast' && loja?.categoria_slug === 'alimentos-bebidas'
-  // Smash: hamburgueria/fast-food (bordô + laranja, folha creme de cardápio).
-  const vitrineSmash =
-    design.arquetipo === 'smash' && loja?.categoria_slug === 'alimentos-bebidas'
-  // Ritual: açaíterias/lifestyle (rosa chiclete, cartões flutuando, cardápio
-  // creme puramente tipográfico).
-  const vitrineRitual =
-    design.arquetipo === 'ritual' && loja?.categoria_slug === 'alimentos-bebidas'
-  // Magazine: lojas de departamento/vende-tudo (categoria guarda-chuva).
-  const vitrineMagazine =
-    design.arquetipo === 'magazine' && loja?.categoria_slug === 'outros'
-  // Horta: comida saudável (saladerias, bowls, cafés naturais) — creme +
-  // verde-floresta, pastéis, selos recortados e fotos-adesivo.
-  const vitrineHorta =
-    design.arquetipo === 'garden' &&
-    CATEGORIAS_VITRINE_HORTA.has(loja?.categoria_slug)
-  // Forno: pizzarias/cantinas — creme fatiado em blocos preto/ouro/vermelho,
-  // pizzas em recorte redondo e coroa real.
-  const vitrineForno =
-    design.arquetipo === 'slice' && loja?.categoria_slug === 'alimentos-bebidas'
-  // Passarela: moda monocromática — branco, fotografia P&B e a compra
-  // acontecendo na própria grade (o editorial veste a mesma categoria, mas o
-  // gate é por arquétipo: os dois nunca disputam a mesma loja).
-  const vitrinePassarela =
-    design.arquetipo === 'mono' && loja?.categoria_slug === 'vestuario-calcados'
-  // Feira: hortifruti/mercado fresco — hero-cartão verde-mata, chips de foto
-  // por categoria, ofertas com cronômetro e preço por unidade.
-  const vitrineFeira =
-    design.arquetipo === 'fresh' &&
-    CATEGORIAS_VITRINE_FEIRA.has(loja?.categoria_slug)
+  // §5.6). A decisão `preset × categoria` mora em @mallevo/lib (`VITRINES`) —
+  // a mesma tabela que o storefront e o editor do lojista leem. Aqui só se
+  // mapeia o código para os componentes RN.
+  const vitrine = resolveVitrine(design.arquetipo, loja?.categoria_slug ?? null)
+  const vitrineEditorial = vitrine === 'editorial'
+  const vitrineRaw = vitrine === 'raw'
+  const vitrineSerena = vitrine === 'serena'
+  const vitrineArtesa = vitrine === 'artesa'
+  const vitrineNoir = vitrine === 'noir'
+  const vitrineVolt = vitrine === 'volt'
+  const vitrineClinica = vitrine === 'clinica'
+  const vitrineTorra = vitrine === 'torra'
+  const vitrineSmash = vitrine === 'smash'
+  const vitrineRitual = vitrine === 'ritual'
+  const vitrineMagazine = vitrine === 'magazine'
+  const vitrineHorta = vitrine === 'horta'
+  const vitrineForno = vitrine === 'forno'
+  const vitrinePassarela = vitrine === 'passarela'
+  const vitrineFeira = vitrine === 'feira'
 
-  if (
-    vitrineEditorial ||
-    vitrineRaw ||
-    vitrineSerena ||
-    vitrineArtesa ||
-    vitrineNoir ||
-    vitrineVolt ||
-    vitrineClinica ||
-    vitrineTorra ||
-    vitrineSmash ||
-    vitrineRitual ||
-    vitrineMagazine ||
-    vitrineHorta ||
-    vitrineForno ||
-    vitrinePassarela ||
-    vitrineFeira
-  ) {
+  if (vitrine) {
     // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
     // do JSX sobre componentes genéricos) — renderizada num ramo próprio.
     const Vitrine = vitrineRaw
@@ -657,7 +573,7 @@ export default function PaginaLoja() {
                   width: 8,
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: colors.success,
+                  backgroundColor: aberta === false ? colors.danger : colors.success,
                 }}
               />
               <Text
@@ -667,7 +583,7 @@ export default function PaginaLoja() {
                   ...fontStyle(design.body, 600),
                 }}
               >
-                Aberto
+                {aberta === false ? 'Fechado agora' : 'Aberto'}
               </Text>
             </View>
           </View>

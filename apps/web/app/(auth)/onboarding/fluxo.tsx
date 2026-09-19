@@ -1011,7 +1011,7 @@ function ConfirmacaoCategoria({ categoria }: { categoria: Categoria }) {
 
 // ============================================================================
 // Etapa de estilo — a loja nasce vestida (StoreTheme). Sugestão por categoria
-// via getArquetipoSugestao; os 11 arquétipos ficam disponíveis. Mesma engine
+// via getArquetipoSugestao; os 21 arquétipos ficam disponíveis. Mesma engine
 // (ARQUETIPOS/RADIUS_STEPS_PX) do editor /minha-loja e do storefront.
 // ============================================================================
 

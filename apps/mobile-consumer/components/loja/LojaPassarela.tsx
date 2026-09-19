@@ -12,7 +12,7 @@ import {
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, horarioDeHoje } from '@mallevo/lib'
 import { Botao } from '@/components/ui/Botao'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
@@ -60,9 +60,6 @@ const ESTOQUE_BAIXO = 40
 
 /** Altura útil da barra de menu inferior (sem o safe-area inset). */
 const ALTURA_BARRA_MENU = 58
-
-/** Dias na ordem de `Date.getDay()` — chaves de `stores.horarios`. */
-const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
 
 interface Horario {
   abre: string
@@ -972,7 +969,7 @@ function FechoPassarela({
     return () => clearInterval(id)
   }, [])
 
-  const hoje = horarios?.[DIAS[new Date().getDay()]]
+  const hoje = horarioDeHoje(horarios)
   const meta = [
     hoje ? `HOJE ${hoje.abre}–${hoje.fecha}` : 'ABERTO',
     tempo != null ? `${tempo} MIN` : null,

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { gerarCsv } from '@/lib/csv'
 import { z } from 'zod'
+import { metadataProdutoSchema, type MetadataProduto } from '@mallevo/lib'
 
 const schemaProduto = z.object({
   nome: z.string().min(2, 'Nome obrigatório'),
@@ -109,40 +110,13 @@ const variantsPayloadSchema = z.object({
   variants: z.array(variantSchema),
 })
 
-const metadataSchema = z
-  .object({
-    // food
-    tempo_preparo_min: z.number().int().min(1).max(180).optional(),
-    serve_pessoas: z.number().int().min(1).max(20).optional(),
-    tags: z.array(z.string().min(1).max(40)).max(20).optional(),
-    // pharmacy
-    registro_anvisa: z
-      .string()
-      .regex(/^\d\.\d{4}\.\d{4}\.\d{3}-\d$/, 'Formato esperado: 1.0123.0456.001-2')
-      .optional(),
-    principio_ativo: z.string().max(120).optional(),
-    categoria_regulatoria: z.enum(['MIP', 'Lista A', 'Lista B', 'Lista C']).optional(),
-    exige_receita: z.boolean().optional(),
-    bula_url: z.string().url().optional(),
-    tipo_medicamento: z.enum(['Genérico', 'Similar', 'Referência']).optional(),
-    // pet
-    especie: z
-      .array(z.enum(['Cães', 'Gatos', 'Aves', 'Peixes', 'Roedores', 'Outros']))
-      .optional(),
-    faixa_peso_kg: z.tuple([z.number().min(0), z.number().min(0)]).optional(),
-    tipo_oferta: z.enum(['Produto físico', 'Serviço (banho/tosa)']).optional(),
-    // generic
-    garantia_meses: z.number().int().min(0).max(120).optional(),
-    marca: z.string().max(80).optional(),
-    modelo: z.string().max(80).optional(),
-    peso_g: z.number().int().min(0).optional(),
-    dimensoes_cm: z.string().max(40).optional(),
-  })
-  .partial()
-  .passthrough()
+// `products.metadata`: contrato único em @mallevo/lib (`metadataProdutoSchema`)
+// — o mesmo que as vitrines do consumer/storefront leem. Ver
+// packages/lib/src/catalogo/metadata-produto.ts.
+const metadataSchema = metadataProdutoSchema
 
 export type GrupoModificadorInput = z.infer<typeof grupoModificadorSchema>
-export type MetadataProduto = z.infer<typeof metadataSchema>
+export type { MetadataProduto }
 export type OptionGroupInput = z.infer<typeof optionGroupSchema>
 export type VariantInput = z.infer<typeof variantSchema>
 export type VariantsPayload = z.infer<typeof variantsPayloadSchema>

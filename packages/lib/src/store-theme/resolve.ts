@@ -39,6 +39,13 @@ export function hasExplicitPreset(raw: unknown): boolean {
   )
 }
 
+/** O `preset` escolhido pelo lojista, ou `null` (tema nulo/v1). Para gates. */
+export function getPresetExplicito(raw: unknown): ArquetipoCodigo | null {
+  return hasExplicitPreset(raw)
+    ? ((raw as Record<string, unknown>).preset as ArquetipoCodigo)
+    : null
+}
+
 /**
  * Normaliza qualquer valor cru de `stores.theme` (null, v1 ou v2) num
  * `StoreThemeConfig` v2 válido. Defensivo: nunca lança.

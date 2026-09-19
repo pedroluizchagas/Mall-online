@@ -345,6 +345,9 @@ importers:
 
   apps/mobile-partner:
     dependencies:
+      '@expo-google-fonts/plus-jakarta-sans':
+        specifier: 0.4.1
+        version: 0.4.1
       '@expo/metro-runtime':
         specifier: ^57.0.15
         version: 57.0.15(@expo/log-box@57.0.4)(expo@57.0.20)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.3(@babel/core@7.29.0)(@react-native-community/cli@13.6.4)(@react-native/metro-config@0.86.3(@babel/core@7.29.0))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
@@ -381,6 +384,9 @@ importers:
       expo-file-system:
         specifier: ~57.0.6
         version: 57.0.6(expo@57.0.20)(react-native@0.86.3(@babel/core@7.29.0)(@react-native-community/cli@13.6.4)(@react-native/metro-config@0.86.3(@babel/core@7.29.0))(@types/react@19.2.18)(react@19.2.3))
+      expo-font:
+        specifier: ~57.0.3
+        version: 57.0.3(expo@57.0.20)(react-native@0.86.3(@babel/core@7.29.0)(@react-native-community/cli@13.6.4)(@react-native/metro-config@0.86.3(@babel/core@7.29.0))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)
       expo-haptics:
         specifier: ~57.0.2
         version: 57.0.2(expo@57.0.20)
@@ -530,6 +536,9 @@ importers:
       typescript:
         specifier: ^5
         version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@20.19.37)(lightningcss@1.32.0)(terser@5.46.1)
 
   apps/web:
     dependencies:
@@ -612,6 +621,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.43.0
         version: 2.100.0
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
       zustand:
         specifier: ^4.5.0
         version: 4.5.7(@types/react@19.2.18)(react@19.2.3)
@@ -7854,9 +7866,7 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.86.3': {}
 
@@ -12353,7 +12363,7 @@ snapshots:
   vite@5.4.21(@types/node@20.19.37)(lightningcss@1.32.0)(terser@5.46.1):
     dependencies:
       esbuild: 0.21.5
-      postcss: 8.5.8
+      postcss: 8.5.28
       rollup: 4.60.3
     optionalDependencies:
       '@types/node': 20.19.37

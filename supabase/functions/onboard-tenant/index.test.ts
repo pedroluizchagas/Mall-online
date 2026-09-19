@@ -177,8 +177,11 @@ function createHandler(deps: {
   const PAGARME_BASE_URL = 'https://api.pagar.me/core/v5'
 
   // Espelha a whitelist/normalização de theme da function real.
+  // (21 arquétipos — a lista defasada de 11 era exatamente o bug que fez o
+  // onboarding descartar o tema em silêncio; manter em sincronia com index.ts)
   const PRESETS_VALIDOS = new Set([
-    'heritage', 'raw', 'editorial', 'noir', 'soft', 'artisan',
+    'heritage', 'roast', 'ritual', 'smash', 'garden', 'slice', 'mono', 'fresh', 'magazine',
+    'raw', 'editorial', 'noir', 'serene', 'volt', 'soft', 'artisan',
     'clinic', 'tech', 'market', 'utility', 'playful',
   ])
   function themeValido(t: unknown): { v: 2; preset: string } | null {
@@ -475,7 +478,7 @@ describe('onboard-tenant Edge Function (Pagar.me + Stripe Billing)', () => {
   })
 
   describe('theme (StoreTheme v2) no INSERT da loja', () => {
-    it('grava {v:2, preset} quando o preset é um dos 11 arquétipos', async () => {
+    it('grava {v:2, preset} quando o preset é um dos 21 arquétipos', async () => {
       const mockClient = createMockSupabaseChain()
       const handler = createHandler({
         stripe: createMockStripe(),

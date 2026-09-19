@@ -12,7 +12,7 @@ import {
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, horarioDeHoje } from '@mallevo/lib'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
 import { type ProdutoVitrine } from '@/components/loja/LojaEditorial'
@@ -53,9 +53,6 @@ import { fontStyle } from '@/lib/store-fonts'
  */
 
 const { width: SCREEN_W } = Dimensions.get('window')
-
-/** Dias na ordem de `Date.getDay()` — chaves de `stores.horarios`. */
-const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
 
 /** Teto de itens no bloco de ofertas — o resto continua nos corredores. */
 const MAX_OFERTAS = 6
@@ -804,7 +801,7 @@ function FechoFeira({
     return () => clearInterval(id)
   }, [])
 
-  const hoje = horarios?.[DIAS[new Date().getDay()]]
+  const hoje = horarioDeHoje(horarios)
   const meta = [
     hoje ? `HOJE ${hoje.abre}–${hoje.fecha}` : 'ABERTO',
     tempo != null ? `${tempo} MIN` : null,

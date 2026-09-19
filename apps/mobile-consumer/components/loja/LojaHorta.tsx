@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Baloo2_800ExtraBold } from '@expo-google-fonts/baloo-2'
 import { Caveat_700Bold } from '@expo-google-fonts/caveat'
 import { useFonts } from 'expo-font'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, horarioDeHoje } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
@@ -85,9 +85,6 @@ const MARQUEE = [
   'FEITO À MÃO',
   'SEM ATALHOS',
 ]
-
-/** Dias na ordem de `Date.getDay()` — chaves de `stores.horarios`. */
-const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'] as const
 
 /** Altura útil da barra de menu inferior (sem o safe-area inset). */
 const ALTURA_BARRA_MENU = 58
@@ -1103,7 +1100,7 @@ function VisiteHorta({
   const { spacing, typeFactor } = design
   const larguraFoto = Math.round(SCREEN_W * 0.6)
 
-  const hoje = horarios?.[DIAS[new Date().getDay()]]
+  const hoje = horarioDeHoje(horarios)
   const linhas = [
     hoje ? `Hoje das ${hoje.abre} às ${hoje.fecha}` : null,
     tempo != null ? `Entrega em cerca de ${tempo} min` : null,

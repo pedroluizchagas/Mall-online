@@ -14,7 +14,7 @@ const MIME_PERMITIDOS = [
   'image/svg+xml',
 ] as const
 
-// Os 11 arquétipos (presets v2). Fonte da verdade: @mallevo/lib.
+// Os 21 arquétipos (presets v2). Fonte da verdade: @mallevo/lib.
 const PRESETS = Object.keys(ARQUETIPOS) as [ArquetipoCodigo, ...ArquetipoCodigo[]]
 const HEX = /^#[0-9a-fA-F]{6}$/
 

@@ -2136,6 +2136,7 @@ export type Database = {
           carga_refrigerada: boolean
           categoria_id: string | null
           cf_dns_record_id: string | null
+          conteudo: Json | null
           criado_em: string
           descricao: string | null
           domain: string | null
@@ -2168,6 +2169,7 @@ export type Database = {
           carga_refrigerada?: boolean
           categoria_id?: string | null
           cf_dns_record_id?: string | null
+          conteudo?: Json | null
           criado_em?: string
           descricao?: string | null
           domain?: string | null
@@ -2200,6 +2202,7 @@ export type Database = {
           carga_refrigerada?: boolean
           categoria_id?: string | null
           cf_dns_record_id?: string | null
+          conteudo?: Json | null
           criado_em?: string
           descricao?: string | null
           domain?: string | null
@@ -2686,6 +2689,7 @@ export type Database = {
           banner_url: string | null
           categoria_id: string | null
           categoria_slug: string | null
+          conteudo: Json | null
           descricao: string | null
           horarios: Json | null
           id: string | null
