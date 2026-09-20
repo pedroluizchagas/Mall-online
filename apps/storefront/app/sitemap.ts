@@ -3,6 +3,8 @@ import { headers } from 'next/headers'
 
 import { getStoreSlug, getStore } from '@/lib/tenant'
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { agruparPorPiso } from '@mallevo/lib'
+import { carregarLojas, urlDaLoja, urlDoShopping } from '@/lib/saguao'
 
 /**
  * sitemap.xml por tenant (host-based — D1). Reflete a loja do host:
@@ -11,7 +13,8 @@ import { createSupabaseServer } from '@/lib/supabase/server'
  * `/produto/{id}` é incluída de forma antecipada para o SEO da loja já
  * mapear o catálogo (a rota passa a existir em 3b).
  *
- * Apex / slug inexistente / loja inativa → sitemap vazio.
+ * Apex (saguão, Fase 5): home, Explorar, pisos com loja e a home de cada
+ * loja ativa em `<slug>.<domínio>`. Slug inexistente / loja inativa → vazio.
  *
  * Spec: docs/storefront/05-stage-3-storefront.md §3a (sitemap por tenant).
  */
@@ -26,7 +29,7 @@ function baseUrl(): string {
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const slug = getStoreSlug()
-  if (!slug) return []
+  if (!slug) return sitemapDoSaguao()
 
   let storeId: string
   try {
@@ -58,5 +61,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   return [
     { url: `${base}/`, lastModified: now, changeFrequency: 'daily', priority: 1 },
     ...produtos,
+  ]
+}
+
+
+/** Sitemap do apex: o saguão e a porta de cada loja. */
+async function sitemapDoSaguao(): Promise<MetadataRoute.Sitemap> {
+  const base = urlDoShopping()
+  const now = new Date()
+  const lojas = await carregarLojas()
+  const pisos = agruparPorPiso(lojas)
+  return [
+    { url: `${base}/`, lastModified: now, changeFrequency: 'daily', priority: 1 },
+    { url: `${base}/explorar`, lastModified: now, changeFrequency: 'hourly', priority: 0.8 },
+    ...pisos.map(({ piso }) => ({
+      url: `${base}/piso/${piso.slug}`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.7,
+    })),
+    ...lojas.map((l) => ({
+      url: `${urlDaLoja(l.slug)}/`,
+      lastModified: now,
+      changeFrequency: 'daily' as const,
+      priority: 0.6,
+    })),
   ]
 }

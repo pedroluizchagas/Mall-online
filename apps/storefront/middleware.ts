@@ -8,6 +8,9 @@ const MAIN_DOMAINS = ['mallevo.com.br', 'mallevo.localhost']
 // Subdomínios reservados (Dashboard/Admin/API/www) nunca são slug de loja.
 const IGNORED_SUBDOMAINS = new Set(['www', 'app', 'admin', 'api'])
 
+/** Rotas do saguão no apex: home, Explorar e um piso. */
+const ROTAS_SAGUAO = /^\/(|explorar|piso\/[a-z0-9-]+)$/
+
 /**
  * Extrai o slug da loja a partir do header `host`.
  * Portado de apps/web/middleware.ts. Retorna `null` no apex / www /
@@ -49,6 +52,27 @@ export async function middleware(request: NextRequest) {
     requestHeaders.delete('x-store-slug')
   }
 
+  // Saguão (Fase 5): sem slug — apex, www ou host sem subdomínio (dev) — a
+  // home, o Explorar e as páginas de piso são reescritos para `app/saguao`.
+  // Reescrita interna: a URL do navegador continua `/`, `/explorar`,
+  // `/piso/<slug>`. Num host de loja o grupo `saguao` não existe (404).
+  const { pathname } = request.nextUrl
+  // O caminho interno nunca é a URL canônica: `/saguao/x` → `/x`.
+  if (!slug && (pathname === '/saguao' || pathname.startsWith('/saguao/'))) {
+    const canonica = request.nextUrl.clone()
+    canonica.pathname = pathname.slice('/saguao'.length) || '/'
+    return NextResponse.redirect(canonica, 308)
+  }
+  let destino: URL | null = null
+  if (!slug && ROTAS_SAGUAO.test(pathname)) {
+    destino = request.nextUrl.clone()
+    destino.pathname = pathname === '/' ? '/saguao' : `/saguao${pathname}`
+  }
+  const responder = () =>
+    destino
+      ? NextResponse.rewrite(destino, { request: { headers: requestHeaders } })
+      : NextResponse.next({ request: { headers: requestHeaders } })
+
   // Override de QA (`?preset=slice&categoria=alimentos-bebidas`): só quando
   // STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true no ambiente (nunca em produção).
   // Vira header porque layouts não recebem searchParams; `lib/tenant.ts`
@@ -65,7 +89,7 @@ export async function middleware(request: NextRequest) {
   // --- Cookie dance @supabase/ssr (mesmo bloco de apps/web/middleware.ts) ---
   // Renova o token do consumer a cada request. Sessão escopada ao host
   // exato (D5). Diferença-chave vs. web: o storefront NÃO faz rewrite.
-  let response = NextResponse.next({ request: { headers: requestHeaders } })
+  let response = responder()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -77,7 +101,7 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
-          response = NextResponse.next({ request: { headers: requestHeaders } })
+          response = responder()
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
           )

@@ -2,11 +2,12 @@ import type { MetadataRoute } from 'next'
 import { headers } from 'next/headers'
 
 import { getStoreSlug, getStore } from '@/lib/tenant'
+import { urlDoShopping } from '@/lib/saguao'
 
 /**
  * robots.txt por tenant (host-based — D1). Loja válida → indexável,
- * apontando o sitemap do próprio host. Apex / slug inexistente / loja
- * inativa → bloqueia indexação (não há catálogo a expor).
+ * apontando o sitemap do próprio host. Apex → saguão indexável. Slug
+ * inexistente / loja inativa → bloqueia indexação.
  *
  * Dinâmico: depende do header `host` (via getStoreSlug/getStore).
  *
@@ -24,8 +25,12 @@ function baseUrl(): string {
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const slug = getStoreSlug()
 
+  // Apex = saguão (Fase 5): indexável, com o sitemap do shopping.
   if (!slug) {
-    return { rules: { userAgent: '*', disallow: '/' } }
+    return {
+      rules: { userAgent: '*', allow: '/', disallow: ['/preview', '/saguao'] },
+      sitemap: `${urlDoShopping()}/sitemap.xml`,
+    }
   }
 
   try {
