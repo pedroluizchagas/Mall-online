@@ -114,7 +114,8 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
 - `fresh` + categoria ∈ {`mercado-conveniencia`, `alimentos-bebidas`}
   (`CATEGORIAS_VITRINE_FEIRA` — hortifruti/mercado fresco);
 - `magazine` + categoria `outros` (lojas de departamento);
-- `heritage` + categoria `alimentos-bebidas` (o DEFAULT da categoria — restaurantes e cafés com história).
+- `heritage` + categoria `alimentos-bebidas` (o DEFAULT da categoria — restaurantes e cafés com história);
+- `market` + categoria ∈ {`mercado-conveniencia`, `construcao-ferramentas`, `oficinas-manutencao`} (utilidade densa).
 
 **Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
 faixa-anúncio no topo, header claro com WORDMARK EM SERIFA, hero com CAIXA
@@ -322,6 +323,22 @@ Componentes: `components/loja/LojaMesa.tsx` + `ProdutoMesa.tsx`. É a vitrine
 do DEFAULT de alimentação — antes, a maior categoria caía no layout padrão.
 2026-09-20 (Fase 4 da convergência), com porte web em
 `apps/storefront/components/vitrines/mesa/`.
+
+**Vitrine gôndola** (arquétipo market, [02 §I]): a compra escaneável e por
+preço — CABEÇALHO CURTO e brilhante (logo + nome + meta na faixa verde-suave;
+a campanha do lojista, quando existe, vira a manchete da faixa), BUSCA e
+CHIPS DE CATEGORIA GRUDADOS no topo (rolam até o corredor e acendem com a
+leitura), OFERTAS DO DIA em trilho compacto com o preço na frente (-N%,
+antigo riscado), GRADE DENSA de 3 colunas por corredor com foto pequena,
+nome em duas linhas, PREÇO GRANDE (verde da pele em oferta, unidade "/kg"
+de `metadata.unidade`) e ADIÇÃO RÁPIDA no cartão ("+" que vira contador;
+item com variação/modificador ou sacola de outra loja abre o detalhe). Sem
+hero fotográfico: o produto é a foto. Barra fixa (molde A). PDP de ficha de
+mercado: palco contido, preço grande com unidade, contador de quantidade na
+barra de compra. Componentes: `components/loja/LojaGondola.tsx` +
+`ProdutoGondola.tsx`; porte web em `apps/storefront/components/vitrines/gondola/`.
+2026-09-20 (Fase 4). Distinta da feira (hero-cartão, discos, cronômetro):
+gôndola é utilidade de corredor, sem marca de quitanda.
 
 **Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
 casa repetida em degradê âmbar com o produto flutuando por cima, trocando

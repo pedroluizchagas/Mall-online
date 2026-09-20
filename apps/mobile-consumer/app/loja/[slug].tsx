@@ -52,6 +52,8 @@ import { LojaFeira } from '@/components/loja/LojaFeira'
 import { ProdutoFeira } from '@/components/loja/ProdutoFeira'
 import { LojaMesa } from '@/components/loja/LojaMesa'
 import { ProdutoMesa } from '@/components/loja/ProdutoMesa'
+import { LojaGondola } from '@/components/loja/LojaGondola'
+import { ProdutoGondola } from '@/components/loja/ProdutoGondola'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -273,6 +275,7 @@ export default function PaginaLoja() {
   const vitrinePassarela = vitrine === 'passarela'
   const vitrineFeira = vitrine === 'feira'
   const vitrineMesa = vitrine === 'mesa'
+  const vitrineGondola = vitrine === 'gondola'
 
   if (vitrine) {
     // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
@@ -345,7 +348,9 @@ export default function PaginaLoja() {
                                 ? ProdutoFeira
                                 : vitrineMesa
                                   ? ProdutoMesa
-                                  : ProdutoEditorial
+                                  : vitrineGondola
+                                    ? ProdutoGondola
+                                    : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
@@ -358,6 +363,13 @@ export default function PaginaLoja() {
            */}
           {vitrineClinica ? (
             <LojaClinica
+              loja={loja}
+              secoes={secoes}
+              aoAbrirProduto={setProdutoSelecionado}
+              espacoFinal={24}
+            />
+          ) : vitrineGondola ? (
+            <LojaGondola
               loja={loja}
               secoes={secoes}
               aoAbrirProduto={setProdutoSelecionado}

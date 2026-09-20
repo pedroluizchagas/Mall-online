@@ -170,6 +170,15 @@ export const VITRINES = {
     componentes: { vitrine: 'LojaMesa', pdp: 'ProdutoMesa' },
     descricao: 'Casa de tradição: serifa, creme, foto full-bleed, selo e cardápio-livro.',
   },
+  gondola: {
+    codigo: 'gondola',
+    nome: 'Gôndola',
+    arquetipo: 'market',
+    categorias: ['mercado-conveniencia', 'construcao-ferramentas', 'oficinas-manutencao'],
+    barra: 'fixa',
+    componentes: { vitrine: 'LojaGondola', pdp: 'ProdutoGondola' },
+    descricao: 'Mercado: busca e chips grudados, grade densa com preço grande e adição rápida.',
+  },
   feira: {
     codigo: 'feira',
     nome: 'Feira',

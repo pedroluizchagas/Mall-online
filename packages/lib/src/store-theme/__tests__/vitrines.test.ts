@@ -49,7 +49,7 @@ describe('VITRINES — coerência da tabela', () => {
 
   it('lista os arquétipos que hoje só têm pele', () => {
     expect([...ARQUETIPOS_SEM_VITRINE].sort()).toEqual(
-      ['market', 'playful', 'soft', 'tech', 'utility'].sort(),
+      ['playful', 'soft', 'tech', 'utility'].sort(),
     )
     expect(lista.length + ARQUETIPOS_SEM_VITRINE.length).toBe(Object.keys(ARQUETIPOS).length)
   })
@@ -62,6 +62,8 @@ describe('resolveVitrine', () => {
     expect(resolveVitrine('fresh', 'mercado-conveniencia')).toBe('feira')
     expect(resolveVitrine('clinic', 'veterinaria')).toBe('clinica')
     expect(resolveVitrine('heritage', 'alimentos-bebidas')).toBe('mesa')
+    expect(resolveVitrine('market', 'mercado-conveniencia')).toBe('gondola')
+    expect(resolveVitrine('market', 'construcao-ferramentas')).toBe('gondola')
   })
 
   it('arquétipo certo em categoria fora do gate → null (só pele)', () => {

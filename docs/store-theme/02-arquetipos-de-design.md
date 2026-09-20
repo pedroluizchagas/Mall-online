@@ -158,6 +158,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **Problema que resolve:** compra de mercado é **escaneável e por preço/oferta** — grade densa, muitos itens, destaque de promoção. Nenhum arquétipo boutique serve.
 - **DNA:** brilhante e eficiente; acento verde fresco; densidade compacta; ênfase em preço; chips de categoria.
 - **Mood:** eficiente, fresco, direto.
+- **Layout próprio no consumer e no web:** vitrine gôndola — ver [05 §5.6](05-aplicacao-storefront-consumer.md). 2026-09-20.
 
 #### J. Utility — `utility`
 - **Nichos:** **construção & ferramentas**, **oficinas & manutenção**, **autopeças**.

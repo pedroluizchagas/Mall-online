@@ -9,6 +9,7 @@ import { VitrineClinica } from './clinica/VitrineClinica'
 import { VitrineEditorial } from './editorial/VitrineEditorial'
 import { VitrineFeira } from './feira/VitrineFeira'
 import { VitrineForno } from './forno/VitrineForno'
+import { VitrineGondola } from './gondola/VitrineGondola'
 import { VitrineHorta } from './horta/VitrineHorta'
 import { VitrineMagazine } from './magazine/VitrineMagazine'
 import { VitrineMesa } from './mesa/VitrineMesa'
@@ -53,6 +54,7 @@ export const VITRINES_WEB: Record<VitrineCodigo, ComponentType<VitrineWebProps>>
   magazine: VitrineMagazine,
   // Fase 4 — arquétipos que não tinham vitrine
   mesa: VitrineMesa,
+  gondola: VitrineGondola,
 }
 
 /** O componente que esta loja veste: vitrine do arquétipo ou o padrão. */

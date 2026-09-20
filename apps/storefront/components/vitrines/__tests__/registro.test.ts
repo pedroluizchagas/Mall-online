@@ -20,7 +20,7 @@ describe('VITRINES_WEB', () => {
         'forno', 'smash', 'torra', 'noir', 'horta', 'ritual', 'feira',
         'editorial', 'passarela', 'raw', 'volt', 'serena',
         'clinica', 'artesa', 'magazine',
-        'mesa',
+        'mesa', 'gondola',
       ]),
     )
   })
