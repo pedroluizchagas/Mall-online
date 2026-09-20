@@ -2,6 +2,7 @@
 
 import { useFormState, useFormStatus } from 'react-dom'
 import { atualizarDadosGerais } from '@/lib/actions/lojas'
+import { EnderecoPublico } from './endereco-publico'
 
 function BotaoSalvar({ label = 'Salvar' }: { label?: string }) {
   const { pending } = useFormStatus()
@@ -111,8 +112,9 @@ export function AbaIdentificacao({ loja, emailComercial }: Props) {
           </div>
           <p className="text-xs text-ink-3 mt-1">
             URL pública da sua loja. Só letras minúsculas, números e hífens.
-            {loja.slug && ' Alterar invalida links compartilhados.'}
+            {loja.slug && ' Ao salvar um slug novo, o endereço é provisionado antes de gravar; links antigos deixam de responder.'}
           </p>
+          <EnderecoPublico slug={loja.slug ?? null} domain={loja.domain ?? null} />
         </div>
 
         {emailComercial && (

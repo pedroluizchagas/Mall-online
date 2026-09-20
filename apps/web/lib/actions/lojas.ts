@@ -305,3 +305,41 @@ export async function atualizarEndereco(
   revalidatePath('/configuracoes')
   return { sucesso: true }
 }
+
+/**
+ * Provisiona (ou reprovisiona) o endereço público do slug ATUAL —
+ * `<slug>.mallevo.com.br` na Cloudflare e na Vercel — e registra em
+ * `stores.domain`. Idempotente: CNAME e domínio já existentes são reaproveitados.
+ * É o botão "Provisionar agora" de Configurações e a correção do card de saúde.
+ */
+export async function provisionarEnderecoPublico(): Promise<
+  { sucesso: true; domain: string } | { erro: string }
+> {
+  const supabase = createSupabaseServer()
+  const { data: tenant } = await supabase.from('tenants').select('id').single()
+  if (!tenant) return { erro: 'Tenant não encontrado' }
+
+  const { data: loja } = await supabase
+    .from('stores')
+    .select('id, slug')
+    .eq('tenant_id', tenant.id)
+    .single()
+  if (!loja) return { erro: 'Loja não encontrada' }
+  if (!loja.slug) return { erro: 'Defina o slug da loja antes de provisionar o endereço.' }
+
+  const dominio = await provisionTenantDomain(loja.slug)
+  if (!dominio.success) {
+    return { erro: `Falha ao provisionar ${dominio.domain} (${dominio.step}): ${dominio.error}` }
+  }
+
+  const { error } = await supabase
+    .from('stores')
+    .update({ domain: dominio.domain, cf_dns_record_id: dominio.cloudflareId })
+    .eq('id', loja.id)
+    .eq('tenant_id', tenant.id)
+  if (error) return { erro: error.message }
+
+  revalidatePath('/')
+  revalidatePath('/configuracoes')
+  return { sucesso: true, domain: dominio.domain }
+}

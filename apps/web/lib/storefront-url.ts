@@ -48,3 +48,21 @@ export function urlPreviewDaLoja(
   if (opcoes.app) params.set('app', '1')
   return `${urlDaLoja(slug)}/preview?${params.toString()}`
 }
+
+/** Domínio provisionado para um slug (`stores.domain` quando está em dia). */
+export function dominioDoSlug(slug: string): string {
+  return `${slug}.mallevo.com.br`
+}
+
+/**
+ * Estado do endereço público: com o DNS na Cloudflare, a Vercel só emite
+ * certificado para hostname provisionado explicitamente, e `stores.domain`
+ * é o registro disso. `ok` quando o registro é o do slug atual.
+ */
+export function statusEnderecoPublico(
+  slug: string | null | undefined,
+  domain: string | null | undefined,
+): 'ok' | 'sem_slug' | 'pendente' {
+  if (!slug) return 'sem_slug'
+  return domain === dominioDoSlug(slug) ? 'ok' : 'pendente'
+}

@@ -1,6 +1,7 @@
 'use server'
 
 import { createSupabaseServer } from '@/lib/supabase/server'
+import { statusEnderecoPublico } from '@/lib/storefront-url'
 
 /**
  * Leituras da home (dashboard-redesign 03 §3.1 / Fase 4 §5).
@@ -33,7 +34,7 @@ export async function getSaudeLoja(): Promise<AvisoSaude[]> {
 
   const { data: loja } = await supabase
     .from('stores')
-    .select('id, ativo, horarios, taxa_entrega, raio_entrega_km, theme')
+    .select('id, ativo, horarios, taxa_entrega, raio_entrega_km, theme, slug, domain, banner_url, descricao, conteudo')
     .eq('tenant_id', tenant.id)
     .limit(1)
     .maybeSingle()
@@ -47,6 +48,7 @@ export async function getSaudeLoja(): Promise<AvisoSaude[]> {
     { count: semFoto },
     { data: comEstoque },
     { data: reviews7d },
+    { count: comGaleria },
   ] = await Promise.all([
     supabase
       .from('products')
@@ -67,6 +69,12 @@ export async function getSaudeLoja(): Promise<AvisoSaude[]> {
       .select('estrelas_loja')
       .eq('tenant_id', tenant.id)
       .gte('criada_em', seteDiasAtras.toISOString()),
+    // Produtos com galeria (`metadata.galeria` não vazia) — o que o PDP das vitrines folheia.
+    supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('store_id', loja.id)
+      .not('metadata->galeria->0', 'is', null),
   ])
 
   const avisos: AvisoSaude[] = []
@@ -119,6 +127,29 @@ export async function getSaudeLoja(): Promise<AvisoSaude[]> {
         },
   )
 
+  // Endereço público: com o DNS na Cloudflare, `<slug>.mallevo.com.br` só
+  // responde com certificado depois de PROVISIONADO na Vercel (o curinga não
+  // cobre). `stores.domain` é o registro do provisionamento; slug diferente
+  // dele = loja no ar sem TLS (o caso guaimbes/guaimbe de 2026-09-20).
+  const status = statusEnderecoPublico(loja.slug, loja.domain)
+  avisos.push(
+    status === 'ok'
+      ? { id: 'endereco_publico', severidade: 'ok', titulo: `${loja.slug}.mallevo.com.br no ar` }
+      : status === 'sem_slug'
+        ? {
+            id: 'endereco_publico',
+            severidade: 'erro',
+            titulo: 'Loja sem endereço público',
+            cta: { label: 'Definir', href: '/configuracoes?aba=identificacao' },
+          }
+        : {
+            id: 'endereco_publico',
+            severidade: 'erro',
+            titulo: `${loja.slug}.mallevo.com.br sem certificado`,
+            cta: { label: 'Provisionar', href: '/configuracoes?aba=identificacao' },
+          },
+  )
+
   // ── Avisos operacionais ────────────────────────────────────────────────
   if (loja.ativo === false) {
     avisos.push({
@@ -161,6 +192,45 @@ export async function getSaudeLoja(): Promise<AvisoSaude[]> {
         cta: { label: 'Ver avaliações', href: '/avaliacoes' },
       })
     }
+  }
+
+  // ── O que as vitrines mostram (plano de convergência, Fase 1b) ─────────
+  if (!loja.banner_url) {
+    avisos.push({
+      id: 'sem_banner',
+      severidade: 'aviso',
+      titulo: 'Vitrine sem banner (o hero fica vazio)',
+      cta: { label: 'Enviar', href: '/minha-loja' },
+    })
+  }
+  if (!loja.descricao || String(loja.descricao).trim().length === 0) {
+    avisos.push({
+      id: 'sem_descricao',
+      severidade: 'aviso',
+      titulo: 'Loja sem descrição',
+      cta: { label: 'Escrever', href: '/minha-loja' },
+    })
+  }
+  const conteudoLoja = loja.conteudo as { campanha?: unknown } | null
+  if (!conteudoLoja?.campanha) {
+    avisos.push({
+      id: 'sem_campanha',
+      severidade: 'info',
+      titulo: 'Sem campanha na vitrine (a manchete usa o nome da loja)',
+      cta: { label: 'Criar', href: '/minha-loja' },
+    })
+  }
+  if ((totalProdutos ?? 0) > 0) {
+    avisos.push(
+      (comGaleria ?? 0) > 0
+        ? { id: 'galeria', severidade: 'ok', titulo: `Galeria em ${comGaleria} produto${comGaleria === 1 ? '' : 's'}` }
+        : {
+            id: 'galeria',
+            severidade: 'info',
+            titulo: 'Nenhum produto com galeria de fotos',
+            cta: { label: 'Adicionar', href: '/produtos' },
+          },
+    )
   }
 
   // Vitrine sem estilo publicado → a loja renderiza com a aparência genérica.
