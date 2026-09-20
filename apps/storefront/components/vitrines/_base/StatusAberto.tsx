@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { abertoAgora, horarioDeHoje, minutosDoDia, relogioDaLoja } from '@mallevo/lib'
+import { relogioDaLoja, statusAbertura } from '@mallevo/lib'
 
 /**
  * Relógio vivo da loja: "Aberto até 18:00" / "Abre às 08:00" / "Fechado hoje".
@@ -26,18 +26,9 @@ export function StatusAberto({
     return () => clearInterval(id)
   }, [])
 
-  const aberta = abertoAgora(horarios, agora)
-  if (aberta === null) return null
-
-  const hoje = horarioDeHoje(horarios, agora)
-  const minutos = agora.getHours() * 60 + agora.getMinutes()
-  const texto = aberta
-    ? hoje
-      ? `Aberto até ${hoje.fecha}`
-      : 'Aberto'
-    : hoje && minutos < minutosDoDia(hoje.abre)
-      ? `Abre às ${hoje.abre}`
-      : 'Fechado agora'
+  const status = statusAbertura(horarios, agora)
+  if (status === null) return null
+  const { aberta, texto } = status
 
   return (
     <span className={`flex items-center gap-1.5 ${className}`} suppressHydrationWarning>

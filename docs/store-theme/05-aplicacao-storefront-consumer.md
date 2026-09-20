@@ -113,7 +113,8 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
   a mesma loja);
 - `fresh` + categoria ∈ {`mercado-conveniencia`, `alimentos-bebidas`}
   (`CATEGORIAS_VITRINE_FEIRA` — hortifruti/mercado fresco);
-- `magazine` + categoria `outros` (lojas de departamento).
+- `magazine` + categoria `outros` (lojas de departamento);
+- `heritage` + categoria `alimentos-bebidas` (o DEFAULT da categoria — restaurantes e cafés com história).
 
 **Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
 faixa-anúncio no topo, header claro com WORDMARK EM SERIFA, hero com CAIXA
@@ -304,6 +305,23 @@ com unidade, ficha de especificações e CTA lima que vira o verde da casa), com
 o vocabulário em `components/loja/feira-ui.tsx` (botão, selo de oferta, chip de
 cronômetro, disco de categoria). Sem fonte-DNA local: a voz é a Plus Jakarta
 Sans do tema.
+
+**Vitrine mesa** (referências Veloria, Bistora e La Paloma, [02 §A]): a casa
+de tradição — HERO FULL-BLEED com a foto da casa, véu quente e o nome (ou a
+campanha) em SERIFA de display (Fraunces) em creme, SELO DE TRADIÇÃO circular
+(inicial em serifa entre dois anéis) e CTA de contorno em pill; muito RESPIRO:
+statement da casa (manifesto ou descrição) em serifa leve centrada, blocos
+separados por ORNAMENTO (fio · losango · fio); PRATOS DA CASA (os `destaques`
+do lojista; senão os primeiros com foto) em trilho de fotos 4:5 com legenda
+serifada; CARDÁPIO-LIVRO sobre o creme — título de seção serifado centrado,
+itens com foto pequena, nome em serifa e LINHA PONTILHADA até o preço, a
+gramática do cardápio impresso; no web, `galeria_casa` vira a faixa "A mesa
+posta". Barra de menu fixa (molde A). PDP: folha creme subindo da foto, nome
+em serifa com ornamento, preço em serifa e pill madeira de largura cheia.
+Componentes: `components/loja/LojaMesa.tsx` + `ProdutoMesa.tsx`. É a vitrine
+do DEFAULT de alimentação — antes, a maior categoria caía no layout padrão.
+2026-09-20 (Fase 4 da convergência), com porte web em
+`apps/storefront/components/vitrines/mesa/`.
 
 **Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
 casa repetida em degradê âmbar com o produto flutuando por cima, trocando

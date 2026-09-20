@@ -49,7 +49,7 @@ describe('VITRINES — coerência da tabela', () => {
 
   it('lista os arquétipos que hoje só têm pele', () => {
     expect([...ARQUETIPOS_SEM_VITRINE].sort()).toEqual(
-      ['heritage', 'market', 'playful', 'soft', 'tech', 'utility'].sort(),
+      ['market', 'playful', 'soft', 'tech', 'utility'].sort(),
     )
     expect(lista.length + ARQUETIPOS_SEM_VITRINE.length).toBe(Object.keys(ARQUETIPOS).length)
   })
@@ -61,6 +61,7 @@ describe('resolveVitrine', () => {
     expect(resolveVitrine('mono', 'vestuario-calcados')).toBe('passarela')
     expect(resolveVitrine('fresh', 'mercado-conveniencia')).toBe('feira')
     expect(resolveVitrine('clinic', 'veterinaria')).toBe('clinica')
+    expect(resolveVitrine('heritage', 'alimentos-bebidas')).toBe('mesa')
   })
 
   it('arquétipo certo em categoria fora do gate → null (só pele)', () => {
@@ -74,7 +75,7 @@ describe('resolveVitrine', () => {
   })
 
   it('arquétipo sem vitrine, nulos e lixo → null, sem lançar', () => {
-    expect(resolveVitrine('heritage', 'alimentos-bebidas')).toBeNull()
+    expect(resolveVitrine('tech', 'eletronicos-tecnologia')).toBeNull()
     expect(resolveVitrine(null, 'alimentos-bebidas')).toBeNull()
     expect(resolveVitrine('smash', null)).toBeNull()
     expect(resolveVitrine('nao-existe', 'categoria-nova')).toBeNull()
@@ -82,7 +83,8 @@ describe('resolveVitrine', () => {
 
   it('getVitrineDoArquetipo informa o editor', () => {
     expect(getVitrineDoArquetipo('slice')?.nome).toBe('Forno')
-    expect(getVitrineDoArquetipo('heritage')).toBeNull()
+    expect(getVitrineDoArquetipo('heritage')?.nome).toBe('Mesa')
+    expect(getVitrineDoArquetipo('tech')).toBeNull()
     expect(getVitrineDoArquetipo(undefined)).toBeNull()
   })
 })

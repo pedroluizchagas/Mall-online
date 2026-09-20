@@ -17,6 +17,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **DNA:** serifa de display; neutros quentes/creme; foto de comida full-bleed; selos de tradição; muito respiro.
 - **Mood:** sofisticado, atemporal, acolhedor.
 - **Refs:** [Veloria](https://veloriarestaurant.framer.website/), [Savoria](https://savoriarestro.framer.website/), [Bistora](https://bistora.framer.website/), [La Paloma](https://lapaloma.framer.website/), [Multiple Influence](https://multiple-influence-475025.framer.app/).
+- **Layout próprio no consumer e no web:** vitrine mesa — ver [05 §5.6](05-aplicacao-storefront-consumer.md). 2026-09-20: o default de alimentação deixou o layout padrão.
 
 #### A2. Roast — `roast`
 - **Nichos:** cafeterias, confeitarias boutique e **açaíterias** (alternativa de `alimentos-bebidas`).

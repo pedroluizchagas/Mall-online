@@ -134,3 +134,24 @@ export function abertoAgora(raw: unknown, agora: Date = new Date()): boolean | n
 export function formatarHorario(h: Horario): string {
   return `${h.abre}–${h.fecha}`
 }
+
+export interface StatusAbertura {
+  aberta: boolean
+  /** "Aberto até 18:00" · "Abre às 08:00" · "Fechado agora". */
+  texto: string
+}
+
+/**
+ * O que o letreiro diz sobre a abertura AGORA — a mesma frase no consumer,
+ * no storefront e no saguão. `null` quando a loja não informou horários: a
+ * regra da convergência é não inventar "Aberto".
+ */
+export function statusAbertura(raw: unknown, agora: Date = new Date()): StatusAbertura | null {
+  const aberta = abertoAgora(raw, agora)
+  if (aberta === null) return null
+  const hoje = horarioDeHoje(raw, agora)
+  if (aberta) return { aberta, texto: hoje ? `Aberto até ${hoje.fecha}` : 'Aberto' }
+  const minutos = agora.getHours() * 60 + agora.getMinutes()
+  if (hoje && minutos < minutosDoDia(hoje.abre)) return { aberta, texto: `Abre às ${hoje.abre}` }
+  return { aberta, texto: 'Fechado agora' }
+}

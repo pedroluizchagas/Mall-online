@@ -14,7 +14,8 @@
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
     "test": "pnpm -r --if-present test",
-    "qa:local": "bash scripts/qa-local.sh"
+    "qa:local": "bash scripts/qa-local.sh",
+    "seed:vitrines": "node scripts/gerar-seed-vitrines.mjs"
   },
   "devDependencies": {
     "supabase": "^1.200.0",

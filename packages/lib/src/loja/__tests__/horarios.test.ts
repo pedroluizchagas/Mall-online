@@ -6,6 +6,7 @@ import {
   formatarHorario,
   horarioDeHoje,
   normalizarHorarios,
+  statusAbertura,
 } from '../horarios'
 
 // 2026-09-16 é quarta-feira.
@@ -81,5 +82,16 @@ describe('relogioDaLoja', () => {
     const r = relogioDaLoja(new Date('2026-09-16T03:00:00Z'), FUSO_LOJA)
     expect(r.getHours()).toBe(0)
     expect(r.getDate()).toBe(16)
+  })
+})
+
+describe('statusAbertura', () => {
+  it('aberta → "Aberto até"; antes de abrir → "Abre às"; depois → "Fechado agora"', () => {
+    expect(statusAbertura(COMERCIAL, qua(10))).toEqual({ aberta: true, texto: 'Aberto até 18:00' })
+    expect(statusAbertura(COMERCIAL, qua(7))).toEqual({ aberta: false, texto: 'Abre às 08:00' })
+    expect(statusAbertura(COMERCIAL, qua(19))).toEqual({ aberta: false, texto: 'Fechado agora' })
+  })
+  it('sem horários → null (não inventa "Aberto")', () => {
+    expect(statusAbertura(null, qua(10))).toBeNull()
   })
 })

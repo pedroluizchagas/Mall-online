@@ -6,19 +6,21 @@ import { VITRINES } from '@mallevo/lib'
 /**
  * Guarda do registro web SEM importar componentes React (o runner é node):
  * lê `index.ts` como texto e confere que cada vitrine registrada existe na
- * tabela da lib e tem arquivo no disco. Quando as 15 estiverem portadas, a
- * segunda asserção vira "toda vitrine da lib está registrada".
+ * tabela da lib e tem arquivo no disco — e que TODA vitrine da lib está
+ * registrada (paridade app ↔ web, DoD da Fase 2b).
  */
 describe('VITRINES_WEB', () => {
   const DIR = resolve(__dirname, '..')
   const fonte = readFileSync(resolve(DIR, 'index.ts'), 'utf8')
   const registradas = [...fonte.matchAll(/^\s+(\w+): Vitrine\w+,$/gm)].map((m) => m[1])
 
-  it('registra pelo menos a onda 1', () => {
+  it('registra as três ondas', () => {
     expect(registradas).toEqual(
       expect.arrayContaining([
         'forno', 'smash', 'torra', 'noir', 'horta', 'ritual', 'feira',
         'editorial', 'passarela', 'raw', 'volt', 'serena',
+        'clinica', 'artesa', 'magazine',
+        'mesa',
       ]),
     )
   })
@@ -29,9 +31,8 @@ describe('VITRINES_WEB', () => {
     expect(existsSync(resolve(DIR, codigo, `${nome}.tsx`))).toBe(true)
   })
 
-  it('o que falta portar está documentado', () => {
+  it('toda vitrine da lib tem porte web', () => {
     const faltam = Object.keys(VITRINES).filter((c) => !registradas.includes(c))
-    // Baixa a cada onda; nunca deve subir.
-    expect(faltam.length).toBeLessThanOrEqual(3)
+    expect(faltam).toEqual([])
   })
 })

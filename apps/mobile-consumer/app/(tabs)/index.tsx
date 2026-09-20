@@ -37,7 +37,7 @@ import { useCartStore } from '@/store/useCartStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useOrderStore } from '@/store/useOrderStore'
 import { useSeguidas } from '@/store/useSeguidas'
-import { formatarReais, PISOS } from '@mallevo/lib'
+import { SUBTITULO_POR_PISO, agruparPorPiso, formatarReais } from '@mallevo/lib'
 import { consumerDesign, saudacaoPorHorario } from '@/lib/consumer-design'
 import { enderecoPadrao } from '@/lib/enderecos'
 import { metaDoStatus, ehAtivo } from '@/lib/status-pedido'
@@ -73,27 +73,12 @@ interface Loja {
  * subtítulo diz o que o consumidor encontra ali, não onde fica.
  */
 
-/** Piso curatorial → subtítulo (o que o consumidor encontra na seção). */
-const SUBTITULO_POR_PISO: Record<string, string> = {
-  'praca-alimentacao': 'Restaurantes, lanches e cafés',
-  'moda-estilo': 'Roupas, calçados e acessórios',
-  'saude': 'Farmácias, clínicas e bem-estar',
-  'beleza': 'Salões, estética e cosméticos',
-  'pet': 'Ração, acessórios e cuidados do pet',
-  'casa-vida': 'Decoração, eletrônicos e ferramentas',
-  'mercado': 'Mercado, hortifrúti e conveniência',
-  'servicos': 'Oficinas, manutenção e cursos',
-  'presentes-diversao': 'Brinquedos, papelaria e presentes',
-}
-
-const SECOES = [...PISOS]
-  .sort((a, b) => a.ordem - b.ordem)
-  .map((piso) => ({
-    slug: piso.slug,
-    ordem: piso.ordem,
-    titulo: piso.nome,
-    subtitulo: SUBTITULO_POR_PISO[piso.slug] ?? '',
-  }))
+/**
+ * Seções do home = os pisos com pelo menos uma loja, na ordem de `PISOS`. A
+ * distribuição (cada loja em UM piso só — o de menor ordem da sua categoria;
+ * sem categoria → `PISO_FALLBACK`) e o subtítulo vivem em @mallevo/lib
+ * (`agruparPorPiso`, `SUBTITULO_POR_PISO`): o saguão web lê a mesma tabela.
+ */
 
 /**
  * Teto da busca de lojas. Precisa cobrir o shopping inteiro: o corte é
@@ -101,38 +86,6 @@ const SECOES = [...PISOS]
  * some da tela — e um piso inteiro sem loja deixa de renderizar.
  */
 const LIMITE_LOJAS = 200
-
-/**
- * Fallback: 'casa-vida'. É o piso mais abrangente (decoração, eletrônicos,
- * ferramentas, plantas, automotivo) e o único que já absorvia a categoria
- * 'outros' — que, por sinal, não pertence a piso nenhum. Loja sem categoria
- * ou com slug desconhecido aparece ali em vez de sumir do home.
- */
-const PISO_FALLBACK = 'casa-vida'
-const SECAO_FALLBACK = Math.max(
-  0,
-  SECOES.findIndex((s) => s.slug === PISO_FALLBACK),
-)
-
-/**
- * Categoria (slug global) → índice da seção em SECOES. Construído UMA vez,
- * fora do render.
- *
- * Uma categoria pode pertencer a 2 pisos (veterinária em Saúde+Pet,
- * salões-estética em Beleza+Serviços, floricultura em Casa&Vida+Presentes),
- * mas a loja entra só no primeiro (menor `ordem`) — senão ela apareceria
- * duas vezes no home, que é justamente o que d67f3c8 eliminou.
- */
-const SECAO_POR_CATEGORIA: Record<string, number> = (() => {
-  const mapa: Record<string, number> = {}
-  SECOES.forEach((secao, indice) => {
-    const piso = PISOS.find((p) => p.slug === secao.slug)!
-    piso.categoriasSlugs.forEach((categoria) => {
-      if (mapa[categoria] === undefined) mapa[categoria] = indice
-    })
-  })
-  return mapa
-})()
 
 /** Quantas lojas entram na fileira de vitrines da marquise. */
 /** Quantos posts recentes acendem na marquise. */
@@ -632,12 +585,7 @@ export default function TelaHome() {
   }, [])
 
   // Cada loja entra em UM piso só — o da sua categoria (nunca duplica nem desalinha).
-  const grupos = SECOES.map(() => [] as Loja[])
-  lojas.forEach((loja) => {
-    const indice =
-      SECAO_POR_CATEGORIA[loja.categoria_slug ?? ''] ?? SECAO_FALLBACK
-    grupos[indice].push(loja)
-  })
+  const corredores = agruparPorPiso(lojas)
 
   // ── Vitrines da marquise ──
   // Quem segue lojas vê as suas (aro aceso); quem não segue vê as em alta.
@@ -809,33 +757,26 @@ export default function TelaHome() {
               que não leva a lugar nenhum é sinalização quebrada. */}
           <Diretorio
             carregando={carregando}
-            pisos={SECOES.filter((_, i) => grupos[i].length > 0).map((s) => ({
-              slug: s.slug,
-              nome: s.titulo,
-            }))}
+            pisos={corredores.map(({ piso }) => ({ slug: piso.slug, nome: piso.nome }))}
             aoTocarPiso={irParaPiso}
           />
 
           {carregando
             ? Array.from({ length: 2 }).map((_, i) => <SkeletonSecao key={i} />)
-            : grupos.map((lojasDaSecao, i) => {
-                if (lojasDaSecao.length === 0) return null
-                const meta = SECOES[i]
-                return (
-                  <SecaoLojas
-                    key={meta.slug}
-                    slug={meta.slug}
-                    ordem={meta.ordem}
-                    titulo={meta.titulo}
-                    subtitulo={meta.subtitulo}
-                    lojas={lojasDaSecao}
-                    aoMedir={(y) => {
-                      posicaoPorPiso.current[meta.slug] = y
-                    }}
-                    aoRecolher={() => irParaPiso(meta.slug)}
-                  />
-                )
-              })}
+            : corredores.map(({ piso, itens }) => (
+                <SecaoLojas
+                  key={piso.slug}
+                  slug={piso.slug}
+                  ordem={piso.ordem}
+                  titulo={piso.nome}
+                  subtitulo={SUBTITULO_POR_PISO[piso.slug] ?? ''}
+                  lojas={itens}
+                  aoMedir={(y) => {
+                    posicaoPorPiso.current[piso.slug] = y
+                  }}
+                  aoRecolher={() => irParaPiso(piso.slug)}
+                />
+              ))}
         </View>
       </ScrollView>
 

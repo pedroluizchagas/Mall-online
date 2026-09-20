@@ -161,6 +161,15 @@ export const VITRINES = {
     componentes: { vitrine: 'LojaPassarela', pdp: 'ProdutoPassarela' },
     descricao: 'Moda monocromática: fotografia P&B, compra na própria grade.',
   },
+  mesa: {
+    codigo: 'mesa',
+    nome: 'Mesa',
+    arquetipo: 'heritage',
+    categorias: ['alimentos-bebidas'],
+    barra: 'fixa',
+    componentes: { vitrine: 'LojaMesa', pdp: 'ProdutoMesa' },
+    descricao: 'Casa de tradição: serifa, creme, foto full-bleed, selo e cardápio-livro.',
+  },
   feira: {
     codigo: 'feira',
     nome: 'Feira',

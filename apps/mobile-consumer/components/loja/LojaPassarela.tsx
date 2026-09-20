@@ -96,10 +96,14 @@ function temPromo(p: ProdutoVitrine): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
 }
 
-/** Estoque publicado pelo lojista (`products.metadata.estoque`). */
+/**
+ * Estoque REAL do lojista (`products.track_stock` + `stock_quantity`) — a
+ * coluna que o dashboard controla. `metadata.estoque` saiu do contrato
+ * (plano de convergência, Fase 0); sem controle de estoque → null.
+ */
 function estoqueDe(p: ProdutoVitrine): number | null {
-  const v = (p as { metadata?: Record<string, unknown> | null }).metadata?.estoque
-  return typeof v === 'number' ? v : null
+  const { track_stock, stock_quantity } = p as { track_stock?: boolean | null; stock_quantity?: number | null }
+  return track_stock && typeof stock_quantity === 'number' ? stock_quantity : null
 }
 
 /**

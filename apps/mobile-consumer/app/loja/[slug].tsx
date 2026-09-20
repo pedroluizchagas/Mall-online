@@ -11,7 +11,7 @@ import { useLocalSearchParams, router, Stack } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { supabase } from '@/lib/supabase'
 import {
-  abertoAgora,
+  statusAbertura,
   formatarReais,
   getTemplateBySlug,
   resolveVitrine,
@@ -50,6 +50,8 @@ import { LojaPassarela } from '@/components/loja/LojaPassarela'
 import { ProdutoPassarela } from '@/components/loja/ProdutoPassarela'
 import { LojaFeira } from '@/components/loja/LojaFeira'
 import { ProdutoFeira } from '@/components/loja/ProdutoFeira'
+import { LojaMesa } from '@/components/loja/LojaMesa'
+import { ProdutoMesa } from '@/components/loja/ProdutoMesa'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -77,6 +79,9 @@ interface Produto {
   disponivel: boolean
   category_id: string | null
   metadata: Record<string, unknown> | null
+  /** Estoque real (`products.track_stock`/`stock_quantity`) — o chip de escassez das vitrines lê daqui. */
+  track_stock?: boolean | null
+  stock_quantity?: number | null
 }
 
 interface SecaoCardapio {
@@ -111,7 +116,7 @@ export default function PaginaLoja() {
       const { data: lojaData } = await supabase
         .from('stores')
         .select(`
-          id, nome, descricao, logo_url, banner_url,
+          id, nome, slug, descricao, logo_url, banner_url,
           taxa_entrega, tempo_entrega, telefone,
           aceita_pix, aceita_cartao_online,
           horarios, tenant_id, theme,
@@ -135,6 +140,7 @@ export default function PaginaLoja() {
         .select(`
           id, nome, descricao, preco, preco_promocional,
           foto_url, disponivel, category_id, metadata,
+          track_stock, stock_quantity,
           categories (id, nome, ordem)
         `)
         .eq('store_id', lojaData.id)
@@ -236,8 +242,9 @@ export default function PaginaLoja() {
       origem: { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY },
     })
 
-  // Estado real de `stores.horarios` (null = loja não informou; mantém "Aberto").
-  const aberta = abertoAgora(loja?.horarios ?? null)
+  // Estado real de `stores.horarios` — a frase compartilhada com o storefront
+  // e o saguão; sem horários informados a pílula não aparece (não inventa "Aberto").
+  const status = statusAbertura(loja?.horarios ?? null)
 
   // Loja de serviço (template `services`): o produto é agendado, não entregue.
   // Mesma checagem que o ModalProduto faz para montar o layout `agendamento`.
@@ -265,6 +272,7 @@ export default function PaginaLoja() {
   const vitrineForno = vitrine === 'forno'
   const vitrinePassarela = vitrine === 'passarela'
   const vitrineFeira = vitrine === 'feira'
+  const vitrineMesa = vitrine === 'mesa'
 
   if (vitrine) {
     // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
@@ -293,7 +301,9 @@ export default function PaginaLoja() {
                           ? LojaPassarela
                           : vitrineFeira
                             ? LojaFeira
-                            : LojaEditorial
+                            : vitrineMesa
+                              ? LojaMesa
+                              : LojaEditorial
     /*
      * Serviço agendável nunca usa o PDP da vitrine. A vitrine é a FACHADA
      * (LojaClinica, LojaSerena, LojaVolt continuam vestindo a loja), mas os
@@ -333,7 +343,9 @@ export default function PaginaLoja() {
                               ? ProdutoPassarela
                               : vitrineFeira
                                 ? ProdutoFeira
-                                : ProdutoEditorial
+                                : vitrineMesa
+                                  ? ProdutoMesa
+                                  : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
@@ -557,6 +569,7 @@ export default function PaginaLoja() {
               }
               cor={loja?.taxa_entrega === 0 ? colors.success : colors.inkMuted}
             />
+{status && (
             <View
               style={{
                 flexDirection: 'row',
@@ -573,7 +586,7 @@ export default function PaginaLoja() {
                   width: 8,
                   height: 8,
                   borderRadius: 4,
-                  backgroundColor: aberta === false ? colors.danger : colors.success,
+                  backgroundColor: status.aberta ? colors.success : colors.danger,
                 }}
               />
               <Text
@@ -583,9 +596,10 @@ export default function PaginaLoja() {
                   ...fontStyle(design.body, 600),
                 }}
               >
-                {aberta === false ? 'Fechado agora' : 'Aberto'}
+                {status.texto}
               </Text>
             </View>
+            )}
           </View>
 
           {metodos.length > 0 && (

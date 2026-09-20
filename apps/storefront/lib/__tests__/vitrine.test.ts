@@ -10,6 +10,6 @@ describe('resolveVitrineDaLoja', () => {
     expect(resolveVitrineDaLoja({ theme: null, categoria_slug: 'alimentos-bebidas' })).toBeNull()
     expect(resolveVitrineDaLoja({ theme: { template: 'neon' }, categoria_slug: 'vestuario-calcados' })).toBeNull()
     expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'noir' }, categoria_slug: 'acessorios-joias' })).toBeNull()
-    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'heritage' }, categoria_slug: 'alimentos-bebidas' })).toBeNull()
+    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'tech' }, categoria_slug: 'eletronicos-tecnologia' })).toBeNull()
   })
 })

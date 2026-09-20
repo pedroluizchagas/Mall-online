@@ -15,7 +15,7 @@ import Svg, { Path } from 'react-native-svg'
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, statusAbertura } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
@@ -78,6 +78,7 @@ interface Props<T extends ProdutoVitrine> {
     logo_url?: string | null
     tempo_entrega?: number | null
     taxa_entrega?: number | null
+    horarios?: unknown
   }
   secoes: SecaoVitrine<T>[]
   aoAbrirProduto: (produto: T) => void
@@ -249,7 +250,7 @@ export function LojaEditorial<T extends ProdutoVitrine>({
       : loja.taxa_entrega != null
         ? `Entrega ${formatarReais(loja.taxa_entrega)}`
         : null,
-    'Aberto',
+    statusAbertura(loja.horarios ?? null)?.texto ?? null,
   ]
     .filter(Boolean)
     .join('  ·  ')
