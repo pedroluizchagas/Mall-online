@@ -179,6 +179,15 @@ export const VITRINES = {
     componentes: { vitrine: 'LojaGondola', pdp: 'ProdutoGondola' },
     descricao: 'Mercado: busca e chips grudados, grade densa com preço grande e adição rápida.',
   },
+  cuidado: {
+    codigo: 'cuidado',
+    nome: 'Cuidado',
+    arquetipo: 'soft',
+    categorias: ['saloes-estetica', 'pet-shop', 'veterinaria'],
+    barra: 'fixa',
+    componentes: { vitrine: 'LojaCuidado', pdp: 'ProdutoCuidado' },
+    descricao: 'Acolhedora: cartão de boas-vindas, stats, pacotes com checklist e lista arredondada.',
+  },
   feira: {
     codigo: 'feira',
     nome: 'Feira',

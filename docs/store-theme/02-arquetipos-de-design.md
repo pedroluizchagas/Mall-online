@@ -129,6 +129,7 @@ Manter 25 layouts é inviável. Agrupadas por linguagem visual (paleta, tipograf
 - **DNA:** cantos bem arredondados; acentos quentes; sans amigável; stats + tiers; tom acolhedor.
 - **Mood:** caloroso, amigável, confiável.
 - **Refs:** [Groomerly](https://groomerly.framer.website/), [PetPals](https://petpals.framer.website/).
+- **Layout próprio no consumer e no web:** vitrine cuidado — ver [05 §5.6](05-aplicacao-storefront-consumer.md). 2026-09-20.
 
 #### F. Artisan Warm — `artisan`
 - **Nichos:** móveis, decoração, floricultura.

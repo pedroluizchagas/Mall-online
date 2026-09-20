@@ -115,7 +115,8 @@ veste o layout automaticamente; o resto segue no catálogo padrão:
   (`CATEGORIAS_VITRINE_FEIRA` — hortifruti/mercado fresco);
 - `magazine` + categoria `outros` (lojas de departamento);
 - `heritage` + categoria `alimentos-bebidas` (o DEFAULT da categoria — restaurantes e cafés com história);
-- `market` + categoria ∈ {`mercado-conveniencia`, `construcao-ferramentas`, `oficinas-manutencao`} (utilidade densa).
+- `market` + categoria ∈ {`mercado-conveniencia`, `construcao-ferramentas`, `oficinas-manutencao`} (utilidade densa);
+- `soft` + categoria ∈ {`saloes-estetica`, `pet-shop`, `veterinaria`} (serviço acolhedor — default de salões e pet).
 
 **Vitrine magazine** (referência Revive, [02 §A3]): varejo clássico —
 faixa-anúncio no topo, header claro com WORDMARK EM SERIFA, hero com CAIXA
@@ -339,6 +340,21 @@ barra de compra. Componentes: `components/loja/LojaGondola.tsx` +
 `ProdutoGondola.tsx`; porte web em `apps/storefront/components/vitrines/gondola/`.
 2026-09-20 (Fase 4). Distinta da feira (hero-cartão, discos, cronômetro):
 gôndola é utilidade de corredor, sem marca de quitanda.
+
+**Vitrine cuidado** (arquétipo soft, refs Groomerly e PetPals, [02 §E]):
+serviço acolhedor — CARTÃO DE BOAS-VINDAS de cantos bem redondos dentro do
+gutter (foto da casa emoldurada, moeda do logo cortando a base, nome em
+Nunito 800, descrição/campanha e CTA em pill quente); STATS em moedas
+arredondadas só com fatos da casa (serviços, tempo, horário de hoje — sem
+nota inventada); PACOTES em CARTÕES-TIER (o primeiro em accent cheio) com
+preço grande e CHECKLIST tirado da ficha técnica (`metadata.especificacoes`:
+duração, inclui, durabilidade) — a primeira seção ou os `destaques` do
+lojista; demais seções em LISTA ARREDONDADA (moeda com inicial ou foto,
+nome, descrição, preço, seta); fecho com coração e o horário de hoje. Barra
+fixa (molde A). PDP: folha com foto em cartão redondo e checklist da ficha —
+serviço agendável continua no `ModalProduto` (calendário). Componentes:
+`components/loja/LojaCuidado.tsx` + `ProdutoCuidado.tsx`; porte web em
+`apps/storefront/components/vitrines/cuidado/`. 2026-09-20 (Fase 4).
 
 **Vitrine torra** (referência Kafoska, [02 §A2]): pôster retrô — a palavra da
 casa repetida em degradê âmbar com o produto flutuando por cima, trocando

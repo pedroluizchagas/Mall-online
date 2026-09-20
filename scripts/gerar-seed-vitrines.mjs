@@ -3,7 +3,7 @@
  * Gera o bloco "DEMO DAS VITRINES" de `supabase/seed.sql` a partir do dataset
  * mock do consumer (apps/mobile-consumer/lib/mock/dataset.ts): UMA loja por
  * vitrine da tabela `VITRINES` (@mallevo/lib) + uma por arquétipo prioritário
- * ainda sem vitrine (soft), cada uma com lojista próprio
+ * ainda sem vitrine (nenhum hoje), cada uma com lojista próprio
  * (auth + tenant + assinatura), catálogo com metadata de vitrine, conteúdo e
  * os posts do Explorar que o mock já tinha para ela.
  *
@@ -34,7 +34,7 @@ const MARCA_FIM = '-- <<< DEMO DAS VITRINES'
 const PLANO_QA = 'c0000000-0000-4000-8000-000000000001'
 const SENHA_DEMO = 'mallevo-demo-2026'
 /** Arquétipos sem vitrine que o plano prioriza (Fase 4). */
-const ARQUETIPOS_EXTRA = ['soft']
+const ARQUETIPOS_EXTRA = []
 
 // ── esbuild do repositório ─────────────────────────────────────────────
 const require = createRequire(import.meta.url)

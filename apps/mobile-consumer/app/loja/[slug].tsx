@@ -54,6 +54,8 @@ import { LojaMesa } from '@/components/loja/LojaMesa'
 import { ProdutoMesa } from '@/components/loja/ProdutoMesa'
 import { LojaGondola } from '@/components/loja/LojaGondola'
 import { ProdutoGondola } from '@/components/loja/ProdutoGondola'
+import { LojaCuidado } from '@/components/loja/LojaCuidado'
+import { ProdutoCuidado } from '@/components/loja/ProdutoCuidado'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -276,6 +278,7 @@ export default function PaginaLoja() {
   const vitrineFeira = vitrine === 'feira'
   const vitrineMesa = vitrine === 'mesa'
   const vitrineGondola = vitrine === 'gondola'
+  const vitrineCuidado = vitrine === 'cuidado'
 
   if (vitrine) {
     // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
@@ -350,7 +353,9 @@ export default function PaginaLoja() {
                                   ? ProdutoMesa
                                   : vitrineGondola
                                     ? ProdutoGondola
-                                    : ProdutoEditorial
+                                    : vitrineCuidado
+                                      ? ProdutoCuidado
+                                      : ProdutoEditorial
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
@@ -370,6 +375,15 @@ export default function PaginaLoja() {
             />
           ) : vitrineGondola ? (
             <LojaGondola
+              loja={loja}
+              secoes={secoes}
+              aoAbrirProduto={setProdutoSelecionado}
+              espacoFinal={24}
+            />
+          ) : vitrineCuidado ? (
+            // Fora da união genérica (a inferência do JSX desiste com muitos
+            // membros): ramo próprio, como Clínica, Magazine e Gôndola.
+            <LojaCuidado
               loja={loja}
               secoes={secoes}
               aoAbrirProduto={setProdutoSelecionado}

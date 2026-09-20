@@ -6,6 +6,7 @@ import { resolveVitrineDaLoja } from '@/lib/vitrine'
 import { VitrinePadrao } from './Padrao'
 import { VitrineArtesa } from './artesa/VitrineArtesa'
 import { VitrineClinica } from './clinica/VitrineClinica'
+import { VitrineCuidado } from './cuidado/VitrineCuidado'
 import { VitrineEditorial } from './editorial/VitrineEditorial'
 import { VitrineFeira } from './feira/VitrineFeira'
 import { VitrineForno } from './forno/VitrineForno'
@@ -55,6 +56,7 @@ export const VITRINES_WEB: Record<VitrineCodigo, ComponentType<VitrineWebProps>>
   // Fase 4 — arquétipos que não tinham vitrine
   mesa: VitrineMesa,
   gondola: VitrineGondola,
+  cuidado: VitrineCuidado,
 }
 
 /** O componente que esta loja veste: vitrine do arquétipo ou o padrão. */
