@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { z } from 'zod'
 import type { HorariosFuncionamento } from '@mallevo/types'
+import { provisionTenantDomain } from '@mallevo/lib'
 
 const schemaDadosGerais = z.object({
   nome: z.string().min(2, 'Nome obrigatório'),
@@ -78,7 +79,7 @@ export async function atualizarDadosGerais(
 
   const { data: loja } = await supabase
     .from('stores')
-    .select('id')
+    .select('id, slug, domain')
     .eq('tenant_id', tenant.id)
     .single()
   if (!loja) return { erro: 'Loja não encontrada' }
@@ -93,9 +94,27 @@ export async function atualizarDadosGerais(
 
   if (!dados.success) return { erro: dados.error.errors[0].message }
 
+  // O endereço público da loja é `<slug>.mallevo.com.br`, e com o DNS na
+  // Cloudflare a Vercel só emite certificado para hostname provisionado
+  // EXPLICITAMENTE (curinga não cobre). Slug novo sem provisionar = loja
+  // no ar sem TLS (foi o que derrubou guaimbes.mallevo.com.br em 2026-09).
+  // Provisiona antes de gravar; se falhar, o slug antigo continua valendo.
+  const atualizacao: Record<string, unknown> = { ...dados.data }
+  const slugNovo = dados.data.slug
+  if (slugNovo && slugNovo !== loja.slug) {
+    const dominio = await provisionTenantDomain(slugNovo)
+    if (!dominio.success) {
+      return {
+        erro: `Não foi possível preparar o endereço ${dominio.domain} (${dominio.step}): ${dominio.error}. O slug não foi alterado.`,
+      }
+    }
+    atualizacao.domain = dominio.domain
+    atualizacao.cf_dns_record_id = dominio.cloudflareId
+  }
+
   const { error } = await supabase
     .from('stores')
-    .update(dados.data)
+    .update(atualizacao)
     .eq('id', loja.id)
     .eq('tenant_id', tenant.id)
 
