@@ -51,6 +51,14 @@ export function construirComandos(template: DashboardTemplate): Comando[] {
   comandos.push(
     { id: 'mensagens', label: 'Mensagens', href: '/mensagens', grupo: 'Operar', palavras: 'chat conversa' },
     { id: 'avaliacoes', label: 'Avaliações', href: '/avaliacoes', grupo: 'Operar', palavras: 'reviews notas estrelas' },
+    { id: 'conteudo', label: 'Conteúdo', href: '/conteudo', grupo: 'Operar', palavras: 'posts explorar videos fotos reels feed' },
+    {
+      id: 'publicar',
+      label: 'Publicar no Explorar',
+      href: '/conteudo/novo',
+      grupo: 'Ações',
+      palavras: 'post video foto publicar conteudo reels',
+    },
   )
 
   if (template.modulos.financeiro) {

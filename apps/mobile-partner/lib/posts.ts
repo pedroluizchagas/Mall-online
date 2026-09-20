@@ -1,57 +1,24 @@
+import { SELECT_POST, type Post } from '@mallevo/lib'
 import { supabase } from './supabase'
 
 // Gestão dos posts do Explorar (docs/partner-app/10): listar/editar/
 // ocultar/remover sob RLS (store_posts_*_proprio). Métricas são
 // SOMENTE LEITURA — quem incrementa é o consumer (Stage 9).
 
-export interface Post {
-  id: string
-  store_id: string
-  tipo: string
-  media_url: string
-  media_path: string
-  thumb_url: string | null
-  thumb_path: string | null
-  descricao: string | null
-  tags: string[]
-  product_id: string | null
-  status: string
-  moderacao: string
-  duracao_seg: number | null
-  curtidas: number
-  comentarios: number
-  views: number
-  criado_em: string
-  publicado_em: string | null
-}
+/** Contrato compartilhado em @mallevo/lib (`status`/`moderacao` tipados). */
+export type { Post } from '@mallevo/lib'
 
 export async function listarPosts(): Promise<Post[]> {
   const { data } = await supabase
     .from('store_posts')
-    .select(
-      'id, store_id, tipo, media_url, media_path, thumb_url, thumb_path, descricao, tags, product_id, status, moderacao, duracao_seg, curtidas, comentarios, views, criado_em, publicado_em'
-    )
+    .select(SELECT_POST)
     .neq('status', 'removed')
     .order('criado_em', { ascending: false })
   return (data ?? []) as Post[]
 }
 
-export interface BadgePost {
-  rotulo: string
-  corKey: 'success' | 'warning' | 'danger' | 'info'
-}
-
-/** Badge de estado do card (docs/partner-app/10 §grade). */
-export function badgeDoPost(post: Pick<Post, 'status' | 'moderacao'>): BadgePost {
-  if (post.moderacao === 'flagged' || post.moderacao === 'rejected') {
-    return { rotulo: 'Sinalizado', corKey: 'danger' }
-  }
-  if (post.status === 'processing' || post.moderacao === 'pending') {
-    return { rotulo: 'Em análise', corKey: 'warning' }
-  }
-  if (post.status === 'hidden') return { rotulo: 'Oculto', corKey: 'info' }
-  return { rotulo: 'Publicado', corKey: 'success' }
-}
+/** Badge de estado do card — contrato compartilhado em @mallevo/lib. */
+export { badgeDoPost, type BadgePost } from '@mallevo/lib'
 
 type Resultado = { sucesso?: true; erro?: string }
 

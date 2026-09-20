@@ -212,16 +212,8 @@ export async function publicarPost(
   return { sucesso: true }
 }
 
-/** Normaliza tag: minúscula, sem espaço/acento, sem '#'. */
-export function normalizarTag(bruta: string): string {
-  return bruta
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 30)
-}
+/** Normalização de tag — contrato compartilhado em @mallevo/lib. */
+export { normalizarTag } from '@mallevo/lib'
 
 export interface ProdutoBusca {
   id: string

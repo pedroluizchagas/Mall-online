@@ -1,7 +1,8 @@
 import * as ImagePicker from 'expo-image-picker'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as tus from 'tus-js-client'
+import type * as tus from 'tus-js-client'
+import { criarUploadTUS, type ArquivoTUS, type ControleUpload } from '@mallevo/lib'
 import { supabase } from './supabase'
 
 // Pipeline de imagem (docs/partner-app/06) + upload resumível TUS de
@@ -90,15 +91,14 @@ const tusUrlStorage: tus.UrlStorage = {
   },
 }
 
-export interface ControleUpload {
-  promessa: Promise<{ url?: string; erro?: string }>
-  cancelar: () => void
-}
+export type { ControleUpload } from '@mallevo/lib'
 
 /**
  * Sobe um arquivo local (uri) para o bucket via protocolo TUS do Storage.
  * Progresso 0–1 em onProgress; retomada automática por fingerprint
- * (uri+caminho) mesmo após queda de rede/app.
+ * (bucket+caminho) mesmo após queda de rede/app. A mecânica vive em
+ * `criarUploadTUS` (@mallevo/lib, compartilhada com o dashboard web); aqui
+ * entram só a fonte `{ uri }` do React Native e o AsyncStorage dos offsets.
  */
 export function uploadResumavelTUS(
   uriLocal: string,
@@ -107,66 +107,34 @@ export function uploadResumavelTUS(
   contentType: string,
   onProgress: (fracao: number) => void
 ): ControleUpload {
-  let uploadRef: tus.Upload | null = null
+  let controle: ControleUpload | null = null
   let cancelado = false
 
   const promessa = (async (): Promise<{ url?: string; erro?: string }> => {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return { erro: 'Sessão expirada — entre novamente' }
+    if (cancelado) return { erro: 'Upload cancelado' }
 
-    const endpoint = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/storage/v1/upload/resumable`
-
-    return new Promise((resolve) => {
-      const upload = new tus.Upload(
-        // tus-js-client em React Native aceita { uri } como fonte do arquivo
-        { uri: uriLocal } as unknown as ConstructorParameters<typeof tus.Upload>[0],
-        {
-          endpoint,
-          retryDelays: [0, 1000, 3000, 5000, 10000],
-          chunkSize: 6 * 1024 * 1024, // exigido pelo Storage resumable (6MB)
-          headers: {
-            authorization: `Bearer ${session.access_token}`,
-            'x-upsert': 'false',
-          },
-          metadata: {
-            bucketName: bucket,
-            objectName: caminho,
-            contentType,
-            cacheControl: '3600',
-          },
-          urlStorage: tusUrlStorage,
-          storeFingerprintForResuming: true,
-          fingerprint: async () => `partner-${bucket}-${caminho}`,
-          removeFingerprintOnSuccess: true,
-          onError: (err) => {
-            if (cancelado) resolve({ erro: 'Upload cancelado' })
-            else resolve({ erro: `Falha no envio: ${err.message ?? 'erro de rede'}` })
-          },
-          onProgress: (enviado, total) => {
-            if (total > 0) onProgress(Math.min(1, enviado / total))
-          },
-          onSuccess: () => {
-            const { data } = supabase.storage.from(bucket).getPublicUrl(caminho)
-            resolve({ url: data.publicUrl })
-          },
-        }
-      )
-
-      uploadRef = upload
-
-      // Retoma do offset se já houver upload anterior deste fingerprint
-      void upload.findPreviousUploads().then((anteriores) => {
-        if (anteriores.length > 0) upload.resumeFromPreviousUpload(anteriores[0])
-        upload.start()
-      })
+    controle = criarUploadTUS({
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL!,
+      accessToken: session.access_token,
+      bucket,
+      caminho,
+      contentType,
+      // tus-js-client em React Native aceita { uri } como fonte do arquivo
+      arquivo: { uri: uriLocal } as unknown as ArquivoTUS,
+      urlStorage: tusUrlStorage,
+      fingerprint: `partner-${bucket}-${caminho}`,
+      onProgress,
     })
+    return controle.promessa
   })()
 
   return {
     promessa,
     cancelar: () => {
       cancelado = true
-      void uploadRef?.abort()
+      controle?.cancelar()
     },
   }
 }

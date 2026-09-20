@@ -21,6 +21,7 @@ import {
   Tag,
   Users,
   ChevronDown,
+  Clapperboard,
   Search,
   X,
   type LucideIcon,
@@ -77,6 +78,7 @@ function buildGrupos(template: DashboardTemplate, pedidosNovosCount: number): Gr
   operar.push(
     { id: 'mensagens', href: '/mensagens', label: 'Mensagens', icon: Bell },
     { id: 'avaliacoes', href: '/avaliacoes', label: 'Avaliações', icon: Star },
+    { id: 'conteudo', href: '/conteudo', label: 'Conteúdo', icon: Clapperboard },
   )
 
   const analisar: ItemMenu[] = []

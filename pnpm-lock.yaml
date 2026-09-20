@@ -624,6 +624,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.43.0
         version: 2.100.0
+      tus-js-client:
+        specifier: 4.3.1
+        version: 4.3.1
       zod:
         specifier: ^3.23.0
         version: 3.25.76
@@ -7888,9 +7891,7 @@ snapshots:
       metro-runtime: 0.84.5
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
 
   '@react-native/normalize-colors@0.86.3': {}
 
