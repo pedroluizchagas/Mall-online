@@ -64,6 +64,17 @@ test.describe('Minha Loja', () => {
     await page.locator('div').filter({ hasText: /^Preview ao vivo/ }).last().screenshot({
       path: 'test-results/shots/minha-loja-preview.png',
     })
+
+    // Moldura "App Mallevo": a mesma página com `?app=1`, e o storefront veste
+    // o chrome do app — a barra de menu Início/Explorar/Pedidos/Perfil.
+    await page.getByRole('button', { name: 'App Mallevo' }).click()
+    await expect(iframe).toHaveAttribute('src', /[?&]app=1/)
+    const menuApp = preview.getByRole('navigation', { name: 'Menu do app' })
+    await expect(menuApp.getByText('Explorar')).toBeVisible({ timeout: 60_000 })
+    await expect(preview.getByRole('heading', { level: 1 })).toContainText(/pizza\s*em dobro/i)
+    await page.locator('div').filter({ hasText: /^Preview ao vivo/ }).last().screenshot({
+      path: 'test-results/shots/minha-loja-preview-app.png',
+    })
     // O shell do dashboard rola num contêiner interno: `fullPage` não alcança
     // o que está abaixo da dobra, então a evidência visual é o bloco em si.
     await page.screenshot({ path: 'test-results/shots/minha-loja.png' })

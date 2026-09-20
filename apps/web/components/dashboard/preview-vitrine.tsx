@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ExternalLink, Monitor, Smartphone } from 'lucide-react'
+import { ExternalLink, Monitor, Smartphone, Store } from 'lucide-react'
 
 import { urlPreviewDaLoja, type RascunhoPreview } from '@/lib/storefront-url'
 
@@ -14,21 +14,32 @@ import { urlPreviewDaLoja, type RascunhoPreview } from '@/lib/storefront-url'
  * lojista vê é a mesma página que o cliente abre — inclusive a VITRINE do
  * arquétipo (Forno, Smash, Passarela…), não só as cores.
  *
- * Duas molduras: celular (390px — a largura em que as vitrines foram
+ * Três molduras: celular (390px — a largura em que as vitrines foram
  * desenhadas e a mesma que o app Mallevo veste, porque as vitrines web são
- * portes 1:1 das do app) e computador (coluna central de 480px sobre a pele).
+ * portes 1:1 das do app), computador (coluna central de 480px sobre a pele) e
+ * App Mallevo (a mesma vitrine dentro do chrome do app — status bar, voltar e
+ * barra de menu —, que o storefront veste com `?app=1`; é a MESMA página, não
+ * o app RN rodando).
  *
  * O rascunho vai na URL (`/preview?draft=`), com debounce, e o storefront o
  * aplica só naquele request — nada é persistido até "Publicar".
  */
 
-type Dispositivo = 'celular' | 'computador'
+type Dispositivo = 'celular' | 'computador' | 'app'
 type Tela = 'inicio' | 'produto'
 
 const MOLDURA = {
   celular: { largura: 390, altura: 800 },
   computador: { largura: 1280, altura: 800 },
+  // iPhone com notch: a moldura em que o app foi desenhado.
+  app: { largura: 390, altura: 844 },
 } as const
+
+const LEGENDA: Record<Dispositivo, string> = {
+  celular: 'É a sua loja de verdade, vestindo o que você está editando, como abre no navegador do celular.',
+  computador: 'É a sua loja de verdade, vestindo o que você está editando, como abre no computador.',
+  app: 'A mesma vitrine dentro do app Mallevo, com a navegação do shopping. Os clientes chegam nela pelo app, sem endereço.',
+}
 
 export function PreviewVitrine({
   slug,
@@ -53,9 +64,10 @@ export function PreviewVitrine({
       slug
         ? urlPreviewDaLoja(slug, rascunho, {
             produtoId: tela === 'produto' ? produtoId : null,
+            app: dispositivo === 'app',
           })
         : null,
-    [slug, rascunho, tela, produtoId],
+    [slug, rascunho, tela, produtoId, dispositivo],
   )
   const [src, setSrc] = useState<string | null>(srcAlvo)
   useEffect(() => {
@@ -88,7 +100,8 @@ export function PreviewVitrine({
     obs.observe(el)
     return () => obs.disconnect()
   }, [])
-  const larguraPainel = dispositivo === 'celular' ? Math.min(340, larguraDisponivel) : larguraDisponivel
+  const ehTelefone = dispositivo !== 'computador'
+  const larguraPainel = ehTelefone ? Math.min(340, larguraDisponivel) : larguraDisponivel
   const { largura, altura } = MOLDURA[dispositivo]
   const escala = larguraPainel / largura
   const alturaEscalada = Math.round(altura * escala)
@@ -101,6 +114,7 @@ export function PreviewVitrine({
             [
               ['celular', 'Celular', Smartphone],
               ['computador', 'Computador', Monitor],
+              ['app', 'App Mallevo', Store],
             ] as const
           ).map(([valor, rotulo, Icone]) => (
             <button
@@ -159,7 +173,7 @@ export function PreviewVitrine({
         <div className="relative mx-auto" style={{ width: larguraPainel }}>
           <div
             className={
-              dispositivo === 'celular'
+              ehTelefone
                 ? 'relative overflow-hidden rounded-[40px] border-[10px] shadow-xl'
                 : 'relative overflow-hidden rounded-xl border-[6px] shadow-xl'
             }
@@ -170,7 +184,7 @@ export function PreviewVitrine({
               height: alturaEscalada,
             }}
           >
-            {dispositivo === 'celular' && (
+            {ehTelefone && (
               <div
                 aria-hidden
                 className="pointer-events-none absolute left-1/2 top-2 z-10 h-[18px] w-[92px] -translate-x-1/2 rounded-full"
@@ -202,10 +216,7 @@ export function PreviewVitrine({
       )}
 
       <div className="space-y-1.5 text-center text-[11px] leading-snug" style={{ color: 'var(--ink-3)' }}>
-        <p>
-          É a sua loja de verdade, vestindo o que você está editando. O app Mallevo veste a
-          mesma vitrine.
-        </p>
+        <p>{LEGENDA[dispositivo]}</p>
         {temMidiaNaoPublicada && (
           <p style={{ color: 'var(--warn)' }}>Logo, banner e fotos novas aparecem depois de publicar.</p>
         )}

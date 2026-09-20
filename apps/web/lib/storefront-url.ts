@@ -39,10 +39,12 @@ function base64url(json: string): string {
 export function urlPreviewDaLoja(
   slug: string,
   rascunho: RascunhoPreview,
-  opcoes: { produtoId?: string | null } = {},
+  opcoes: { produtoId?: string | null; app?: boolean } = {},
 ): string {
   const params = new URLSearchParams()
   params.set('draft', base64url(JSON.stringify(rascunho)))
   if (opcoes.produtoId) params.set('produto', opcoes.produtoId)
+  // Moldura "App Mallevo": a vitrine dentro do chrome do app (ShellApp do storefront).
+  if (opcoes.app) params.set('app', '1')
   return `${urlDaLoja(slug)}/preview?${params.toString()}`
 }
