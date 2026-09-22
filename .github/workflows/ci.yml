@@ -1,0 +1,105 @@
+# CI da convergência (achado A-08 do plano em docs/dev/plano-convergencia-web-storefront-mobile.md).
+#
+# Até 2026-09-22 nada rodava sozinho: `npx tsc` na raiz é um pacote stub que sai
+# 0, o eslint não está instalado e metade dos pacotes não tinha script de teste.
+# As guardas escritas neste ciclo (status "ABERTO" inventado, `metadata.estoque`,
+# `as any`, paridade das 18 vitrines, sanitização do tema) só valem se algo as
+# executar a cada push.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # O build do Next precisa das variáveis públicas em tempo de build. Nada aqui
+  # é segredo: são placeholders — as páginas da loja e do saguão são dinâmicas e
+  # não consultam o banco durante o build.
+  NEXT_PUBLIC_SUPABASE_URL: https://exemplo.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: chave-de-ci-sem-valor
+  SUPABASE_SERVICE_ROLE_KEY: chave-de-ci-sem-valor
+  NEXT_PUBLIC_PAGARME_APPID: appid_ci
+  APP_URL: http://localhost:3002
+  TURBO_TELEMETRY_DISABLED: 1
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  verificar:
+    name: typecheck · testes · build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Cada app resolve os tipos do React pelo próprio `node_modules` (paths no
+      # tsconfig). Se alguém remover esses paths, é aqui que aparece — foi o que
+      # quebrou o build da Vercel em 2026-09-19.
+      - name: Typecheck (lib, web, storefront, admin, mobile)
+        run: pnpm typecheck
+
+      - name: Testes de unidade e guardas
+        run: pnpm test
+
+      - name: Build (web, storefront, admin)
+        run: pnpm build
+
+  e2e:
+    name: e2e autenticado (Supabase local + Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Sobe Postgres, Storage e o resto do Supabase em Docker e reproduz o banco
+    # do zero com as 19 lojas do seed. É caro e ainda não rodou verde nesta
+    # configuração, então não bloqueia PR por padrão: rode pelo botão
+    # (workflow_dispatch) ou ponha o rótulo `e2e` no PR. Quando estabilizar,
+    # remover o `if` e exigir no branch protection.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.pull_request.labels.*.name, 'e2e')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Navegadores do Playwright
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      # `scripts/qa-local.sh` sobe o Supabase, roda `db reset` (migrations +
+      # seed) e chama o Playwright do dashboard. Runbook: docs/dev/qa-local.md.
+      - name: QA local (dashboard autenticado)
+        run: bash scripts/qa-local.sh
+
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            apps/web/test-results/
+            apps/web/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore

@@ -13,9 +13,12 @@
     "types:generate": "supabase gen types typescript --project-id $SUPABASE_PROJECT_ID > packages/types/src/supabase.ts",
     "db:push": "supabase db push",
     "db:reset": "supabase db reset",
-    "test": "pnpm -r --if-present test",
+    "test": "turbo run test",
     "qa:local": "bash scripts/qa-local.sh",
-    "seed:vitrines": "node scripts/gerar-seed-vitrines.mjs"
+    "seed:vitrines": "node scripts/gerar-seed-vitrines.mjs",
+    "typecheck": "turbo run typecheck",
+    "build": "turbo run build --filter=web --filter=storefront --filter=admin",
+    "smoke:storefront": "bash scripts/smoke-storefront.sh"
   },
   "devDependencies": {
     "supabase": "^1.200.0",
