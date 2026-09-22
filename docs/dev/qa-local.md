@@ -41,8 +41,8 @@ de ambiente vencem o `.env.local`, que continua apontando para produção e não
 `pnpm seed:vitrines` regenera, entre os marcadores `-- >>> DEMO DAS VITRINES` e
 `-- <<< DEMO DAS VITRINES` do `seed.sql`, **18 lojas** portadas do dataset mock
 do consumer (`apps/mobile-consumer/lib/mock/dataset.ts`): uma por vitrine da
-tabela `VITRINES` (@mallevo/lib) e uma por arquétipo prioritário ainda sem
-vitrine (`heritage`, `market`, `soft`). Cada loja tem lojista próprio
+tabela `VITRINES` (@mallevo/lib) — as 18, já contando Mesa, Gôndola e Cuidado,
+que nasceram na Fase 4 para `heritage`, `market` e `soft`. Cada loja tem lojista próprio
 (`demo-<slug>@mallevo.local` / `mallevo-demo-2026`, recebimentos ativos),
 catálogo com metadata de vitrine (galeria, recorte, ficha, unidade,
 `exige_receita`), estoque real (`track_stock`/`stock_quantity` — o
@@ -66,9 +66,9 @@ tinha. IDs são determinísticos (md5 do slug), então regerar não duplica.
 | `forno-real` | Forno |
 | `monarca` | Passarela |
 | `quintal-verde` | Feira |
-| `sabor-mineiro` | `heritage` (layout padrão) |
-| `tintas-aurora` | `market` (layout padrão) |
-| `esmalteria-lilas` | `soft` (layout padrão) |
+| `sabor-mineiro` | Mesa (`heritage`) |
+| `tintas-aurora` | Gôndola (`market`) |
+| `esmalteria-lilas` | Cuidado (`soft`) |
 
 Storefront: `http://<slug>.mallevo.localhost:3002/`. Saguão: `http://mallevo.localhost:3002/`.
 
@@ -114,3 +114,31 @@ STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true pnpm dev
 - O seed usa fotos do picsum (rede). Sem rede, as vitrines mostram os fallbacks.
 - Os logos das lojas-demo são data URIs (PNG) copiados do mock — o seed
   cresce ~80 KB por isso; é intencional (o splash e a fachada usam o logo).
+
+## Smoke do storefront sem Docker
+
+O `.env.local` do storefront aponta para o Supabase de **produção** (leitura das
+views públicas), então dá para exercitar as 18 vitrines, o saguão e o preview
+sem subir nada local:
+
+```bash
+pnpm smoke:storefront          # scripts/smoke-storefront.sh, porta 3012
+```
+
+O script sobe `next start` com `STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true`, espera
+o servidor, e confere: apex (`/`, `/explorar`, `/piso/<slug do piso>`,
+`sitemap.xml`, `robots.txt`), `/saguao` respondendo 308, host de loja
+(`/`, `/checkout`, `/entrar`, `/produto/<id>`), as 18 vitrines pelo override de
+QA — exigindo **md5 distinto** por vitrine, que é o que prova que o gate trocou
+de layout — e o `/preview?draft=…&app=1`.
+
+Pegadinhas:
+- `/piso/` usa o slug do **piso** (`casa-vida`, `praca-alimentacao`…), não o da
+  categoria. `/piso/floricultura-plantas` dando 404 é o comportamento certo.
+- `?app=1` só faz efeito em `/preview`.
+- Para derrubar o servidor use `fuser -k 3012/tcp`; `pkill -f` com um trecho que
+  está na própria linha de comando mata o shell.
+
+Capturas sem Playwright (Firefox headless) e as demais receitas de verificação
+estão no Apêndice A do
+[plano de convergência](plano-convergencia-web-storefront-mobile.md).

@@ -57,7 +57,7 @@ A **listagem do catálogo** também pode variar de estrutura por nicho (lista de
 - `mode: dark` não pode reduzir contraste de status (success/warning/danger fixos).
 - Movimento decorativo (autoplay, parallax, transições de ambiente) desliga quando o sistema pede "reduzir movimento" (`AccessibilityInfo.isReduceMotionEnabled`).
 
-## 5.6 Layouts por arquétipo — editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual, horta, forno, passarela e feira
+## 5.6 Layouts por arquétipo — as 18 vitrines (editorial, raw, serena, artesã, noir, volt, clínica, torra, magazine, smash, ritual, horta, forno, passarela, feira, mesa, gôndola e cuidado)
 
 Além da **pele** (tokens), um arquétipo pode carregar um **layout próprio** no
 consumer. `StoreDesign.arquetipo` (mobile, [04 §4.4]) expõe o código do preset
@@ -479,3 +479,78 @@ real dentro de vitrines: `passo-certo-calcados` (raw sinal),
 
 Próximos candidatos a layout próprio: `noir` (joias/luxo — mesma gramática em
 fundo preto) e `heritage` (alimentação premium).
+
+## 5.7 Storefront — como uma vitrine vive no web
+
+Escrita em 2026-09-22, a partir do que a Fase 2 do
+[plano de convergência](../dev/plano-convergencia-web-storefront-mobile.md)
+construiu. O §5.6 descreve cada vitrine como desenho; esta seção descreve o
+**encaixe** delas no `apps/storefront`.
+
+### A pele entra uma vez, no `:root`
+
+O route group `app/(loja)/` cobre catálogo, produto, checkout, pedido, auth e
+preview. O `layout.tsx` monta `StoreThemeRoot` **uma vez**, e ele escreve as CSS
+vars no `:root` do documento — não num wrapper. Assim o `body` (overscroll, área
+fora da coluna de 480px no desktop) e qualquer portal herdam a pele. Páginas
+legais, "loja não encontrada" e o saguão ficam de fora do grupo: são Mallevo.
+
+Decisão de produto: no storefront **o checkout veste a loja**. No app, não — lá
+o checkout é Mallevo, porque o app é o shopping e o storefront é a loja.
+
+> Tema é entrada não confiável. `StoreThemeRoot` monta o CSS com
+> `textoCssDasVars`, que descarta qualquer valor fora do alfabeto de CSS, e o
+> tema já chegou saneado pelo `parseStoreTheme`. Ver [03](03-design-tokens-e-schema.md) §3.4b.
+
+### Quem decide a vitrine
+
+`lib/tenant.ts` carrega a loja da view pública com `categoria_slug`, `conteudo` e
+`horarios`; `lib/vitrine.ts` (`resolveVitrineDaLoja`) chama o `resolveVitrine` da
+lib. O registro `components/vitrines/index.ts` é um `Record` **completo** das 18
+vitrines: vitrine nova na lib sem porte web quebra o typecheck e o teste-guarda
+`__tests__/registro.test.ts`. Sem vitrine elegível, cai no `Padrao`.
+
+### O vocabulário compartilhado (`components/vitrines/_base/`)
+
+| Peça | Papel |
+|---|---|
+| `HeroLoja` | banner com véu ou bloco accent; voz de `conteudo.campanha`, senão nome/descrição |
+| `StatusAberto` | relógio vivo por minuto, `statusAbertura` + `relogioDaLoja`. **Nunca** "Aberto" literal |
+| `NavSecoes` | chips grudados com IntersectionObserver |
+| `FechoLoja` | rodapé que leva ao apex |
+| `Sacola` | botão da sacola no DNA da vitrine, sem FAB |
+| `FonteDna` | fontes-DNA por vitrine via Google Fonts |
+| `useCarrossel` + `movimento` | motor de hero-carrossel e respeito a "reduzir movimento" |
+| `Fachada` | o tijolo de loja do saguão, com a pele da própria loja |
+
+Regra: helper repetido em duas vitrines vai para `_base/`; a terceira cópia é
+bug. Há testes-guarda que leem o disco e falham se uma vitrine redeclarar o que
+já existe em `_base/`.
+
+### Anatomia de uma vitrine
+
+`components/vitrines/<codigo>/Vitrine<Nome>.tsx` (estrutura e copy) +
+`<codigo>-ui.tsx` (as peças). Props em `VitrineWebProps`. O detalhe do produto
+passa pelo `ProdutoModalHost` (render-prop `abrir(id)`); `/produto/[id]` renderiza
+a mesma vitrine com `initialProdutoId`, e é dali que sai a metadata de SEO.
+
+Adaptações em relação à RN: não há barra de 4 abas (o storefront é loja única) —
+ela só aparece na moldura App do preview; não há favoritos; adição rápida segue
+o padrão da Passarela (item com variação ou `exige_receita` abre o detalhe).
+
+### Moldura "App Mallevo"
+
+`components/store/ShellApp.tsx` veste o chrome do app em volta da vitrine quando
+a URL tem `?app=1` (só no `/preview`): status bar, botão de voltar no layout
+padrão e a barra de menu no molde declarado em `VITRINES` (`fixa` ou `pilula`).
+O chrome grudado das vitrines desce pelo `--inset-top`. Não é o app RN rodando:
+é o porte web da vitrine com o chrome do app.
+
+### Ver qualquer vitrine sobre uma loja real
+
+Com `STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true` no ambiente,
+`?preset=<arquetipo>&categoria=<slug>` troca pele e categoria só naquele request
+(middleware → headers `x-preview-*` → `lib/tenant.ts`). O middleware apaga esses
+headers quando a variável não está ligada, então o cliente não consegue forjá-los.
+**Nunca ligar em produção.** O roteiro completo está em `scripts/smoke-storefront.sh`
+e no Apêndice A do plano de convergência.

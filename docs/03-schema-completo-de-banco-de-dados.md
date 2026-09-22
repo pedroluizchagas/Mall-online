@@ -203,7 +203,8 @@ CREATE TABLE stores (
   aceita_cartao_online     BOOLEAN NOT NULL DEFAULT true,
   usa_entregadores_proprios BOOLEAN NOT NULL DEFAULT false,
   ativo           BOOLEAN NOT NULL DEFAULT true,
-  theme           JSONB,                      -- customizações visuais opcionais
+  theme           JSONB,                      -- pele da loja (StoreThemeConfig v2) — ver abaixo
+  conteudo        JSONB,                      -- editorial da vitrine (StoreConteudo v1) — ver abaixo
   criado_em       TIMESTAMPTZ NOT NULL DEFAULT now(),
   atualizado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -211,6 +212,40 @@ CREATE TABLE stores (
 CREATE INDEX idx_stores_tenant ON stores(tenant_id);
 CREATE INDEX idx_stores_slug ON stores(slug);
 ```
+
+**`theme`** — a pele escolhida pelo lojista (`StoreThemeConfig` v2):
+`{ v: 2, preset, palette?, color?, fonts?, shape?, mode? }`. Quem grava é o
+dashboard (`publicarVitrine`), e só `preset`, `palette` e `color.accent` — as
+outras chaves existem para os arquétipos, não são expostas ao lojista
+(decisão 4 do plano de convergência). Quem lê é o `resolveTheme` da
+`@mallevo/lib`, **única** porta de leitura nas três superfícies.
+
+> Todo tema passa por `parseStoreTheme` antes de virar CSS (desde 2026-09-22):
+> hex fora do padrão, família de fonte fora do catálogo dos arquétipos e escala
+> desconhecida são descartados campo a campo. O motivo está no achado A-01 do
+> plano de convergência — o tema chega a um `<style>` no storefront e o
+> `/preview` aceita tema pela URL.
+
+**`conteudo`** — o editorial que as vitrines mostram (`StoreConteudo` v1,
+migration `20260919120000_stores_conteudo.sql`):
+
+```jsonc
+{
+  "v": 1,
+  "campanha": { "eyebrow": "...", "titulo": "...", "subtitulo": "...", "cta": "..." },
+  "manifesto": "texto da casa",
+  "galeria_casa": ["https://.../store-assets/<tenant>/casa-1.webp"],
+  "destaques": ["<product_id>", "..."]
+}
+```
+
+Limites (`CONTEUDO_LIMITES` em `@mallevo/lib`): 6 destaques, 8 fotos da casa.
+Grava: `publicarVitrine` (Minha Loja no dashboard), validando com
+`storeConteudoSchema` e filtrando os destaques para produtos da própria loja.
+Lê: as 18 vitrines do consumer e do storefront, via `normalizeStoreConteudo`
+(recuperação campo a campo — campo corrompido não derruba os outros). `NULL`
+significa "sem editorial": cada vitrine tem fallback próprio (banner, nome,
+descrição), nunca texto inventado. Exposta na view `public_catalog_stores`.
 
 -----
 

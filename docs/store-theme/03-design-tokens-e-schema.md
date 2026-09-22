@@ -186,6 +186,27 @@ Regras (implementadas em `store-theme/resolve.ts`):
 - `v` versiona o shape. `theme` antigo (`{template,paleta}`) é tratado como `v1` e migrado por `normalizeThemeConfig`: `market→editorial`, `boutique→editorial`, `artesanal→artisan`, `neon→raw` (paletas v1 descartadas). Ver [07](07-roadmap-implementacao.md).
 - A resolução final (`resolveTheme`) aplica defaults + overrides + correção de contraste do `accentInk`, e é a **única** porta usada por storefront, app e preview do onboarding ([04](04-theme-engine.md)).
 
+## 3.4b Validação do `stores.theme` (desde 2026-09-22)
+
+`stores.theme` é **entrada não confiável**, venha do banco ou do `?draft=` do
+preview. `packages/lib/src/store-theme/schema.ts` é o portão único:
+
+| Campo | Aceita | Fora disso |
+|---|---|---|
+| `preset` | código em `ARQUETIPOS` | tema inteiro é descartado (cai no arquétipo default) |
+| `palette` | slug `[a-z0-9-]`, ≤ 40 | campo descartado |
+| `color.*` | `#rgb` ou `#rrggbb` | **aquela chave** é descartada; as outras ficam |
+| `fonts.display/body` | família usada por algum arquétipo (`FAMILIAS_DE_FONTE`, derivada da tabela) | campo descartado |
+| `shape.radius/density` | valores de `RADIUS_STEPS_PX` / `DENSITY_SPACE_PX` | campo descartado |
+| `mode` | `light` ou `dark` | campo descartado |
+
+`normalizeThemeConfig` chama `parseStoreTheme`, então `resolveTheme` nunca vê
+valor cru. No storefront, `textoCssDasVars` ainda filtra cada valor antes de
+concatenar o `:root{…}` — o `<style>` é o ponto onde tema vira HTML, e era por
+ele que um `color.accent` com `red}</style><script>…` escapava (achado A-01 do
+plano de convergência). Fonte arbitrária deixou de ser aceita, o que também
+alinha com a decisão 4: pele é arquétipo + paleta + accent.
+
 ## 3.5 Tipos compartilhados
 
 **Implementado** em `packages/lib/src/store-theme/types.ts` (módulo aditivo, não-quebrante), exportado via `@mallevo/lib`:
@@ -208,3 +229,25 @@ export interface ThemeTokens { mode; color: ColorTokens; typography; shape }  //
 ```
 
 > **Nota de migração:** `packages/types/src/domain.ts` ainda exporta os tipos v1 (`TemplateVitrine`/`PaletaVitrine`/`StoreTheme`) usados pelo `minha-loja-editor.tsx`. Consolidar/depreciar esses tipos a favor do `StoreThemeConfig` é a **Fase 3** ([07](07-roadmap-implementacao.md)) — feito junto com a troca do editor para os 11 arquétipos, para não quebrar o web agora.
+
+## 3.6 `stores.conteudo` — o editorial da vitrine
+
+Coluna JSONB criada na migration `20260919120000_stores_conteudo.sql` e exposta
+na view `public_catalog_stores`. Separada do `theme` de propósito: `theme` é
+**pele** (cor, fonte, forma), `conteudo` é **voz** (o que a loja diz).
+
+```ts
+interface StoreConteudo {            // packages/lib/src/loja/conteudo.ts
+  v: 1
+  campanha?: { eyebrow?: string; titulo?: string; subtitulo?: string; cta?: string }
+  manifesto?: string
+  galeria_casa?: string[]            // ≤ 8 fotos, bucket store-assets/<tenant>/
+  destaques?: string[]               // ≤ 6 product_id da própria loja
+}
+```
+
+- **Grava:** `publicarVitrine` (Minha Loja), com `storeConteudoSchema`.
+- **Lê:** as 18 vitrines das duas superfícies, por `normalizeStoreConteudo`
+  (recuperação campo a campo: um destaque corrompido não apaga a campanha).
+- **Ausente (`null`):** cada vitrine cai no seu fallback — banner, nome,
+  descrição. Nenhuma superfície inventa copy.
