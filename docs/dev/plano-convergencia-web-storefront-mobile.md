@@ -467,7 +467,7 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
   1. Após A-01 e A-02 (mesmo dia): merge da branch em `main` e deploy de produção dos dois projetos; conferir com `vercel inspect <url>` que o commit é o esperado.
   2. `loja-teste-*`: desativar (`ativo = false`) ou marcar `stores.is_demo` e excluir da view pública. Recomendação: coluna `is_demo` (o seed local também a usa), filtrada em `public_catalog_stores`.
   3. Apex: decisão D-07 (mover `mallevo.com.br` para o storefront, ou manter a LP e publicar o saguão em `shopping.mallevo.com.br`). Até lá, o "Pronto quando" da Fase 5 não é atingível em produção.
-  4. Registrar em `docs/dev/deploy.md` o mapa: `mall-online-web` (root `apps/web`, `app.mallevo.com.br`), `storefront-mallevo` (root `apps/storefront`, `*.mallevo.com.br`), LP (apex), branch de produção, e o passo de `vercel domains add` por slug.
+  4. ~~Registrar em `docs/dev/deploy.md`~~ → **feito em 2026-09-22**: o mapa entrou como §2b de `docs/dev/deploy-checklist.md`, que já existia (criar um segundo documento seria o mesmo drift que a auditoria apontou). Cobre os três projetos da Vercel, o apex na LP, o modelo de branch, o `vercel domains add` por slug com o diagnóstico de certificado, e as variáveis que não podem vazar para produção.
 - Pronto quando: `vercel ls --prod` dos dois projetos aponta para o commit de `main` com A-01 corrigido; saguão sem loja de teste.
 
 ---
@@ -522,7 +522,7 @@ Nada da Fase 6 é feature nova. É o que separa "implementado" de "funcionando d
 
 ### 6e — Docs e decisões · 0,5 dia
 1. A-16 (§5.7, `stores.conteudo` nos schemas, `qa-local.md`).
-2. `docs/dev/deploy.md` (A-22 passo 4).
+2. ~~`docs/dev/deploy.md`~~ → §2b do `deploy-checklist.md`, **feito em 2026-09-22**.
 3. Fechar D-07 a D-11 no §8 com data.
 
 ---

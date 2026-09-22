@@ -41,6 +41,54 @@
 - [ ] Chaves de **produção** (sem `_test_`) em todos os projetos.
 - [ ] Build OK nos 3 (`pnpm --filter <app> build`).
 
+## 2b. Mapa dos projetos, domínios e branch (atualizado em 2026-09-22)
+
+Nomes reais na Vercel — `vercel ls <projeto>` e `vercel inspect <url>` usam estes:
+
+| Projeto Vercel | Root | Domínios | O que serve |
+|---|---|---|---|
+| `mall-online-web` | `apps/web` | `app.mallevo.com.br` | dashboard do lojista |
+| `storefront-mallevo` | `apps/storefront` | `*.mallevo.com.br` | a loja por subdomínio **e** o saguão, quando o host não tem slug |
+| `mallevo-lp-consumidor` | — | `mallevo.com.br`, `www` | landing page |
+
+**O apex ainda é a LP.** O saguão (Fase 5 da convergência) responde no host sem
+slug, então hoje só aparece em `storefront-mallevo.vercel.app`. Enquanto o apex
+não for movido para o `storefront-mallevo`, o critério de pronto da Fase 5 não é
+atingível em produção. Decisão D-07 do
+[plano de convergência](plano-convergencia-web-storefront-mobile.md).
+
+**Branch.** Push na branch gera Preview; produção é promoção explícita. Conferir
+sempre com `vercel inspect <url>` que o commit publicado é o esperado — em
+2026-09-21 a produção estava quatro commits atrás da branch sem que nada
+indicasse isso na interface.
+
+### Um subdomínio por loja precisa de certificado
+
+O DNS está na Cloudflare com curinga `*` apontando para a Vercel em modo
+DNS-only. A Vercel só emite certificado para hostname **adicionado
+explicitamente** ao projeto:
+
+```bash
+vercel domains add <slug>.mallevo.com.br storefront-mallevo
+openssl s_client -connect <slug>.mallevo.com.br:443 -servername <slug>.mallevo.com.br </dev/null 2>&1 | head -3
+```
+
+O onboarding faz isso sozinho (`provisionTenantDomain`: CNAME na Cloudflare +
+domínio na Vercel, com `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`,
+`VERCEL_TOKEN` e `VERCEL_PROJECT_ID` no projeto `mall-online-web`), e trocar o
+slug em Configurações reprovisiona antes de gravar. Sintoma de quem esqueceu:
+"Secure Connection Failed" — é hostname sem certificado, não bug da aplicação.
+Diagnóstico: `getent hosts` (DNS resolve?) → `openssl s_client` (`unexpected
+eof` = sem certificado) → `vercel domains inspect mallevo.com.br`.
+
+### Variáveis que não podem vazar para produção
+
+- `STOREFRONT_ALLOW_PREVIEW_OVERRIDE` — liga o `?preset=&categoria=` que troca a
+  pele de qualquer loja. **Nunca** em produção; é ferramenta de QA.
+- `NEXT_PUBLIC_ALLOW_UNKNOWN_HOST` — só para Previews da Vercel.
+- `PREVIEW_FRAME_ANCESTORS` — acrescenta origens que podem embutir o `/preview`
+  em iframe. Vazio em produção significa: só o dashboard.
+
 ## 3. Pagar.me (pedidos)
 
 - [ ] Conta em produção; `PAGARME_PLATFORM_RECIPIENT_ID` da Mallevo criado e **KYC ativo**.
