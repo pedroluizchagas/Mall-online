@@ -3,6 +3,7 @@ import {
   googleFontsHref,
   hasExplicitPreset,
   resolveTheme,
+  textoCssDasVars,
   toCssVars,
 } from '@mallevo/lib'
 
@@ -44,9 +45,10 @@ export function StoreThemeRoot({
   vars['--font-display'] = `"${tokens.typography.display.family}", system-ui, sans-serif`
   vars['--font-body'] = `"${tokens.typography.body.family}", system-ui, sans-serif`
 
-  const css = `:root{${Object.entries(vars)
-    .map(([k, v]) => `${k}:${v}`)
-    .join(';')}}`
+  // `textoCssDasVars` sanitiza cada valor antes de concatenar (achado A-01):
+  // este `<style>` é o único ponto do storefront onde tema vira HTML, e o
+  // tema pode vir do `?draft=` do preview, que é entrada do usuário.
+  const css = textoCssDasVars(vars)
   const fontsHref = googleFontsHref(tokens)
 
   return (

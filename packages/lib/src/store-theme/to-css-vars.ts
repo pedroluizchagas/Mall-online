@@ -35,8 +35,11 @@ function hexToRgba(hex: string, alpha: number): string {
  */
 export function toCssVars(t: ThemeTokens): Record<string, string> {
   const c = t.color
-  const r = RADIUS_STEPS_PX[t.shape.radius]
-  const s = DENSITY_SPACE_PX[t.shape.density]
+  // Defensivo (achado A-02): escala desconhecida NÃO pode virar `undefined.sm`
+  // — era isso que derrubava o `/preview` em 500 com `shape.radius:'nope'`.
+  // Desde o `parseStoreTheme` o valor já chega saneado; isto é a segunda linha.
+  const r = RADIUS_STEPS_PX[t.shape.radius] ?? RADIUS_STEPS_PX.soft
+  const s = DENSITY_SPACE_PX[t.shape.density] ?? DENSITY_SPACE_PX.comfortable
   return {
     '--bg': c.bg,
     '--surface': c.surface,
@@ -51,7 +54,7 @@ export function toCssVars(t: ThemeTokens): Record<string, string> {
     '--warning': c.warning,
     '--danger': c.danger,
     // Forma — escala completa de raios do arquétipo.
-    '--radius': RADIUS_PX[t.shape.radius],
+    '--radius': RADIUS_PX[t.shape.radius] ?? RADIUS_PX.soft,
     '--radius-sm': `${r.sm}px`,
     '--radius-md': `${r.md}px`,
     '--radius-lg': `${r.lg}px`,
@@ -67,4 +70,34 @@ export function toCssVars(t: ThemeTokens): Record<string, string> {
     '--font-body': t.typography.body.family,
     '--type-factor': String(TYPE_SCALE_FACTOR[t.typography.scale]),
   }
+}
+
+/**
+ * Caracteres aceitos num VALOR de CSS var gerado por nós: letras, dígitos,
+ * `#`, espaço, `,`, `.`, `%`, `(`, `)`, `-`, `_`, `/`, aspas simples e duplas.
+ * De fora ficam os que quebram o contexto: `<`, `>`, `;`, `{`, `}`, `\`, `:` e
+ * `@`. Cobre tudo o que os tokens produzem (`#RRGGBB`, `rgba(…)`, `20px`,
+ * `"Plus Jakarta Sans", system-ui, sans-serif`, `1.05`).
+ */
+const RE_VALOR_CSS = /^[\w\s#,.%()/'"-]+$/
+
+/**
+ * `:root{--a:x;--b:y}` a partir das vars — com sanitização (achado A-01).
+ *
+ * O storefront injeta este texto num `<style dangerouslySetInnerHTML>`; era
+ * por aqui que um `color.accent` hostil (`red}</style><script>…`) escapava do
+ * CSS e virava HTML. O `parseStoreTheme` já barra na entrada; esta é a defesa
+ * em profundidade, no ponto exato da concatenação: valor fora do alfabeto é
+ * DESCARTADO (a var some e o CSS/Tailwind cai no fallback), nunca escapado
+ * pela metade.
+ */
+export function textoCssDasVars(
+  vars: Record<string, string>,
+  seletor = ':root',
+): string {
+  const decl = Object.entries(vars)
+    .filter(([k, v]) => /^--[\w-]+$/.test(k) && typeof v === 'string' && RE_VALOR_CSS.test(v))
+    .map(([k, v]) => `${k}:${v}`)
+    .join(';')
+  return `${seletor}{${decl}}`
 }

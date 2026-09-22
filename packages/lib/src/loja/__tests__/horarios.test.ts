@@ -7,6 +7,7 @@ import {
   horarioDeHoje,
   normalizarHorarios,
   statusAbertura,
+  turnoEmCurso,
 } from '../horarios'
 
 // 2026-09-16 é quarta-feira.
@@ -93,5 +94,28 @@ describe('statusAbertura', () => {
   })
   it('sem horários → null (não inventa "Aberto")', () => {
     expect(statusAbertura(null, qua(10))).toBeNull()
+  })
+})
+
+describe('turno da véspera manda no "até" (achado A-18)', () => {
+  // Sexta 22:00–02:00, sábado 10:00–18:00. À 01:00 de sábado quem está aberto
+  // é o turno da SEXTA — o letreiro dizia "Aberto até 18:00" (o fecha do dia
+  // corrente), que é o horário de quem ainda nem abriu.
+  const CRUZA = { sex: { abre: '22:00', fecha: '02:00' }, sab: { abre: '10:00', fecha: '18:00' } }
+  const sabadoAs = (h: number) => new Date(2026, 8, 19, h, 0, 0) // 2026-09-19 é sábado
+
+  it('madrugada de sábado: fecha às 02:00, não às 18:00', () => {
+    expect(statusAbertura(CRUZA, sabadoAs(1))).toEqual({ aberta: true, texto: 'Aberto até 02:00' })
+  })
+
+  it('depois de fechar e antes de abrir, volta a falar do dia', () => {
+    expect(statusAbertura(CRUZA, sabadoAs(3))).toEqual({ aberta: false, texto: 'Abre às 10:00' })
+    expect(statusAbertura(CRUZA, sabadoAs(12))).toEqual({ aberta: true, texto: 'Aberto até 18:00' })
+  })
+
+  it('turnoEmCurso distingue sem horários (undefined) de fechada (null)', () => {
+    expect(turnoEmCurso(null, sabadoAs(12))).toBeUndefined()
+    expect(turnoEmCurso(CRUZA, sabadoAs(3))).toBeNull()
+    expect(turnoEmCurso(CRUZA, sabadoAs(1))).toEqual({ abre: '22:00', fecha: '02:00' })
   })
 })

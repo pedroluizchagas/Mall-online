@@ -1,6 +1,7 @@
 import { ensureAccentInk } from './contrast'
 import { getPaleta } from './palettes'
 import { ARQUETIPOS, ARQUETIPO_FALLBACK } from './presets'
+import { parseStoreTheme } from './schema'
 import type {
   ArquetipoCodigo,
   StoreThemeConfig,
@@ -49,31 +50,24 @@ export function getPresetExplicito(raw: unknown): ArquetipoCodigo | null {
 /**
  * Normaliza qualquer valor cru de `stores.theme` (null, v1 ou v2) num
  * `StoreThemeConfig` v2 válido. Defensivo: nunca lança.
+ *
+ * Desde 2026-09-22 (achado A-01) a parte v2 passa pelo `parseStoreTheme`:
+ * `color`, `fonts` e `shape` são validados campo a campo em vez de seguirem
+ * crus para os tokens e, daí, para o `<style>` do storefront. Este é o ÚNICO
+ * portão — banco e rascunho do preview entram pela mesma porta.
  */
 export function normalizeThemeConfig(raw: unknown): StoreThemeConfig {
-  if (!raw || typeof raw !== 'object') {
-    return { v: 2, preset: ARQUETIPO_FALLBACK }
-  }
-  const obj = raw as Record<string, unknown>
-
-  // v2 — tem `preset` reconhecível.
-  if (isArquetipo(obj.preset)) {
-    return {
-      v: 2,
-      preset: obj.preset,
-      palette: typeof obj.palette === 'string' ? obj.palette : undefined,
-      color: (obj.color as StoreThemeConfig['color']) ?? undefined,
-      fonts: (obj.fonts as StoreThemeConfig['fonts']) ?? undefined,
-      shape: (obj.shape as StoreThemeConfig['shape']) ?? undefined,
-      mode: obj.mode === 'dark' || obj.mode === 'light' ? obj.mode : undefined,
-    }
-  }
+  const v2 = parseStoreTheme(raw)
+  if (v2) return v2
 
   // v1 — tem `template` legado.
-  if (typeof obj.template === 'string') {
-    return {
-      v: 2,
-      preset: V1_TEMPLATE_TO_ARQUETIPO[obj.template] ?? ARQUETIPO_FALLBACK,
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>
+    if (typeof obj.template === 'string') {
+      return {
+        v: 2,
+        preset: V1_TEMPLATE_TO_ARQUETIPO[obj.template] ?? ARQUETIPO_FALLBACK,
+      }
     }
   }
 

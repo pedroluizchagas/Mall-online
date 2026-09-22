@@ -97,13 +97,15 @@ export function horarioDeHoje(raw: unknown, agora: Date = new Date()): Horario |
 }
 
 /**
- * Está aberta agora? `null` = a loja não informou horários (o chamador decide
- * o que mostrar — não inventar "Aberto"). Considera turno que cruza a
- * meia-noite, inclusive o da véspera ainda em curso.
+ * O turno que está ABERTO agora, se algum: `undefined` = a loja não informou
+ * horários; `null` = fechada. Considera turno que cruza a meia-noite, inclusive
+ * o da véspera ainda em curso — e é por isso que devolve o turno em vez de um
+ * booleano: aberta às 01:00 de sábado pelo turno de sexta (22:00–02:00), quem
+ * fecha é a sexta, não o horário de sábado (achado A-18).
  */
-export function abertoAgora(raw: unknown, agora: Date = new Date()): boolean | null {
+export function turnoEmCurso(raw: unknown, agora: Date = new Date()): Horario | null | undefined {
   const horarios = normalizarHorarios(raw)
-  if (!horarios) return null
+  if (!horarios) return undefined
 
   const minutos = agora.getHours() * 60 + agora.getMinutes()
   const hoje = horarios[DIAS_SEMANA[agora.getDay()]]
@@ -111,11 +113,11 @@ export function abertoAgora(raw: unknown, agora: Date = new Date()): boolean | n
     const abre = minutosDoDia(hoje.abre)
     const fecha = minutosDoDia(hoje.fecha)
     if (fecha > abre) {
-      if (minutos >= abre && minutos < fecha) return true
+      if (minutos >= abre && minutos < fecha) return hoje
     } else if (minutos >= abre) {
       // Turno noturno de hoje já começou. A madrugada (antes de `fecha`)
       // pertence ao turno da VÉSPERA — checado abaixo.
-      return true
+      return hoje
     }
   }
 
@@ -124,10 +126,19 @@ export function abertoAgora(raw: unknown, agora: Date = new Date()): boolean | n
   if (ontem) {
     const abre = minutosDoDia(ontem.abre)
     const fecha = minutosDoDia(ontem.fecha)
-    if (fecha <= abre && minutos < fecha) return true
+    if (fecha <= abre && minutos < fecha) return ontem
   }
 
-  return false
+  return null
+}
+
+/**
+ * Está aberta agora? `null` = a loja não informou horários (o chamador decide
+ * o que mostrar — não inventar "Aberto").
+ */
+export function abertoAgora(raw: unknown, agora: Date = new Date()): boolean | null {
+  const turno = turnoEmCurso(raw, agora)
+  return turno === undefined ? null : turno !== null
 }
 
 /** "08:00–18:00" (travessão), para letreiros. */
@@ -147,10 +158,13 @@ export interface StatusAbertura {
  * regra da convergência é não inventar "Aberto".
  */
 export function statusAbertura(raw: unknown, agora: Date = new Date()): StatusAbertura | null {
-  const aberta = abertoAgora(raw, agora)
-  if (aberta === null) return null
+  const turno = turnoEmCurso(raw, agora)
+  if (turno === undefined) return null
+  const aberta = turno !== null
   const hoje = horarioDeHoje(raw, agora)
-  if (aberta) return { aberta, texto: hoje ? `Aberto até ${hoje.fecha}` : 'Aberto' }
+  // O "até" vem do turno EM CURSO, não do horário de hoje: na madrugada, quem
+  // está aberto é o turno da véspera (achado A-18).
+  if (turno) return { aberta, texto: `Aberto até ${turno.fecha}` }
   const minutos = agora.getHours() * 60 + agora.getMinutes()
   if (hoje && minutos < minutosDoDia(hoje.abre)) return { aberta, texto: `Abre às ${hoje.abre}` }
   return { aberta, texto: 'Fechado agora' }

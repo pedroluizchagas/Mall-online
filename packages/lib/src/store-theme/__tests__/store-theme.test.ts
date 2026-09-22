@@ -104,10 +104,18 @@ describe('resolveTheme', () => {
     expect(contrastRatio(t.color.accent, t.color.accentInk)).toBeGreaterThanOrEqual(4.5)
   })
 
-  it('override de fonte troca apenas a família', () => {
-    const t = resolveTheme({ v: 2, preset: 'editorial', fonts: { display: 'Poppins' } })
-    expect(t.typography.display.family).toBe('Poppins')
+  it('override de fonte troca apenas a família — dentro do catálogo', () => {
+    const t = resolveTheme({ v: 2, preset: 'editorial', fonts: { display: 'Fraunces' } })
+    expect(t.typography.display.family).toBe('Fraunces')
     expect(t.typography.body.family).toBe('Inter')
+  })
+
+  // Desde 2026-09-22 (achado A-01) a família vai para uma CSS var e para o
+  // href do Google Fonts, então só entram as famílias dos arquétipos. Bate com
+  // a decisão 4 do plano: fonte não é exposta ao lojista.
+  it('família fora do catálogo dos arquétipos é ignorada', () => {
+    const t = resolveTheme({ v: 2, preset: 'editorial', fonts: { display: 'Poppins' } })
+    expect(t.typography.display.family).toBe(ARQUETIPOS.editorial.tokens.typography.display.family)
   })
 })
 

@@ -40,13 +40,20 @@ export {
   resolveTheme,
 } from './resolve'
 export {
+  CHAVES_DE_COR,
+  FAMILIAS_DE_FONTE,
+  RE_HEX,
+  parseStoreTheme,
+  storeThemeConfigSchema,
+} from './schema'
+export {
   VITRINES,
   ARQUETIPOS_SEM_VITRINE,
   resolveVitrine,
   getVitrineDoArquetipo,
 } from './vitrines'
 export type { Vitrine, VitrineCodigo, MoldeBarra } from './vitrines'
-export { toCssVars, RADIUS_PX } from './to-css-vars'
+export { toCssVars, textoCssDasVars, RADIUS_PX } from './to-css-vars'
 export {
   DENSITY_SPACE_PX,
   RADIUS_STEPS_PX,
