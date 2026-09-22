@@ -268,6 +268,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 ### 4.1 Segurança
 
 **A-01 · Crítico · storefront + lib — XSS refletido em `/preview?draft=`**
+> **Feito em 2026-09-22** (`648869e`). `packages/lib/src/store-theme/schema.ts` (`parseStoreTheme`) valida campo a campo e `normalizeThemeConfig` o chama, então banco e rascunho entram pelo mesmo portão; `textoCssDasVars` sanitiza no ponto da concatenação; `/preview` tem teto de 8 KB no draft. Prova no `pnpm smoke:storefront`: o payload devolve a pele do arquétipo, sem script. Efeito colateral aceito: fonte arbitrária deixou de ser aceita, alinhado à decisão 4.
+
 - Onde: `apps/storefront/lib/rascunho.ts:30-42` (`aplicarRascunho` aceita `theme` só com `hasExplicitPreset`); `packages/lib/src/store-theme/resolve.ts:60-70` (`normalizeTheme` faz cast de `color`, `fonts`, `shape`) e `:95-118` (`resolveTheme` espalha); `apps/storefront/components/store/StoreThemeRoot.tsx:47-54` (`:root{--accent:${v}}` em `<style dangerouslySetInnerHTML>`).
 - O que acontece: `?draft=` com `color.accent = "red}</style><script>…</script><style>"` sai literal no HTML servido em `<slug>.mallevo.com.br`. Reproduzido no `next start` local contra a loja real. `fonts.display` malicioso também vai para `--font-display` e para o `href` do Google Fonts. Sem limite de tamanho do draft.
 - Por que importa: executa no domínio da loja, onde vive a sessão do consumidor; `/preview` está em produção; o próprio dashboard oferece "Abrir o preview em nova aba". `frame-ancestors` não protege quem abre a URL direto.
@@ -281,6 +283,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Esforço: 1 dia.
 
 **A-02 · Alto · lib — `/preview` cai em 500 com `shape` inválido**
+> **Feito em 2026-09-22** (`648869e`). Coberto pelo schema, mais fallback de escala no `toCssVars`. `shape.radius:"nope"` responde 200.
+
 - Onde: `packages/lib/src/store-theme/to-css-vars.ts:38-39,55-63` (`RADIUS_STEPS_PX[t.shape.radius]` com chave desconhecida → `undefined.sm`).
 - Como resolver: coberto pelo schema de A-01; além disso `toCssVars` usa `RADIUS_STEPS_PX[radius] ?? RADIUS_STEPS_PX.md` (defensivo).
 - Pronto quando: draft com `shape.radius: 'nope'` devolve 200 com o raio do arquétipo.
@@ -297,6 +301,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Esforço: 1 dia.
 
 **A-13 · Médio · storefront — CSP e clickjacking**
+> **Feito em 2026-09-22** (`648869e`). Origens de localhost só fora de produção (`VERCEL_ENV`), acrescentáveis por `PREVIEW_FRAME_ANCESTORS`; demais rotas com `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff` e `Referrer-Policy`. O `/preview` fica fora da regra genérica por lookahead — duas CSPs se intersectam no navegador e matariam o iframe.
+
 - Onde: `apps/storefront/next.config.mjs:8-13` (`frame-ancestors 'self' https://app.mallevo.com.br http://localhost:3000 http://127.0.0.1:3000 http://localhost:3100 http://127.0.0.1:3100`, aplicado só a `/preview`).
 - Como resolver: origens de dev entram por `process.env.PREVIEW_FRAME_ANCESTORS` (vazio em produção); todas as demais rotas recebem `Content-Security-Policy: frame-ancestors 'none'` e `X-Frame-Options: DENY`.
 - Pronto quando: `curl -I` em `/checkout` mostra os dois headers e `/preview` em produção não lista `localhost`.
@@ -329,17 +335,23 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 ### 4.3 Consumer — limpezas incompletas
 
 **A-05 · Alto · consumer — `metadata.estoque` ainda vivo**
+> **Feito em 2026-09-22** (`18b39b4`). Passarela lê `track_stock`/`stock_quantity`; guarda de disco em `consumer-guardas.test.ts`.
+
 - Onde: `apps/mobile-consumer/components/loja/ProdutoPassarela.tsx:94-101`.
 - Como resolver: ler `produto.track_stock && produto.stock_quantity` como `LojaPassarela.tsx:104-106` já faz; `[slug].tsx` já seleciona as colunas. Guarda (R5): teste em `packages/lib/src/store-theme/__tests__/store-theme.test.ts` (que já lê o disco do consumer) falha se `components/loja/**` contiver `metadata.estoque` ou `estoque?:`.
 - Pronto quando: chip "Só N na loja" acende no seed (Passarela) com `EXPO_PUBLIC_USE_MOCK=false`.
 
 **A-06 · Alto · consumer — status "ABERTO" inventado em 6 vitrines**
+> **Feito em 2026-09-22** (`18b39b4`). Raw, Ritual, Horta, Forno, Feira e Passarela passaram a `statusAbertura`; Clínica ganhou chip na fileira de confiança. Serena, Volt e Magazine ficaram sem chip por não terem linha de meta onde encaixar — registrar como pendência de desenho, não de dado. Guarda de disco cobre o literal.
+
 - Onde: incondicional em `LojaRaw.tsx:254`, `LojaRitual.tsx:405` (pílula "Aberto para pedidos") e `:673`, `LojaHorta.tsx:1236`; fallback sem horários em `LojaForno.tsx:1001`, `LojaFeira.tsx:806`, `LojaPassarela.tsx:978` (`hoje ? 'HOJE …' : 'ABERTO'`). Sem `statusAbertura`: Clínica, Feira, Forno, Horta, Magazine, Passarela, Raw, Serena, Volt.
 - Como resolver: `const status = statusAbertura(loja.horarios)`; renderizar o chip só quando `status !== null`; nos marquees que listam `['ABERTO', tempo, hora]`, entra `status?.texto` no lugar da string. Clínica, Magazine, Serena e Volt ganham o chip via `statusAbertura` onde a spec do `05` §5.6 prevê status. Guarda (R5): teste falha se qualquer `Loja*.tsx` contiver `'ABERTO'`, `"Aberto"` ou `Aberto para pedidos`.
 - Pronto quando: com a loja do seed sem `horarios`, nenhuma vitrine mostra "aberto"; com horários, todas mostram a frase de `statusAbertura`.
 - Esforço: 1 dia (A-05 + A-06).
 
 **A-19 · Médio · consumer — duplicação e tipagem**
+> **Feito em 2026-09-22** (`18b39b4`). `VOZ_POR_PISO`/`NOME_CURTO` vêm da lib; `components/loja/registro.ts` substitui as cadeias de ternários (−247 linhas no `[slug].tsx`); `lerMetadataProduto` e cliente tipado zeraram o `as any`. `horarios` nas props virou `unknown` (é JSONB cru e a lib normaliza), que era o que impedia o `Record` único.
+
 - `FachadaLoja.tsx:106-125` redeclara `VOZ_POR_PISO`; `Diretorio.tsx:44` redeclara `NOME_CURTO` → importar `VOZ_POR_PISO` e `NOME_CURTO_POR_PISO` da lib e apagar as cópias.
 - `[slug].tsx:104,139,161` (`useState<any>`, `as any`) e o dispatch em cadeias de 14 e 18 ternários (`:286-312`, `:326-360`, `:370-393`) → `const VITRINES_RN: Record<VitrineCodigo, { Loja: ComponentType<…>; Pdp: ComponentType<…> }>` num arquivo próprio (`components/loja/registro.ts`), tipado; o `[slug].tsx` só faz `VITRINES_RN[codigo]`. Nota do napkin: a união genérica estoura a inferência do JSX a partir de ~14 membros, por isso o registro precisa ser um `Record` com props explícitas, não uma união.
 - `(produto.metadata as any)?.galeria` em 17 `Produto*.tsx` → `lerMetadataProduto(produto.metadata)` da lib, que já existe; `(supabase as any).from` → tipos gerados.
@@ -414,6 +426,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 ### 4.5 Qualidade, automação e verificação
 
 **A-08 · Alto · repo — sem CI; web e mobile sem `test`/`typecheck`**
+> **Feito em 2026-09-22** (`1c5c341`). `typecheck` em admin e nos três Expo; raiz com `typecheck`/`test`/`build` pelo turbo; `.github/workflows/ci.yml` com job "verificar" em todo PR e job "e2e" sob demanda (`workflow_dispatch` ou rótulo `e2e`) — a suíte e2e nunca rodou verde, então não bloqueia PR antes da primeira execução observada.
+
 - Onde: `.github/` não existe; `apps/web/package.json`, `apps/mobile-consumer`, `apps/mobile-partner`, `apps/admin` sem `test`/`typecheck`; root `pnpm test` = `pnpm -r --if-present test` (pula quem não tem); não há `typecheck` na raiz. Memória do projeto: `npx tsc` na raiz é um pacote stub que sai 0.
 - Como resolver:
   1. Scripts: `apps/web` `typecheck: tsc --noEmit -p tsconfig.json`, `test: vitest run` (com um primeiro teste de unidade para `filtrarUrlsDoTenant` de A-03); `apps/mobile-*` `typecheck: tsc --noEmit -p tsconfig.json`; root `typecheck: turbo run typecheck`, `test: turbo run test`, `build: turbo run build --filter=web --filter=storefront`.
@@ -430,6 +444,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Esforço: 2 dias.
 
 **A-16 · Médio · docs e plano — afirmações erradas e itens não feitos**
+> **Feito em 2026-09-22** (`872f224`). §5.7 no `05`, §3.4b e §3.6 no `store-theme/03`, `conteudo` no `docs/03-schema`, `qa-local.md` com as três vitrines certas e a receita do smoke sem Docker.
+
 - `docs/store-theme/05-aplicacao-storefront-consumer.md`: criar **§5.7 Storefront** (route group, `StoreThemeRoot` no `:root`, `_base/`, moldura App, override de QA, `/preview`, regras R1 a R8).
 - `docs/store-theme/03-design-tokens-e-schema.md` e `docs/03-schema-completo-de-banco-de-dados.md`: documentar `stores.conteudo` (schema v1, limites, quem grava, quem lê) e o `CHECK` de A-03.
 - `docs/dev/qa-local.md:69-71`: `sabor-mineiro` = Mesa, `tintas-aurora` = Gôndola, `esmalteria-lilas` = Cuidado; adicionar o roteiro do smoke sem Docker.
@@ -438,6 +454,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Esforço: 0,5 dia.
 
 **A-18 · Baixo · lib — `statusAbertura` no turno da véspera**
+> **Feito em 2026-09-22** (`648869e`). `turnoEmCurso` devolve o turno aberto (`undefined` = sem horários, `null` = fechada) e o "Aberto até" vem dele. Testes com sexta 22:00–02:00.
+
 - Onde: `packages/lib/src/loja/horarios.ts:152` usa `hoje.fecha` mesmo quando a abertura veio do turno noturno de ontem.
 - Como resolver: `abertoAgora` devolve também o turno que abriu (`{ aberta, turno }`), e `statusAbertura` usa `turno.fecha`. Teste: sexta 22:00–02:00 e sábado 10:00–18:00, às 01:00 de sábado → "Aberto até 02:00".
 
@@ -455,6 +473,15 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 ---
 
 ## 5. Fase 6 — Endurecimento e fechamento do ciclo
+
+**Andamento em 2026-09-22.** Fechados: A-01, A-02, A-13, A-18 (`648869e`), A-08
+(`1c5c341`), A-16 (`872f224`), A-05, A-06, A-19 (`18b39b4`). Em execução:
+A-03/A-04/A-17 no dashboard e A-07/A-09/A-11/A-12/A-15/A-20/A-21 no storefront.
+Bloqueados por falta de Docker nesta máquina (`sudo` pede senha): `pnpm qa:local`,
+`supabase db reset` com o seed e o consumer fora do mock. Não executados por
+dependerem de decisão: merge em `main`, deploy de produção e o destino do apex.
+Ferramenta nova: `pnpm smoke:storefront`, que é o teto do que se prova sem Docker.
+
 
 Nada da Fase 6 é feature nova. É o que separa "implementado" de "funcionando de maneira profissional". Ondas em ordem de dependência; cada onda tem um "pronto quando" verificável.
 
