@@ -17,7 +17,7 @@ import Svg, { Path } from 'react-native-svg'
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, statusAbertura } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
@@ -81,6 +81,7 @@ interface Props<T extends ProdutoVitrine> {
     banner_url?: string | null
     tempo_entrega?: number | null
     taxa_entrega?: number | null
+    horarios?: unknown
   }
   secoes: SecaoLoja<T>[]
   aoAbrirProduto: (produto: T) => void
@@ -251,7 +252,9 @@ export function LojaRaw<T extends ProdutoVitrine>({
       : loja.taxa_entrega != null
         ? `ENTREGA ${formatarReais(loja.taxa_entrega)}`
         : null,
-    'ABERTO',
+    // Estado REAL de `stores.horarios`: sem horários informados, nada entra
+    // na linha — a vitrine não inventa "aberto" (regra R4 da convergência).
+    statusAbertura(loja.horarios ?? null)?.texto.toUpperCase() ?? null,
   ]
     .filter(Boolean)
     .join('  ·  ')
@@ -318,7 +321,7 @@ export function LojaRaw<T extends ProdutoVitrine>({
       </View>
 
       <Animated.ScrollView
-        ref={scrollRef as any}
+        ref={scrollRef}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false },
@@ -501,7 +504,7 @@ export function LojaRaw<T extends ProdutoVitrine>({
         <TouchableOpacity
           activeOpacity={consumerDesign.opacity.pressed}
           onPress={() =>
-            (scrollRef.current as any)?.scrollTo?.({
+            scrollRef.current?.scrollTo({
               y: HERO_H + 40,
               animated: true,
             })

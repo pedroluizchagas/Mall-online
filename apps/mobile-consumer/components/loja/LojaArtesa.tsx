@@ -272,7 +272,7 @@ export function LojaArtesa<T extends ProdutoVitrine>({
       </View>
 
       <Animated.ScrollView
-        ref={scrollRef as any}
+        ref={scrollRef}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false },
@@ -400,7 +400,7 @@ export function LojaArtesa<T extends ProdutoVitrine>({
                       onPress={() => {
                         if (slide.produto) aoAbrirProduto(slide.produto)
                         else
-                          (scrollRef.current as any)?.scrollTo?.({
+                          scrollRef.current?.scrollTo({
                             y: HERO_H - insets.top,
                             animated: true,
                           })

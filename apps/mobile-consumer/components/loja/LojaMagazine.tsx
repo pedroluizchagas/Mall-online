@@ -468,7 +468,7 @@ export function LojaMagazine<T extends ProdutoMagazineItem>({
                       onPress={() => {
                         if (slide.produto) aoAbrirProduto(slide.produto)
                         else
-                          (scrollRef.current as any)?.scrollTo?.({
+                          scrollRef.current?.scrollTo({
                             y: HERO_H + 30,
                             animated: true,
                           })

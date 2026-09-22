@@ -54,6 +54,11 @@ export interface ProdutoVitrine {
   preco: number
   preco_promocional?: number | null
   foto_url: string | null
+  /** JSONB do lojista — sempre lido por `lerMetadataProduto` (contrato da lib). */
+  metadata?: Record<string, unknown> | null
+  /** Estoque REAL (`products.track_stock`/`stock_quantity`); `metadata.estoque` não existe. */
+  track_stock?: boolean | null
+  stock_quantity?: number | null
 }
 
 interface SecaoVitrine<T extends ProdutoVitrine> {
@@ -328,7 +333,7 @@ export function LojaEditorial<T extends ProdutoVitrine>({
       </View>
 
       <Animated.ScrollView
-        ref={scrollRef as any}
+        ref={scrollRef}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false },
@@ -496,7 +501,7 @@ export function LojaEditorial<T extends ProdutoVitrine>({
                     onPress={() => {
                       if (slide.produto) aoAbrirProduto(slide.produto)
                       else
-                        (scrollRef.current as any)?.scrollTo?.({
+                        scrollRef.current?.scrollTo({
                           y: HERO_H - insets.top - 48,
                           animated: true,
                         })

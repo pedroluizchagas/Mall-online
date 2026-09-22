@@ -248,6 +248,10 @@ export function LojaRitual<T extends ProdutoVitrine>({
     [secoes, secaoEspeciais],
   )
 
+  // Estado REAL de `stores.horarios`; `null` = loja sem horários informados,
+  // e aí nem o pill nem o rodapé dizem nada (regra R4 da convergência).
+  const status = statusAbertura(loja.horarios ?? null)
+
   const meta = [
     loja.tempo_entrega != null ? `${loja.tempo_entrega} min` : null,
     loja.taxa_entrega === 0
@@ -255,7 +259,7 @@ export function LojaRitual<T extends ProdutoVitrine>({
       : loja.taxa_entrega != null
         ? `Entrega ${formatarReais(loja.taxa_entrega)}`
         : null,
-    statusAbertura(loja.horarios ?? null)?.texto ?? null,
+    status?.texto ?? null,
   ]
     .filter(Boolean)
     .join('  ·  ')
@@ -282,6 +286,7 @@ export function LojaRitual<T extends ProdutoVitrine>({
           nome={loja.nome}
           descricao={loja.descricao}
           tempo={loja.tempo_entrega}
+          status={status?.texto.toUpperCase() ?? null}
           fotos={heroFotos}
           reduzirMovimento={reduzirMovimento}
         />
@@ -375,36 +380,40 @@ export function LojaRitual<T extends ProdutoVitrine>({
           />
         </TouchableOpacity>
 
-        <View
-          style={{
-            flexShrink: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 7,
-          }}
-        >
+        {/* Sem horários no cadastro não há disco nem frase: o pill fica só
+            com a saída e a sacola. Com horários, o disco lê o estado real. */}
+        {status && (
           <View
             style={{
-              width: 7,
-              height: 7,
-              borderRadius: 3.5,
-              backgroundColor: MENTA,
-            }}
-          />
-          <Text
-            numberOfLines={1}
-            style={{
               flexShrink: 1,
-              fontSize: 12.5,
-              letterSpacing: 0.6,
-              textTransform: 'uppercase',
-              color: colors.accentInk,
-              ...fontStyle(design.display, 800),
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 7,
             }}
           >
-            Aberto para pedidos
-          </Text>
-        </View>
+            <View
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: 3.5,
+                backgroundColor: status.aberta ? MENTA : comAlfa(colors.accentInk, 0.4),
+              }}
+            />
+            <Text
+              numberOfLines={1}
+              style={{
+                flexShrink: 1,
+                fontSize: 12.5,
+                letterSpacing: 0.6,
+                textTransform: 'uppercase',
+                color: colors.accentInk,
+                ...fontStyle(design.display, 800),
+              }}
+            >
+              {status.texto}
+            </Text>
+          </View>
+        )}
 
         <TouchableOpacity
           onPress={() => totalItens > 0 && router.push('/checkout')}
@@ -469,12 +478,15 @@ function HeroRitual({
   nome,
   descricao,
   tempo,
+  status,
   fotos,
   reduzirMovimento,
 }: {
   nome: string
   descricao?: string | null
   tempo?: number | null
+  /** Frase de `statusAbertura` em caixa alta; `null` = loja sem horários. */
+  status: string | null
   fotos: string[]
   reduzirMovimento: boolean
 }) {
@@ -670,7 +682,7 @@ function HeroRitual({
             ...fontStyle(design.body, 700),
           }}
         >
-          {['ABERTO', tempo != null ? `${tempo} MIN` : null, hora]
+          {[status, tempo != null ? `${tempo} MIN` : null, hora]
             .filter(Boolean)
             .join('  ·  ')}
         </Text>

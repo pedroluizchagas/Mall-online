@@ -20,42 +20,12 @@ import { Skeleton } from '@/components/ui/Skeleton'
 import { SplashLoja } from '@/components/SplashLoja'
 import { ModalProduto } from '@/components/ModalProduto'
 import { ProdutoCard } from '@/components/ProdutoCard'
-import { LojaEditorial } from '@/components/loja/LojaEditorial'
-import { ProdutoEditorial } from '@/components/loja/ProdutoEditorial'
-import { LojaRaw } from '@/components/loja/LojaRaw'
-import { ProdutoRaw } from '@/components/loja/ProdutoRaw'
-import { LojaSerena } from '@/components/loja/LojaSerena'
-import { ProdutoSereno } from '@/components/loja/ProdutoSereno'
-import { LojaArtesa } from '@/components/loja/LojaArtesa'
-import { ProdutoArtesao } from '@/components/loja/ProdutoArtesao'
-import { LojaNoir } from '@/components/loja/LojaNoir'
-import { ProdutoNoir } from '@/components/loja/ProdutoNoir'
-import { LojaVolt } from '@/components/loja/LojaVolt'
-import { ProdutoVolt } from '@/components/loja/ProdutoVolt'
-import { LojaClinica } from '@/components/loja/LojaClinica'
-import { ProdutoClinico } from '@/components/loja/ProdutoClinico'
-import { LojaTorra } from '@/components/loja/LojaTorra'
-import { ProdutoTorra } from '@/components/loja/ProdutoTorra'
-import { LojaSmash } from '@/components/loja/LojaSmash'
-import { ProdutoSmash } from '@/components/loja/ProdutoSmash'
-import { LojaRitual } from '@/components/loja/LojaRitual'
-import { ProdutoRitual } from '@/components/loja/ProdutoRitual'
-import { LojaMagazine } from '@/components/loja/LojaMagazine'
-import { ProdutoMagazine } from '@/components/loja/ProdutoMagazine'
-import { LojaHorta } from '@/components/loja/LojaHorta'
-import { ProdutoHorta } from '@/components/loja/ProdutoHorta'
-import { LojaForno } from '@/components/loja/LojaForno'
-import { ProdutoForno } from '@/components/loja/ProdutoForno'
-import { LojaPassarela } from '@/components/loja/LojaPassarela'
-import { ProdutoPassarela } from '@/components/loja/ProdutoPassarela'
-import { LojaFeira } from '@/components/loja/LojaFeira'
-import { ProdutoFeira } from '@/components/loja/ProdutoFeira'
-import { LojaMesa } from '@/components/loja/LojaMesa'
-import { ProdutoMesa } from '@/components/loja/ProdutoMesa'
-import { LojaGondola } from '@/components/loja/LojaGondola'
-import { ProdutoGondola } from '@/components/loja/ProdutoGondola'
-import { LojaCuidado } from '@/components/loja/LojaCuidado'
-import { ProdutoCuidado } from '@/components/loja/ProdutoCuidado'
+import {
+  VITRINES_RN,
+  type LojaDaVitrine,
+  type ProdutoDaVitrine,
+  type SecaoDaVitrine,
+} from '@/components/loja/registro'
 import { Badge } from '@/components/ui/Badge'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
@@ -73,24 +43,26 @@ const { shadow } = consumerDesign
 /** Altura útil da barra de menu inferior (sem o safe-area inset). */
 const ALTURA_BARRA_MENU = 58
 
-interface Produto {
-  id: string
-  nome: string
-  descricao: string | null
-  preco: number
-  preco_promocional: number | null
-  foto_url: string | null
-  disponivel: boolean
-  category_id: string | null
-  metadata: Record<string, unknown> | null
-  /** Estoque real (`products.track_stock`/`stock_quantity`) — o chip de escassez das vitrines lê daqui. */
-  track_stock?: boolean | null
-  stock_quantity?: number | null
-}
+/**
+ * Produto e seção são os tipos do registro das vitrines — a mesma forma que
+ * as 18 fachadas e os 18 PDPs recebem. `disponivel` só filtra a consulta,
+ * então fica de fora do contrato de renderização.
+ */
+type Produto = ProdutoDaVitrine
+type SecaoCardapio = SecaoDaVitrine
 
-interface SecaoCardapio {
-  titulo: string
-  produtos: Produto[]
+/** Linha de `stores` com o embed do nicho, como o select abaixo a devolve. */
+type LojaCarregada = LojaDaVitrine
+
+/**
+ * JSONB cru → objeto (ou `null`). `products.metadata` é `Json` nos tipos
+ * gerados: array ou escalar não é metadata de produto, e quem lê de verdade
+ * é `lerMetadataProduto` nas vitrines.
+ */
+function objetoOuNull(v: unknown): Record<string, unknown> | null {
+  return v !== null && typeof v === 'object' && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null
 }
 
 interface MetodoPagamento {
@@ -101,7 +73,7 @@ interface MetodoPagamento {
 export default function PaginaLoja() {
   const { slug } = useLocalSearchParams<{ slug: string }>()
   const insets = useSafeAreaInsets()
-  const [loja, setLoja] = useState<any>(null)
+  const [loja, setLoja] = useState<LojaCarregada | null>(null)
   const [secoes, setSecoes] = useState<SecaoCardapio[]>([])
   const [carregando, setCarregando] = useState(true)
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null)
@@ -135,9 +107,17 @@ export default function PaginaLoja() {
         return
       }
 
-      const categoria_slug =
-        (lojaData as any).categoria?.slug ?? null
-      setLoja({ ...lojaData, categoria_slug })
+      // O embed vem como objeto (`!stores_categoria_id_fkey` é 1:1); o
+      // PostgREST tipa como array em alguns selects, então normaliza-se aqui.
+      const categoria = Array.isArray(lojaData.categoria)
+        ? lojaData.categoria[0]
+        : lojaData.categoria
+      setLoja({
+        ...lojaData,
+        // `stores.slug` é nullable no schema, mas a linha veio de `.eq('slug', slug)`.
+        slug: lojaData.slug ?? slug,
+        categoria_slug: categoria?.slug ?? null,
+      })
 
       const { data: produtos } = await supabase
         .from('products')
@@ -157,8 +137,10 @@ export default function PaginaLoja() {
           { titulo: string; ordem: number; produtos: Produto[] }
         > = {}
 
-        for (const produto of produtos) {
-          const cat = (produto as any).categories
+        for (const { categories, ...produto } of produtos) {
+          // O embed de seção também chega ora objeto, ora array (1:1 pelo
+          // `category_id`) — a mesma normalização do nicho da loja.
+          const cat = Array.isArray(categories) ? categories[0] : categories
           const chave = cat?.id ?? 'sem-categoria'
           const titulo = cat?.nome ?? 'Outros'
           const ordem = cat?.ordem ?? 999
@@ -166,7 +148,10 @@ export default function PaginaLoja() {
           if (!grupos[chave]) {
             grupos[chave] = { titulo, ordem, produtos: [] }
           }
-          grupos[chave].produtos.push(produto as unknown as Produto)
+          grupos[chave].produtos.push({
+            ...produto,
+            metadata: objetoOuNull(produto.metadata),
+          })
         }
 
         const secoesOrdenadas = Object.values(grupos)
@@ -261,55 +246,12 @@ export default function PaginaLoja() {
   // a mesma tabela que o storefront e o editor do lojista leem. Aqui só se
   // mapeia o código para os componentes RN.
   const vitrine = resolveVitrine(design.arquetipo, loja?.categoria_slug ?? null)
-  const vitrineEditorial = vitrine === 'editorial'
-  const vitrineRaw = vitrine === 'raw'
-  const vitrineSerena = vitrine === 'serena'
-  const vitrineArtesa = vitrine === 'artesa'
-  const vitrineNoir = vitrine === 'noir'
-  const vitrineVolt = vitrine === 'volt'
-  const vitrineClinica = vitrine === 'clinica'
-  const vitrineTorra = vitrine === 'torra'
-  const vitrineSmash = vitrine === 'smash'
-  const vitrineRitual = vitrine === 'ritual'
-  const vitrineMagazine = vitrine === 'magazine'
-  const vitrineHorta = vitrine === 'horta'
-  const vitrineForno = vitrine === 'forno'
-  const vitrinePassarela = vitrine === 'passarela'
-  const vitrineFeira = vitrine === 'feira'
-  const vitrineMesa = vitrine === 'mesa'
-  const vitrineGondola = vitrine === 'gondola'
-  const vitrineCuidado = vitrine === 'cuidado'
 
-  if (vitrine) {
-    // LojaClinica fica fora da união (o `loja.id` extra quebra a inferência
-    // do JSX sobre componentes genéricos) — renderizada num ramo próprio.
-    const Vitrine = vitrineRaw
-      ? LojaRaw
-      : vitrineSerena
-        ? LojaSerena
-        : vitrineArtesa
-          ? LojaArtesa
-          : vitrineNoir
-            ? LojaNoir
-            : vitrineVolt
-              ? LojaVolt
-              : vitrineTorra
-                ? LojaTorra
-                : vitrineSmash
-                  ? LojaSmash
-                  : vitrineRitual
-                    ? LojaRitual
-                    : vitrineHorta
-                      ? LojaHorta
-                      : vitrineForno
-                        ? LojaForno
-                        : vitrinePassarela
-                          ? LojaPassarela
-                          : vitrineFeira
-                            ? LojaFeira
-                            : vitrineMesa
-                              ? LojaMesa
-                              : LojaEditorial
+  if (vitrine && loja) {
+    // Um acesso de índice no lugar das cadeias de ternários: o registro é um
+    // `Record` completo e tipado por props COMUNS, então o JSX não precisa
+    // inferir nada sobre 18 componentes distintos.
+    const { Loja: Vitrine, Pdp: PdpDaVitrine } = VITRINES_RN[vitrine]
     /*
      * Serviço agendável nunca usa o PDP da vitrine. A vitrine é a FACHADA
      * (LojaClinica, LojaSerena, LojaVolt continuam vestindo a loja), mas os
@@ -319,43 +261,8 @@ export default function PaginaLoja() {
      * endereço — pedido de entrega para uma consulta. Só o ModalProduto
      * implementa o layout `agendamento`, então ele assume o PDP dessas lojas.
      */
-    const Pdp = ehAgendamento
-      ? ModalProduto
-      : vitrineRaw
-      ? ProdutoRaw
-      : vitrineSerena
-        ? ProdutoSereno
-        : vitrineArtesa
-          ? ProdutoArtesao
-          : vitrineNoir
-            ? ProdutoNoir
-            : vitrineVolt
-              ? ProdutoVolt
-              : vitrineClinica
-                ? ProdutoClinico
-                : vitrineTorra
-                  ? ProdutoTorra
-                  : vitrineSmash
-                    ? ProdutoSmash
-                    : vitrineRitual
-                      ? ProdutoRitual
-                      : vitrineMagazine
-                        ? ProdutoMagazine
-                        : vitrineHorta
-                          ? ProdutoHorta
-                          : vitrineForno
-                            ? ProdutoForno
-                            : vitrinePassarela
-                              ? ProdutoPassarela
-                              : vitrineFeira
-                                ? ProdutoFeira
-                                : vitrineMesa
-                                  ? ProdutoMesa
-                                  : vitrineGondola
-                                    ? ProdutoGondola
-                                    : vitrineCuidado
-                                      ? ProdutoCuidado
-                                      : ProdutoEditorial
+    const Pdp = ehAgendamento ? ModalProduto : PdpDaVitrine
+
     return (
       <StoreDesignProvider value={design}>
         <View style={{ flex: 1, backgroundColor: colors.canvas }}>
@@ -366,46 +273,14 @@ export default function PaginaLoja() {
            * contador) é a porta do carrinho — a pill flutuante duplicaria a
            * função e disputaria espaço com a barra de menu da vitrine.
            */}
-          {vitrineClinica ? (
-            <LojaClinica
-              loja={loja}
-              secoes={secoes}
-              aoAbrirProduto={setProdutoSelecionado}
-              espacoFinal={24}
-            />
-          ) : vitrineGondola ? (
-            <LojaGondola
-              loja={loja}
-              secoes={secoes}
-              aoAbrirProduto={setProdutoSelecionado}
-              espacoFinal={24}
-            />
-          ) : vitrineCuidado ? (
-            // Fora da união genérica (a inferência do JSX desiste com muitos
-            // membros): ramo próprio, como Clínica, Magazine e Gôndola.
-            <LojaCuidado
-              loja={loja}
-              secoes={secoes}
-              aoAbrirProduto={setProdutoSelecionado}
-              espacoFinal={24}
-            />
-          ) : vitrineMagazine ? (
-            <LojaMagazine
-              loja={loja}
-              secoes={secoes}
-              aoAbrirProduto={setProdutoSelecionado}
-              espacoFinal={24}
-            />
-          ) : (
-            <Vitrine
-              loja={loja}
-              secoes={secoes}
-              aoAbrirProduto={setProdutoSelecionado}
-              espacoFinal={24}
-            />
-          )}
+          <Vitrine
+            loja={loja}
+            secoes={secoes}
+            aoAbrirProduto={setProdutoSelecionado}
+            espacoFinal={24}
+          />
 
-          {produtoSelecionado && loja && (
+          {produtoSelecionado && (
             <Pdp
               produto={produtoSelecionado}
               loja={loja}

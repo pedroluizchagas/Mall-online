@@ -14,7 +14,7 @@ import {
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais, statusAbertura } from '@mallevo/lib'
+import { formatarReais, lerMetadataProduto, statusAbertura } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
@@ -166,9 +166,7 @@ export function LojaTorra<T extends ProdutoVitrine>({
   // Recorte transparente (metadata.recorte) → efeito verdadeiro do pôster:
   // o produto solto sobre as palavras. Sem recorte, a foto ganha MÁSCARA DE
   // CÁPSULA (arco vertical) — lê como objeto, não como retângulo.
-  const recorteCard = (produtoCard as any)?.metadata?.recorte as
-    | string
-    | undefined
+  const recorteCard = produtoCard ? lerMetadataProduto(produtoCard.metadata).recorte : undefined
   const larguraCard = Math.round(SCREEN_W * 0.46)
   const alturaCard = Math.round(larguraCard * 1.5)
 

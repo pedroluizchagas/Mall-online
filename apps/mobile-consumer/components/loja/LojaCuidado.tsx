@@ -180,7 +180,7 @@ export function LojaCuidado<T extends ProdutoCuidadoItem>({
       </View>
 
       <Animated.ScrollView
-        ref={scrollRef as any}
+        ref={scrollRef}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}

@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, VOZ_PADRAO_PISO, VOZ_POR_PISO } from '@mallevo/lib'
 import { supabase } from '@/lib/supabase'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { BotaoSeguir } from '@/components/BotaoSeguir'
@@ -98,27 +98,6 @@ export interface LojaFachada {
   theme: unknown
 }
 
-/**
- * Vocabulário do corredor por piso: como a fachada chama a sua vitrine, o
- * link para o catálogo e o convite do CTA. Verbos honestos com o que a loja
- * faz — "Pedir agora" só onde se pede; "Passear" onde se passeia.
- */
-export const VOZ_POR_PISO: Record<
-  string,
-  { vitrine: string; link: string; cta: string }
-> = {
-  'praca-alimentacao': { vitrine: 'Frescos do dia', link: 'Cardápio', cta: 'Pedir agora' },
-  'moda-estilo': { vitrine: 'Peças na vitrine', link: 'Entrar na loja', cta: 'Passear' },
-  saude: { vitrine: 'Cuidados em destaque', link: 'Ver tudo', cta: 'Ver loja' },
-  beleza: { vitrine: 'Rituais da casa', link: 'Ver tudo', cta: 'Ver loja' },
-  pet: { vitrine: 'Para o seu pet', link: 'Ver tudo', cta: 'Pedir agora' },
-  'casa-vida': { vitrine: 'Para a sua casa', link: 'Entrar na loja', cta: 'Passear' },
-  mercado: { vitrine: 'Na cesta hoje', link: 'Ver tudo', cta: 'Pedir agora' },
-  servicos: { vitrine: 'Serviços em destaque', link: 'Ver tudo', cta: 'Conhecer' },
-  'presentes-diversao': { vitrine: 'Para presentear', link: 'Entrar na loja', cta: 'Passear' },
-}
-const VOZ_PADRAO = { vitrine: 'Destaques da loja', link: 'Ver tudo', cta: 'Ver loja' }
-
 interface Props {
   loja: LojaFachada
   pisoSlug: string
@@ -139,7 +118,9 @@ export function FachadaLoja({
   const { colors } = design
   const TILE_W = tileW(largura)
   const TILE_FOTO = TILE_W - TILE_PAD * 2
-  const voz = VOZ_POR_PISO[pisoSlug] ?? VOZ_PADRAO
+  // Vocabulário do corredor (vitrine/link/cta) mora em @mallevo/lib: o mesmo
+  // que o storefront e o saguão leem — nada de cópia local.
+  const voz = VOZ_POR_PISO[pisoSlug] ?? VOZ_PADRAO_PISO
   const destaques = useDestaquesLoja(loja.id)
 
   // Loja sem pele: a fachada é branca sobre o canvas (elevação por

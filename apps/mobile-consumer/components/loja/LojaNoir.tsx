@@ -269,7 +269,7 @@ export function LojaNoir<T extends ProdutoVitrine>({
       </View>
 
       <Animated.ScrollView
-        ref={scrollRef as any}
+        ref={scrollRef}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           { useNativeDriver: false },
@@ -413,7 +413,7 @@ export function LojaNoir<T extends ProdutoVitrine>({
                       onPress={() => {
                         if (slide.produto) aoAbrirProduto(slide.produto)
                         else
-                          (scrollRef.current as any)?.scrollTo?.({
+                          scrollRef.current?.scrollTo({
                             y: HERO_H - insets.top,
                             animated: true,
                           })
@@ -709,7 +709,7 @@ function CarrosselCentral<T extends ProdutoVitrine>({
     <View>
       <View>
         <Animated.ScrollView
-          ref={pagerRef as any}
+          ref={pagerRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           snapToInterval={passo}

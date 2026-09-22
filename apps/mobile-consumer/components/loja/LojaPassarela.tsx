@@ -61,11 +61,6 @@ const ESTOQUE_BAIXO = 40
 /** Altura útil da barra de menu inferior (sem o safe-area inset). */
 const ALTURA_BARRA_MENU = 58
 
-interface Horario {
-  abre: string
-  fecha: string
-}
-
 interface SecaoLoja<T extends ProdutoVitrine> {
   titulo: string
   produtos: T[]
@@ -81,7 +76,8 @@ interface Props<T extends ProdutoVitrine> {
     descricao?: string | null
     banner_url?: string | null
     tempo_entrega?: number | null
-    horarios?: Record<string, Horario> | null
+    /** `stores.horarios` cru — `horarioDeHoje`/`statusAbertura` normalizam. */
+    horarios?: unknown
   }
   secoes: SecaoLoja<T>[]
   aoAbrirProduto: (produto: T) => void
@@ -102,8 +98,7 @@ function temPromo(p: ProdutoVitrine): boolean {
  * (plano de convergência, Fase 0); sem controle de estoque → null.
  */
 function estoqueDe(p: ProdutoVitrine): number | null {
-  const { track_stock, stock_quantity } = p as { track_stock?: boolean | null; stock_quantity?: number | null }
-  return track_stock && typeof stock_quantity === 'number' ? stock_quantity : null
+  return p.track_stock && typeof p.stock_quantity === 'number' ? p.stock_quantity : null
 }
 
 /**
@@ -242,8 +237,9 @@ export function LojaPassarela<T extends ProdutoVitrine>({
     const cacheado = temOpcoesCache.current.get(id)
     if (cacheado !== undefined) return cacheado
 
-    const consultar = (tabela: string) =>
-      (supabase as any).from(tabela).select('id').eq('product_id', id)
+    // Tabelas literais: o cliente tipado só aceita nomes do `Database`.
+    const consultar = (tabela: 'product_option_groups' | 'product_modifier_groups') =>
+      supabase.from(tabela).select('id').eq('product_id', id)
 
     try {
       const [opts, mods] = await Promise.all([
@@ -460,7 +456,7 @@ export function LojaPassarela<T extends ProdutoVitrine>({
         <FechoPassarela
           nome={loja.nome}
           tempo={loja.tempo_entrega ?? null}
-          horarios={loja.horarios ?? null}
+          horarios={loja.horarios}
         />
       </ScrollView>
 
@@ -962,7 +958,7 @@ function FechoPassarela({
 }: {
   nome: string
   tempo: number | null
-  horarios: Record<string, Horario> | null
+  horarios: unknown
 }) {
   const design = useStoreDesign()
   const { colors } = design
@@ -975,7 +971,9 @@ function FechoPassarela({
 
   const hoje = horarioDeHoje(horarios)
   const meta = [
-    hoje ? `HOJE ${hoje.abre}–${hoje.fecha}` : 'ABERTO',
+    // Sem horários (ou fechado hoje) a linha simplesmente não tem essa peça:
+    // nenhuma vitrine inventa "aberto" (regra R4 da convergência).
+    hoje ? `HOJE ${hoje.abre}–${hoje.fecha}` : null,
     tempo != null ? `${tempo} MIN` : null,
     hora,
   ].filter(Boolean)

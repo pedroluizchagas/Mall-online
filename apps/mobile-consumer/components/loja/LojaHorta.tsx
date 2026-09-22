@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Baloo2_800ExtraBold } from '@expo-google-fonts/baloo-2'
 import { Caveat_700Bold } from '@expo-google-fonts/caveat'
 import { useFonts } from 'expo-font'
-import { formatarReais, horarioDeHoje } from '@mallevo/lib'
+import { formatarReais, horarioDeHoje, statusAbertura } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
@@ -89,11 +89,6 @@ const MARQUEE = [
 /** Altura útil da barra de menu inferior (sem o safe-area inset). */
 const ALTURA_BARRA_MENU = 58
 
-interface Horario {
-  abre: string
-  fecha: string
-}
-
 interface SecaoLoja<T extends ProdutoVitrine> {
   titulo: string
   produtos: T[]
@@ -106,7 +101,8 @@ interface Props<T extends ProdutoVitrine> {
     banner_url?: string | null
     tempo_entrega?: number | null
     taxa_entrega?: number | null
-    horarios?: Record<string, Horario> | null
+    /** `stores.horarios` cru — `horarioDeHoje`/`statusAbertura` normalizam. */
+    horarios?: unknown
   }
   secoes: SecaoLoja<T>[]
   aoAbrirProduto: (produto: T) => void
@@ -345,7 +341,7 @@ export function LojaHorta<T extends ProdutoVitrine>({
 
         {/* ── Visite: faixa caramelo com o horário de hoje ── */}
         <VisiteHorta
-          horarios={loja.horarios ?? null}
+          horarios={loja.horarios}
           tempo={loja.tempo_entrega ?? null}
           taxa={loja.taxa_entrega ?? null}
           foto={fotos[2] ?? fotos[0] ?? null}
@@ -353,7 +349,11 @@ export function LojaHorta<T extends ProdutoVitrine>({
         />
 
         {/* ── Fecho: faixa verde com selo, nome e relógio ── */}
-        <FechoHorta nome={loja.nome} tempo={loja.tempo_entrega ?? null} />
+        <FechoHorta
+          nome={loja.nome}
+          tempo={loja.tempo_entrega ?? null}
+          status={statusAbertura(loja.horarios ?? null)?.texto ?? null}
+        />
       </ScrollView>
 
       {/* Chrome: dois botões-adesivo fixos. Creme com fio e sombra — legíveis
@@ -1090,7 +1090,7 @@ function VisiteHorta({
   foto,
   aoPedir,
 }: {
-  horarios: Record<string, Horario> | null
+  horarios: unknown
   tempo: number | null
   taxa: number | null
   foto: string | null
@@ -1175,7 +1175,16 @@ function VisiteHorta({
 // Fecho — faixa verde com selo, nome e relógio vivo
 // ─────────────────────────────────────────────────────────────
 
-function FechoHorta({ nome, tempo }: { nome: string; tempo: number | null }) {
+function FechoHorta({
+  nome,
+  tempo,
+  status,
+}: {
+  nome: string
+  tempo: number | null
+  /** Frase de `statusAbertura`; `null` = loja sem horários, e o relógio fica só com a hora. */
+  status: string | null
+}) {
   const design = useStoreDesign()
   const { colors } = design
   const { wordmark } = useFontesHorta()
@@ -1233,7 +1242,7 @@ function FechoHorta({ nome, tempo }: { nome: string; tempo: number | null }) {
           ...fontStyle(design.body, 600),
         }}
       >
-        {['ABERTO', tempo != null ? `${tempo} MIN` : null, hora]
+        {[status, tempo != null ? `${tempo} MIN` : null, hora]
           .filter(Boolean)
           .join('  ·  ')}
       </Text>

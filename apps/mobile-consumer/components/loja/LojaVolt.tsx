@@ -406,7 +406,7 @@ export function LojaVolt<T extends ProdutoVitrine>({
                       onPress={() => {
                         if (slide.produto) aoAbrirProduto(slide.produto)
                         else
-                          (scrollRef.current as any)?.scrollTo?.({
+                          scrollRef.current?.scrollTo({
                             y: HERO_H - 20,
                             animated: true,
                           })

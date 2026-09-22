@@ -12,7 +12,7 @@ import {
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, lerMetadataProduto } from '@mallevo/lib'
 import { ConsumerIcon } from '@/components/ConsumerIcon'
 import { ModalProduto } from '@/components/ModalProduto'
 import { Botao } from '@/components/ui/Botao'
@@ -83,9 +83,10 @@ export function ProdutoSmash({ produto, loja, onFechar }: Props) {
   const escalaCta = useRef(new Animated.Value(1)).current
 
   const recorte = (produto.metadata as { recorte?: string } | null)?.recorte
-  const galeria = Array.isArray((produto.metadata as any)?.galeria)
-    ? ((produto.metadata as any).galeria as string[])
-    : []
+  // `metadata` é JSONB do lojista: a leitura passa pelo contrato único da lib
+  // (campo corrompido some sozinho, nada lança).
+  const metadata = lerMetadataProduto(produto.metadata)
+  const galeria = metadata.galeria ?? []
   const fotos =
     galeria.length > 0 ? galeria : produto.foto_url ? [produto.foto_url] : []
 
@@ -96,11 +97,11 @@ export function ProdutoSmash({ produto, loja, onFechar }: Props) {
   useEffect(() => {
     let cancelado = false
     Promise.all([
-      (supabase as any)
+      supabase
         .from('product_option_groups')
         .select('id')
         .eq('product_id', produto.id),
-      (supabase as any)
+      supabase
         .from('product_modifier_groups')
         .select('id')
         .eq('product_id', produto.id),

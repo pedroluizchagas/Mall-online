@@ -80,11 +80,6 @@ const ALTURA_BARRA_MENU = 58
 const DISCO_HERO = Math.round(SCREEN_W * 0.92)
 const VAZAMENTO = Math.round(DISCO_HERO * 0.3)
 
-interface Horario {
-  abre: string
-  fecha: string
-}
-
 interface SecaoLoja<T extends ProdutoVitrine> {
   titulo: string
   produtos: T[]
@@ -97,7 +92,8 @@ interface Props<T extends ProdutoVitrine> {
     banner_url?: string | null
     tempo_entrega?: number | null
     taxa_entrega?: number | null
-    horarios?: Record<string, Horario> | null
+    /** `stores.horarios` cru — `horarioDeHoje`/`statusAbertura` normalizam. */
+    horarios?: unknown
   }
   secoes: SecaoLoja<T>[]
   aoAbrirProduto: (produto: T) => void
@@ -347,7 +343,7 @@ export function LojaForno<T extends ProdutoVitrine>({
           nome={loja.nome}
           tempo={loja.tempo_entrega ?? null}
           taxa={loja.taxa_entrega ?? null}
-          horarios={loja.horarios ?? null}
+          horarios={loja.horarios}
         />
       </ScrollView>
 
@@ -984,7 +980,7 @@ function FechoForno({
   nome: string
   tempo: number | null
   taxa: number | null
-  horarios: Record<string, Horario> | null
+  horarios: unknown
 }) {
   const design = useStoreDesign()
   const { black } = useFonteForno()
@@ -998,7 +994,9 @@ function FechoForno({
 
   const hoje = horarioDeHoje(horarios)
   const meta = [
-    hoje ? `HOJE ${hoje.abre}–${hoje.fecha}` : 'ABERTO',
+    // Sem horários (ou fechado hoje) a linha simplesmente não tem essa peça:
+    // nenhuma vitrine inventa "aberto" (regra R4 da convergência).
+    hoje ? `HOJE ${hoje.abre}–${hoje.fecha}` : null,
     tempo != null ? `${tempo} MIN` : null,
     taxa === 0 ? 'ENTREGA GRÁTIS' : null,
     hora,

@@ -15,7 +15,7 @@ import {
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, lerMetadataProduto, statusAbertura } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { useCartStore } from '@/store/useCartStore'
 import { useTransicaoSaida } from '@/store/useTransicaoSaida'
@@ -71,6 +71,7 @@ interface Props<T extends ProdutoClinica> {
     banner_url?: string | null
     taxa_entrega?: number | null
     tempo_entrega?: number | null
+    horarios?: unknown
   }
   secoes: SecaoLoja<T>[]
   aoAbrirProduto: (produto: T) => void
@@ -83,7 +84,7 @@ function descontoPct(p: ProdutoVitrine): number {
 }
 
 function exigeReceita(p: ProdutoClinica): boolean {
-  return (p.metadata as any)?.exige_receita === true
+  return lerMetadataProduto(p.metadata).exige_receita === true
 }
 
 export function LojaClinica<T extends ProdutoClinica>({
@@ -129,6 +130,9 @@ export function LojaClinica<T extends ProdutoClinica>({
         .find((p) => descontoPct(p) === maxDesc && p.foto_url) ?? null,
     [secoes, maxDesc],
   )
+
+  // Frase compartilhada com o storefront e o saguão; `null` = sem horários.
+  const status = statusAbertura(loja.horarios ?? null)
 
   const slides = useMemo<SlideClinica<T>[]>(() => {
     const campanha: SlideClinica<T> = {
@@ -338,7 +342,7 @@ export function LojaClinica<T extends ProdutoClinica>({
       </View>
 
       <Animated.ScrollView
-        ref={scrollRef as any}
+        ref={scrollRef}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         onScroll={Animated.event(
@@ -481,7 +485,7 @@ export function LojaClinica<T extends ProdutoClinica>({
                       onPress={() => {
                         if (slide.produto) aoAbrirProduto(slide.produto)
                         else
-                          (scrollRef.current as any)?.scrollTo?.({
+                          scrollRef.current?.scrollTo({
                             y: HERO_H - 40,
                             animated: true,
                           })
@@ -599,6 +603,14 @@ export function LojaClinica<T extends ProdutoClinica>({
             }
           />
           <Separador />
+          {/* Estado REAL de `stores.horarios`: a loja sem horários informados
+              não ganha item nenhum — nada de "aberto" inventado (regra R4). */}
+          {status && (
+            <>
+              <ItemConfianca icone="clock" rotulo={status.texto} />
+              <Separador />
+            </>
+          )}
           <ItemConfianca icone="file" rotulo="Receita na entrega" />
           <Separador />
           <ItemConfianca icone="shield" rotulo="Compra segura" />

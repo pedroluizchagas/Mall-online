@@ -16,6 +16,7 @@
  * aqui.
  */
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
+import { NOME_CURTO_POR_PISO } from '@mallevo/lib'
 import { ConsumerIcon, type ConsumerIconName } from '@/components/ConsumerIcon'
 import { Skeleton } from '@/components/ui/Skeleton'
 import { Vidro } from '@/components/ui/Vidro'
@@ -34,23 +35,6 @@ export const ICONE_POR_PISO: Record<string, ConsumerIconName> = {
   mercado: 'basket',
   servicos: 'wrench',
   'presentes-diversao': 'gift',
-}
-
-/**
- * Nome curto para a placa do diretório — placa de sinalização abrevia
- * ("Alimentação", não "Praça de Alimentação"). O letreiro do corredor,
- * lá embaixo, mantém o nome completo do piso.
- */
-const NOME_CURTO: Record<string, string> = {
-  'praca-alimentacao': 'Alimentação',
-  'moda-estilo': 'Moda',
-  saude: 'Saúde',
-  beleza: 'Beleza',
-  pet: 'Pet',
-  'casa-vida': 'Casa & Vida',
-  mercado: 'Mercado',
-  servicos: 'Serviços',
-  'presentes-diversao': 'Presentes',
 }
 
 export interface PisoDiretorio {
@@ -134,7 +118,7 @@ export function Diretorio({
                   <Text
                     style={{ fontSize: 13, fontWeight: '600', color: colors.ink }}
                   >
-                    {NOME_CURTO[piso.slug] ?? piso.nome}
+                    {NOME_CURTO_POR_PISO[piso.slug] ?? piso.nome}
                   </Text>
                 </View>
               </Vidro>

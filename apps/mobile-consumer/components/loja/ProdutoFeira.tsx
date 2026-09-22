@@ -12,7 +12,7 @@ import {
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, lerMetadataProduto } from '@mallevo/lib'
 import { ModalProduto } from '@/components/ModalProduto'
 import { Botao } from '@/components/ui/Botao'
 import { useCartStore } from '@/store/useCartStore'
@@ -82,9 +82,10 @@ export function ProdutoFeira({ produto, loja, onFechar }: Props) {
   const [temOpcoes, setTemOpcoes] = useState<boolean | null>(null)
   const escalaCta = useRef(new Animated.Value(1)).current
 
-  const galeria = Array.isArray((produto.metadata as any)?.galeria)
-    ? ((produto.metadata as any).galeria as string[])
-    : []
+  // `metadata` é JSONB do lojista: a leitura passa pelo contrato único da lib
+  // (campo corrompido some sozinho, nada lança).
+  const metadata = lerMetadataProduto(produto.metadata)
+  const galeria = metadata.galeria ?? []
   const paginas =
     galeria.length > 0 ? galeria : produto.foto_url ? [produto.foto_url] : []
 
@@ -109,8 +110,9 @@ export function ProdutoFeira({ produto, loja, onFechar }: Props) {
 
   useEffect(() => {
     let cancelado = false
-    const consultar = (tabela: string) =>
-      (supabase as any).from(tabela).select('id').eq('product_id', produto.id)
+    // Tabelas literais: o cliente tipado só aceita nomes do `Database`.
+    const consultar = (tabela: 'product_option_groups' | 'product_modifier_groups') =>
+      supabase.from(tabela).select('id').eq('product_id', produto.id)
 
     Promise.all([
       consultar('product_option_groups'),

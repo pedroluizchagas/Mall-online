@@ -12,7 +12,7 @@ import {
 import { router } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { formatarReais } from '@mallevo/lib'
+import { formatarReais, lerMetadataProduto } from '@mallevo/lib'
 import { ModalProduto } from '@/components/ModalProduto'
 import { Botao } from '@/components/ui/Botao'
 import { useCartStore } from '@/store/useCartStore'
@@ -52,6 +52,9 @@ interface ProdutoPdp {
   preco_promocional: number | null
   foto_url: string | null
   metadata?: Record<string, unknown> | null
+  /** Estoque REAL do lojista — as mesmas colunas que `estoqueDe` lê na vitrine. */
+  track_stock?: boolean | null
+  stock_quantity?: number | null
 }
 
 interface LojaPdp {
@@ -85,19 +88,26 @@ export function ProdutoPassarela({ produto, loja, onFechar }: Props) {
   const [temOpcoes, setTemOpcoes] = useState<boolean | null>(null)
   const escalaCta = useRef(new Animated.Value(1)).current
 
-  const galeria = Array.isArray((produto.metadata as any)?.galeria)
-    ? ((produto.metadata as any).galeria as string[])
-    : []
+  // `metadata` é JSONB do lojista: a leitura passa pelo contrato único da lib
+  // (campo corrompido some sozinho, nada lança).
+  const metadata = lerMetadataProduto(produto.metadata)
+  const galeria = metadata.galeria ?? []
   const paginas =
     galeria.length > 0 ? galeria : produto.foto_url ? [produto.foto_url] : []
 
-  const estoque = (produto.metadata as { estoque?: number } | null)?.estoque
+  // Estoque REAL (`products.track_stock` + `stock_quantity`), espelhando
+  // `estoqueDe` em LojaPassarela. `metadata.estoque` saiu do contrato
+  // (plano de convergência, Fase 0) — sem controle de estoque, sem chip.
+  const estoque =
+    produto.track_stock && typeof produto.stock_quantity === 'number'
+      ? produto.stock_quantity
+      : null
   const precoFinal = produto.preco_promocional ?? produto.preco
   const temPromo =
     !!produto.preco_promocional && produto.preco_promocional < produto.preco
   // Zero não vira "Só 0 na loja" — espelha a regra de `chipDe` na vitrine.
   const chip =
-    typeof estoque === 'number' && estoque > 0 && estoque <= ESTOQUE_BAIXO
+    estoque !== null && estoque > 0 && estoque <= ESTOQUE_BAIXO
       ? `Só ${estoque} na loja`
       : temPromo
         ? 'Oferta'
@@ -109,11 +119,11 @@ export function ProdutoPassarela({ produto, loja, onFechar }: Props) {
   useEffect(() => {
     let cancelado = false
     Promise.all([
-      (supabase as any)
+      supabase
         .from('product_option_groups')
         .select('id')
         .eq('product_id', produto.id),
-      (supabase as any)
+      supabase
         .from('product_modifier_groups')
         .select('id')
         .eq('product_id', produto.id),
