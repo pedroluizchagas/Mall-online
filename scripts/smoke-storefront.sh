@@ -68,6 +68,14 @@ checar /                        "www.mallevo.localhost" 200
 # Host fora dos domínios da Mallevo não serve o saguão (A-21): 404 seco, a
 # menos que NEXT_PUBLIC_ALLOW_UNKNOWN_HOST=true (previews da Vercel).
 checar /                        "dominio-de-terceiro.example" 404
+# A URL de deploy da Vercel é nossa e serve o saguão (é por ela que o shopping
+# é alcançável enquanto o apex estiver na LP), mas com `noindex`.
+checar /                        "storefront-mallevo.vercel.app" 200
+if curl -s -D - -o /dev/null --max-time 30 -H "Host: storefront-mallevo.vercel.app" "$BASE/" | tr -d '\r' | grep -qi '^x-robots-tag:.*noindex'; then
+  ok "URL da Vercel serve o saguão com noindex"
+else
+  erro "URL da Vercel sem x-robots-tag: noindex"
+fi
 
 echo
 echo "── loja (${HOST_LOJA}) ──"

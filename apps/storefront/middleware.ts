@@ -9,8 +9,21 @@ const MAIN_DOMAINS = ['mallevo.com.br', 'mallevo.localhost']
 // Também são apex: `localhost:3002/` é o saguão desde a Fase 5.
 const HOSTS_LOCAIS = ['localhost', '127.0.0.1', '[::1]']
 
+// A URL de deploy da Vercel é NOSSA, mas nunca carrega slug de loja: em
+// `storefront-mallevo.vercel.app` o "storefront-mallevo" é o nome do projeto,
+// não uma loja. Fica só como apex — é assim que o saguão é alcançável enquanto
+// `mallevo.com.br` estiver na landing page (decisão D-07 do plano de
+// convergência). Não entra em `getSubdomain`, senão viraria loja inexistente.
+const DOMINIOS_APEX = ['vercel.app']
+
 /** Tudo que o storefront reconhece como seu. Fora disto → 404 (ver abaixo). */
-const DOMINIOS_CONHECIDOS = [...MAIN_DOMAINS, ...HOSTS_LOCAIS]
+const DOMINIOS_CONHECIDOS = [...MAIN_DOMAINS, ...HOSTS_LOCAIS, ...DOMINIOS_APEX]
+
+/** Domínio onde a loja é pública de verdade — o resto não deve ser indexado. */
+function ehDominioCanonico(hostname: string): boolean {
+  const host = normalizarHost(hostname)
+  return MAIN_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`))
+}
 
 // Subdomínios reservados (Dashboard/Admin/API/www) nunca são slug de loja.
 const IGNORED_SUBDOMAINS = new Set(['www', 'app', 'admin', 'api'])
@@ -41,7 +54,10 @@ function hostConhecido(hostname: string): boolean {
 function getSubdomain(hostname: string): string | null {
   const host = normalizarHost(hostname)
 
-  for (const domain of DOMINIOS_CONHECIDOS) {
+  // URL de deploy da Vercel é sempre apex (ver `DOMINIOS_APEX`).
+  if (DOMINIOS_APEX.some((d) => host === d || host.endsWith(`.${d}`))) return null
+
+  for (const domain of [...MAIN_DOMAINS, ...HOSTS_LOCAIS]) {
     if (host === domain) return null
     if (host.endsWith(`.${domain}`)) {
       const sub = host.slice(0, host.length - domain.length - 1)
@@ -58,9 +74,11 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
 
   // Host fora dos domínios da Mallevo: 404 seco, em vez de servir o saguão
-  // (conteúdo duplicado para o Google e domínio de terceiro exibindo a
-  // marca). Previews da Vercel (`*.vercel.app`) ligam
-  // NEXT_PUBLIC_ALLOW_UNKNOWN_HOST=true e voltam a cair no apex.
+  // (domínio de terceiro exibindo a marca). A URL de deploy da Vercel é
+  // conhecida (`DOMINIOS_APEX`) e responde como apex; o conteúdo duplicado que
+  // isso criaria é resolvido com `X-Robots-Tag: noindex` mais abaixo, não com
+  // 404. `NEXT_PUBLIC_ALLOW_UNKNOWN_HOST=true` libera qualquer host, para
+  // depurar um domínio novo antes de entrar na lista.
   if (!hostConhecido(hostname) && process.env.NEXT_PUBLIC_ALLOW_UNKNOWN_HOST !== 'true') {
     return new NextResponse('Host desconhecido', {
       status: 404,
@@ -102,10 +120,18 @@ export async function middleware(request: NextRequest) {
     destino = request.nextUrl.clone()
     destino.pathname = pathname === '/' ? '/saguao' : `/saguao${pathname}`
   }
-  const responder = () =>
-    destino
+  const responder = () => {
+    const res = destino
       ? NextResponse.rewrite(destino, { request: { headers: requestHeaders } })
       : NextResponse.next({ request: { headers: requestHeaders } })
+    // Fora do domínio canônico (URL de deploy da Vercel, máquina local), a
+    // mesma loja/saguão responde num segundo endereço. Não é 404 — é nosso —,
+    // mas também não pode disputar SEO com `mallevo.com.br`.
+    if (!ehDominioCanonico(hostname)) {
+      res.headers.set('x-robots-tag', 'noindex, nofollow')
+    }
+    return res
+  }
 
   // Override de QA (`?preset=slice&categoria=alimentos-bebidas`): só quando
   // STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true no ambiente (nunca em produção).
