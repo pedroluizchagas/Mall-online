@@ -175,7 +175,10 @@ function sqlDaLoja({ loja, papel }, db, feed) {
         .map((p) => {
           // `metadata.estoque` morreu no contrato: vira a coluna real.
           const { estoque, ...meta } = p.metadata ?? {}
-          const metadata = Object.keys(meta).length > 0 ? meta : null
+          // Produto sem nenhum campo de vitrine grava `{}`, não NULL:
+          // `products.metadata` é `JSONB NOT NULL DEFAULT '{}'` (migration 019)
+          // e o NULL derrubava o `supabase db reset` inteiro.
+          const metadata = meta
           const temEstoque = typeof estoque === 'number'
           return `  (${q(prodId(p))}, ${q(storeId)}, ${q(tenantId)}, ${q(catId(p.category_id))}, ${q(p.nome)}, ${q(p.descricao)}, ${n(p.preco)}, ${n(p.preco_promocional)}, ${q(p.foto_url)}, ${n(p.ordem)}, ${jsonb(metadata)}, ${b(temEstoque)}, ${temEstoque ? n(estoque) : 'NULL'})`
         })

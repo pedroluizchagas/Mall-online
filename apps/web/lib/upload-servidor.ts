@@ -60,9 +60,38 @@ export function caminhoDaUrlPublica(
 }
 
 /**
- * Filtra as URLs que o formulário diz ter "mantido": só sobrevive o que está
- * no bucket certo, sob o prefixo deste tenant (A-03). Preserva a ordem e
- * remove duplicatas.
+ * Filtra as URLs que o formulário diz ter "mantido" pelo conjunto **já
+ * gravado** naquele registro: só sobrevive o que o banco já tinha. Preserva a
+ * ordem escolhida pelo lojista (reordenar é legítimo) e remove duplicatas.
+ *
+ * É a checagem certa para um campo "mantida" (A-03): ela não deixa entrar NADA
+ * de novo por ali — URL externa, objeto de outro tenant, nem outro objeto do
+ * mesmo tenant. Mídia nova entra só por upload de verdade, que sempre gera URL
+ * do bucket.
+ *
+ * Por que não filtrar pelo prefixo do bucket: isso parece seguro e é pior nos
+ * dois sentidos. Aceita qualquer objeto do tenant (inclusive um que não é deste
+ * produto) e **apaga em silêncio** o que está gravado e não mora no bucket —
+ * foi o que o e2e pegou em 2026-09-22: as fotos do seed (picsum) sumiam da
+ * galeria assim que o lojista salvava o produto por qualquer motivo.
+ */
+export function manterDoConjunto(bruto: unknown, jaGravadas: readonly string[]): string[] {
+  if (!Array.isArray(bruto)) return []
+  const permitidas = new Set(jaGravadas.filter((u) => typeof u === 'string'))
+  const vistas = new Set<string>()
+  const out: string[] = []
+  for (const u of bruto) {
+    if (typeof u !== 'string' || !permitidas.has(u) || vistas.has(u)) continue
+    vistas.add(u)
+    out.push(u)
+  }
+  return out
+}
+
+/**
+ * Filtra URLs pelo bucket e prefixo do tenant. Use para conteúdo que o cliente
+ * MONTA (caminho de upload que ele acabou de fazer), não para um campo
+ * "mantida" — nesse caso o certo é `manterDoConjunto`.
  */
 export function filtrarUrlsDoTenant(
   urls: unknown,

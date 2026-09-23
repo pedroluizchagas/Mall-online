@@ -6,7 +6,7 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import {
   diffDeMidia,
   extensaoSegura,
-  filtrarUrlsDoTenant,
+  manterDoConjunto,
   removerObjetosDoTenant,
 } from '@/lib/upload-servidor'
 import {
@@ -223,13 +223,16 @@ async function montarConteudo(
     return { erro: 'Falha ao ler o conteúdo da vitrine' }
   }
 
-  // Fotos da casa: mantidas (URLs já publicadas) + novas (upload). "Mantida"
-  // só vale se for de `store-assets` e do prefixo deste tenant (A-03).
+  // Fotos da casa: mantidas (URLs já publicadas) + novas (upload). "Mantida" é
+  // subconjunto do que JÁ está gravado em `conteudo.galeria_casa` (A-03): nada
+  // novo entra por este campo, e foto gravada fora do bucket (legado) não
+  // desaparece sozinha. Ver `manterDoConjunto`.
+  const jaGravadas = Array.isArray(anterior?.galeria_casa) ? anterior.galeria_casa : []
   let mantidas: string[] = []
   const brutoMantidas = formData.get('galeria_casa_mantida')
   if (typeof brutoMantidas === 'string' && brutoMantidas) {
     try {
-      mantidas = filtrarUrlsDoTenant(JSON.parse(brutoMantidas), BUCKET, tenantId)
+      mantidas = manterDoConjunto(JSON.parse(brutoMantidas), jaGravadas)
     } catch {
       return { erro: 'Falha ao ler as fotos da casa' }
     }

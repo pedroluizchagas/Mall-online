@@ -9,7 +9,7 @@ import type { Json } from '@mallevo/types'
 import {
   diffDeMidia,
   extensaoSegura,
-  filtrarUrlsDoTenant,
+  manterDoConjunto,
   removerObjetosDoTenant,
 } from '@/lib/upload-servidor'
 
@@ -214,13 +214,14 @@ async function aplicarMidiaVitrine(
   const galeriaAntiga = Array.isArray(anterior?.galeria) ? (anterior?.galeria as string[]) : []
   const recorteAntigo = typeof anterior?.recorte === 'string' ? anterior.recorte : null
 
-  // Galeria: mantidas (na ordem do lojista) + novas. "Mantida" só vale se for
-  // deste bucket e deste tenant — A-03: URL externa ou de outra loja cai fora.
+  // Galeria: mantidas (na ordem do lojista) + novas. "Mantida" é subconjunto do
+  // que JÁ está gravado neste produto (A-03) — nada novo entra por aqui, e o
+  // que está gravado fora do bucket (seed, legado) não é apagado em silêncio.
   let mantidas: string[] = []
   const brutoMantidas = formData.get('galeria_mantida')
   if (typeof brutoMantidas === 'string' && brutoMantidas) {
     try {
-      mantidas = filtrarUrlsDoTenant(JSON.parse(brutoMantidas), BUCKET_PRODUTOS, tenantId)
+      mantidas = manterDoConjunto(JSON.parse(brutoMantidas), galeriaAntiga)
     } catch {
       return { metadata, remover: [], erro: 'Falha ao ler a galeria' }
     }

@@ -40,9 +40,12 @@ test.describe('Conteúdo', () => {
     const grade = page.getByRole('list', { name: 'Publicações' })
     await expect(grade.getByRole('link', { name: /Foto, 340 visualizações, Publicado/ })).toBeVisible()
 
-    // Métricas somam o que o consumer incrementou.
-    await expect(page.getByText('Visualizações')).toBeVisible()
-    await expect(page.getByText('340', { exact: true })).toBeVisible()
+    // Métricas somam o que o consumer incrementou. O número aparece duas vezes
+    // na página (KPI e pílula do cartaz), então a asserção é na região de
+    // métricas, que tem nome acessível próprio.
+    const metricas = page.getByRole('region', { name: 'Métricas do conteúdo' })
+    await expect(metricas.getByText('Visualizações')).toBeVisible()
+    await expect(metricas.getByText('340', { exact: true })).toBeVisible()
 
     // Filtro por estado "Ocultos" esconde o post publicado.
     await page.getByRole('button', { name: 'Ocultos' }).click()
@@ -55,13 +58,21 @@ test.describe('Conteúdo', () => {
     await page.goto(`/conteudo/${POST_SEED}`)
     await dispensarTutorial(page)
 
+    // Idem: a legenda é sobrescrita aqui, então não afirmamos a do seed — só
+    // que existe uma e que a edição sobrevive ao reload.
     const legenda = page.getByLabel('Legenda')
-    await expect(legenda).toHaveValue(/Margherita saindo do forno/)
+    await expect(legenda).not.toHaveValue('')
     const nova = `Margherita do forno (${Date.now().toString().slice(-4)})`
     await legenda.fill(nova)
-    await page.getByLabel('Adicionar tag…').fill('Fermentação Natural')
+    // O campo tem `<label for>` ("Tags · N/M"); "Adicionar tag…" é só o
+    // placeholder, e `getByLabel` não olha para placeholder.
+    // A tag pode ter sobrado de uma execução anterior: tira antes de pôr, para
+    // o teste valer tanto no banco recém-semeado quanto num já usado.
+    const removerTag = page.getByRole('button', { name: 'Remover tag fermentacao-natural' })
+    if (await removerTag.count()) await removerTag.click()
+    await page.getByPlaceholder('Adicionar tag…').fill('Fermentação Natural')
     await page.getByRole('button', { name: 'Adicionar tag' }).click()
-    await expect(page.getByRole('button', { name: 'Remover tag fermentacao-natural' })).toBeVisible()
+    await expect(removerTag).toBeVisible()
     await page.getByRole('button', { name: /salvar alterações/i }).click()
     await expect(page.getByText('Alterações salvas')).toBeVisible()
 

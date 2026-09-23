@@ -5,6 +5,7 @@ import {
   diffDeMidia,
   extensaoSegura,
   filtrarUrlsDoTenant,
+  manterDoConjunto,
   prefixoPublicoDoTenant,
 } from '@/lib/upload-servidor'
 
@@ -112,5 +113,39 @@ describe('extensaoSegura', () => {
     expect(extensaoSegura('image/webp', 'jpg')).toBe('webp')
     expect(extensaoSegura('image/svg+xml', 'png')).toBe('svg')
     expect(extensaoSegura('application/x-msdownload', 'jpg')).toBe('jpg')
+  })
+})
+
+describe('manterDoConjunto', () => {
+  const A = 'https://x.supabase.co/storage/v1/object/public/product-images/t1/a.jpg'
+  const B = 'https://picsum.photos/seed/legado/800/800'   // gravado, fora do bucket
+  const C = 'https://x.supabase.co/storage/v1/object/public/product-images/t1/c.jpg'
+
+  it('mantém o que já estava gravado, inclusive URL fora do bucket', () => {
+    // Era isto que quebrava: a foto do seed (picsum) sumia ao salvar o produto.
+    expect(manterDoConjunto([A, B], [A, B, C])).toEqual([A, B])
+  })
+
+  it('respeita a ordem escolhida pelo lojista', () => {
+    expect(manterDoConjunto([C, A], [A, B, C])).toEqual([C, A])
+  })
+
+  it('descarta o que NÃO estava gravado, venha de onde vier', () => {
+    const deOutroTenant = 'https://x.supabase.co/storage/v1/object/public/product-images/t2/x.jpg'
+    const externa = 'https://evil.example/x.jpg'
+    expect(manterDoConjunto([A, deOutroTenant, externa], [A, B])).toEqual([A])
+  })
+
+  it('remove duplicata e ignora item que não é string', () => {
+    expect(manterDoConjunto([A, A, 3, null, {}], [A])).toEqual([A])
+  })
+
+  it('entrada que não é lista vira lista vazia', () => {
+    expect(manterDoConjunto('não é lista', [A])).toEqual([])
+    expect(manterDoConjunto(undefined, [A])).toEqual([])
+  })
+
+  it('nada gravado = nada mantido', () => {
+    expect(manterDoConjunto([A], [])).toEqual([])
   })
 })

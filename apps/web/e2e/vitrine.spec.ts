@@ -34,10 +34,13 @@ test.describe('Minha Loja', () => {
     // Badge lê a mesma tabela VITRINES do consumer/storefront.
     await expect(page.getByText('Vitrine ativada: Forno')).toBeVisible()
 
-    // Seção nova, com o conteúdo do seed carregado.
+    // Seção nova, com o conteúdo carregado do banco. Não afirmamos o texto do
+    // seed: este teste grava por cima, então fixá-lo faria a suíte passar uma
+    // vez só (foi o que aconteceu em 2026-09-22). O que importa é haver
+    // conteúdo carregado e a edição persistir.
     await expect(page.getByText('CONTEÚDO DA VITRINE', { exact: true })).toBeVisible()
     const titulo = page.getByPlaceholder('A manchete da sua vitrine')
-    await expect(titulo).toHaveValue('Pizza em dobro às terças')
+    await expect(titulo).not.toHaveValue('')
 
     // Edita, publica, recarrega — o que vejo é o que ficou gravado.
     const novoTitulo = `Pizza em dobro (${Date.now().toString().slice(-4)})`
