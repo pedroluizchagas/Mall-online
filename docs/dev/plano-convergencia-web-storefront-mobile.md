@@ -46,14 +46,20 @@ Como ler este documento:
 | Produção | REST anônimo na view pública; `curl` nos hosts | colunas novas presentes; `guaimbe.mallevo.com.br` serve o storefront novo; `mallevo.com.br` serve a LP |
 | Visual | Firefox headless 480 e 1280 | saguão, Artesã, Mesa, Gôndola, Cuidado, Forno, padrão e moldura App renderizam |
 
-### 0.3 O que NÃO foi verificado (e nunca foi, em nenhuma sessão)
+### 0.3 O que não tinha sido verificado — e foi, em 2026-09-22
 
-- `pnpm qa:local`: as 5 specs Playwright do dashboard (`vitrine.spec` rodou verde em 2026-09-19, antes da moldura App; `conteudo.spec` nunca rodou).
-- `supabase db reset` com o seed de 18 lojas geradas.
-- O consumer rodando contra o Supabase local (`.env.local` do dev ainda está em `EXPO_PUBLIC_USE_MOCK=true`).
-- Vídeo real publicado pelo navegador (TUS) no `/conteudo`.
+O Docker subiu e o que estava bloqueado rodou. Resultado resumido:
 
-Motivo: os três dependem do Docker daemon, que estava parado; `sudo` pede senha em sessão autônoma.
+| Verificação | Resultado |
+|---|---|
+| `supabase db reset` com o seed | verde **depois de corrigir o gerador** (emitia `NULL` em `products.metadata`, que é `NOT NULL`) |
+| `pnpm qa:local` (5 specs Playwright) | **5/5 verde**, e verde de novo sem reset — as specs passaram a ser idempotentes |
+| Consultas reais do consumer contra o banco local | 19/19 lojas respondem sem erro de PostgREST, todas com preset e categoria |
+| Storefront servido pelo banco local | 19 lojas, **19 layouts distintos**, fonte do arquétipo em cada, status vindo dos horários reais, zero erro no servidor |
+
+**O que isso achou** (nenhum `tsc` pegaria): o seed não reproduzia; salvar um produto **apagava a galeria**; três specs só passavam uma vez; duas asserções tinham sido escritas contra marcação inexistente, porque o arquivo nunca tinha sido executado. Todos corrigidos em `f9f9d98`.
+
+**Ainda não verificado:** o app do consumer rodando em device ou emulador (não há nenhum nesta máquina; o `.env.local` do dev segue em `EXPO_PUBLIC_USE_MOCK=true`) e a publicação de vídeo real por TUS no `/conteudo`. O que dava para provar sem device — as consultas do consumer contra o banco real — está provado acima.
 
 ### 0.4 Estado do deploy
 
@@ -290,7 +296,7 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Pronto quando: draft com `shape.radius: 'nope'` devolve 200 com o raio do arquétipo.
 
 **A-03 · Alto · web + lib + banco — referências a mídia aceitas sem checagem de origem**
-> **Feito em 2026-09-22** (`1fcccc8`). Lib: `caminhoPertenceAoTenant`, `urlPublicaDoBucket` e `novoPostSchemaPara({tenantId, storeId, supabaseUrl})`. Web: `filtrarUrlsDoTenant` em `lib/upload-servidor.ts`, aplicado a `criarPost`, `galeria_mantida` e `galeria_casa_mantida`. Banco: CHECK de prefixo em `store_posts` (`20260922100000`), **`NOT VALID`** — a checagem vale para toda escrita nova, e a migration traz a query de auditoria e os `VALIDATE CONSTRAINT` prontos para quando produção for conferida. Partner passou a consumir os mesmos helpers.
+> **Feito em 2026-09-22** (`1fcccc8`), **corrigido no mesmo dia** (`f9f9d98`): a primeira versão filtrava `galeria_mantida` pelo prefixo do bucket e apagava em silêncio as fotos já gravadas fora dele — salvar um produto do seed matava a galeria. A checagem certa é `manterDoConjunto`: "mantida" tem de ser subconjunto do que JÁ está gravado naquele registro, o que é mais restritivo (nada novo entra por esse campo) e não destrói dado legado. Lib: `caminhoPertenceAoTenant`, `urlPublicaDoBucket` e `novoPostSchemaPara({tenantId, storeId, supabaseUrl})`. Web: `filtrarUrlsDoTenant` em `lib/upload-servidor.ts`, aplicado a `criarPost`, `galeria_mantida` e `galeria_casa_mantida`. Banco: CHECK de prefixo em `store_posts` (`20260922100000`), **`NOT VALID`** — a checagem vale para toda escrita nova, e a migration traz a query de auditoria e os `VALIDATE CONSTRAINT` prontos para quando produção for conferida. Partner passou a consumir os mesmos helpers.
 
 - Onde: `apps/web/lib/actions/conteudo.ts:113-160` (`criarPost` grava `media_path`, `media_url`, `thumb_*` como vieram); `packages/lib/src/conteudo/posts.ts:200-214` (`novoPostSchema` só exige `min(1)` e `.url()`); `apps/web/lib/actions/produtos.ts:198-210` (`galeria_mantida` filtra só `^https?://`); `apps/web/lib/actions/loja-vitrine.ts:195` (`galeria_casa_mantida` idem).
 - O que acontece: um lojista autenticado pode gravar no feed público uma URL externa, ou o objeto de outro tenant, ou colocar qualquer URL em `metadata.galeria`/`conteudo.galeria_casa`.
@@ -519,9 +525,10 @@ Verificação do monorepo em 2026-09-22: `turbo run typecheck` verde nos 7 pacot
 165 e 22, e o web não tinha nenhum); `next build` de web e storefront;
 `pnpm smoke:storefront` verde.
 
-Segue bloqueado por falta de Docker (`sudo` pede senha nesta máquina):
-`pnpm qa:local`, `supabase db reset` com o seed e o consumer fora do mock. Segue
-aguardando decisão: merge em `main`, deploy de produção e o destino do apex.
+Docker subiu em 2026-09-22 e o que estava bloqueado rodou — ver §0.3, incluindo
+os quatro defeitos que só a execução revelou. Segue aguardando decisão: merge em
+`main`, deploy de produção e o destino do apex. Segue sem device para rodar o app
+do consumer.
 Ferramenta nova: `pnpm smoke:storefront`, o teto do que se prova sem Docker.
 
 
