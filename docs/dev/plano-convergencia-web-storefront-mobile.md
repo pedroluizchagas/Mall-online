@@ -367,16 +367,22 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 ### 4.4 Storefront — robustez e arquitetura
 
 **A-07 · Alto · storefront — sem `error.tsx` nem `loading.tsx`**
+> **Feito em 2026-09-22** (`d092188`), com um achado que só apareceu ao medir: um `loading.tsx` abre Suspense e o Next responde **200 antes de a página decidir**, então loja inexistente e piso inexistente viraram soft 404. Corrigido movendo o `notFound()` da loja para o layout do grupo e pondo os esqueletos em grupos de rota que não mudam URL (`(vitrine)`, `(corredores)`). O 404 de verdade está provado no smoke.
+
 - Como resolver: `app/(loja)/error.tsx` (client; usa as CSS vars já no `:root`, botão "Tentar de novo" e link para o apex), `app/(loja)/loading.tsx` (esqueleto na pele: hero, régua, 6 cartões), `app/saguao/error.tsx` e `loading.tsx`, `app/global-error.tsx` (Mallevo). Registrar o erro com `console.error` estruturado (mensagem, slug, rota) até haver Sentry no storefront.
 - Pronto quando: derrubar o Supabase local e abrir uma loja mostra a tela de erro vestida, não a genérica do Next.
 - Esforço: 0,5 dia.
 
 **A-09 · Médio · storefront — Feira carrega o hero com `lazy`**
+> **Feito em 2026-09-22** (`d092188`). A guarda `heros.test.ts` exige prioridade nas 18 pastas e revelou outras cinco sem nada prioritário além da Feira.
+
 - Onde: `components/vitrines/feira/feira-ui.tsx:252-255` (`DiscoFoto`).
 - Como resolver: prop `carregamento` como em Forno e Horta; a primeira foto da colagem `eager` + `fetchPriority="high"`. Guarda: teste que lê cada `Vitrine*.tsx` e exige pelo menos um `fetchPriority="high"` (ou `carregamento="eager"`) por vitrine.
 - Pronto quando: captura Firefox da Feira mostra a foto do hero; teste verde.
 
 **A-10 · Médio · storefront — 18/18 vitrines são `'use client'`**
+> **Não feito.** Segue aberto. O `Padrao` voltou a ser server component com a sacola em ilha fina (`d092188`), que é o molde a replicar.
+
 - O que acontece: cada vitrine de 500 a 1.438 linhas vai inteira para o bundle e hidrata no cliente; a promessa "server component com ilhas" (2b) não foi cumprida.
 - Como resolver (R7), em ondas e sem reescrever de uma vez:
   1. Definir o contrato: `Vitrine<Nome>.tsx` é server (recebe `store`, `secoes`, `detalhes`, decide estrutura e copy) e importa ilhas de `<codigo>-ui.tsx` marcadas `'use client'` (hero-carrossel, nav grudada, sacola, adição rápida, relógio, pager).
@@ -386,6 +392,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Esforço: 1 semana para as 3 de referência; 2 a 3 semanas para as demais, diluídas.
 
 **A-11 · Médio · storefront — duplicação entre vitrines**
+> **Parcial em 2026-09-22** (`d092188`). Foram para `_base`: `precoFinalDe` (17 cópias), `exigeEscolha`, `repartirDescricao`, 20 `setInterval` e 12 cópias de `prefereMenosMovimento`, com guarda em `dedupe.test.ts`. **Os seis motores de hero-carrossel NÃO foram unificados**: divergiram de verdade (trilho, índice com direção, crossfade, dissolve) e nenhuma verificação disponível pega regressão de animação — o md5 do smoke passaria com o carrossel quebrado. Depende de A-08b.
+
 - Motores locais de hero-carrossel em Editorial, Noir, Raw, Serena, Volt e Torra → `_base/useCarrossel` (`useCarrossel`, `useHeroEmCena`, `comCopiaDeLoop`).
 - 8 cópias de `prefereMenosMovimento` (Editorial, Feira, Forno, Horta, Noir, Passarela, Raw, Torra) e os hooks `useMenosMovimento` (Torra) e `useReduzirMovimento` homônimo (Volt) → `_base/movimento`.
 - Relógios locais em `VitrineHorta.tsx:162-170` e `VitrineRitual.tsx:112-120` → `_base/StatusAberto`.
@@ -395,6 +403,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Esforço: 2 dias.
 
 **A-12 · Médio · storefront — saguão sem cache e destaques por corte global**
+> **Feito em 2026-09-22** (`d092188`), com ressalva: a migration `20260922110000_public_catalog_destaques.sql` **não está aplicada** (sem Docker, e o `.env.local` aponta para produção), então `carregarDestaques` chama a RPC e cai na consulta antiga com um aviso único por processo. Aplicar a migration faz o fallback sumir sem tocar em código. Cache medido: 0,06 s → 3,4 s na revalidação → 0,02 s.
+
 - Onde: `app/saguao/page.tsx:19`, `explorar/page.tsx:15`, `piso/[slug]/page.tsx:12` (`force-dynamic`); `lib/supabase/server.ts:5` (`cookies()`); `lib/saguao.ts:94-114` (`carregarDestaques` corta `storeIds.length * 12` ordenado globalmente).
 - Como resolver:
   1. O saguão é anônimo: criar `lib/supabase/publico.ts` (client anon sem cookies) e usá-lo em `lib/saguao.ts`; páginas passam a `export const revalidate = 60` (Explorar 30). `urlDoShopping`/`urlDaLoja` continuam lendo `headers()`, então manter `dynamic` só onde o host é necessário, ou derivar a base de `NEXT_PUBLIC_APEX_HOST` em produção.
@@ -409,16 +419,22 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Se D-10 escolher PDP própria: server component por vitrine (`components/vitrines/<codigo>/Pdp<Nome>.tsx`), portando `Produto<Nome>.tsx` da RN, com `carregarDetalhesCatalogo([id])` só do produto aberto.
 
 **A-15 · Médio · storefront — deslocamento de 47px da moldura App por seletor global**
+> **Feito em 2026-09-22** (`d092188`). `--inset-top` publicado pelo `ShellApp`; as âncoras passaram a somar o mesmo valor, o que corrigiu o salto de seção que parava embaixo do chrome. Guarda em `inset.test.ts`.
+
 - Onde: `components/store/ShellApp.tsx:113` (`[data-shell-app] .sticky.top-0 { top: 47px }`).
 - Como resolver: `ShellApp` define `--inset-top: 47px` no wrapper; as vitrines e o `NavSecoes` usam `top-[var(--inset-top,0px)]` e `scroll-mt-[calc(var(--inset-top,0px)+Xpx)]`. Guarda: teste que exige `var(--inset-top` em cada `Vitrine*.tsx` que tenha `sticky`.
 - Pronto quando: na moldura App, clicar num chip de seção pára abaixo do chrome, não embaixo dele.
 
 **A-20 · Baixo · storefront — acessibilidade do visor do Explorar**
+> **Feito em 2026-09-22** (`d092188`).
+
 - Onde: `components/saguao/VisorPost.tsx` (`role="dialog"`, Escape e scroll lock existem; falta gestão de foco; foto com `alt=""`; `autoPlay` sem `muted`).
 - Como resolver: mover o foco para o diálogo ao abrir, focus trap (Tab não alcança a grade atrás), restaurar o foco ao fechar, `alt` com a legenda do post, `muted` no `autoPlay`. Reaproveitar o padrão do `ProductModal` se já tiver trap; senão, `inert` no conteúdo de fundo.
 - Pronto quando: navegação só por teclado abre, percorre e fecha o visor sem sair dele.
 
 **A-21 · Baixo · storefront — pequenos**
+> **Feito em 2026-09-22** (`d092188`), exceto as fontes do saguão (React 18.3 não faz hoist de `precedence`, então ficou como está) e o carregamento sob demanda dos detalhes do catálogo (só `cache()`, chaveado pelo conjunto ordenado — carregar por produto mexeria nas props das 18 vitrines).
+
 - `lib/consumer-design.ts` morto (ainda com `surfaceDark`) → apagar e limpar o comentário em `lib/status-pedido.ts:6`.
 - `Padrao.tsx:36` mantém `CartFab` → `_base/Sacola` no header, como nas vitrines.
 - `lib/catalog.ts`: `carregarCatalogo`/`carregarDetalhesCatalogo` sem `cache()` e carregando modificadores/variantes de todos os produtos em toda visita → `cache()` nas duas e detalhes sob demanda (fetch no `ProdutoModalHost` ao abrir, com prefetch dos destaques).
@@ -480,19 +496,39 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 
 ## 5. Fase 6 — Endurecimento e fechamento do ciclo
 
-**Andamento em 2026-09-22.** Fechados: A-01, A-02, A-13, A-18 (`648869e`), A-08
-(`1c5c341`), A-16 (`872f224`), A-22 passo 4 (`a682da2`), A-05, A-06, A-19
-(`18b39b4`), A-03, A-04, A-17 (`1fcccc8`). Em execução: A-07, A-09, A-11, A-12,
-A-15, A-20 e A-21 no storefront.
-Bloqueados por falta de Docker nesta máquina (`sudo` pede senha): `pnpm qa:local`,
-`supabase db reset` com o seed e o consumer fora do mock. Não executados por
-dependerem de decisão: merge em `main`, deploy de produção e o destino do apex.
-Ferramenta nova: `pnpm smoke:storefront`, que é o teto do que se prova sem Docker.
+**Andamento em 2026-09-22 — 19 dos 22 achados fechados.**
+
+| Achado | Estado | Commit |
+|---|---|---|
+| A-01, A-02, A-13, A-18 | fechado | `648869e` |
+| A-08 (CI) | fechado | `1c5c341` |
+| A-16 (docs) | fechado | `872f224` |
+| A-05, A-06, A-19 (consumer) | fechado | `18b39b4` |
+| A-22 passo 4 (mapa de deploy) | fechado | `a682da2` |
+| A-03, A-04, A-17 (dashboard) | fechado | `1fcccc8` |
+| A-04 reconciliação | escrita, não executada nem deployada | `298c77b` |
+| A-07, A-09, A-12, A-15, A-20, A-21 | fechado | `d092188` |
+| A-11 (dedupe) | parcial: helpers sim, motores de carrossel não | `d092188` |
+| A-10 (server + ilhas) | **aberto** | — |
+| A-14 (PDP própria) | **aberto**, aguarda D-10 | — |
+| A-08b (testing-library + Playwright por arquétipo) | **aberto** | — |
+| A-22 passos 1 a 3 (deploy, loja de teste, apex) | **aberto**, aguarda decisão | — |
+
+Verificação do monorepo em 2026-09-22: `turbo run typecheck` verde nos 7 pacotes;
+`turbo run test` com 417 testes (326 na lib, 80 no storefront, 11 no web — eram
+165 e 22, e o web não tinha nenhum); `next build` de web e storefront;
+`pnpm smoke:storefront` verde.
+
+Segue bloqueado por falta de Docker (`sudo` pede senha nesta máquina):
+`pnpm qa:local`, `supabase db reset` com o seed e o consumer fora do mock. Segue
+aguardando decisão: merge em `main`, deploy de produção e o destino do apex.
+Ferramenta nova: `pnpm smoke:storefront`, o teto do que se prova sem Docker.
 
 
 Nada da Fase 6 é feature nova. É o que separa "implementado" de "funcionando de maneira profissional". Ondas em ordem de dependência; cada onda tem um "pronto quando" verificável.
 
 ### 6a — Bloqueadores de release · 3 dias
+> Itens 1 e 2 **feitos** em 2026-09-22. Itens 3, 4 e 5 dependem de Docker e de decisão.
 1. A-01 schema de tema + A-02 defensivo em `toCssVars` + testes.
 2. A-13 CSP por ambiente e `frame-ancestors 'none'` fora do preview.
 3. Subir o Docker e rodar `pnpm qa:local` inteiro; consertar o que quebrar (é a primeira vez que `conteudo.spec`, a moldura App e o seed de 18 lojas rodam juntos). Registrar aqui a data e o resultado.
@@ -502,6 +538,7 @@ Nada da Fase 6 é feature nova. É o que separa "implementado" de "funcionando d
 **Pronto quando:** payload de prova do A-01 devolve a loja com o tema publicado em produção; `pnpm qa:local` verde com data neste documento; produção no commit de `main`.
 
 ### 6b — Dívidas que contradizem o plano · 1 semana
+> **Feita** em 2026-09-22, menos a execução da reconciliação de mídia (escrita, não rodada).
 1. A-05 e A-06 no consumer, com as guardas de disco.
 2. A-03 origem de mídia (lib + web + `CHECK` no banco + partner).
 3. A-04 limpeza de órfãos + Edge Function de reconciliação em dry-run.
@@ -511,6 +548,7 @@ Nada da Fase 6 é feature nova. É o que separa "implementado" de "funcionando d
 **Pronto quando:** guardas verdes; `grep -rn "as any" apps/web/lib/actions apps/mobile-consumer/components/loja` vazio; e2e do produto prova a remoção no bucket.
 
 ### 6c — Automação · 1 semana
+> Item 1 **feito**; itens 2 e 3 (testing-library, Playwright por arquétipo, `qa-local.sh --ci`) **abertos** — e são o que destrava A-11 e A-10.
 1. A-08 scripts + `ci.yml` + branch protection.
 2. A-08b testing-library, `vitrines.spec.ts` com 36 capturas, `scripts/smoke-storefront.sh`.
 3. `qa-local.sh --ci` (sem prompts; sobe web e storefront, roda as duas suítes, guarda artefatos).
@@ -518,6 +556,7 @@ Nada da Fase 6 é feature nova. É o que separa "implementado" de "funcionando d
 **Pronto quando:** CI verde no PR desta onda; um PR de sabotagem (`'ABERTO'` numa vitrine) fica vermelho.
 
 ### 6d — Arquitetura do storefront · 2 a 3 semanas, diluída
+> Itens 1 a 3 **feitos**; item 4 parcial; itens 5 (A-10) e 6 (A-14) **abertos**.
 1. A-07 `error.tsx`/`loading.tsx` (0,5 dia; pode entrar na 6a se sobrar tempo).
 2. A-09 Feira, A-15 `--inset-top`, A-21 (`consumer-design`, `CartFab`, `catalog.ts` com `cache()`, `getSubdomain`, sitemap, fontes, metadata, iframe).
 3. A-12 cache do saguão + RPC de destaques.
@@ -528,6 +567,7 @@ Nada da Fase 6 é feature nova. É o que separa "implementado" de "funcionando d
 **Pronto quando:** tabela de First Load JS por vitrine registrada; `x-nextjs-cache: HIT` no apex; guardas de dedupe verdes.
 
 ### 6e — Docs e decisões · 0,5 dia
+> Itens 1 e 2 **feitos**; item 3 (fechar D-07 a D-11) **aberto**.
 1. A-16 (§5.7, `stores.conteudo` nos schemas, `qa-local.md`).
 2. ~~`docs/dev/deploy.md`~~ → §2b do `deploy-checklist.md`, **feito em 2026-09-22**.
 3. Fechar D-07 a D-11 no §8 com data.
