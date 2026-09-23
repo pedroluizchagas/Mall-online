@@ -1,4 +1,4 @@
-import { SELECT_POST, type Post } from '@mallevo/lib'
+import { SELECT_POST, orfaosDoPrefixo, type Post } from '@mallevo/lib'
 import { supabase } from './supabase'
 
 // Gestão dos posts do Explorar (docs/partner-app/10): listar/editar/
@@ -79,17 +79,12 @@ export async function detectarOrfaos(
   const prefixo = `${tenantId}/${storeId}`
   const { data } = await supabase.storage.from('explore-media').list(prefixo, { limit: 100 })
   if (!data) return []
-
-  const conhecidos = new Set<string>()
-  for (const p of posts) {
-    conhecidos.add(p.media_path)
-    if (p.thumb_path) conhecidos.add(p.thumb_path)
-  }
-
-  return data
-    .filter((obj) => obj.name && !obj.name.endsWith('/'))
-    .map((obj) => `${prefixo}/${obj.name}`)
-    .filter((caminho) => !conhecidos.has(caminho))
+  // A regra de "o que é órfão" é do contrato (@mallevo/lib), não desta tela.
+  return orfaosDoPrefixo(
+    prefixo,
+    data.map((obj) => obj.name),
+    posts
+  )
 }
 
 export async function descartarOrfaos(caminhos: string[]): Promise<Resultado> {

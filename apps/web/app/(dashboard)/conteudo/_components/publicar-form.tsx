@@ -220,14 +220,14 @@ export function PublicarForm({ tenantId, storeId, lojaNome }: { tenantId: string
               onClick={descartar}
               aria-label="Trocar a mídia"
               className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-white"
-              style={{ background: 'rgba(15,15,13,0.62)' }}
+              style={{ background: 'var(--veil)' }}
             >
               <X className="w-4 h-4" />
             </button>
           )}
           {ocupado && (
-            <div className="absolute inset-x-0 bottom-0 p-3" style={{ background: 'linear-gradient(to top, rgba(15,15,13,0.7), transparent)' }}>
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.3)' }}>
+            <div className="absolute inset-x-0 bottom-0 p-3" style={{ background: 'linear-gradient(to top, var(--veil-forte), transparent)' }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--glass-sobre-foto)' }}>
                 <div
                   className="h-full rounded-full transition-all"
                   style={{ width: `${Math.round(progresso * 100)}%`, background: 'var(--brick)' }}

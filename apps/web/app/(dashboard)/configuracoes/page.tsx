@@ -1,3 +1,4 @@
+import type { HorariosFuncionamento } from '@mallevo/types'
 import { getDadosLoja } from '@/lib/actions/lojas'
 import { getDadosConta } from '@/lib/actions/auth'
 import { PageHeader } from '@/components/dashboard/page-header'
@@ -51,7 +52,8 @@ export default async function PaginaConfiguracoes() {
           {
             id: 'horarios',
             label: 'Horários',
-            content: <AbaHorarios horarios={loja.horarios} />,
+            // A coluna é jsonb; o formato é o contrato de domínio.
+            content: <AbaHorarios horarios={(loja.horarios as HorariosFuncionamento | null) ?? null} />,
           },
           {
             id: 'entrega',

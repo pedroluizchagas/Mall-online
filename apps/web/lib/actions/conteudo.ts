@@ -6,7 +6,7 @@ import {
   SELECT_POST,
   dadosPostSchema,
   mensagemErroPost,
-  novoPostSchema,
+  novoPostSchemaPara,
   orfaosDoPrefixo,
   tenantPodePublicar,
   type Post,
@@ -83,27 +83,36 @@ export async function getContextoConteudo(): Promise<ContextoConteudo | null> {
   }
 }
 
-/** Todos os posts do tenant que não foram removidos, mais novos primeiro. */
+/**
+ * Todos os posts do tenant que não foram removidos, mais novos primeiro.
+ * O filtro de tenant é explícito: a RLS é a segunda linha, não a primeira.
+ */
 export async function listarPosts(): Promise<Post[]> {
   const supabase = createSupabaseServer()
+  const tenant = await getTenant(supabase)
+  if (!tenant) return []
   const { data } = await supabase
     .from('store_posts')
     .select(SELECT_POST)
+    .eq('tenant_id', tenant.id)
     .neq('status', 'removed')
     .order('criado_em', { ascending: false })
-  return (data ?? []) as Post[]
+  return (data ?? []) as unknown as Post[]
 }
 
 export async function getPost(id: string): Promise<Post | null> {
   if (!z.string().uuid().safeParse(id).success) return null
   const supabase = createSupabaseServer()
+  const tenant = await getTenant(supabase)
+  if (!tenant) return null
   const { data } = await supabase
     .from('store_posts')
     .select(SELECT_POST)
     .eq('id', id)
+    .eq('tenant_id', tenant.id)
     .neq('status', 'removed')
     .maybeSingle()
-  return (data ?? null) as Post | null
+  return (data ?? null) as unknown as Post | null
 }
 
 /**
@@ -112,17 +121,28 @@ export async function getPost(id: string): Promise<Post | null> {
  * aplica o teto do plano; a RLS confere tenant + loja.
  */
 export async function criarPost(input: unknown): Promise<{ sucesso: true; id: string } | { erro: string }> {
-  const parsed = novoPostSchema.safeParse(input)
-  if (!parsed.success) return { erro: parsed.error.errors[0]?.message ?? 'Dados inválidos' }
-  const dados = parsed.data
+  // Forma primeiro (sem tenant não dá para saber de qual loja é o `store_id`).
+  const storeId = (input as { store_id?: unknown } | null)?.store_id
+  if (typeof storeId !== 'string') return { erro: 'Dados inválidos' }
 
   const supabase = createSupabaseServer()
   const tenant = await getTenant(supabase)
   if (!tenant) return { erro: 'Tenant não encontrado' }
   if (!tenantPodePublicar(tenant)) return { erro: 'Ative seus recebimentos para publicar no Explorar.' }
 
-  const loja = await lojaDoTenant(supabase, tenant.id, dados.store_id)
+  const loja = await lojaDoTenant(supabase, tenant.id, storeId)
   if (!loja) return { erro: 'Loja não encontrada' }
+
+  // A-03/R2: caminho sob `{tenant}/{loja}/` e URL igual à pública do bucket
+  // `explore-media` para esse caminho. URL externa ou objeto de outro tenant
+  // não entra no feed público.
+  const parsed = novoPostSchemaPara({
+    tenantId: tenant.id,
+    storeId: loja.id,
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
+  }).safeParse(input)
+  if (!parsed.success) return { erro: parsed.error.errors[0]?.message ?? 'Dados inválidos' }
+  const dados = parsed.data
 
   // O produto vinculado tem que ser desta loja.
   if (dados.product_id) {
@@ -263,9 +283,12 @@ export interface ProdutoResumo {
 export async function buscarProdutosParaPost(storeId: string, termo: string): Promise<ProdutoResumo[]> {
   if (!z.string().uuid().safeParse(storeId).success) return []
   const supabase = createSupabaseServer()
+  const tenant = await getTenant(supabase)
+  if (!tenant) return []
   let q = supabase
     .from('products')
     .select('id, nome, preco, foto_url')
+    .eq('tenant_id', tenant.id)
     .eq('store_id', storeId)
     .eq('disponivel', true)
     .order('nome')
@@ -279,12 +302,23 @@ export async function buscarProdutosParaPost(storeId: string, termo: string): Pr
 export async function getProdutoResumo(id: string | null): Promise<ProdutoResumo | null> {
   if (!id || !z.string().uuid().safeParse(id).success) return null
   const supabase = createSupabaseServer()
-  const { data } = await supabase.from('products').select('id, nome, preco, foto_url').eq('id', id).maybeSingle()
+  const tenant = await getTenant(supabase)
+  if (!tenant) return null
+  const { data } = await supabase
+    .from('products')
+    .select('id, nome, preco, foto_url')
+    .eq('id', id)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle()
   return (data ?? null) as ProdutoResumo | null
 }
 
-/** Objetos no prefixo da loja sem registro em `store_posts` (upload que não virou post). */
-export async function detectarOrfaosConteudo(): Promise<string[]> {
+/**
+ * Objetos no prefixo da loja sem registro em `store_posts` (upload que não
+ * virou post). `postsCarregados` evita a segunda consulta quando a página já
+ * tem a lista na mão (A-17).
+ */
+export async function detectarOrfaosConteudo(postsCarregados?: Post[]): Promise<string[]> {
   const supabase = createSupabaseServer()
   const tenant = await getTenant(supabase)
   if (!tenant) return []
@@ -294,7 +328,7 @@ export async function detectarOrfaosConteudo(): Promise<string[]> {
   const prefixo = `${tenant.id}/${loja.id}`
   const [{ data: objetos }, posts] = await Promise.all([
     supabase.storage.from(BUCKET).list(prefixo, { limit: 200 }),
-    listarPosts(),
+    postsCarregados ?? listarPosts(),
   ])
   if (!objetos) return []
   return orfaosDoPrefixo(

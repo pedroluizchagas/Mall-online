@@ -5,6 +5,15 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { gerarCsv } from '@/lib/csv'
 import { z } from 'zod'
 import { metadataProdutoSchema, type MetadataProduto } from '@mallevo/lib'
+import type { Json } from '@mallevo/types'
+import {
+  diffDeMidia,
+  extensaoSegura,
+  filtrarUrlsDoTenant,
+  removerObjetosDoTenant,
+} from '@/lib/upload-servidor'
+
+const BUCKET_PRODUTOS = 'product-images'
 
 const schemaProduto = z.object({
   nome: z.string().min(2, 'Nome obrigatório'),
@@ -173,40 +182,47 @@ function parseMetadataPayload(raw: FormDataEntryValue | null): {
  * (`remover_recorte`). Devolve o `metadata` já com os campos resolvidos —
  * o contrato é o `metadataProdutoSchema` de @mallevo/lib, o mesmo que as
  * vitrines do consumer e do storefront leem.
+ *
+ * `anterior` é o metadata JÁ GRAVADO (edição). Duas coisas dependem dele:
+ * as URLs "mantidas" só valem se forem do bucket e do prefixo deste tenant
+ * (A-03/R2) e o que saiu de cena volta em `remover`, para a action apagar do
+ * bucket DEPOIS de gravar a linha (A-04/R3).
  */
 async function aplicarMidiaVitrine(
   supabase: Awaited<ReturnType<typeof createSupabaseServer>>,
   tenantId: string,
   formData: FormData,
   metadata: MetadataProduto,
-): Promise<{ metadata: MetadataProduto; erro?: string }> {
+  anterior?: MetadataProduto | null,
+): Promise<{ metadata: MetadataProduto; remover: string[]; erro?: string }> {
   const TIPOS_FOTO = new Set(['image/jpeg', 'image/png', 'image/webp'])
   const TIPOS_RECORTE = new Set(['image/png', 'image/webp'])
   const MAX = 5 * 1024 * 1024
 
   async function subir(arquivo: File, prefixo: string): Promise<string | null> {
-    const extensao = (arquivo.name.split('.').pop() || 'jpg').toLowerCase()
+    // Extensão pelo MIME declarado — o nome do arquivo é entrada do lojista.
+    const extensao = extensaoSegura(arquivo.type, 'jpg')
     const caminho = `${tenantId}/${prefixo}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extensao}`
     const { error } = await supabase.storage
-      .from('product-images')
+      .from(BUCKET_PRODUTOS)
       .upload(caminho, arquivo, { contentType: arquivo.type })
     if (error) return null
-    return supabase.storage.from('product-images').getPublicUrl(caminho).data.publicUrl
+    return supabase.storage.from(BUCKET_PRODUTOS).getPublicUrl(caminho).data.publicUrl
   }
 
   const resultado: MetadataProduto = { ...metadata }
+  const galeriaAntiga = Array.isArray(anterior?.galeria) ? (anterior?.galeria as string[]) : []
+  const recorteAntigo = typeof anterior?.recorte === 'string' ? anterior.recorte : null
 
-  // Galeria: mantidas (na ordem do lojista) + novas.
+  // Galeria: mantidas (na ordem do lojista) + novas. "Mantida" só vale se for
+  // deste bucket e deste tenant — A-03: URL externa ou de outra loja cai fora.
   let mantidas: string[] = []
   const brutoMantidas = formData.get('galeria_mantida')
   if (typeof brutoMantidas === 'string' && brutoMantidas) {
     try {
-      const lista = JSON.parse(brutoMantidas)
-      if (Array.isArray(lista)) {
-        mantidas = lista.filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u))
-      }
+      mantidas = filtrarUrlsDoTenant(JSON.parse(brutoMantidas), BUCKET_PRODUTOS, tenantId)
     } catch {
-      return { metadata, erro: 'Falha ao ler a galeria' }
+      return { metadata, remover: [], erro: 'Falha ao ler a galeria' }
     }
   }
   const novas = formData
@@ -214,33 +230,45 @@ async function aplicarMidiaVitrine(
     .filter((f): f is File => f instanceof File && f.size > 0)
   for (const f of novas) {
     if (!TIPOS_FOTO.has(f.type) || f.size > MAX) {
-      return { metadata, erro: 'Galeria: use JPEG, PNG ou WebP até 5MB.' }
+      return { metadata, remover: [], erro: 'Galeria: use JPEG, PNG ou WebP até 5MB.' }
     }
   }
   const urlsNovas: string[] = []
   for (const f of novas) {
     const url = await subir(f, 'galeria')
-    if (!url) return { metadata, erro: 'Erro ao fazer upload da galeria' }
+    if (!url) return { metadata, remover: [], erro: 'Erro ao fazer upload da galeria' }
     urlsNovas.push(url)
   }
-  const galeria = [...mantidas, ...urlsNovas].slice(0, 10)
+  // Campo ausente E nenhum arquivo = o bloco não foi renderizado (gate por
+  // nicho): preserva o que estava gravado em vez de esvaziar a galeria.
+  const galeriaAusente = brutoMantidas === null && novas.length === 0
+  const galeria = galeriaAusente ? galeriaAntiga : [...mantidas, ...urlsNovas].slice(0, 10)
   if (galeria.length > 0) resultado.galeria = galeria
   else delete resultado.galeria
 
-  // Recorte: novo arquivo substitui; `remover_recorte` apaga.
+  // Recorte: novo arquivo substitui; `remover_recorte` apaga. Sem nenhum dos
+  // dois (o bloco nem apareceu no formulário), o que estava gravado fica.
   const recorte = formData.get('recorte')
   if (recorte instanceof File && recorte.size > 0) {
     if (!TIPOS_RECORTE.has(recorte.type) || recorte.size > MAX) {
-      return { metadata, erro: 'Recorte: PNG ou WebP com fundo transparente, até 5MB.' }
+      return { metadata, remover: [], erro: 'Recorte: PNG ou WebP com fundo transparente, até 5MB.' }
     }
     const url = await subir(recorte, 'recorte')
-    if (!url) return { metadata, erro: 'Erro ao fazer upload do recorte' }
+    if (!url) return { metadata, remover: [], erro: 'Erro ao fazer upload do recorte' }
     resultado.recorte = url
   } else if (formData.get('remover_recorte') === 'true') {
     delete resultado.recorte
+  } else if (recorteAntigo && typeof resultado.recorte !== 'string') {
+    resultado.recorte = recorteAntigo
   }
 
-  return { metadata: resultado }
+  // O que saiu de cena (A-04): a action apaga do bucket depois de gravar.
+  const remover = [
+    ...diffDeMidia(galeriaAntiga, resultado.galeria ?? []),
+    ...(recorteAntigo && resultado.recorte !== recorteAntigo ? [recorteAntigo] : []),
+  ]
+
+  return { metadata: resultado, remover }
 }
 
 // Sincroniza grupos de modificadores e seus itens com o banco.
@@ -378,15 +406,13 @@ async function sincronizarVariants(
   tenant_id: string,
   payload: VariantsPayload,
 ): Promise<string | null> {
-  const sb = supabase as any
-
-  const { data: gruposExistData, error: errSelG } = await sb
+  const { data: gruposExistData, error: errSelG } = await supabase
     .from('product_option_groups')
     .select('id, nome, ordem, product_options(id, valor, hex_color, ordem)')
     .eq('product_id', produto_id)
   if (errSelG) return errSelG.message
 
-  const { data: variantsExistData, error: errSelV } = await sb
+  const { data: variantsExistData, error: errSelV } = await supabase
     .from('product_variants')
     .select('id')
     .eq('product_id', produto_id)
@@ -404,7 +430,7 @@ async function sincronizarVariants(
   // 1) Limpa todos os product_variant_options dos variants atuais — destrava
   //    o ON DELETE RESTRICT em options.
   if (idsVariantsExist.length > 0) {
-    const { error: errCleanPVO } = await sb
+    const { error: errCleanPVO } = await supabase
       .from('product_variant_options')
       .delete()
       .in('variant_id', idsVariantsExist)
@@ -417,7 +443,7 @@ async function sincronizarVariants(
   )
   const variantsARemover = variantsExist.filter((v) => !idsVariantsEnviados.has(v.id))
   if (variantsARemover.length > 0) {
-    const { error: errDelV } = await sb
+    const { error: errDelV } = await supabase
       .from('product_variants')
       .delete()
       .in(
@@ -433,7 +459,7 @@ async function sincronizarVariants(
   )
   const gruposARemover = gruposExist.filter((g) => !idsGruposEnviados.has(g.id))
   if (gruposARemover.length > 0) {
-    const { error: errDelG } = await sb
+    const { error: errDelG } = await supabase
       .from('product_option_groups')
       .delete()
       .in(
@@ -453,14 +479,14 @@ async function sincronizarVariants(
     let groupId: string
 
     if (grupo.id) {
-      const { error: errUpd } = await sb
+      const { error: errUpd } = await supabase
         .from('product_option_groups')
         .update({ nome: grupo.nome, ordem })
         .eq('id', grupo.id)
       if (errUpd) return errUpd.message
       groupId = grupo.id
     } else {
-      const { data: insertData, error: errIns } = await sb
+      const { data: insertData, error: errIns } = await supabase
         .from('product_option_groups')
         .insert({ product_id: produto_id, tenant_id, nome: grupo.nome, ordem })
         .select('id')
@@ -480,7 +506,7 @@ async function sincronizarVariants(
       .filter((o) => !idsOptionsEnviadas.has(o.id))
       .map((o) => o.id)
     if (optionsARemover.length > 0) {
-      const { error: errDelO } = await sb
+      const { error: errDelO } = await supabase
         .from('product_options')
         .delete()
         .in('id', optionsARemover)
@@ -492,13 +518,13 @@ async function sincronizarVariants(
       const ordemOpt = typeof opt.ordem === 'number' ? opt.ordem : oIdx
 
       if (opt.id) {
-        const { error: errUpdO } = await sb
+        const { error: errUpdO } = await supabase
           .from('product_options')
           .update({ valor: opt.valor, hex_color: opt.hex_color ?? null, ordem: ordemOpt })
           .eq('id', opt.id)
         if (errUpdO) return errUpdO.message
       } else {
-        const { error: errInsO } = await sb.from('product_options').insert({
+        const { error: errInsO } = await supabase.from('product_options').insert({
           group_id: groupId,
           valor: opt.valor,
           hex_color: opt.hex_color ?? null,
@@ -510,14 +536,14 @@ async function sincronizarVariants(
   }
 
   // 5) Reconstrói map (group_nome, valor) → option_id após sync de options.
-  const { data: optionsAtuais, error: errSelO } = await sb
+  const { data: optionsAtuais, error: errSelO } = await supabase
     .from('product_options')
     .select('id, valor, group_id, product_option_groups!inner(nome, product_id)')
     .eq('product_option_groups.product_id', produto_id)
   if (errSelO) return errSelO.message
 
   const optionIdPorGrupoValor = new Map<string, string>()
-  for (const o of (optionsAtuais ?? []) as any[]) {
+  for (const o of optionsAtuais ?? []) {
     const grupoNome = o.product_option_groups?.nome
     if (!grupoNome) continue
     optionIdPorGrupoValor.set(`${grupoNome}::${o.valor}`, o.id)
@@ -548,14 +574,14 @@ async function sincronizarVariants(
     }
 
     if (variant.id) {
-      const { error: errUpdV } = await sb
+      const { error: errUpdV } = await supabase
         .from('product_variants')
         .update(camposVariant)
         .eq('id', variant.id)
       if (errUpdV) return errUpdV.message
       variantId = variant.id
     } else {
-      const { data: insertData, error: errInsV } = await sb
+      const { data: insertData, error: errInsV } = await supabase
         .from('product_variants')
         .insert({ product_id: produto_id, tenant_id, ...camposVariant })
         .select('id')
@@ -572,7 +598,7 @@ async function sincronizarVariants(
       return 'Variação sem opções resolvidas — verifique os atributos'
     }
 
-    const { error: errInsPVO } = await sb
+    const { error: errInsPVO } = await supabase
       .from('product_variant_options')
       .insert(optionIds.map((option_id) => ({ variant_id: variantId, option_id })))
     if (errInsPVO) return errInsPVO.message
@@ -583,15 +609,13 @@ async function sincronizarVariants(
 
 export async function getVariantsProduto(produto_id: string) {
   const supabase = createSupabaseServer()
-  const sb = supabase as any
-
-  const { data: groups } = await sb
+  const { data: groups } = await supabase
     .from('product_option_groups')
     .select('id, nome, ordem, product_options (id, valor, hex_color, ordem)')
     .eq('product_id', produto_id)
     .order('ordem', { ascending: true })
 
-  const { data: variants } = await sb
+  const { data: variants } = await supabase
     .from('product_variants')
     .select(
       'id, sku, preco, preco_promocional, stock_quantity, stock_minimo, foto_url, disponivel, ordem, product_variant_options (option_id)',
@@ -600,11 +624,11 @@ export async function getVariantsProduto(produto_id: string) {
     .order('ordem', { ascending: true })
 
   return {
-    optionGroups: ((groups ?? []) as any[]).map((g) => ({
+    optionGroups: (groups ?? []).map((g) => ({
       id: g.id as string,
       nome: g.nome as string,
       ordem: g.ordem as number,
-      options: ((g.product_options ?? []) as any[])
+      options: (g.product_options ?? [])
         .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
         .map((o) => ({
           id: o.id as string,
@@ -613,7 +637,7 @@ export async function getVariantsProduto(produto_id: string) {
           ordem: o.ordem as number,
         })),
     })),
-    variants: ((variants ?? []) as any[]).map((v) => ({
+    variants: (variants ?? []).map((v) => ({
       id: v.id as string,
       sku: (v.sku ?? null) as string | null,
       preco: v.preco as number,
@@ -623,9 +647,7 @@ export async function getVariantsProduto(produto_id: string) {
       foto_url: (v.foto_url ?? null) as string | null,
       disponivel: v.disponivel as boolean,
       ordem: v.ordem as number,
-      optionRefs: ((v.product_variant_options ?? []) as any[]).map(
-        (vo) => vo.option_id as string,
-      ),
+      optionRefs: (v.product_variant_options ?? []).map((vo) => vo.option_id as string),
     })),
   }
 }
@@ -664,7 +686,7 @@ export async function getProdutos(store_id: string) {
     .select('plans(max_produtos)')
     .single()
 
-  const maxProdutos = (subscription?.plans as any)?.max_produtos ?? 30
+  const maxProdutos = subscription?.plans?.max_produtos ?? 30
 
   return {
     produtos: produtos ?? [],
@@ -695,13 +717,13 @@ export async function getModificadoresProduto(produto_id: string) {
 
   if (error || !data) return { grupos: [] as GrupoModificadorInput[] }
 
-  const grupos: GrupoModificadorInput[] = (data as any[]).map((g) => ({
+  const grupos: GrupoModificadorInput[] = (data ?? []).map((g) => ({
     id: g.id,
     nome: g.nome,
     min_select: g.min_select,
     max_select: g.max_select,
     ordem: g.ordem,
-    modifiers: ((g.product_modifiers ?? []) as any[])
+    modifiers: (g.product_modifiers ?? [])
       .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0))
       .map((m) => ({
         id: m.id,
@@ -782,17 +804,16 @@ export async function criarProduto(store_id: string, formData: FormData) {
   const foto = formData.get('foto') as File | null
 
   if (foto && foto.size > 0) {
-    const extensao = foto.name.split('.').pop()
-    const caminho = `${tenant.id}/${Date.now()}.${extensao}`
+    const caminho = `${tenant.id}/${Date.now()}.${extensaoSegura(foto.type, 'jpg')}`
 
     const { error: uploadError } = await supabase.storage
-      .from('product-images')
+      .from(BUCKET_PRODUTOS)
       .upload(caminho, foto, { contentType: foto.type })
 
     if (uploadError) return { erro: 'Erro ao fazer upload da foto' }
 
     const { data: urlPublica } = supabase.storage
-      .from('product-images')
+      .from(BUCKET_PRODUTOS)
       .getPublicUrl(caminho)
 
     foto_url = urlPublica.publicUrl
@@ -815,7 +836,8 @@ export async function criarProduto(store_id: string, formData: FormData) {
       store_id,
       tenant_id: tenant.id,
       foto_url,
-      metadata,
+      // `metadata` é um objeto zod `passthrough`; a coluna é jsonb (`Json`).
+      metadata: metadata as Json,
     })
     .select('id')
     .single()
@@ -888,9 +910,23 @@ export async function atualizarProduto(
 
   if (!dados.success) return { erro: dados.error.errors[0].message }
 
+  // Estado anterior da mídia: é o que diz o que foi SUBSTITUÍDO ou retirado
+  // (A-04) e o que deve ser preservado quando o bloco não veio no formulário.
+  const { data: produtoAtual } = await supabase
+    .from('products')
+    .select('foto_url, metadata')
+    .eq('id', produto_id)
+    .eq('tenant_id', tenant.id)
+    .maybeSingle()
+  const metadataAnterior = (produtoAtual?.metadata ?? null) as MetadataProduto | null
+
   const { metadata: metadataBase, erro: erroMeta } = parseMetadataPayload(formData.get('metadata'))
   if (erroMeta) return { erro: erroMeta }
-  const { metadata, erro: erroMidia } = await aplicarMidiaVitrine(supabase, tenant.id, formData, metadataBase)
+  const {
+    metadata,
+    remover: midiaRemovida,
+    erro: erroMidia,
+  } = await aplicarMidiaVitrine(supabase, tenant.id, formData, metadataBase, metadataAnterior)
   if (erroMidia) return { erro: erroMidia }
 
   const { grupos, erro: erroGrupos } = parseGruposPayload(formData.get('modifier_groups'))
@@ -905,16 +941,15 @@ export async function atualizarProduto(
   const foto = formData.get('foto') as File | null
 
   if (foto && foto.size > 0) {
-    const extensao = foto.name.split('.').pop()
-    const caminho = `${tenant.id}/${Date.now()}.${extensao}`
+    const caminho = `${tenant.id}/${Date.now()}.${extensaoSegura(foto.type, 'jpg')}`
 
     const { error: uploadError } = await supabase.storage
-      .from('product-images')
+      .from(BUCKET_PRODUTOS)
       .upload(caminho, foto, { contentType: foto.type })
 
     if (!uploadError) {
       const { data: urlPublica } = supabase.storage
-        .from('product-images')
+        .from(BUCKET_PRODUTOS)
         .getPublicUrl(caminho)
       foto_url = urlPublica.publicUrl
     }
@@ -935,12 +970,22 @@ export async function atualizarProduto(
       ...dadosFinal,
       ...(carga ?? {}),
       ...(foto_url ? { foto_url } : {}),
-      metadata,
+      // `metadata` é um objeto zod `passthrough`; a coluna é jsonb (`Json`).
+      metadata: metadata as Json,
     })
     .eq('id', produto_id)
     .eq('tenant_id', tenant.id)
 
   if (error) return { erro: error.message }
+
+  // A linha já aponta para a mídia nova: o que ficou para trás sai do bucket
+  // (R3). Best-effort — falha aqui só vira log, não desfaz o salvamento.
+  await removerObjetosDoTenant(
+    supabase,
+    BUCKET_PRODUTOS,
+    [...midiaRemovida, ...(foto_url && produtoAtual?.foto_url ? [produtoAtual.foto_url] : [])],
+    tenant.id,
+  )
 
   const erroGruposSync = await sincronizarGrupos(supabase, produto_id, tenant.id, grupos)
   if (erroGruposSync) return { erro: erroGruposSync }
@@ -996,7 +1041,7 @@ export async function excluirProduto(produto_id: string) {
 
   const { data: produto } = await supabase
     .from('products')
-    .select('foto_url')
+    .select('foto_url, metadata')
     .eq('id', produto_id)
     .eq('tenant_id', tenant.id)
     .single()
@@ -1009,12 +1054,18 @@ export async function excluirProduto(produto_id: string) {
 
   if (error) return { erro: error.message }
 
-  if (produto?.foto_url) {
-    const caminho = produto.foto_url.split('/product-images/')[1]
-    if (caminho) {
-      await supabase.storage.from('product-images').remove([caminho])
-    }
-  }
+  // Foto principal + galeria + recorte: nada do produto fica no bucket (A-04).
+  const metadataExcluido = (produto?.metadata ?? null) as MetadataProduto | null
+  await removerObjetosDoTenant(
+    supabase,
+    BUCKET_PRODUTOS,
+    [
+      produto?.foto_url ?? null,
+      ...(Array.isArray(metadataExcluido?.galeria) ? (metadataExcluido?.galeria as string[]) : []),
+      typeof metadataExcluido?.recorte === 'string' ? metadataExcluido.recorte : null,
+    ],
+    tenant.id,
+  )
 
   revalidatePath('/dashboard/produtos')
   return { sucesso: true }

@@ -67,6 +67,7 @@ export const templateServices: DashboardTemplate = {
       trackStock: false,
       disponivel: true,
     },
+    midia: { galeria: true, recorte: false, especificacoes: false, unidade: false },
   },
 
   consumer: {

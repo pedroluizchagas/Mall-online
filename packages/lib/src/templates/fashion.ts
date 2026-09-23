@@ -47,6 +47,7 @@ export const templateFashion: DashboardTemplate = {
       trackStock: true,
       disponivel: true,
     },
+    midia: { galeria: true, recorte: false, especificacoes: false, unidade: false },
   },
 
   consumer: {

@@ -101,6 +101,29 @@ export interface DashboardTemplate {
       trackStock: boolean
       disponivel: boolean
     }
+    /**
+     * Blocos de "Mídia e vitrine" que este nicho edita em `products.metadata`
+     * (A-17: o gate estava chumbado no formulário do dashboard).
+     *
+     * O que cada flag alimenta nas vitrines do consumer/storefront:
+     *  - `galeria`: fotos extras do PDP — toda loja tem;
+     *  - `recorte`: PNG sem fundo do "produto solto" (Torra, Smash, Horta,
+     *    Ritual, Gôndola) — praça de alimentação e lojas genéricas;
+     *  - `especificacoes`: ficha técnica em pares (Artesã, Jardim, Gôndola) —
+     *    casa/decoração, floricultura, mercado e demais nichos `generic`, e
+     *    também comida (o cardápio do seed usa Tamanho/Massa e o e2e cobre);
+     *  - `unidade`: unidade de venda ao lado do preço ("R$ 8,90 /kg") —
+     *    comida e mercado.
+     *
+     * Flag desligada só ESCONDE o editor: o que já estiver gravado é
+     * preservado, nunca apagado por não ter aparecido na tela.
+     */
+    midia: {
+      galeria: boolean
+      recorte: boolean
+      especificacoes: boolean
+      unidade: boolean
+    }
   }
 
   consumer: {

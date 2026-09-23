@@ -75,16 +75,15 @@ export async function listarAgenda(
   const inicioIso = inicio.toISOString()
   const fimIso = fim.toISOString()
 
-  const sb = supabase as any
 
   const [staffRes, agendamentosRes, bloqueiosRes] = await Promise.all([
-    sb
+    supabase
       .from('service_staff')
       .select('id, nome, cor')
       .eq('store_id', store_id)
       .eq('tenant_id', tenant.id)
       .order('ordem', { ascending: true }),
-    sb
+    supabase
       .from('orders')
       .select(
         'id, agendamento_inicio_at, agendamento_fim_at, staff_id, total, status, consumers(nome)',
@@ -95,7 +94,7 @@ export async function listarAgenda(
       .gte('agendamento_inicio_at', inicioIso)
       .lt('agendamento_inicio_at', fimIso)
       .order('agendamento_inicio_at', { ascending: true }),
-    sb
+    supabase
       .from('service_blocks')
       .select('id, inicio_at, fim_at, staff_id, motivo')
       .eq('store_id', store_id)
@@ -183,7 +182,7 @@ export async function criarBloqueio(store_id: string, formData: FormData) {
 
   if (!dados.success) return { erro: dados.error.errors[0].message }
 
-  const { error } = await (supabase as any).from('service_blocks').insert({
+  const { error } = await supabase.from('service_blocks').insert({
     ...dados.data,
     store_id,
     tenant_id: tenant.id,
@@ -201,7 +200,7 @@ export async function excluirBloqueio(block_id: string) {
   const { data: tenant } = await supabase.from('tenants').select('id').single()
   if (!tenant) return { erro: 'Tenant não encontrado' }
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('service_blocks')
     .delete()
     .eq('id', block_id)

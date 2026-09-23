@@ -45,6 +45,21 @@
   --err-lt: #fbeae6;
   --sky-lt: #eaf2f9;
 
+  /* Bordas de status (chips, avisos) e superfícies sobre mídia/escuro.
+     A-17: estas cores viviam soltas em rgba()/#fff dentro dos componentes
+     de Conteúdo e Minha Loja — agora são tokens e acompanham o tema. */
+  --ok-line: rgba(79, 176, 37, 0.25);
+  --warn-line: rgba(224, 166, 26, 0.30);
+  --err-line: rgba(224, 90, 59, 0.35);
+  /* Texto/ícone sobre fundo de status ou sobre foto. */
+  --on-color: #ffffff;
+  /* Véu de leitura sobre foto/vídeo (cartazes do Conteúdo). */
+  --veil: rgba(15, 15, 13, 0.62);
+  --veil-forte: rgba(15, 15, 13, 0.70);
+  /* Vidro sobre superfície escura (--ink / --shell). */
+  --glass-sobre-escuro: rgba(255, 255, 255, 0.12);
+  --glass-sobre-foto: rgba(255, 255, 255, 0.30);
+
   /* Radii */
   --r-sm: 8px;
   --r-md: 12px;

@@ -44,7 +44,7 @@ export async function listarStaff(store_id: string): Promise<{
   const { data: tenant } = await supabase.from('tenants').select('id').single()
   if (!tenant) return { erro: 'Tenant não encontrado', staff: [] }
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('service_staff')
     .select('id, nome, foto_url, cor, ativo, ordem')
     .eq('store_id', store_id)
@@ -74,7 +74,7 @@ export async function criarStaff(store_id: string, formData: FormData) {
   const dados = parseStaffFormData(formData)
   if (!dados.success) return { erro: dados.error.errors[0].message }
 
-  const { error } = await (supabase as any).from('service_staff').insert({
+  const { error } = await supabase.from('service_staff').insert({
     ...dados.data,
     store_id,
     tenant_id: tenant.id,
@@ -96,7 +96,7 @@ export async function atualizarStaff(staff_id: string, formData: FormData) {
   const dados = parseStaffFormData(formData)
   if (!dados.success) return { erro: dados.error.errors[0].message }
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('service_staff')
     .update(dados.data)
     .eq('id', staff_id)
@@ -115,7 +115,7 @@ export async function alternarAtivoStaff(staff_id: string, ativo: boolean) {
   const { data: tenant } = await supabase.from('tenants').select('id').single()
   if (!tenant) return { erro: 'Tenant não encontrado' }
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('service_staff')
     .update({ ativo })
     .eq('id', staff_id)
@@ -134,7 +134,7 @@ export async function excluirStaff(staff_id: string) {
   const { data: tenant } = await supabase.from('tenants').select('id').single()
   if (!tenant) return { erro: 'Tenant não encontrado' }
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('service_staff')
     .delete()
     .eq('id', staff_id)

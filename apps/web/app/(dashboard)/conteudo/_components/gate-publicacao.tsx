@@ -14,7 +14,7 @@ export function GatePublicacao({ contexto }: { contexto: 'conteudo' | 'publicar'
     >
       <div
         className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: 'rgba(255,255,255,0.12)' }}
+        style={{ background: 'var(--glass-sobre-escuro)' }}
       >
         <CreditCard className="w-4.5 h-4.5" />
       </div>

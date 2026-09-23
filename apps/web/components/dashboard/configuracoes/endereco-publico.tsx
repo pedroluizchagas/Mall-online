@@ -39,7 +39,7 @@ export function EnderecoPublico({ slug, domain }: { slug: string | null; domain:
       className="mt-2 flex flex-col gap-2 rounded-xl p-3 sm:flex-row sm:items-center"
       style={{
         background: status === 'ok' ? 'var(--ok-lt)' : 'var(--err-lt)',
-        border: `1px solid ${status === 'ok' ? 'rgba(79,176,37,0.25)' : 'rgba(224,90,59,0.28)'}`,
+        border: `1px solid ${status === 'ok' ? 'var(--ok-line)' : 'var(--err-line)'}`,
       }}
       role="status"
     >

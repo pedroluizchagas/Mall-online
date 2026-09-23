@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { z } from 'zod'
-import type { HorariosFuncionamento } from '@mallevo/types'
+import type { HorariosFuncionamento, Json } from '@mallevo/types'
 import { provisionTenantDomain } from '@mallevo/lib'
 
 const schemaDadosGerais = z.object({
@@ -262,7 +262,8 @@ export async function atualizarHorarios(horarios: HorariosFuncionamento) {
 
   const { error } = await supabase
     .from('stores')
-    .update({ horarios })
+    // `HorariosFuncionamento` é um objeto de domínio; a coluna é jsonb.
+    .update({ horarios: horarios as unknown as Json })
     .eq('tenant_id', tenant.id)
 
   if (error) return { erro: error.message }
@@ -285,14 +286,16 @@ export async function atualizarEndereco(
 
   if (!tenant) return { erro: 'Tenant não encontrado' }
 
-  const endereco = {
-    rua: formData.get('rua'),
-    numero: formData.get('numero'),
-    complemento: formData.get('complemento') || undefined,
-    bairro: formData.get('bairro'),
-    cidade: formData.get('cidade'),
-    estado: formData.get('estado'),
-    cep: formData.get('cep'),
+  // Texto, sempre: `FormData` também devolve `File`, que não entra em jsonb.
+  const texto = (chave: string) => String(formData.get(chave) ?? '')
+  const endereco: Json = {
+    rua: texto('rua'),
+    numero: texto('numero'),
+    complemento: texto('complemento') || null,
+    bairro: texto('bairro'),
+    cidade: texto('cidade'),
+    estado: texto('estado'),
+    cep: texto('cep'),
   }
 
   const { error } = await supabase

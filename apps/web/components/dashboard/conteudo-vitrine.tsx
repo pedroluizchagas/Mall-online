@@ -131,27 +131,28 @@ export function ConteudoVitrine({
       {/* ── Campanha ─────────────────────────────────────────── */}
       <div className="space-y-3">
         <p className="text-sm font-semibold text-ink">Campanha do topo</p>
-        <Campo rotulo="Sobrelinha" sufixo={contador(valor.campanha.eyebrow.length, CONTEUDO_LIMITES.eyebrow)}>
-          <input value={valor.campanha.eyebrow} onChange={(e) => setCampanha('eyebrow', e.target.value)} maxLength={CONTEUDO_LIMITES.eyebrow} placeholder="Nova coleção · Só hoje · Fresquinho" className={inputClass} style={{ borderColor: 'var(--line)' }} />
+        <Campo id="conteudo-eyebrow" rotulo="Sobrelinha" sufixo={contador(valor.campanha.eyebrow.length, CONTEUDO_LIMITES.eyebrow)}>
+          <input id="conteudo-eyebrow" value={valor.campanha.eyebrow} onChange={(e) => setCampanha('eyebrow', e.target.value)} maxLength={CONTEUDO_LIMITES.eyebrow} placeholder="Nova coleção · Só hoje · Fresquinho" className={inputClass} style={{ borderColor: 'var(--line)' }} />
         </Campo>
-        <Campo rotulo="Título" sufixo={contador(valor.campanha.titulo.length, CONTEUDO_LIMITES.titulo)}>
-          <input value={valor.campanha.titulo} onChange={(e) => setCampanha('titulo', e.target.value)} maxLength={CONTEUDO_LIMITES.titulo} placeholder="A manchete da sua vitrine" className={inputClass} style={{ borderColor: 'var(--line)' }} />
+        <Campo id="conteudo-titulo" rotulo="Título" sufixo={contador(valor.campanha.titulo.length, CONTEUDO_LIMITES.titulo)}>
+          <input id="conteudo-titulo" value={valor.campanha.titulo} onChange={(e) => setCampanha('titulo', e.target.value)} maxLength={CONTEUDO_LIMITES.titulo} placeholder="A manchete da sua vitrine" className={inputClass} style={{ borderColor: 'var(--line)' }} />
         </Campo>
-        <Campo rotulo="Subtítulo" sufixo={contador(valor.campanha.subtitulo.length, CONTEUDO_LIMITES.subtitulo)}>
-          <input value={valor.campanha.subtitulo} onChange={(e) => setCampanha('subtitulo', e.target.value)} maxLength={CONTEUDO_LIMITES.subtitulo} placeholder="Uma linha de apoio" className={inputClass} style={{ borderColor: 'var(--line)' }} />
+        <Campo id="conteudo-subtitulo" rotulo="Subtítulo" sufixo={contador(valor.campanha.subtitulo.length, CONTEUDO_LIMITES.subtitulo)}>
+          <input id="conteudo-subtitulo" value={valor.campanha.subtitulo} onChange={(e) => setCampanha('subtitulo', e.target.value)} maxLength={CONTEUDO_LIMITES.subtitulo} placeholder="Uma linha de apoio" className={inputClass} style={{ borderColor: 'var(--line)' }} />
         </Campo>
-        <Campo rotulo="Botão" sufixo={contador(valor.campanha.cta.length, CONTEUDO_LIMITES.cta)}>
-          <input value={valor.campanha.cta} onChange={(e) => setCampanha('cta', e.target.value)} maxLength={CONTEUDO_LIMITES.cta} placeholder="Ver cardápio" className={inputClass} style={{ borderColor: 'var(--line)' }} />
+        <Campo id="conteudo-cta" rotulo="Botão" sufixo={contador(valor.campanha.cta.length, CONTEUDO_LIMITES.cta)}>
+          <input id="conteudo-cta" value={valor.campanha.cta} onChange={(e) => setCampanha('cta', e.target.value)} maxLength={CONTEUDO_LIMITES.cta} placeholder="Ver cardápio" className={inputClass} style={{ borderColor: 'var(--line)' }} />
         </Campo>
       </div>
 
       {/* ── Manifesto ────────────────────────────────────────── */}
       <div className="space-y-2">
         <div className="flex items-baseline justify-between">
-          <p className="text-sm font-semibold text-ink">Texto da casa</p>
+          <label htmlFor="conteudo-manifesto" className="text-sm font-semibold text-ink">Texto da casa</label>
           {contador(valor.manifesto.length, CONTEUDO_LIMITES.manifesto)}
         </div>
         <textarea
+          id="conteudo-manifesto"
           value={valor.manifesto}
           onChange={(e) => set({ manifesto: e.target.value })}
           maxLength={CONTEUDO_LIMITES.manifesto}
@@ -163,9 +164,9 @@ export function ConteudoVitrine({
       </div>
 
       {/* ── Destaques ────────────────────────────────────────── */}
-      <div className="space-y-2">
+      <div className="space-y-2" role="group" aria-labelledby="conteudo-destaques-rotulo">
         <div className="flex items-baseline justify-between">
-          <p className="text-sm font-semibold text-ink">Destaques</p>
+          <p id="conteudo-destaques-rotulo" className="text-sm font-semibold text-ink">Destaques</p>
           {contador(valor.destaques.length, CONTEUDO_LIMITES.destaques)}
         </div>
         <p className="text-xs text-ink-3">Os produtos que abrem a vitrine, na ordem que você escolher.</p>
@@ -189,7 +190,7 @@ export function ConteudoVitrine({
         {valor.destaques.length < CONTEUDO_LIMITES.destaques && (
           <div className="relative">
             <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
-            <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto para destacar…" className={`${inputClass} pl-9`} style={{ borderColor: 'var(--line)' }} />
+            <input id="conteudo-busca-destaque" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto para destacar…" aria-label="Buscar produto para destacar" className={`${inputClass} pl-9`} style={{ borderColor: 'var(--line)' }} />
             {(busca || candidatos.length > 0) && (
               <ul className="mt-1.5 max-h-56 overflow-y-auto rounded-xl" style={{ border: '1px solid var(--line)', background: 'var(--bg)' }}>
                 {candidatos.length === 0 ? (
@@ -209,9 +210,9 @@ export function ConteudoVitrine({
       </div>
 
       {/* ── Fotos da casa ────────────────────────────────────── */}
-      <div className="space-y-2">
+      <div className="space-y-2" role="group" aria-labelledby="conteudo-casa-rotulo">
         <div className="flex items-baseline justify-between">
-          <p className="text-sm font-semibold text-ink">Fotos da casa</p>
+          <p id="conteudo-casa-rotulo" className="text-sm font-semibold text-ink">Fotos da casa</p>
           {contador(totalFotos, CONTEUDO_LIMITES.galeriaCasa)}
         </div>
         <p className="text-xs text-ink-3">O espaço, a equipe, o balcão. Entram no hero e no fecho de algumas vitrines.</p>
@@ -226,7 +227,7 @@ export function ConteudoVitrine({
             <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-ink-3 hover:text-ink" style={{ border: '1px dashed var(--line)' }}>
               <ImagePlus size={18} />
               <span className="text-[10px] font-semibold">Adicionar</span>
-              <input type="file" multiple accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(e) => { escolherFotos(e.target.files); e.target.value = '' }} />
+              <input id="conteudo-casa-arquivos" type="file" multiple accept="image/jpeg,image/png,image/webp" aria-label="Adicionar fotos da casa" className="sr-only" onChange={(e) => { escolherFotos(e.target.files); e.target.value = '' }} />
             </label>
           )}
         </div>
@@ -244,11 +245,11 @@ function mover<T>(lista: T[], de: number, para: number): T[] {
   return copia
 }
 
-function Campo({ rotulo, sufixo, children }: { rotulo: string; sufixo?: React.ReactNode; children: React.ReactNode }) {
+function Campo({ id, rotulo, sufixo, children }: { id: string; rotulo: string; sufixo?: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
       <div className="mb-1 flex items-baseline justify-between">
-        <label className="text-xs font-medium text-ink-2">{rotulo}</label>
+        <label htmlFor={id} className="text-xs font-medium text-ink-2">{rotulo}</label>
         {sufixo}
       </div>
       {children}
@@ -271,9 +272,9 @@ function Miniatura({ src, nova, aoRemover }: { src: string; nova?: boolean; aoRe
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt="" className="h-full w-full rounded-xl object-cover" />
       {nova && (
-        <span className="absolute bottom-1 left-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase" style={{ background: 'var(--brick)', color: '#111' }}>nova</span>
+        <span className="absolute bottom-1 left-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase" style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}>nova</span>
       )}
-      <button type="button" aria-label="Remover foto" onClick={aoRemover} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-white" style={{ background: 'var(--ink)' }}>
+      <button type="button" aria-label="Remover foto" onClick={aoRemover} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: 'var(--ink)', color: 'var(--bg)' }}>
         <X size={11} />
       </button>
     </div>

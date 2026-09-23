@@ -3,10 +3,10 @@ import { Eye, Images, Play } from 'lucide-react'
 import { badgeDoPost, formatarDuracaoSeg, type Post } from '@mallevo/lib'
 
 const COR_BADGE = {
-  success: { bg: 'var(--ok)', fg: '#fff' },
-  info: { bg: 'var(--sky)', fg: '#fff' },
-  warning: { bg: 'var(--warn)', fg: '#1d1d1b' },
-  danger: { bg: 'var(--err)', fg: '#fff' },
+  success: { bg: 'var(--ok)', fg: 'var(--on-color)' },
+  info: { bg: 'var(--sky)', fg: 'var(--on-color)' },
+  warning: { bg: 'var(--warn)', fg: 'var(--shell)' },
+  danger: { bg: 'var(--err)', fg: 'var(--on-color)' },
 } as const
 
 const NUMERO = new Intl.NumberFormat('pt-BR')
@@ -42,7 +42,7 @@ export function PostCard({ post }: { post: Post }) {
         {post.tipo === 'video' && (
           <span
             className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-            style={{ background: 'rgba(15,15,13,0.62)' }}
+            style={{ background: 'var(--veil)' }}
           >
             <Play className="w-2.5 h-2.5" fill="currentColor" strokeWidth={0} />
             {formatarDuracaoSeg(post.duracao_seg)}
@@ -51,7 +51,7 @@ export function PostCard({ post }: { post: Post }) {
 
         <span
           className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
-          style={{ background: 'rgba(15,15,13,0.62)' }}
+          style={{ background: 'var(--veil)' }}
         >
           <Eye className="w-3 h-3" strokeWidth={2.2} />
           {NUMERO.format(post.views)}

@@ -19,7 +19,7 @@ export async function marcarTutorialVisto() {
   const tenant = tenants?.[0]
   if (!tenant) return { erro: 'Tenant não encontrado' }
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('tenants')
     .update({ tutorial_template_visto: true })
     .eq('id', tenant.id)

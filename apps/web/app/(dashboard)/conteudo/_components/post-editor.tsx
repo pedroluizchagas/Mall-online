@@ -227,8 +227,8 @@ export function PostEditor({ post, produtoInicial }: { post: Post; produtoInicia
                 className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold border transition-colors disabled:opacity-50"
                 style={
                   confirmacao >= 2
-                    ? { background: 'var(--err)', color: '#fff', borderColor: 'var(--err)' }
-                    : { borderColor: 'rgba(224,90,59,0.35)', color: 'var(--err)' }
+                    ? { background: 'var(--err)', color: 'var(--on-color)', borderColor: 'var(--err)' }
+                    : { borderColor: 'var(--err-line)', color: 'var(--err)' }
                 }
               >
                 <Trash2 className="w-3.5 h-3.5" />

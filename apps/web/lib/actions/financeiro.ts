@@ -305,7 +305,7 @@ export async function getPedidosElegiveis() {
     return { elegivel: false, motivo: 'Assinatura inativa', pedidos: 0, valor_bruto: 0, taxa: 0, valor_liquido: 0 }
   }
 
-  if (!(sub.plans as any)?.tem_antecipacao) {
+  if (!sub.plans?.tem_antecipacao) {
     return { elegivel: false, motivo: 'Seu plano não inclui antecipação', pedidos: 0, valor_bruto: 0, taxa: 0, valor_liquido: 0 }
   }
 

@@ -51,7 +51,9 @@ export default async function PaginaConteudo({ searchParams }: { searchParams: S
     )
   }
 
-  const [posts, orfaos] = await Promise.all([listarPosts(), detectarOrfaosConteudo()])
+  // Uma leitura só: `detectarOrfaosConteudo` recebe a lista já carregada.
+  const posts = await listarPosts()
+  const orfaos = await detectarOrfaosConteudo(posts)
 
   const filtrados = posts.filter((p) => (tipo === 'todos' || p.tipo === tipo) && casaEstado(p, estado))
   const videos = posts.filter((p) => p.tipo === 'video').length

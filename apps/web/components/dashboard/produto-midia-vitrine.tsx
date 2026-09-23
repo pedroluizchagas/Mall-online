@@ -35,16 +35,24 @@ const TAMANHO_MAX_BYTES = 5 * 1024 * 1024
 const inputClass =
   'w-full px-3 py-2 text-sm text-ink bg-bg rounded-xl border focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
 
+/** Gate por nicho — `DashboardTemplate.produto.midia` (@mallevo/lib). */
+export interface MidiaFlags {
+  galeria: boolean
+  recorte: boolean
+  especificacoes: boolean
+  unidade: boolean
+}
+
 export function MidiaVitrine({
   valor,
   onChange,
   recorteAtual,
-  mostraUnidade,
+  midia,
 }: {
   valor: VitrineProduto
   onChange: (v: VitrineProduto) => void
   recorteAtual: string | null
-  mostraUnidade: boolean
+  midia: MidiaFlags
 }) {
   const [novas, setNovas] = useState<File[]>([])
   const [novoRecorte, setNovoRecorte] = useState<File | null>(null)
@@ -113,8 +121,11 @@ export function MidiaVitrine({
       </div>
 
       {/* ── Galeria ─────────────────────────────────────────── */}
-      <div>
-        <label className="block text-sm font-medium text-ink-2 mb-1">Galeria de fotos</label>
+      {midia.galeria && (
+      <div role="group" aria-labelledby="midia-galeria-rotulo">
+        <p id="midia-galeria-rotulo" className="block text-sm font-medium text-ink-2 mb-1">
+          Galeria de fotos
+        </p>
         <p className="text-xs text-ink-3 mb-2">
           Fotos extras que o cliente desliza no detalhe do produto. Até {LIMITE_GALERIA}.
         </p>
@@ -144,10 +155,12 @@ export function MidiaVitrine({
               <ImagePlus size={18} />
               <span className="text-[10px] font-semibold">Adicionar</span>
               <input
+                id="midia-galeria-arquivos"
                 type="file"
                 name="galeria"
                 multiple
                 accept="image/jpeg,image/png,image/webp"
+                aria-label="Adicionar fotos à galeria"
                 className="sr-only"
                 onChange={(e) => escolherGaleria(e.target.files)}
               />
@@ -156,10 +169,14 @@ export function MidiaVitrine({
         </div>
         <input type="hidden" name="galeria_mantida" value={JSON.stringify(valor.galeriaMantida)} />
       </div>
+      )}
 
       {/* ── Recorte ─────────────────────────────────────────── */}
-      <div>
-        <label className="block text-sm font-medium text-ink-2 mb-1">Recorte sem fundo</label>
+      {midia.recorte && (
+      <div role="group" aria-labelledby="midia-recorte-rotulo">
+        <p id="midia-recorte-rotulo" className="block text-sm font-medium text-ink-2 mb-1">
+          Recorte sem fundo
+        </p>
         <p className="text-xs text-ink-3 mb-2">
           PNG com fundo transparente. Algumas vitrines mostram o produto "solto" sobre a cor da casa.
         </p>
@@ -187,8 +204,8 @@ export function MidiaVitrine({
                   setNovoRecorte(null)
                   onChange({ ...valor, removerRecorte: true })
                 }}
-                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-white"
-                style={{ background: 'var(--ink)' }}
+                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full"
+                style={{ background: 'var(--ink)', color: 'var(--bg)' }}
               >
                 <X size={11} />
               </button>
@@ -201,9 +218,11 @@ export function MidiaVitrine({
             <ImagePlus size={14} />
             {recorteAtual || novoRecorte ? 'Trocar recorte' : 'Enviar recorte'}
             <input
+              id="midia-recorte-arquivo"
               type="file"
               name="recorte"
               accept="image/png,image/webp"
+              aria-label={recorteAtual || novoRecorte ? 'Trocar o recorte sem fundo' : 'Enviar um recorte sem fundo'}
               className="sr-only"
               onChange={(e) => escolherRecorte(e.target.files)}
             />
@@ -211,10 +230,14 @@ export function MidiaVitrine({
         </div>
         <input type="hidden" name="remover_recorte" value={valor.removerRecorte ? 'true' : 'false'} />
       </div>
+      )}
 
       {/* ── Especificações ───────────────────────────────────── */}
-      <div>
-        <label className="block text-sm font-medium text-ink-2 mb-1">Ficha técnica</label>
+      {midia.especificacoes && (
+      <div role="group" aria-labelledby="midia-ficha-rotulo">
+        <p id="midia-ficha-rotulo" className="block text-sm font-medium text-ink-2 mb-1">
+          Ficha técnica
+        </p>
         <p className="text-xs text-ink-3 mb-2">
           Pares rótulo e valor — Material, Dimensões, Origem, Peso… Até {LIMITE_ESPECIFICACOES}.
         </p>
@@ -225,6 +248,7 @@ export function MidiaVitrine({
                 value={par[0]}
                 onChange={(e) => atualizarEspec(i, 0, e.target.value)}
                 placeholder="Rótulo"
+                aria-label={`Rótulo da linha ${i + 1} da ficha técnica`}
                 maxLength={40}
                 className={`${inputClass} basis-2/5`}
                 style={{ borderColor: 'var(--line)' }}
@@ -233,6 +257,7 @@ export function MidiaVitrine({
                 value={par[1]}
                 onChange={(e) => atualizarEspec(i, 1, e.target.value)}
                 placeholder="Valor"
+                aria-label={`Valor da linha ${i + 1} da ficha técnica`}
                 maxLength={120}
                 className={`${inputClass} flex-1`}
                 style={{ borderColor: 'var(--line)' }}
@@ -260,13 +285,17 @@ export function MidiaVitrine({
           )}
         </div>
       </div>
+      )}
 
       {/* ── Unidade ─────────────────────────────────────────── */}
-      {mostraUnidade && (
+      {midia.unidade && (
         <div>
-          <label className="block text-sm font-medium text-ink-2 mb-1">Unidade de venda</label>
+          <label htmlFor="midia-unidade" className="block text-sm font-medium text-ink-2 mb-1">
+            Unidade de venda
+          </label>
           <p className="text-xs text-ink-3 mb-2">Aparece ao lado do preço ("R$ 8,90 /kg").</p>
           <select
+            id="midia-unidade"
             value={valor.unidade}
             onChange={(e) => onChange({ ...valor, unidade: e.target.value })}
             className={inputClass}
@@ -308,8 +337,8 @@ function Miniatura({ src, nova, aoRemover }: { src: string; nova?: boolean; aoRe
         type="button"
         aria-label="Remover foto"
         onClick={aoRemover}
-        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-white"
-        style={{ background: 'var(--ink)' }}
+        className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full"
+        style={{ background: 'var(--ink)', color: 'var(--bg)' }}
       >
         <X size={11} />
       </button>

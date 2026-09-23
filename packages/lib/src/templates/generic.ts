@@ -53,6 +53,7 @@ export const templateGeneric: DashboardTemplate = {
       trackStock: true,
       disponivel: true,
     },
+    midia: { galeria: true, recorte: true, especificacoes: true, unidade: true },
   },
 
   consumer: {

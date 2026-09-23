@@ -51,6 +51,14 @@ describe('registry de templates', () => {
       expect(typeof template.produto.defaults.trackStock).toBe('boolean')
       expect(typeof template.produto.defaults.disponivel).toBe('boolean')
 
+      // produto.midia: 4 booleans presentes (gate de "Mídia e vitrine", A-17)
+      expect(template.produto.midia).toMatchObject({
+        galeria: expect.any(Boolean),
+        recorte: expect.any(Boolean),
+        especificacoes: expect.any(Boolean),
+        unidade: expect.any(Boolean),
+      })
+
       // consumer
       expect(['simples', 'variacao', 'cardapio', 'agendamento']).toContain(
         template.consumer.layoutPdp,
@@ -98,6 +106,30 @@ describe('registry de templates', () => {
     expect(TEMPLATES.pet.produto.permiteModificadores).toBe(false)
     expect(TEMPLATES.services.produto.permiteModificadores).toBe(false)
     expect(TEMPLATES.generic.produto.permiteModificadores).toBe(false)
+  })
+
+  it('galeria de fotos existe em todo nicho', () => {
+    for (const t of Object.values(TEMPLATES)) {
+      expect(t.produto.midia.galeria).toBe(true)
+    }
+  })
+
+  it('matriz de mídia da vitrine × templates', () => {
+    // recorte (produto "solto") = praça de alimentação e lojas genéricas;
+    // unidade de venda = comida e mercado (mercado-conveniencia → generic);
+    // ficha técnica = casa/decoração, floricultura, mercado (→ generic) e
+    // comida (o cardápio do seed traz Tamanho/Massa).
+    expect(TEMPLATES.food.produto.midia).toEqual({
+      galeria: true, recorte: true, especificacoes: true, unidade: true,
+    })
+    expect(TEMPLATES.generic.produto.midia).toEqual({
+      galeria: true, recorte: true, especificacoes: true, unidade: true,
+    })
+    for (const codigo of ['fashion', 'pharmacy', 'pet', 'services'] as const) {
+      expect(TEMPLATES[codigo].produto.midia).toEqual({
+        galeria: true, recorte: false, especificacoes: false, unidade: false,
+      })
+    }
   })
 
   it('matriz permiteVariacoes × templates', () => {

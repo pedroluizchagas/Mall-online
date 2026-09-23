@@ -49,8 +49,8 @@ export function SeletorProduto({
 
   if (produto) {
     return (
-      <div>
-        <p className="text-sm font-medium text-ink-2 mb-1">Produto vinculado</p>
+      <div role="group" aria-labelledby="post-produto-rotulo">
+        <p id="post-produto-rotulo" className="text-sm font-medium text-ink-2 mb-1">Produto vinculado</p>
         <div
           className="flex items-center gap-3 p-2.5 rounded-xl border"
           style={{ borderColor: 'var(--line)', background: 'var(--bg)' }}
@@ -81,8 +81,8 @@ export function SeletorProduto({
   }
 
   return (
-    <div>
-      <p className="text-sm font-medium text-ink-2 mb-1">Produto vinculado</p>
+    <div role="group" aria-labelledby="post-produto-rotulo">
+      <p id="post-produto-rotulo" className="text-sm font-medium text-ink-2 mb-1">Produto vinculado</p>
       {!aberto ? (
         <button
           type="button"

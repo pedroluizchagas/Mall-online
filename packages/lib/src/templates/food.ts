@@ -50,6 +50,7 @@ export const templateFood: DashboardTemplate = {
       trackStock: false,
       disponivel: true,
     },
+    midia: { galeria: true, recorte: true, especificacoes: true, unidade: true },
   },
 
   consumer: {

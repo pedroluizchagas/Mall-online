@@ -108,6 +108,9 @@ export function extensaoDaMidia(tipo: TipoPost, mime?: string | null): 'mp4' | '
   return mime === 'video/quicktime' ? 'mov' : 'mp4'
 }
 
+/** Bucket dos posts do Explorar (público, policy por prefixo do tenant). */
+export const BUCKET_POSTS = 'explore-media'
+
 export interface CaminhosPost {
   /** `{tenant_id}/{store_id}` — o prefixo que a policy do bucket exige. */
   prefixo: string
@@ -135,9 +138,40 @@ export function caminhosDoPost(
 }
 
 /** URL pública de um objeto de bucket público (o `getPublicUrl` sem cliente). */
-export function urlPublicaDoObjeto(supabaseUrl: string, bucket: string, caminho: string): string {
+export function urlPublicaDoBucket(supabaseUrl: string, bucket: string, caminho: string): string {
   const base = supabaseUrl.replace(/\/+$/, '')
   return `${base}/storage/v1/object/public/${bucket}/${caminho}`
+}
+
+/** Nome anterior de `urlPublicaDoBucket` — mantido para não quebrar imports. */
+export const urlPublicaDoObjeto = urlPublicaDoBucket
+
+/**
+ * O caminho está sob o prefixo `{tenant_id}/{store_id}/` da convenção de
+ * `caminhosDoPost` (a mesma que as policies dos buckets exigem)?
+ *
+ * Regra R2 do plano: referência a mídia gravada pelo servidor é validada por
+ * prefixo do tenant e por bucket — "parece https" não é critério.
+ */
+export function caminhoPertenceAoTenant(
+  caminho: string,
+  tenantId: string,
+  storeId: string,
+): boolean {
+  if (!caminho || !tenantId || !storeId) return false
+  if (caminho.startsWith('/') || caminho.includes('..')) return false
+  const prefixo = `${tenantId}/${storeId}/`
+  return caminho.startsWith(prefixo) && caminho.length > prefixo.length
+}
+
+/**
+ * UUID do objeto no bucket. `crypto.randomUUID` existe no navegador seguro e
+ * no Hermes recente; o fallback cobre Expo Go e contextos sem HTTPS.
+ */
+export function gerarUuid(): string {
+  const c = globalThis.crypto as { randomUUID?: () => string } | undefined
+  if (c?.randomUUID) return c.randomUUID()
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 /**
@@ -211,6 +245,53 @@ export const novoPostSchema = dadosPostSchema.extend({
 })
 
 export type NovoPost = z.infer<typeof novoPostSchema>
+
+/** De onde a mídia do post PODE vir (A-03 · regra R2). */
+export interface OrigemMidiaPost {
+  tenantId: string
+  storeId: string
+  /** `NEXT_PUBLIC_SUPABASE_URL` / `EXPO_PUBLIC_SUPABASE_URL`. */
+  supabaseUrl: string
+}
+
+/**
+ * `novoPostSchema` + checagem de ORIGEM da mídia: caminho sob
+ * `{tenant}/{store}/` e URL exatamente a pública do bucket `explore-media`
+ * para aquele caminho. Sem isso um lojista autenticado grava no feed público
+ * uma URL externa ou o objeto de outro tenant (A-03).
+ *
+ * O `novoPostSchema` cru continua valendo para validação de FORMATO no
+ * cliente, onde tenant/loja ainda não foram conferidos contra o banco.
+ */
+export function novoPostSchemaPara({ tenantId, storeId, supabaseUrl }: OrigemMidiaPost) {
+  return novoPostSchema.superRefine((dados, ctx) => {
+    const erro = (path: string, message: string) =>
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: [path], message })
+
+    if (dados.store_id !== storeId) {
+      erro('store_id', 'A loja do post não é a loja informada')
+    }
+
+    if (!caminhoPertenceAoTenant(dados.media_path, tenantId, storeId)) {
+      erro('media_path', 'A mídia não está na pasta desta loja')
+    } else if (dados.media_url !== urlPublicaDoBucket(supabaseUrl, BUCKET_POSTS, dados.media_path)) {
+      erro('media_url', 'O endereço da mídia não é o do arquivo enviado')
+    }
+
+    if (dados.thumb_path === null) {
+      if (dados.thumb_url !== null) erro('thumb_url', 'Miniatura sem arquivo correspondente')
+      return
+    }
+
+    if (!caminhoPertenceAoTenant(dados.thumb_path, tenantId, storeId)) {
+      erro('thumb_path', 'A miniatura não está na pasta desta loja')
+      return
+    }
+    if (dados.thumb_url !== urlPublicaDoBucket(supabaseUrl, BUCKET_POSTS, dados.thumb_path)) {
+      erro('thumb_url', 'O endereço da miniatura não é o do arquivo enviado')
+    }
+  })
+}
 
 /** "12s", "1:05" — duração de vídeo curta. */
 export function formatarDuracaoSeg(segundos: number | null | undefined): string {

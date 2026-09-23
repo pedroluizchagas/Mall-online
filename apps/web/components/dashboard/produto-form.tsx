@@ -14,7 +14,8 @@ import {
 interface Categoria {
   id: string
   nome: string
-  icone?: string
+  /** `categories.icone` é nullable no banco. */
+  icone?: string | null
 }
 
 interface ModifierEditavel {
@@ -369,7 +370,8 @@ export function ProdutoForm({
   // Estado dos campos extras genéricos (pet/pharmacy/generic).
   // Mídia e vitrine (galeria/recorte/especificações/unidade) — contrato de
   // `products.metadata` em @mallevo/lib, lido pelas vitrines do app e do web.
-  const mostraUnidade = template.codigo === 'food' || template.codigo === 'generic'
+  // Gate por nicho vem do registry da lib (A-17), não mais chumbado aqui.
+  const midia = template.produto.midia
   const [vitrine, setVitrine] = useState<VitrineProduto>(() => {
     const m = metadataInicial as Record<string, unknown>
     return {
@@ -529,8 +531,10 @@ export function ProdutoForm({
       : metadataExtras),
     // Vitrine: `galeria`/`recorte` são decididos no servidor (uploads +
     // `galeria_mantida`/`remover_recorte`); aqui só o que é texto.
+    // Bloco escondido pelo gate mantém o que já estava gravado (o estado
+    // nasce de `metadataInicial`): esconder não é apagar.
     especificacoes: especificacoesLimpas.length > 0 ? especificacoesLimpas : undefined,
-    unidade: mostraUnidade && vitrine.unidade ? vitrine.unidade : undefined,
+    unidade: vitrine.unidade || undefined,
   })
 
   return (
@@ -636,7 +640,7 @@ export function ProdutoForm({
         valor={vitrine}
         onChange={setVitrine}
         recorteAtual={recorteAtual}
-        mostraUnidade={mostraUnidade}
+        midia={midia}
       />
 
       <div className="flex items-center justify-between">

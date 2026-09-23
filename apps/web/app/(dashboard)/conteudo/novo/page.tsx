@@ -28,7 +28,7 @@ export default async function PaginaPublicar() {
       ) : limiteAtingido ? (
         <div
           className="rounded-lg p-5 border"
-          style={{ background: 'var(--warn-lt)', borderColor: 'rgba(224,166,26,0.30)' }}
+          style={{ background: 'var(--warn-lt)', borderColor: 'var(--warn-line)' }}
         >
           <p className="text-sm font-semibold text-ink">Limite de posts do seu plano atingido</p>
           <p className="text-xs text-ink-2 mt-1">

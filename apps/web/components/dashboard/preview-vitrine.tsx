@@ -78,13 +78,17 @@ export function PreviewVitrine({
     }, 600)
     return () => clearTimeout(id)
   }, [srcAlvo, src])
-  // O `load` do iframe espera fontes e fotos externas; se demorarem, o
-  // indicador some sozinho — a vitrine já está legível muito antes disso.
+  // A troca de endereço vai pelo REF, não por `key`/prop: remontar o iframe a
+  // cada debounce destruía a vitrine e piscava branco a cada tecla. Agora o
+  // mesmo elemento navega e o "Atualizando…" some no `load`.
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+  const srcInicial = useRef<string | null>(srcAlvo)
   useEffect(() => {
-    if (!carregando) return
-    const id = setTimeout(() => setCarregando(false), 4_000)
-    return () => clearTimeout(id)
-  }, [carregando, src])
+    const el = iframeRef.current
+    if (!el || !src) return
+    if (el.getAttribute('src') === src) return
+    el.setAttribute('src', src)
+  }, [src])
 
   // Escala a moldura para caber na largura que o painel oferece (medida, não
   // imposta): o celular não passa de 340px; o computador usa tudo que houver.
@@ -193,8 +197,8 @@ export function PreviewVitrine({
             )}
             {src && (
               <iframe
-                key={src}
-                src={src}
+                ref={iframeRef}
+                src={srcInicial.current ?? undefined}
                 title="Preview da loja"
                 onLoad={() => setCarregando(false)}
                 className="absolute left-0 top-0 origin-top-left border-0"

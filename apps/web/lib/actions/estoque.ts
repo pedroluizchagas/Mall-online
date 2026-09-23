@@ -5,13 +5,13 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { z } from 'zod'
 
 // Verificar se o plano do lojista inclui estoque
-async function verificarAcessoEstoque(supabase: any): Promise<boolean> {
+async function verificarAcessoEstoque(supabase: ReturnType<typeof createSupabaseServer>): Promise<boolean> {
   const { data } = await supabase
     .from('tenant_subscriptions')
     .select('plans!inner(tem_estoque)')
     .single()
 
-  return (data?.plans as any)?.tem_estoque === true
+  return data?.plans?.tem_estoque === true
 }
 
 // Buscar produtos com controle de estoque

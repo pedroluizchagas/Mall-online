@@ -38,7 +38,8 @@ export default async function PaginaMinhaLoja() {
         descricao: loja.descricao,
         logo_url: loja.logo_url,
         banner_url: loja.banner_url,
-        theme: loja.theme ?? null,
+        // Coluna jsonb: o StoreThemeConfig é validado na lib, não aqui.
+        theme: (loja.theme as Record<string, unknown> | null) ?? null,
         ativo: loja.ativo ?? true,
         slug: loja.slug ?? null,
         categoriaSlug,

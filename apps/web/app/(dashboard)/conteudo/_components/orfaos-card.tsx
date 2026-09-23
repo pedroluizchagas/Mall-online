@@ -29,7 +29,7 @@ export function OrfaosCard({ caminhos }: { caminhos: string[] }) {
   return (
     <div
       className="rounded-md p-4 border flex flex-col sm:flex-row sm:items-center gap-3"
-      style={{ background: 'var(--warn-lt)', borderColor: 'rgba(224,166,26,0.30)' }}
+      style={{ background: 'var(--warn-lt)', borderColor: 'var(--warn-line)' }}
       role="status"
     >
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--bg)' }}>

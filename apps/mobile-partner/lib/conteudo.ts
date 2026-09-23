@@ -2,6 +2,12 @@ import Constants from 'expo-constants'
 import { getInfoAsync } from 'expo-file-system/legacy'
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator'
 import * as VideoThumbnails from 'expo-video-thumbnails'
+import {
+  LIMITES_POST,
+  caminhosDoPost,
+  gerarUuid,
+  mensagemErroPost,
+} from '@mallevo/lib'
 import { supabase } from './supabase'
 import { comprimirEUploadImagem, uploadResumavelTUS } from './upload'
 import { useUploadStore } from '@/store/useUploadStore'
@@ -26,8 +32,6 @@ export interface MidiaPreparada extends MidiaCapturada {
   thumbUri: string
   bytes: number | null
 }
-
-const CAP_BUCKET_BYTES = 50 * 1024 * 1024 // rede de segurança do bucket
 
 function rodandoNoExpoGo(): boolean {
   return Constants.appOwnership === 'expo'
@@ -83,7 +87,7 @@ export async function prepararMidia(
     const info = await getInfoAsync(uriEnvio)
     const bytes = info.exists && 'size' in info ? (info.size ?? null) : null
 
-    if (bytes && bytes > CAP_BUCKET_BYTES) {
+    if (bytes && bytes > LIMITES_POST.bytes) {
       return {
         erro: `Arquivo de ${(bytes / 1024 / 1024).toFixed(0)} MB excede o limite de 50 MB. Grave um vídeo mais curto.`,
       }
@@ -99,12 +103,6 @@ export interface DadosPost {
   descricao: string
   tags: string[]
   productId: string | null
-}
-
-function gerarUuid(): string {
-  const c = globalThis.crypto as { randomUUID?: () => string } | undefined
-  if (c?.randomUUID) return c.randomUUID()
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
 /**
@@ -134,11 +132,9 @@ export async function publicarPost(
   store.setEstado('enviando')
   store.setProgresso(0)
 
+  // Caminhos no bucket = contrato compartilhado (@mallevo/lib).
   const id = gerarUuid()
-  const prefixo = `${tenantId}/${storeId}`
-  const extensao = preparada.tipo === 'video' ? 'mp4' : 'jpg'
-  const mediaPath = `${prefixo}/${id}.${extensao}`
-  const thumbPath = `${prefixo}/${id}-thumb.jpg`
+  const { mediaPath, thumbPath } = caminhosDoPost(tenantId, storeId, id, preparada.tipo)
 
   let mediaUrl: string
 
@@ -199,12 +195,9 @@ export async function publicarPost(
   })
 
   if (error) {
-    if (error.message.includes('Limite de posts')) {
-      store.setErro('Limite de posts do seu plano atingido.')
-      return { erro: 'Limite de posts do seu plano atingido.' }
-    }
-    store.setErro(error.message)
-    return { erro: error.message }
+    const mensagem = mensagemErroPost(error.message)
+    store.setErro(mensagem)
+    return { erro: mensagem }
   }
 
   store.setEstado('concluido')
