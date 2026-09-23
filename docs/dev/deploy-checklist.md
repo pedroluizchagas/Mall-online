@@ -57,7 +57,19 @@ não for movido para o `storefront-mallevo`, o critério de pronto da Fase 5 nã
 atingível em produção. Decisão D-07 do
 [plano de convergência](plano-convergencia-web-storefront-mobile.md).
 
-**Branch.** Push na branch gera Preview; produção é promoção explícita. Conferir
+**Branch.** O `storefront-mallevo` tem `main` como branch de produção: push em
+`main` já sai em produção. O `mall-online-web` **não** — push em `main` gera
+Preview, e é preciso promover:
+
+```bash
+cd apps/web && npx vercel promote <url-do-preview> --non-interactive --yes
+```
+
+`vercel promote` de um Preview não troca o alias: ele **reconstrói** com o
+ambiente de produção e só então aliasa `app.mallevo.com.br`. Vale alinhar a
+branch de produção dos dois projetos para dispensar esse passo manual.
+
+**Conferir sempre** Conferir
 sempre com `vercel inspect <url>` que o commit publicado é o esperado — em
 2026-09-21 a produção estava quatro commits atrás da branch sem que nada
 indicasse isso na interface.
