@@ -4,6 +4,7 @@ import type { MouseEvent, ReactNode } from 'react'
 
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
+import { precoFinalDe } from '@/components/vitrines/_base'
 
 /**
  * Vocabulário gráfico da vitrine magazine (arquétipo `magazine`: lojas de
@@ -32,10 +33,6 @@ export const CAIXA_HERO = 'rgba(28, 22, 20, 0.5)'
 export const VEU_TILE = 'rgba(20, 16, 14, 0.34)'
 /** Chip verde de oferta — a assinatura varejista (RN: success a 14%). */
 export const VERDE_CHIP = 'color-mix(in srgb, var(--success, #16A34A) 14%, transparent)'
-
-export function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 /** Percentual de desconto inteiro; 0 quando não há promoção válida. */
 export function descontoPct(p: ProdutoCatalogo): number {

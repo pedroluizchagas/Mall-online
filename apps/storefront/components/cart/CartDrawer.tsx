@@ -12,7 +12,8 @@ import { ItemCarrinhoCard } from '@/components/cart/ItemCarrinhoCard'
  * carrinho VISÍVEL). Lista os itens via `ItemCarrinhoCard` e mostra
  * subtotal/total reativos do `useCartStore` (@mallevo/lib).
  *
- * Aberto/fechado é controlado pelo `CartFab` (host). O CTA "Finalizar
+ * Aberto/fechado é controlado por quem hospeda a sacola (`_base/Sacola`
+ * nas vitrines e no layout padrão). O CTA "Finalizar
  * pedido" navega para `/checkout` (Stage 3d) — o gate de sessão consumer
  * vive no próprio checkout (decisão TL §3d).
  *

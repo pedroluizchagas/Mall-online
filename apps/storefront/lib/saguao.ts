@@ -1,7 +1,8 @@
 import { cache } from 'react'
 import { headers } from 'next/headers'
+import { unstable_cache } from 'next/cache'
 
-import { createSupabaseServer } from '@/lib/supabase/server'
+import { createSupabasePublico } from '@/lib/supabase/publico'
 
 /**
  * Dados do SAGUÃO — o apex `mallevo.com.br` (plano de convergência, Fase 5):
@@ -9,7 +10,22 @@ import { createSupabaseServer } from '@/lib/supabase/server'
  * Explorar. Tudo ANÔNIMO, só pelas views públicas (`public_catalog_stores`,
  * `public_catalog_products`, `public_explore_feed`) — as mesmas que o
  * consumer lê.
+ *
+ * Cache (A-12): o saguão é igual para todo visitante, então cada carregador
+ * passa por `unstable_cache` com TTL e a tag `saguao` — o dashboard invalida
+ * publicando vitrine ou post (`revalidateTag('saguao')`). Por isso o cliente
+ * é o ANÔNIMO SEM COOKIES (`lib/supabase/publico.ts`): `cookies()` dentro de
+ * uma função cacheada é erro no Next 14. Pela mesma razão `urlDaLoja`/
+ * `urlDoShopping` — que leem `headers()` — ficam FORA do trecho cacheado;
+ * quem monta link continua chamando os dois na página.
  */
+
+/** Alvo de `revalidateTag` quando o lojista publica vitrine ou post. */
+export const TAG_SAGUAO = 'saguao'
+/** TTL das lojas/destaques (catálogo muda devagar). */
+const TTL_CATALOGO = 60
+/** TTL do Explorar (posts entram o dia todo). */
+const TTL_FEED = 30
 
 export interface LojaSaguao {
   id: string
@@ -63,48 +79,60 @@ const LIMITE_LOJAS = 200
 /** Destaques por loja na fachada (3, como no corredor do consumer). */
 export const DESTAQUES_POR_LOJA = 3
 
-/** Todas as lojas ativas, na ordem da view. Cache por request. */
-export const carregarLojas = cache(async (): Promise<LojaSaguao[]> => {
-  const supabase = createSupabaseServer()
-  const { data } = await supabase
-    .from('public_catalog_stores')
-    .select('id, slug, nome, descricao, logo_url, banner_url, taxa_entrega, tempo_entrega, categoria_slug, theme')
-    .order('nome', { ascending: true })
-    .limit(LIMITE_LOJAS)
-  return ((data ?? []) as Partial<LojaSaguao>[])
-    .filter((r): r is LojaSaguao & Partial<LojaSaguao> => typeof r.slug === 'string' && typeof r.nome === 'string')
-    .map((r) => ({
-      id: r.id!,
-      slug: r.slug!,
-      nome: r.nome!,
-      descricao: r.descricao ?? null,
-      logo_url: r.logo_url ?? null,
-      banner_url: r.banner_url ?? null,
-      taxa_entrega: r.taxa_entrega ?? null,
-      tempo_entrega: r.tempo_entrega ?? null,
-      categoria_slug: r.categoria_slug ?? null,
-      theme: r.theme ?? null,
-    }))
-})
+/** Todas as lojas ativas, na ordem da view. `cache` por request + TTL. */
+export const carregarLojas = cache(
+  unstable_cache(
+    async (): Promise<LojaSaguao[]> => {
+      const supabase = createSupabasePublico()
+      const { data } = await supabase
+        .from('public_catalog_stores')
+        .select('id, slug, nome, descricao, logo_url, banner_url, taxa_entrega, tempo_entrega, categoria_slug, theme')
+        .order('nome', { ascending: true })
+        .limit(LIMITE_LOJAS)
+      return ((data ?? []) as Partial<LojaSaguao>[])
+        .filter((r): r is LojaSaguao & Partial<LojaSaguao> => typeof r.slug === 'string' && typeof r.nome === 'string')
+        .map((r) => ({
+          id: r.id!,
+          slug: r.slug!,
+          nome: r.nome!,
+          descricao: r.descricao ?? null,
+          logo_url: r.logo_url ?? null,
+          banner_url: r.banner_url ?? null,
+          taxa_entrega: r.taxa_entrega ?? null,
+          tempo_entrega: r.tempo_entrega ?? null,
+          categoria_slug: r.categoria_slug ?? null,
+          theme: r.theme ?? null,
+        }))
+    },
+    ['saguao:lojas'],
+    { revalidate: TTL_CATALOGO, tags: [TAG_SAGUAO] },
+  ),
+)
 
 /**
- * Três primeiros produtos (por `ordem`) de cada loja pedida — uma query só,
- * agrupada aqui. A view já filtra `disponivel = true`.
+ * Três primeiros produtos (por `ordem`) de cada loja pedida.
+ *
+ * Caminho bom: a RPC `destaques_por_loja` (migration
+ * 20260922110000_public_catalog_destaques.sql), que faz a janela POR LOJA
+ * no Postgres. O caminho antigo — `IN (…)` ordenado globalmente com corte
+ * em `storeIds.length * 12` — corta o conjunto TODO, então uma loja de
+ * `ordem` alta podia ficar sem destaque nenhum.
+ *
+ * Fallback: enquanto a migration não estiver aplicada no banco (a função
+ * não existe → PGRST202), a consulta antiga assume, com um aviso ÚNICO por
+ * processo para o log não virar ruído. Some sozinho quando a migration
+ * subir.
  */
+let avisouRpcAusente = false
+
 export async function carregarDestaques(storeIds: string[]): Promise<Map<string, DestaqueLoja[]>> {
+  if (storeIds.length === 0) return new Map<string, DestaqueLoja[]>()
+  // Chave estável: o `unstable_cache` serializa os argumentos, e a mesma
+  // lista em outra ordem é o mesmo pedido.
+  const linhas = await destaquesEmLote([...new Set(storeIds)].sort())
+
   const mapa = new Map<string, DestaqueLoja[]>()
-  if (storeIds.length === 0) return mapa
-
-  const supabase = createSupabaseServer()
-  const { data } = await supabase
-    .from('public_catalog_products')
-    .select('id, store_id, nome, preco, preco_promocional, foto_url')
-    .in('store_id', storeIds)
-    .order('ordem', { ascending: true, nullsFirst: false })
-    .order('nome', { ascending: true })
-    .limit(storeIds.length * 12)
-
-  for (const p of (data ?? []) as DestaqueLoja[]) {
+  for (const p of linhas) {
     const lista = mapa.get(p.store_id) ?? []
     if (lista.length >= DESTAQUES_POR_LOJA) continue
     lista.push(p)
@@ -113,27 +141,67 @@ export async function carregarDestaques(storeIds: string[]): Promise<Map<string,
   return mapa
 }
 
+const destaquesEmLote = unstable_cache(
+  async (storeIds: string[]): Promise<DestaqueLoja[]> => {
+    const supabase = createSupabasePublico()
+
+    const { data, error } = await supabase.rpc('destaques_por_loja', {
+      store_ids: storeIds,
+      n: DESTAQUES_POR_LOJA,
+    })
+    if (!error) return (data ?? []) as DestaqueLoja[]
+
+    if (!avisouRpcAusente) {
+      avisouRpcAusente = true
+      console.warn({
+        rota: 'saguao',
+        mensagem: 'destaques_por_loja indisponível; usando o corte global antigo',
+        detalhe: error.message,
+      })
+    }
+
+    const { data: cru } = await supabase
+      .from('public_catalog_products')
+      .select('id, store_id, nome, preco, preco_promocional, foto_url')
+      .in('store_id', storeIds)
+      .order('ordem', { ascending: true, nullsFirst: false })
+      .order('nome', { ascending: true })
+      .limit(storeIds.length * 12)
+    return (cru ?? []) as DestaqueLoja[]
+  },
+  ['saguao:destaques'],
+  { revalidate: TTL_CATALOGO, tags: [TAG_SAGUAO] },
+)
+
 /** Tamanho da página do Explorar (keyset por `publicado_em`). */
 export const PAGINA_FEED = 24
 
-export async function carregarFeed(opcoes: { limite?: number; antesDe?: string | null; lojaSlug?: string | null } = {}): Promise<PostSaguao[]> {
-  const supabase = createSupabaseServer()
-  let q = supabase
-    .from('public_explore_feed')
-    .select('*')
-    .order('publicado_em', { ascending: false })
-    .limit(opcoes.limite ?? PAGINA_FEED)
-  if (opcoes.antesDe) q = q.lt('publicado_em', opcoes.antesDe)
-  if (opcoes.lojaSlug) q = q.eq('loja_slug', opcoes.lojaSlug)
-  const { data } = await q
-  return ((data ?? []) as Record<string, unknown>[]).map(mapearPost)
-}
+export const carregarFeed = unstable_cache(
+  async (opcoes: { limite?: number; antesDe?: string | null; lojaSlug?: string | null } = {}): Promise<PostSaguao[]> => {
+    const supabase = createSupabasePublico()
+    let q = supabase
+      .from('public_explore_feed')
+      .select('*')
+      .order('publicado_em', { ascending: false })
+      .limit(opcoes.limite ?? PAGINA_FEED)
+    if (opcoes.antesDe) q = q.lt('publicado_em', opcoes.antesDe)
+    if (opcoes.lojaSlug) q = q.eq('loja_slug', opcoes.lojaSlug)
+    const { data } = await q
+    return ((data ?? []) as Record<string, unknown>[]).map(mapearPost)
+  },
+  ['saguao:feed'],
+  { revalidate: TTL_FEED, tags: [TAG_SAGUAO] },
+)
 
-export async function carregarPost(id: string): Promise<PostSaguao | null> {
-  const supabase = createSupabaseServer()
-  const { data } = await supabase.from('public_explore_feed').select('*').eq('id', id).maybeSingle()
-  return data ? mapearPost(data as Record<string, unknown>) : null
-}
+export const carregarPost = unstable_cache(
+  async (id: string): Promise<PostSaguao | null> => {
+    const supabase = createSupabasePublico()
+    const { data } = await supabase.from('public_explore_feed').select('*').eq('id', id).maybeSingle()
+    return data ? mapearPost(data as Record<string, unknown>) : null
+  },
+  ['saguao:post'],
+  { revalidate: TTL_FEED, tags: [TAG_SAGUAO] },
+)
 
 function mapearPost(r: Record<string, unknown>): PostSaguao {
   const produto = r.produto as { id: string; nome: string; preco: number } | null | undefined
@@ -183,8 +251,18 @@ export function urlDaLoja(slug: string): string {
   return `${proto}://${slug}.${dominio}`
 }
 
-/** URL do apex — para links absolutos e sitemap. */
-export function urlDoShopping(): string {
+/**
+ * Base absoluta do host DESTE request — apex no saguão, `<slug>.<domínio>`
+ * num host de loja. Mesma normalização de `dominioDoShopping` (protocolo por
+ * domínio, porta preservada, `www.` fora), que é o que o sitemap da loja
+ * precisa: a heurística antiga montava a base com o header `host` cru.
+ */
+export function urlDoHostAtual(): string {
   const { proto, dominio } = dominioDoShopping()
   return `${proto}://${dominio}`
+}
+
+/** URL do apex — para links absolutos e sitemap. */
+export function urlDoShopping(): string {
+  return urlDoHostAtual()
 }

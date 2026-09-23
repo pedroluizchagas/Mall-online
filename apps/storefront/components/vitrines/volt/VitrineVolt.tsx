@@ -20,7 +20,16 @@ import {
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  useHeroEmCena,
+  useReduzirMovimento,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -38,8 +47,6 @@ import {
   TickerVolt,
   VEU_HERO,
   WordmarkVolt,
-  prefereMenosMovimento,
-  useReduzirMovimento,
   type BeneficioVolt,
 } from './volt-ui'
 
@@ -84,10 +91,6 @@ interface SlideVolt {
 function descontoPct(p: ProdutoCatalogo): number {
   if (!p.preco_promocional || p.preco_promocional >= p.preco) return 0
   return Math.round((1 - p.preco_promocional / p.preco) * 100)
-}
-
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
 }
 
 /**
@@ -175,18 +178,7 @@ export function VitrineVolt({ store, secoes, detalhes, initialProdutoId }: Vitri
 
   // O hero em cena dirige o autoplay (só roda com o hero à vista) — o
   // `depoisDoHero` da RN num observer.
-  const heroRef = useRef<HTMLElement>(null)
-  const [heroEmCena, setHeroEmCena] = useState(true)
-  useEffect(() => {
-    const el = heroRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const obs = new IntersectionObserver(
-      ([entrada]) => setHeroEmCena(entrada.isIntersecting && entrada.intersectionRatio >= 0.3),
-      { threshold: [0, 0.3, 0.31] },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+  const { heroRef, emCena: heroEmCena } = useHeroEmCena<HTMLElement>()
 
   const rolarPara = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({
@@ -215,7 +207,7 @@ export function VitrineVolt({ store, secoes, detalhes, initialProdutoId }: Vitri
             {/* ── Bloco grudado: faixa-anúncio + header branco ──
                 Opaco, então ocupa o fluxo (não é o `h-0` das irmãs que
                 flutuam sobre a foto). */}
-            <div className="sticky top-0 z-30">
+            <div className="sticky top-[var(--inset-top,0px)] z-30">
               <FaixaAnuncio>{anuncio}</FaixaAnuncio>
               <header className="flex h-[52px] items-center border-b border-line bg-surface px-[calc(var(--space-screen-x,24px)-8px)]">
                 <AcaoVolt href="/" rotulo={`${store.nome} — início da loja`}>
@@ -255,7 +247,7 @@ export function VitrineVolt({ store, secoes, detalhes, initialProdutoId }: Vitri
             />
 
             {/* ── Seções: caps pesadas + "↳ Ver tudo" + grid com chips ── */}
-            <section id={ID_CATALOGO} className="pb-12" style={{ scrollMarginTop: ALTURA_CHROME }} aria-label="Catálogo">
+            <section id={ID_CATALOGO} className="pb-12" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_CHROME}px)` }} aria-label="Catálogo">
               {vazio ? (
                 <VazioVolt />
               ) : (
@@ -497,7 +489,7 @@ function SecaoVolt({
   }
 
   return (
-    <div id={id} className="mt-[30px]" style={{ scrollMarginTop: ALTURA_CHROME }}>
+    <div id={id} className="mt-[30px]" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_CHROME}px)` }}>
       <div className="flex flex-col gap-1 px-screen-x">
         <h2
           className="m-0 truncate font-display font-extrabold uppercase text-ink"
@@ -606,12 +598,7 @@ function VazioVolt() {
 function FechoVolt({ store }: { store: VitrineWebProps['store'] }) {
   // Hora de parede da LOJA. Nasce vazia para o servidor (UTC) e o cliente
   // não divergirem na hidratação.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 60_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja(60_000)
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
 
   const partes = [

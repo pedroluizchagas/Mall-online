@@ -4,6 +4,7 @@ import type { MouseEvent, ReactNode } from 'react'
 
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
+import { precoFinalDe } from '@/components/vitrines/_base'
 
 /**
  * Vocabulário gráfico da vitrine artesã (arquétipo `artisan`: casa &
@@ -27,10 +28,6 @@ export const VEU_BANDA = 'rgba(24, 19, 12, 0.42)'
 
 export const VEU_HERO =
   'linear-gradient(to bottom, rgba(0,0,0,0.14) 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.34) 64%, rgba(0,0,0,0.70) 100%)'
-
-export function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 export function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
@@ -249,7 +246,7 @@ export function SecaoNumerada({
   children: ReactNode
 }) {
   return (
-    <section id={id} className={`scroll-mt-[58px] pt-[34px] ${className}`} aria-label={`${numero} ${rotulo}`}>
+    <section id={id} className={`scroll-mt-[calc(var(--inset-top,0px)+58px)] pt-[34px] ${className}`} aria-label={`${numero} ${rotulo}`}>
       {conteudoFullBleed ? children : <div className="px-screen-x">{children}</div>}
       <div className="mx-screen-x mt-7 flex items-center justify-between border-t border-line pt-[14px]">
         <span className="font-display text-[15px] font-semibold text-accent">{numero}</span>

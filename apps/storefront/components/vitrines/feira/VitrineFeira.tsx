@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useMemo, useRef, useState, type MouseEvent } from 'react'
 import {
   formatarHorario,
   horarioDeHoje,
@@ -11,7 +11,16 @@ import {
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  repartirDescricao,
+  useRelogioDaLoja,
+  useTique,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -76,10 +85,6 @@ const estiloTituloSecao = {
   lineHeight: 'calc(26px * var(--type-factor, 1))',
 } as const
 
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
-
 function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
 }
@@ -98,33 +103,6 @@ function unidadeDe(p: ProdutoCatalogo): string | null {
 function segundosAteViradaDoDia(agora: Date): number {
   const virada = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 1, 0, 0, 0, 0)
   return Math.max(0, Math.floor((virada.getTime() - agora.getTime()) / 1000))
-}
-
-/**
- * Reparte a descrição entre as duas vozes que a mostram (mesmo racional das
- * vitrines forno e passarela): a 1ª oração vira a manchete do hero e o resto
- * vira o subtexto, para o mesmo texto não aparecer duas vezes na mesma tela.
- * `manchete` null → o hero grita o nome da casa.
- */
-function repartirDescricao(descricao: string | null | undefined): {
-  manchete: string | null
-  detalhe: string | null
-} {
-  const texto = descricao?.trim() ?? ''
-  if (!texto) return { manchete: null, detalhe: null }
-
-  const corte = texto.search(/[—.!?]/)
-  const primeira = (corte === -1 ? texto : texto.slice(0, corte)).trim()
-  if (primeira.length < 8 || primeira.length > 64) {
-    return { manchete: null, detalhe: texto }
-  }
-  const resto = corte === -1 ? '' : texto.slice(corte + 1).trim()
-  return { manchete: primeira, detalhe: resto || null }
-}
-
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 function rolarAte(id: string) {
@@ -193,7 +171,7 @@ export function VitrineFeira({ store, secoes, detalhes, initialProdutoId }: Vitr
                 página. À esquerda a casa (logo ou folha) leva ao topo; à
                 direita, a sacola. `h-0` sticky: fica sobre a rolagem sem
                 empurrar nada. */}
-            <div className="sticky top-0 z-30 -mt-[66px] mb-[66px] h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 -mt-[66px] mb-[66px] h-0">
               <div className="pointer-events-none flex items-start justify-between px-screen-x pt-2">
                 <div className="pointer-events-auto">
                   <BotaoFeira href="/" rotulo={`${store.nome} — início da loja`}>
@@ -352,6 +330,8 @@ function HeroFeira({
                   <DiscoFoto
                     src={fotos[i % fotos.length]}
                     largura="52%"
+                    /* Primeira cena da colagem = LCP da Feira (A-09). */
+                    carregamento={i === 0 ? 'eager' : 'lazy'}
                     className="absolute -right-[12%] top-0"
                     style={{ transform: 'translateY(-11.5%)' }}
                   />
@@ -460,15 +440,10 @@ function OfertasFeira({
   // segundo (em vez de decrementar) para não acumular deriva e para virar o
   // dia sozinho quando passa da meia-noite.
   const [restam, setRestam] = useState<number | null>(null)
-  useEffect(() => {
-    const bater = () => setRestam(segundosAteViradaDoDia(relogioDaLoja()))
-    bater()
-    const id = setInterval(bater, 1000)
-    return () => clearInterval(id)
-  }, [])
+  useTique(() => setRestam(segundosAteViradaDoDia(relogioDaLoja())), 1000)
 
   return (
-    <section id={ID_OFERTAS} className="scroll-mt-[70px] px-screen-x pt-[34px]" aria-label="Ofertas do dia">
+    <section id={ID_OFERTAS} className="scroll-mt-[calc(var(--inset-top,0px)+70px)] px-screen-x pt-[34px]" aria-label="Ofertas do dia">
       <div className="flex items-center gap-[10px]">
         <h2 className="font-display font-bold" style={estiloTituloSecao}>
           Ofertas do dia
@@ -495,7 +470,7 @@ function CorredorFeira({
   return (
     <section
       id={idDaSecao(secao.chave)}
-      className="scroll-mt-[70px] px-screen-x pt-[34px]"
+      className="scroll-mt-[calc(var(--inset-top,0px)+70px)] px-screen-x pt-[34px]"
       aria-label={secao.titulo}
     >
       <h2
@@ -621,12 +596,7 @@ function FechoFeira({ store }: { store: VitrineWebProps['store'] }) {
   // Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o
   // cliente não divergirem na hidratação; meio minuto basta pra nunca mostrar
   // hora velha sem acordar a página à toa.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
 
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const hora = agora ? agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null

@@ -11,9 +11,18 @@ import {
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  exigeEscolha,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  repartirDescricao,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
-import type { ProdutoCatalogo, ProdutoDetalhe, SecaoCatalogo } from '@/lib/catalog'
+import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
 import {
   BotaoPassarela,
@@ -61,10 +70,6 @@ const ID_PECAS = 'pecas'
 /** Duração do flash "NA SACOLA ✓" (RN: 1400ms). */
 const FLASH_MS = 1400
 
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
-
 function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
 }
@@ -79,41 +84,6 @@ function temPromo(p: ProdutoCatalogo): boolean {
  */
 function chipDe(p: ProdutoCatalogo): string | null {
   return temPromo(p) ? 'Oferta' : null
-}
-
-/** Peça COM variação/modificador nunca entra às cegas: roupa tem tamanho. */
-function exigeEscolha(detalhe: ProdutoDetalhe | undefined): boolean {
-  if (!detalhe) return false
-  return detalhe.optionGroups.length + detalhe.modifierGroups.length > 0
-}
-
-/**
- * Reparte a descrição entre as duas vozes que a mostram (mesmo racional da
- * vitrine forno): a 1ª oração vira a manchete do hero e o resto vai para o
- * bloco "sobre", para o mesmo texto não aparecer duas vezes na rolagem.
- *
- * `manchete` null quando não há oração aproveitável — aí o hero grita o NOME
- * da casa e omite o sobretítulo, senão o nome apareceria duas vezes seguidas.
- */
-function repartirDescricao(descricao: string | null | undefined): {
-  manchete: string | null
-  detalhe: string | null
-} {
-  const texto = descricao?.trim() ?? ''
-  if (!texto) return { manchete: null, detalhe: null }
-
-  const corte = texto.search(/[—.!?]/)
-  const primeira = (corte === -1 ? texto : texto.slice(0, corte)).trim()
-  if (primeira.length < 8 || primeira.length > 64) {
-    return { manchete: null, detalhe: texto }
-  }
-  const resto = corte === -1 ? '' : texto.slice(corte + 1).trim()
-  return { manchete: primeira, detalhe: resto || null }
-}
-
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 function inicialDe(nome: string): string {
@@ -267,7 +237,7 @@ export function VitrinePassarela({ store, secoes, detalhes, initialProdutoId }: 
                 foto e sobre o branco sem trocar de estado. À esquerda a casa
                 (logo ou monograma) leva ao topo; à direita, a sacola. `h-0`
                 sticky: fica sobre a rolagem sem empurrar nada. */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="pointer-events-none flex items-start justify-between px-screen-x pt-3">
                 <div className="pointer-events-auto">
                   <BotaoPassarela href="/" rotulo={`${store.nome} — início da loja`}>
@@ -328,7 +298,7 @@ export function VitrinePassarela({ store, secoes, detalhes, initialProdutoId }: 
                 )}
 
                 {/* ── Grades de 2, uma por seção ── */}
-                <div id={ID_PECAS} className="scroll-mt-3">
+                <div id={ID_PECAS} className="scroll-mt-[calc(var(--inset-top,0px)+12px)]">
                   {secoesGrade.map((secao) => (
                     <GradePassarela
                       key={secao.chave}
@@ -578,7 +548,7 @@ function GradePassarela({
   if (secao.produtos.length === 0) return null
 
   return (
-    <section id={idDaSecao(secao.chave)} className="scroll-mt-16 px-screen-x pt-[54px]" aria-label={secao.titulo}>
+    <section id={idDaSecao(secao.chave)} className="scroll-mt-[calc(var(--inset-top,0px)+64px)] px-screen-x pt-[54px]" aria-label={secao.titulo}>
       <h2
         className="text-center font-display font-normal tracking-[-0.4px] text-ink"
         // Peso 400 de propósito: a assinatura tipográfica da referência é o
@@ -626,7 +596,7 @@ function SobrePassarela({ texto }: { texto: string }) {
 
 function VazioPassarela({ store }: { store: VitrineWebProps['store'] }) {
   return (
-    <section id={ID_PECAS} className="scroll-mt-3 px-screen-x pt-[54px]" aria-label="Peças">
+    <section id={ID_PECAS} className="scroll-mt-[calc(var(--inset-top,0px)+12px)] px-screen-x pt-[54px]" aria-label="Peças">
       <h2
         className="text-center font-display font-normal tracking-[-0.4px] text-ink"
         style={{
@@ -653,12 +623,7 @@ function FechoPassarela({ store }: { store: VitrineWebProps['store'] }) {
   // Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o
   // cliente não divergirem na hidratação; meio minuto basta pra nunca mostrar
   // hora velha sem acordar a página à toa.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
 
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const hora = agora ? agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null

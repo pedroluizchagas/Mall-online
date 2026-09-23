@@ -5,11 +5,33 @@ import { NextResponse, type NextRequest } from 'next/server'
 // Portado de apps/web/middleware.ts (origem de getSubdomain()).
 const MAIN_DOMAINS = ['mallevo.com.br', 'mallevo.localhost']
 
+// Hosts de máquina (dev, `next start` do smoke, healthcheck da plataforma).
+// Também são apex: `localhost:3002/` é o saguão desde a Fase 5.
+const HOSTS_LOCAIS = ['localhost', '127.0.0.1', '[::1]']
+
+/** Tudo que o storefront reconhece como seu. Fora disto → 404 (ver abaixo). */
+const DOMINIOS_CONHECIDOS = [...MAIN_DOMAINS, ...HOSTS_LOCAIS]
+
 // Subdomínios reservados (Dashboard/Admin/API/www) nunca são slug de loja.
 const IGNORED_SUBDOMAINS = new Set(['www', 'app', 'admin', 'api'])
 
 /** Rotas do saguão no apex: home, Explorar e um piso. */
 const ROTAS_SAGUAO = /^\/(|explorar|piso\/[a-z0-9-]+)$/
+
+/** Host sem porta e em minúsculas — `Host:` não é case-sensitive. */
+function normalizarHost(hostname: string): string {
+  return hostname.split(':')[0].toLowerCase()
+}
+
+/**
+ * O host pertence ao storefront? Apex, `www`, `<slug>.<apex>` e as máquinas
+ * locais. Um host estranho (domínio apontado por engano, preview da Vercel,
+ * varredura de bots) NÃO é o saguão — ver a guarda em `middleware`.
+ */
+function hostConhecido(hostname: string): boolean {
+  const host = normalizarHost(hostname)
+  return DOMINIOS_CONHECIDOS.some((d) => host === d || host.endsWith(`.${d}`))
+}
 
 /**
  * Extrai o slug da loja a partir do header `host`.
@@ -17,9 +39,9 @@ const ROTAS_SAGUAO = /^\/(|explorar|piso\/[a-z0-9-]+)$/
  * subdomínio reservado / host desconhecido.
  */
 function getSubdomain(hostname: string): string | null {
-  const host = hostname.split(':')[0]
+  const host = normalizarHost(hostname)
 
-  for (const domain of MAIN_DOMAINS) {
+  for (const domain of DOMINIOS_CONHECIDOS) {
     if (host === domain) return null
     if (host.endsWith(`.${domain}`)) {
       const sub = host.slice(0, host.length - domain.length - 1)
@@ -34,6 +56,18 @@ function getSubdomain(hostname: string): string | null {
 
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
+
+  // Host fora dos domínios da Mallevo: 404 seco, em vez de servir o saguão
+  // (conteúdo duplicado para o Google e domínio de terceiro exibindo a
+  // marca). Previews da Vercel (`*.vercel.app`) ligam
+  // NEXT_PUBLIC_ALLOW_UNKNOWN_HOST=true e voltam a cair no apex.
+  if (!hostConhecido(hostname) && process.env.NEXT_PUBLIC_ALLOW_UNKNOWN_HOST !== 'true') {
+    return new NextResponse('Host desconhecido', {
+      status: 404,
+      headers: { 'content-type': 'text/plain; charset=utf-8' },
+    })
+  }
+
   const slug = getSubdomain(hostname)
 
   // Header `x-store-slug` injetado no request para as páginas lerem via

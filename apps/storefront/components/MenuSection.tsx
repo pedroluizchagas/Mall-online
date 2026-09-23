@@ -28,7 +28,7 @@ export function MenuSection({
   onSelect?: (id: string) => void
 }) {
   return (
-    <section id={id} className="mt-section scroll-mt-16 px-screen-x">
+    <section id={id} className="mt-section scroll-mt-[calc(var(--inset-top,0px)+64px)] px-screen-x">
       <h2 className="mb-1 font-display text-display-sm font-extrabold tracking-tight text-ink">
         {titulo}
       </h2>

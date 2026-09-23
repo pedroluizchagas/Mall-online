@@ -3,6 +3,7 @@ import { lerMetadataProduto } from '@mallevo/lib'
 
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
+import { precoFinalDe } from '@/components/vitrines/_base'
 
 /**
  * Vocabulário gráfico da vitrine cuidado (arquétipo `soft`: salões &
@@ -13,10 +14,6 @@ import { formatarReais } from '@/lib/format'
  * quente, Nunito, moedas de stats e cartões-tier com checklist. As cores vêm
  * da pele (`bg-accent`, `bg-accent-soft`, `text-ink`…).
  */
-
-export function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 export function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco

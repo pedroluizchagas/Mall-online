@@ -18,7 +18,7 @@ import { useCartStore } from '@mallevo/lib'
  * Spec: docs/storefront/05-stage-3-storefront.md §3b (cart/TrocaLojaDialog).
  */
 export function TrocaLojaDialog() {
-  // O store Zustand só é confiável no client (espelha CartFab).
+  // O store Zustand só é confiável no client (espelha `_base/Sacola`).
   const [montado, setMontado] = useState(false)
   useEffect(() => setMontado(true), [])
 

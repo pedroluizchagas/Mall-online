@@ -2,6 +2,7 @@ import type { MouseEvent, ReactNode } from 'react'
 
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
+import { precoFinalDe } from '@/components/vitrines/_base'
 
 /**
  * Vocabulário gráfico da vitrine mesa (arquétipo `heritage`: restaurantes e
@@ -23,10 +24,6 @@ export const CREME_45 = 'rgba(255, 249, 240, 0.45)'
 /** Véu do hero: quente, mais denso no pé, onde o nome em serifa pousa. */
 export const VEU_HERO =
   'linear-gradient(to bottom, rgba(26,23,20,0.30) 0%, rgba(26,23,20,0.06) 32%, rgba(26,23,20,0.38) 64%, rgba(26,23,20,0.74) 100%)'
-
-export function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 export function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco

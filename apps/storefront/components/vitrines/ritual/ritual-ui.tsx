@@ -93,11 +93,6 @@ export function corpoQueCabe(texto: string, maxPx: number, gutterPx = GUTTER + 1
   return `min(calc(${maxPx}px * var(--type-factor, 1)), calc(${util} * ${ocupacao.toFixed(2)} / ${(chars * LARGURA_CAPS_GROOVY).toFixed(2)}))`
 }
 
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-export function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
 /** A primeira palavra do nome em caps — o wordmark groovy da referência ("OCHA"). */
 export function palavraDaCasa(nome: string): string {
   return (nome.trim().split(/\s+/)[0] ?? nome).toUpperCase()

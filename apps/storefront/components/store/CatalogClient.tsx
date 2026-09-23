@@ -36,7 +36,7 @@ export function CatalogClient({
         secoes.length > 0 ? (
           <>
             <NavSecoes secoes={secoes.map((s) => ({ chave: s.chave, titulo: s.titulo }))} />
-            <div id="catalogo" className="scroll-mt-16">
+            <div id="catalogo" className="scroll-mt-[calc(var(--inset-top,0px)+64px)]">
               {secoes.map((s) => (
                 <MenuSection
                   key={s.chave}

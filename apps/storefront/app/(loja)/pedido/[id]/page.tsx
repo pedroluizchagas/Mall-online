@@ -1,7 +1,9 @@
 import { notFound, redirect } from 'next/navigation'
 
 import { createSupabaseServer } from '@/lib/supabase/server'
-import { getStore, getStoreSlug } from '@/lib/tenant'
+import type { Metadata } from 'next'
+
+import { buscarStore, getStore, getStoreSlug } from '@/lib/tenant'
 import {
   PedidoClient,
   type PedidoCompleto,
@@ -21,6 +23,21 @@ import {
  *
  * Spec/decisão: docs/storefront/05-stage-3-storefront.md §3f.
  */
+/**
+ * Título das rotas de dentro da loja (A-21): sem `generateMetadata` a aba
+ * herdava "Mallevo" do layout raiz e o histórico do navegador não dizia de
+ * qual loja era o pedido. `robots: noindex` porque nenhuma delas é conteúdo
+ * público — o sitemap só publica a home e os produtos.
+ */
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  const store = await buscarStore(getStoreSlug())
+  const numero = params.id.slice(0, 8)
+  return {
+    title: store ? `Pedido ${numero} · ${store.nome}` : `Pedido ${numero}`,
+    robots: { index: false, follow: false },
+  }
+}
+
 export default async function PedidoPage({
   params,
 }: {

@@ -233,17 +233,23 @@ export function DiscoCategoria({
  * Disco de foto da colagem do hero — a fruta "saindo" do cartão. `largura`
  * em fração do cartão (`'52%'`); o disco é sempre quadrado. `aro` desenha o
  * fio da cor do cartão que separa o disco menor do maior.
+ *
+ * `carregamento` como em Forno e Horta: a primeira foto da colagem é o LCP
+ * da Feira e entra `eager` + `fetchPriority="high"` (A-09); as demais ficam
+ * `lazy`.
  */
 export function DiscoFoto({
   src,
   largura,
   aro,
+  carregamento = 'lazy',
   className,
   style,
 }: {
   src: string
   largura: string
   aro?: string
+  carregamento?: 'lazy' | 'eager'
   className?: string
   style?: CSSProperties
 }) {
@@ -252,7 +258,8 @@ export function DiscoFoto({
     <img
       src={src}
       alt=""
-      loading="lazy"
+      loading={carregamento}
+      fetchPriority={carregamento === 'eager' ? 'high' : undefined}
       decoding="async"
       draggable={false}
       className={`block rounded-full object-cover ${className ?? ''}`}

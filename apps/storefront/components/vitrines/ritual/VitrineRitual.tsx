@@ -7,12 +7,19 @@ import {
   horarioDeHoje,
   lerMetadataProduto,
   normalizeStoreConteudo,
-  relogioDaLoja,
 } from '@mallevo/lib'
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { FonteDna, Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  FonteDna,
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -35,7 +42,6 @@ import {
   WordmarkGroovy,
   larg,
   largCartao,
-  prefereMenosMovimento,
   tokenComAlfa,
 } from './ritual-ui'
 
@@ -79,10 +85,6 @@ const MAX_FOTOS_HERO = 4
 /** Altura da pílula + folgas: o hero começa abaixo dela. */
 const TOPO_HERO = 6 + ALTURA_PILL + 16
 
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
-
 function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
 }
@@ -102,21 +104,6 @@ function fotoPalco(p: ProdutoCatalogo): { src: string; recorte: boolean } | null
 /** "HH:MM" da hora de parede da loja. */
 function horaCurta(d: Date): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-}
-
-/**
- * Relógio vivo da loja. Nasce VAZIO para o servidor (UTC) e o cliente não
- * divergirem na hidratação; bate a cada meio minuto — basta para nunca
- * mostrar hora velha sem acordar a página à toa.
- */
-function useRelogio(): Date | null {
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
-  return agora
 }
 
 export function VitrineRitual({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
@@ -210,7 +197,7 @@ export function VitrineRitual({ store, secoes, detalhes, initialProdutoId }: Vit
 
             {/* ── Pílula flutuante: o único chrome, fixo o scroll inteiro ──
                 `h-0` sticky: fica sobre a rolagem sem empurrar nada. */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div
                 className="mx-auto mt-[6px] flex w-max max-w-[calc(100%-28px)] items-center gap-[10px] rounded-full border bg-accent pl-[6px] pr-2 text-accent-ink shadow-floating"
                 style={{ height: ALTURA_PILL, borderColor: tokenComAlfa('--accent-ink', 0.18) }}
@@ -352,7 +339,7 @@ function HeroRitual({
 
   // Relógio vivo do rodapé (o "NEW YORK · 7:23 PM" da referência). O "ABERTO"
   // fixo da RN vira o estado real: loja sem horários não inventa status.
-  const agora = useRelogio()
+  const agora = useRelogioDaLoja()
   const aberto = agora ? abertoAgora(horarios, agora) : null
   const linhaRelogio = [
     aberto === true ? 'ABERTO' : aberto === false ? 'FECHADO' : null,
@@ -538,7 +525,8 @@ function EspeciaisRitual({
                       alt=""
                       className="max-h-full object-contain"
                       style={{ width: largCartao(0.72), aspectRatio: '1 / 1.05' }}
-                      loading={i > 0 ? 'lazy' : undefined}
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      fetchPriority={i === 0 ? 'high' : undefined}
                     />
                   ) : (
                     <span
@@ -631,7 +619,7 @@ function CartaoCardapio({
     <Cartao
       id={idDaSecao(secao.chave)}
       rotulo={secao.titulo}
-      className="mt-3 scroll-mt-[76px] px-[22px] py-[26px]"
+      className="mt-3 scroll-mt-[calc(var(--inset-top,0px)+76px)] px-[22px] py-[26px]"
       style={{ backgroundColor: CREME }}
     >
       {/* Sem opacidade: num cardápio sem foto e sem descrição, o título é o
@@ -708,7 +696,7 @@ function FechoRitual({
   tempo: number | null
   entrega: string | null
 }) {
-  const agora = useRelogio()
+  const agora = useRelogioDaLoja()
   const hoje = agora ? horarioDeHoje(store.horarios, agora) : null
   const meta = [tempo != null ? `${tempo} min` : null, entrega, hoje ? `Hoje ${formatarHorario(hoje)}` : null].filter(
     (m): m is string => !!m,

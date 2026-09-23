@@ -9,13 +9,16 @@ import {
   Sacola,
   StatusAberto,
   comCopiaDeLoop,
+  exigeEscolha,
   idDaSecao,
+  precoFinalDe,
   prefereMenosMovimento,
   useCarrossel,
   useHeroEmCena,
+  useRelogioDaLoja,
 } from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
-import type { ProdutoCatalogo, ProdutoDetalhe, SecaoCatalogo } from '@/lib/catalog'
+import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
 import {
   AcaoMagazine,
@@ -33,7 +36,6 @@ import {
   VEU_HERO,
   VEU_TILE,
   descontoPct,
-  precoFinalDe,
 } from './magazine-ui'
 
 /**
@@ -70,12 +72,6 @@ interface SlideMagazine {
   paragrafo: string | null
   cta: string
   produto: ProdutoCatalogo | null
-}
-
-/** Item COM variação/modificador nunca entra às cegas. */
-function exigeEscolha(detalhe: ProdutoDetalhe | undefined): boolean {
-  if (!detalhe) return false
-  return detalhe.optionGroups.length + detalhe.modifierGroups.length > 0
 }
 
 export function VitrineMagazine({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
@@ -187,7 +183,7 @@ export function VitrineMagazine({ store, secoes, detalhes, initialProdutoId }: V
             <CartPersistence />
 
             {/* ── Bloco grudado: faixa-anúncio + header claro com wordmark ── */}
-            <div className="sticky top-0 z-30">
+            <div className="sticky top-[var(--inset-top,0px)] z-30">
               <FaixaAnuncio>{textoFaixa}</FaixaAnuncio>
               <header className="flex h-[60px] items-center border-b border-line bg-surface px-[calc(var(--space-screen-x,24px)-8px)]">
                 <MarcaDaCasa nome={store.nome} logoUrl={store.logo_url} />
@@ -219,7 +215,7 @@ export function VitrineMagazine({ store, secoes, detalhes, initialProdutoId }: V
               <>
                 {/* ── Compre por categoria: tiles de foto cheia ── */}
                 {secoesComItens.length > 1 && (
-                  <section id={ID_OFERTAS} className="mt-7" aria-labelledby="titulo-categorias" style={{ scrollMarginTop: ALTURA_CHROME }}>
+                  <section id={ID_OFERTAS} className="mt-7" aria-labelledby="titulo-categorias" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_CHROME}px)` }}>
                     <TituloCentrado id="titulo-categorias">Compre por categoria</TituloCentrado>
                     <ul className="flex flex-col gap-3 px-screen-x">
                       {secoesComItens.map((s) => {
@@ -255,7 +251,7 @@ export function VitrineMagazine({ store, secoes, detalhes, initialProdutoId }: V
                 )}
 
                 {/* Com uma seção só não há tiles: o CTA do hero desce direto aos produtos. */}
-                {secoesComItens.length === 1 && <div id={ID_OFERTAS} style={{ scrollMarginTop: ALTURA_CHROME }} aria-hidden />}
+                {secoesComItens.length === 1 && <div id={ID_OFERTAS} style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_CHROME}px)` }} aria-hidden />}
 
                 {/* ── Seções de produtos ── */}
                 {secoesComItens.map((secao) => {
@@ -264,7 +260,7 @@ export function VitrineMagazine({ store, secoes, detalhes, initialProdutoId }: V
                   const idSecao = idDaSecao(secao.chave)
                   const idGrade = `${idSecao}-grade`
                   return (
-                    <section key={secao.chave} id={idSecao} className="mt-[30px]" aria-labelledby={`${idSecao}-titulo`} style={{ scrollMarginTop: ALTURA_CHROME }}>
+                    <section key={secao.chave} id={idSecao} className="mt-[30px]" aria-labelledby={`${idSecao}-titulo`} style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_CHROME}px)` }}>
                       <TituloCentrado id={`${idSecao}-titulo`}>{secao.titulo}</TituloCentrado>
                       <div id={idGrade} className="grid grid-cols-2 gap-3 px-screen-x">
                         {visiveis.map((p, idx) => (
@@ -406,7 +402,7 @@ const HeroMagazine = forwardRef<
 
 function VazioMagazine({ nome }: { nome: string }) {
   return (
-    <section id={ID_OFERTAS} className="px-screen-x pt-7" aria-label="Ofertas" style={{ scrollMarginTop: ALTURA_CHROME }}>
+    <section id={ID_OFERTAS} className="px-screen-x pt-7" aria-label="Ofertas" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_CHROME}px)` }}>
       <div className="rounded-lg bg-surface px-6 py-12 text-center shadow-soft">
         <p className="font-display text-[22px] font-semibold text-ink">As prateleiras ainda estão sendo montadas</p>
         <p className="mx-auto mt-3 max-w-[34ch] font-body text-[14px] leading-[22px] text-ink-muted">
@@ -422,12 +418,7 @@ function VazioMagazine({ nome }: { nome: string }) {
 // ─────────────────────────────────────────────────────────────
 
 function FechoMagazine({ store }: { store: VitrineWebProps['store'] }) {
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const meta = [
     hoje ? `Hoje ${formatarHorario(hoje)}` : null,

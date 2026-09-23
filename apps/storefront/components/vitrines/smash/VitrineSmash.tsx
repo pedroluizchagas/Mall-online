@@ -11,7 +11,14 @@ import {
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -35,7 +42,6 @@ import {
   TINTA_RISCADA,
   WordmarkSmash,
   corpoQueCabe,
-  prefereMenosMovimento,
   tokenComAlfa,
 } from './smash-ui'
 
@@ -73,10 +79,6 @@ const ID_PAGER = 'cardapio-pager'
 
 /** Manchete fixa da RN — fallback quando a casa não escreveu campanha. */
 const MANCHETE_PADRAO = ['DEU FOME?', 'PEDE. CHEGOU.']
-
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
@@ -227,7 +229,7 @@ export function VitrineSmash({ store, secoes, detalhes, initialProdutoId }: Vitr
 
             {/* ── Header: pílula flutuante bordô (invisível sobre o hero) ──
                 `h-0` sticky: fica sobre a rolagem sem empurrar nada. */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="relative mx-[14px] mt-[6px] flex h-[52px] items-center px-2">
                 <div
                   className="pointer-events-none absolute inset-0 rounded-full border border-line bg-canvas shadow-floating transition-opacity duration-200"
@@ -352,7 +354,7 @@ export function VitrineSmash({ store, secoes, detalhes, initialProdutoId }: Vitr
             {/* ── Folha creme: cardápio com chips + pager de cartões ── */}
             <section
               id={ID_CARDAPIO}
-              className="scroll-mt-16 rounded-t-[32px] pb-9 pt-[30px]"
+              className="scroll-mt-[calc(var(--inset-top,0px)+64px)] rounded-t-[32px] pb-9 pt-[30px]"
               style={{ backgroundColor: CREME }}
               aria-label="Cardápio"
             >
@@ -364,7 +366,7 @@ export function VitrineSmash({ store, secoes, detalhes, initialProdutoId }: Vitr
 
             {/* ── Ofertas: banner laranja + cards de combo ── */}
             {ofertas.length > 0 && (
-              <section id={ID_OFERTAS} className="scroll-mt-16" aria-label="Ofertas">
+              <section id={ID_OFERTAS} className="scroll-mt-[calc(var(--inset-top,0px)+64px)]" aria-label="Ofertas">
                 <BannerOfertas
                   fotos={ofertas.filter((p) => p.foto_url).slice(0, 4).map((p) => p.foto_url as string)}
                   maxDesconto={maxDesconto}
@@ -767,7 +769,7 @@ function ListaCardapio({
 
       <div className="mt-6 px-screen-x">
         {secoes.map((secao) => (
-          <div key={secao.chave} id={idDaSecao(secao.chave)} className="mb-7 scroll-mt-16">
+          <div key={secao.chave} id={idDaSecao(secao.chave)} className="mb-7 scroll-mt-[calc(var(--inset-top,0px)+64px)]">
             <div className="flex items-center gap-3">
               <h3 className="font-display text-[18px] font-extrabold uppercase tracking-[0.5px] text-canvas">
                 {secao.titulo}
@@ -868,12 +870,7 @@ function FechoSmash({
 }) {
   // Hora de parede da LOJA. Nasce vazia para o servidor (UTC) e o cliente
   // não divergirem na hidratação.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 60_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja(60_000)
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
 
   return (

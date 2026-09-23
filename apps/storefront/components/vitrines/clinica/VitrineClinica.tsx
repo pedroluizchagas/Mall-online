@@ -9,13 +9,16 @@ import {
   Sacola,
   StatusAberto,
   comCopiaDeLoop,
+  exigeEscolha,
   idDaSecao,
+  precoFinalDe,
   prefereMenosMovimento,
   useCarrossel,
   useHeroEmCena,
+  useRelogioDaLoja,
 } from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
-import type { ProdutoCatalogo, ProdutoDetalhe, SecaoCatalogo } from '@/lib/catalog'
+import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
 import {
   AcaoClinica,
@@ -34,7 +37,6 @@ import {
   descontoPct,
   exigeReceita,
   larg,
-  precoFinalDe,
 } from './clinica-ui'
 
 /**
@@ -67,12 +69,6 @@ interface SlideClinica {
   legenda: string | null
   cta: string
   produto: ProdutoCatalogo | null
-}
-
-/** Item COM variação/modificador nunca entra às cegas. */
-function exigeEscolha(detalhe: ProdutoDetalhe | undefined): boolean {
-  if (!detalhe) return false
-  return detalhe.optionGroups.length + detalhe.modifierGroups.length > 0
 }
 
 export function VitrineClinica({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
@@ -210,7 +206,7 @@ export function VitrineClinica({ store, secoes, detalhes, initialProdutoId }: Vi
             <CartPersistence />
 
             {/* ── Header: transparente sobre o hero → surface com fio ── */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="relative">
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 border-b border-line bg-surface transition-opacity duration-300 motion-reduce:transition-none"
@@ -485,7 +481,7 @@ function CatalogoClinico({
   const idPainel = idDaSecao(secaoAtiva.chave)
 
   return (
-    <section id={ID_CATALOGO} aria-label="Catálogo" style={{ scrollMarginTop: ALTURA_HEADER }}>
+    <section id={ID_CATALOGO} aria-label="Catálogo" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_HEADER}px)` }}>
       <div className="mb-[14px] mt-[26px] flex items-baseline">
         <div
           role="tablist"
@@ -581,12 +577,7 @@ function VazioClinico({ nome }: { nome: string }) {
 // ─────────────────────────────────────────────────────────────
 
 function FechoClinico({ store }: { store: VitrineWebProps['store'] }) {
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const meta = [
     hoje ? `Hoje ${formatarHorario(hoje)}` : null,

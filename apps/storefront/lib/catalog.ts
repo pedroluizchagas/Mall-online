@@ -1,3 +1,5 @@
+import { cache } from 'react'
+
 import { createSupabaseServer } from '@/lib/supabase/server'
 
 /**
@@ -106,15 +108,18 @@ async function carregarCategorias(
   return data as CategoriaCatalogo[]
 }
 
-export async function carregarCatalogo(
-  storeId: string
-): Promise<SecaoCatalogo[]> {
+/**
+ * Catálogo agrupado por seção. `cache()` do React: `/produto/[id]` chama isto
+ * DUAS vezes no mesmo request (no `generateMetadata` e na página) — sem a
+ * memoização são quatro idas ao Postgres por visita (A-21).
+ */
+export const carregarCatalogo = cache(async (storeId: string): Promise<SecaoCatalogo[]> => {
   const [produtos, categorias] = await Promise.all([
     carregarProdutos(storeId),
     carregarCategorias(storeId),
   ])
   return agruparPorCategoria(produtos, categorias)
-}
+})
 
 /* ============================================================
  * Detalhe do produto — modifiers + variants (2ª passada do 3b)
@@ -193,6 +198,14 @@ export async function carregarDetalhesCatalogo(
   produtoIds: string[]
 ): Promise<Record<string, ProdutoDetalhe>> {
   if (produtoIds.length === 0) return {}
+  // `cache()` compara os argumentos por identidade, e um array novo a cada
+  // chamada nunca bate. A chave é o conjunto ordenado — assim duas passadas
+  // pelo mesmo catálogo no mesmo request compartilham o resultado (A-21).
+  return detalhesPorChave([...new Set(produtoIds)].sort().join(','))
+}
+
+const detalhesPorChave = cache(async (chave: string): Promise<Record<string, ProdutoDetalhe>> => {
+  const produtoIds = chave.split(',')
 
   const supabase = createSupabaseServer()
 
@@ -365,4 +378,4 @@ export async function carregarDetalhesCatalogo(
   }
 
   return out
-}
+})

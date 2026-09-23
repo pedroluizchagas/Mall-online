@@ -23,7 +23,7 @@ import type { ItemCarrinho } from '@mallevo/types'
  * `sessionStorage` é origin-scoped por natureza (reforça single-store).
  *
  * Renderiza `null`. Montado uma vez por página (Server Component → ilha
- * client), espelhando o padrão de CartFab.
+ * client), espelhando o padrão de `_base/Sacola`.
  */
 
 const STORAGE_KEY = 'mallevo:storefront:cart:v1'

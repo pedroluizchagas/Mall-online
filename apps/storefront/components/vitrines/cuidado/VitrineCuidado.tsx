@@ -1,11 +1,18 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { horarioDeHoje, normalizeStoreConteudo, relogioDaLoja } from '@mallevo/lib'
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao, prefereMenosMovimento, useHeroEmCena } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  prefereMenosMovimento,
+  useHeroEmCena,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { AcaoCuidado, CartaoPacote, IconeTraco, Letreiro, LinhaServico } from './cuidado-ui'
@@ -88,7 +95,7 @@ export function VitrineCuidado({ store, secoes, detalhes, initialProdutoId }: Vi
             <CartPersistence />
 
             {/* ── Header: moedas sobre o canvas → surface com fio depois do cartão ── */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="relative">
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 border-b border-line bg-surface transition-opacity duration-300 motion-reduce:transition-none"
@@ -192,7 +199,7 @@ export function VitrineCuidado({ store, secoes, detalhes, initialProdutoId }: Vi
             ) : (
               <>
                 {pacotes.length > 0 && (
-                  <section id={ID_SERVICOS} className="scroll-mt-16 pt-7" aria-labelledby="letreiro-pacotes">
+                  <section id={ID_SERVICOS} className="scroll-mt-[calc(var(--inset-top,0px)+64px)] pt-7" aria-labelledby="letreiro-pacotes">
                     <Letreiro id="letreiro-pacotes" titulo={tituloPacotes} sub="Escolha o pacote e a gente cuida do resto" />
                     <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-screen-x pb-2 list-none m-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                       {pacotes.map((p, i) => (
@@ -205,7 +212,7 @@ export function VitrineCuidado({ store, secoes, detalhes, initialProdutoId }: Vi
                 )}
 
                 {secoesLista.map((secao) => (
-                  <section key={secao.chave} id={idDaSecao(secao.chave)} className="scroll-mt-16 pt-7" aria-labelledby={`${idDaSecao(secao.chave)}-titulo`}>
+                  <section key={secao.chave} id={idDaSecao(secao.chave)} className="scroll-mt-[calc(var(--inset-top,0px)+64px)] pt-7" aria-labelledby={`${idDaSecao(secao.chave)}-titulo`}>
                     <Letreiro id={`${idDaSecao(secao.chave)}-titulo`} titulo={secao.titulo} />
                     <ul className="mx-screen-x divide-y divide-line overflow-hidden rounded-xl bg-surface list-none p-0 m-0">
                       {secao.produtos.map((p) => (
@@ -228,12 +235,7 @@ export function VitrineCuidado({ store, secoes, detalhes, initialProdutoId }: Vi
 }
 
 function FechoCuidado({ store }: { store: VitrineWebProps['store'] }) {
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   return (
     <footer className="mt-9 flex flex-col items-center px-screen-x pb-12 text-center">

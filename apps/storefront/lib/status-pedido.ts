@@ -3,8 +3,9 @@
  * (Stage 3f).
  *
  * Cópia local de apps/mobile-consumer/lib/status-pedido.ts (padrão
- * "Copiado, não compartilhado" do `consumer-design`: storefront é
- * superfície isolada — D1/D5 — com seu próprio bundle/tema). Tokens
+ * "Copiado, não compartilhado": o storefront é superfície isolada — D1/D5 —
+ * com o seu próprio bundle e tema; os tokens de cor vivem no
+ * `tailwind.config.ts`, traduzidos do consumer). Tokens
  * (cores semânticas) idênticos por construção; ícones são nomes locais
  * (DOM SVG), não o `ConsumerIconName` RN.
  *

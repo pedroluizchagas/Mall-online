@@ -5,7 +5,15 @@ import { formatarHorario, horarioDeHoje, normalizeStoreConteudo, relogioDaLoja }
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  useHeroEmCena,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -19,8 +27,6 @@ import {
   MarcaDaCasa,
   VEU_HERO,
   descontoPct,
-  precoFinalDe,
-  prefereMenosMovimento,
 } from './serena-ui'
 
 /**
@@ -112,18 +118,7 @@ export function VitrineSerena({ store, secoes, detalhes, initialProdutoId }: Vit
 
   // O hero em cena dirige o autoplay: só roda com o hero à vista (o limiar
   // de `scrollY` da RN num observer).
-  const heroRef = useRef<HTMLElement>(null)
-  const [heroEmCena, setHeroEmCena] = useState(true)
-  useEffect(() => {
-    const el = heroRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const obs = new IntersectionObserver(
-      ([entrada]) => setHeroEmCena(entrada.isIntersecting && entrada.intersectionRatio >= 0.3),
-      { threshold: [0, 0.3, 0.31] },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+  const { heroRef, emCena: heroEmCena } = useHeroEmCena<HTMLElement>()
 
   const rolarParaColecao = useCallback(() => {
     document.getElementById(ID_COLECAO)?.scrollIntoView({
@@ -152,7 +147,7 @@ export function VitrineSerena({ store, secoes, detalhes, initialProdutoId }: Vit
             {/* ── Header claro estruturado — a assinatura da referência.
                 Ocupa altura de verdade (não é overlay) e gruda no topo. ── */}
             <header
-              className="sticky top-0 z-30 flex items-center justify-between border-b border-line bg-surface px-[calc(var(--space-screen-x,24px)-8px)]"
+              className="sticky top-[var(--inset-top,0px)] z-30 flex items-center justify-between border-b border-line bg-surface px-[calc(var(--space-screen-x,24px)-8px)]"
               style={{ height: ALTURA_HEADER }}
             >
               <MarcaDaCasa nome={store.nome} logoUrl={store.logo_url} />
@@ -452,7 +447,7 @@ function ColecaoSerena({
   const idGrade = idDaSecao(secaoAtiva.chave)
 
   return (
-    <section id={ID_COLECAO} className="px-screen-x" style={{ scrollMarginTop: ALTURA_HEADER }} aria-label="Coleção">
+    <section id={ID_COLECAO} className="px-screen-x" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_HEADER}px)` }} aria-label="Coleção">
       {/* ── Abas de seções + "Ver tudo" ── */}
       <div className="mb-4 mt-[26px] flex items-baseline gap-[18px]">
         <div
@@ -503,7 +498,7 @@ function ColecaoSerena({
         role="tabpanel"
         aria-labelledby={`aba-${secaoAtiva.chave}`}
         className="grid grid-cols-2 gap-[14px]"
-        style={{ scrollMarginTop: ALTURA_HEADER + 16 }}
+        style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_HEADER + 16}px)` }}
       >
         {produtosVisiveis.map((p) => (
           <CardSereno key={p.id} produto={p} aoTocar={() => aoAbrirProduto(p)} />
@@ -546,7 +541,7 @@ function TileDaMarca({ nome, foto, texto }: { nome: string; foto: string; texto:
 
 function VazioSereno({ store }: { store: VitrineWebProps['store'] }) {
   return (
-    <section id={ID_COLECAO} className="px-screen-x pt-[26px]" style={{ scrollMarginTop: ALTURA_HEADER }} aria-label="Coleção">
+    <section id={ID_COLECAO} className="px-screen-x pt-[26px]" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_HEADER}px)` }} aria-label="Coleção">
       <div className="rounded-lg bg-canvasAlt px-6 py-12 text-center">
         <p
           className="font-display font-normal text-ink"
@@ -570,12 +565,7 @@ function FechoSereno({ store }: { store: VitrineWebProps['store'] }) {
   // Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o
   // cliente não divergirem na hidratação; meio minuto basta pra nunca mostrar
   // hora velha sem acordar a página à toa.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
 
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const hora = agora ? agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null

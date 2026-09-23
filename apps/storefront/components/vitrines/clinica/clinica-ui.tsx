@@ -4,6 +4,7 @@ import { useState, type CSSProperties, type MouseEvent, type ReactNode } from 'r
 
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
+import { precoFinalDe } from '@/components/vitrines/_base'
 
 /**
  * Vocabulário gráfico da vitrine clínica (arquétipo `clinic`: farmácia, saúde
@@ -35,10 +36,6 @@ export function larg(fator: number): string {
 /** Véu do hero: a foto escurece em direção ao pé, onde vive o texto (GRADIENTE_HERO da RN). */
 export const VEU_HERO =
   'linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.04) 28%, rgba(0,0,0,0.34) 62%, rgba(0,0,0,0.68) 100%)'
-
-export function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 /** Percentual de desconto inteiro; 0 quando não há promoção válida. */
 export function descontoPct(p: ProdutoCatalogo): number {

@@ -5,6 +5,7 @@ import { lerMetadataProduto } from '@mallevo/lib'
 
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
+import { precoFinalDe } from '@/components/vitrines/_base'
 
 /**
  * Vocabulário gráfico da vitrine gôndola (arquétipo `market`: mercado &
@@ -21,10 +22,6 @@ import { formatarReais } from '@/lib/format'
 export const FLASH_MS = 900
 /** Ofertas: os maiores descontos primeiro, até este teto. */
 export const MAX_OFERTAS = 10
-
-export function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 export function descontoPct(p: ProdutoCatalogo): number {
   if (!p.preco_promocional || p.preco_promocional >= p.preco) return 0

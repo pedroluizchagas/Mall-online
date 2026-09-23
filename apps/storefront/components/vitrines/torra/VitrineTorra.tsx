@@ -11,7 +11,7 @@ import {
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import { Sacola, StatusAberto, idDaSecao, precoFinalDe, prefereMenosMovimento, useReduzirMovimento, useRelogioDaLoja } from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -74,10 +74,6 @@ const MAX_DESTAQUES = 4
 
 const ID_MENU = 'menu'
 
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
-
 function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
 }
@@ -96,24 +92,6 @@ function cenaDe(p: ProdutoCatalogo): { src: string; recorte: boolean } | null {
 /** A palavra do pôster: a primeira do título (campanha ou nome da casa). */
 function palavraDe(titulo: string): string {
   return (titulo.trim().split(/\s+/)[0] || PALAVRA_PADRAO).toUpperCase()
-}
-
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-/** `prefers-reduced-motion` como estado — pausa o crossfade, não só o esconde. */
-function useMenosMovimento(): boolean {
-  const [menos, setMenos] = useState(false)
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    setMenos(mq.matches)
-    const aoMudar = (e: MediaQueryListEvent) => setMenos(e.matches)
-    mq.addEventListener('change', aoMudar)
-    return () => mq.removeEventListener('change', aoMudar)
-  }, [])
-  return menos
 }
 
 export function VitrineTorra({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
@@ -178,7 +156,7 @@ export function VitrineTorra({ store, secoes, detalhes, initialProdutoId }: Vitr
             <CartPersistence />
 
             {/* ── Header: nu sobre o pôster, surface com fio depois dele ── */}
-            <header className="sticky top-0 z-30">
+            <header className="sticky top-[var(--inset-top,0px)] z-30">
               <div
                 className={`absolute inset-0 border-b border-line bg-surface transition-opacity duration-200 motion-reduce:transition-none ${
                   depoisDoPoster ? 'opacity-100' : 'opacity-0'
@@ -233,7 +211,7 @@ export function VitrineTorra({ store, secoes, detalhes, initialProdutoId }: Vitr
               <VazioTorra />
             ) : (
               /* ── MENU vertical + cartões âmbar ── */
-              <section id={ID_MENU} className="mt-2 flex scroll-mt-[52px] pr-screen-x" aria-label="Menu">
+              <section id={ID_MENU} className="mt-2 flex scroll-mt-[calc(var(--inset-top,0px)+52px)] pr-screen-x" aria-label="Menu">
                 <div className="shrink-0 pt-1" style={{ width: LARGURA_RAIL }}>
                   <LetrasEmpilhadas palavra="MENU" />
                 </div>
@@ -273,7 +251,7 @@ const PosterTorra = forwardRef<
     aoVerMenu: () => void
   }
 >(function PosterTorra({ palavra, eyebrow, frase, cta, destaques, pausado, store, aoAbrirProduto, aoVerMenu }, ref) {
-  const menosMovimento = useMenosMovimento()
+  const menosMovimento = useReduzirMovimento()
   const [indice, setIndice] = useState(0)
   const [proximo, setProximo] = useState<number | null>(null)
 
@@ -333,7 +311,7 @@ const PosterTorra = forwardRef<
               aria-label={`${emCena.nome}, ${formatarReais(precoFinalDe(emCena))}`}
               className="relative block aspect-[2/3] w-full transition-opacity active:opacity-90"
             >
-              <CenaDoPoster src={cenaAtual.src} recorte={cenaAtual.recorte} />
+              <CenaDoPoster src={cenaAtual.src} recorte={cenaAtual.recorte} carregamento="eager" />
               {cenaProxima && (
                 <CenaDoPoster
                   key={proximo}
@@ -421,7 +399,7 @@ function CartaoSecao({
   const tintaRiscado = tokenComAlfa('--accent-ink', 0.55, '#221503')
 
   return (
-    <div id={idDaSecao(secao.chave)} className="relative scroll-mt-[60px] overflow-hidden rounded-xl bg-accent p-5">
+    <div id={idDaSecao(secao.chave)} className="relative scroll-mt-[calc(var(--inset-top,0px)+60px)] overflow-hidden rounded-xl bg-accent p-5">
       <MarcaDagua texto={secao.titulo} cor={VEU_MARCA} />
 
       <h2
@@ -476,7 +454,7 @@ function CartaoSecao({
 
 function VazioTorra() {
   return (
-    <section id={ID_MENU} className="mt-2 flex scroll-mt-[52px] pr-screen-x" aria-label="Menu">
+    <section id={ID_MENU} className="mt-2 flex scroll-mt-[calc(var(--inset-top,0px)+52px)] pr-screen-x" aria-label="Menu">
       <div className="shrink-0 pt-1" style={{ width: LARGURA_RAIL }}>
         <LetrasEmpilhadas palavra="MENU" />
       </div>
@@ -507,12 +485,7 @@ function FechoTorra({ store, palavra }: { store: VitrineWebProps['store']; palav
   // Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o
   // cliente não divergirem na hidratação; meio minuto basta pra nunca mostrar
   // hora velha sem acordar a página à toa.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
 
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const hora = agora ? agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null

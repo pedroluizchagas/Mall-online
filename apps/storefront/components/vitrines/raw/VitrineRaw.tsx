@@ -15,7 +15,14 @@ import { formatarHorario, horarioDeHoje, normalizeStoreConteudo, relogioDaLoja }
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  prefereMenosMovimento,
+  useHeroEmCena,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -73,11 +80,6 @@ interface SlideRaw {
   produto: ProdutoCatalogo | null
 }
 
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
 export function VitrineRaw({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
   const conteudo = useMemo(() => normalizeStoreConteudo(store.conteudo), [store.conteudo])
   const campanha = conteudo.campanha
@@ -123,18 +125,7 @@ export function VitrineRaw({ store, secoes, detalhes, initialProdutoId }: Vitrin
   // O hero em cena dirige o autoplay (só roda com o hero à vista) e o header
   // (transparente sobre a foto, escuro com fio depois dela) — os dois
   // limiares de `scrollY` da RN num só observer.
-  const heroRef = useRef<HTMLElement>(null)
-  const [heroEmCena, setHeroEmCena] = useState(true)
-  useEffect(() => {
-    const el = heroRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const obs = new IntersectionObserver(
-      ([entrada]) => setHeroEmCena(entrada.isIntersecting && entrada.intersectionRatio >= 0.3),
-      { threshold: [0, 0.3, 0.31] },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+  const { heroRef, emCena: heroEmCena } = useHeroEmCena<HTMLElement>()
 
   const rolarParaDrop = useCallback(() => {
     document.getElementById(ID_DROP)?.scrollIntoView({
@@ -165,7 +156,7 @@ export function VitrineRaw({ store, secoes, detalhes, initialProdutoId }: Vitrin
             {/* Chrome: transparente sobre a foto → superfície escura com fio
                 depois do hero; o nome em MONO caps nasce junto com o fundo.
                 `h-0` sticky: fica sobre a rolagem sem empurrar nada. */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="relative">
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 border-b border-line bg-surface transition-opacity duration-200 motion-reduce:transition-none"
@@ -234,7 +225,7 @@ export function VitrineRaw({ store, secoes, detalhes, initialProdutoId }: Vitrin
             {vazio ? (
               <VazioRaw store={store} />
             ) : (
-              <section id={ID_DROP} aria-label="Produtos" style={{ scrollMarginTop: H_HEADER }}>
+              <section id={ID_DROP} aria-label="Produtos" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${H_HEADER}px)` }}>
                 {secoesComItens.map((secao, i) =>
                   i === 0 ? (
                     <SecaoDrop key={secao.chave} secao={secao} aoAbrirProduto={aoAbrirProduto} />
@@ -593,7 +584,7 @@ function SecaoDrop({
   aoAbrirProduto: (p: ProdutoCatalogo) => void
 }) {
   return (
-    <div id={idDaSecao(secao.chave)} className="mt-[30px]" style={{ scrollMarginTop: H_HEADER + 8 }}>
+    <div id={idDaSecao(secao.chave)} className="mt-[30px]" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${H_HEADER + 8}px)` }}>
       <div className="mb-3 flex items-end justify-between px-screen-x">
         <TituloRaw titulo={secao.titulo} />
       </div>
@@ -652,7 +643,7 @@ function SecaoGrade({
   const visiveis = expandida || !dobravel ? secao.produtos : secao.produtos.slice(0, PREVIA)
 
   return (
-    <div id={idDaSecao(secao.chave)} className="mt-[30px]" style={{ scrollMarginTop: H_HEADER + 8 }}>
+    <div id={idDaSecao(secao.chave)} className="mt-[30px]" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${H_HEADER + 8}px)` }}>
       <div className="mb-3 flex items-end justify-between gap-3 px-screen-x">
         <TituloRaw titulo={secao.titulo} />
         {dobravel && (
@@ -712,7 +703,7 @@ function CardRaw({ produto, aoTocar }: { produto: ProdutoCatalogo; aoTocar: () =
 
 function VazioRaw({ store }: { store: VitrineWebProps['store'] }) {
   return (
-    <section id={ID_DROP} className="px-screen-x pt-[30px]" style={{ scrollMarginTop: H_HEADER }} aria-label="Produtos">
+    <section id={ID_DROP} className="px-screen-x pt-[30px]" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${H_HEADER}px)` }} aria-label="Produtos">
       <TituloRaw titulo="o drop" />
       <div className="mt-3 border-[3px] border-accent px-5 py-10 text-center">
         <p className="text-[11px] font-bold uppercase tracking-[2.4px] text-accent" style={MONO}>
@@ -740,12 +731,7 @@ function FechoRaw({ store }: { store: VitrineWebProps['store'] }) {
   // Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o
   // cliente não divergirem na hidratação; meio minuto basta pra nunca mostrar
   // hora velha sem acordar a página à toa.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
 
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const hora = agora ? agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null

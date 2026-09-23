@@ -2,6 +2,7 @@ import type { CSSProperties, MouseEvent, ReactNode } from 'react'
 
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
+import { precoFinalDe } from '@/components/vitrines/_base'
 
 /**
  * Vocabulário gráfico da vitrine editorial (arquétipo `editorial`, moda /
@@ -61,10 +62,6 @@ export const VEU_HERO =
 export function descontoPct(p: ProdutoCatalogo): number {
   if (!p.preco_promocional || p.preco_promocional >= p.preco) return 0
   return Math.round((1 - p.preco_promocional / p.preco) * 100)
-}
-
-export function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
 }
 
 /**

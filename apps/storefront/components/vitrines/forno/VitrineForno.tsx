@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   formatarHorario,
   horarioDeHoje,
@@ -11,7 +11,16 @@ import {
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { FonteDna, Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  FonteDna,
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  repartirDescricao,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -72,6 +81,19 @@ const CREME_FIXO = '#F6EFDE'
 const TINTA_OURO = '#1A150F'
 
 /** Frase do statement quando a casa não tem uma curta o bastante. */
+/**
+ * O manifesto do Forno é a manchete do lojista em caixa alta — a partilha é
+ * a de `_base/catalogo` (limite 54, a linha que cabe no display), e o que
+ * sobra aqui é só a casca: sem manchete no tamanho certo, o statement da casa.
+ */
+function manifestoDoForno(descricao: string | null | undefined): {
+  manifesto: string
+  detalhe: string | null
+} {
+  const { manchete, detalhe } = repartirDescricao(descricao, { maxManchete: 54 })
+  return { manifesto: manchete ? manchete.toUpperCase() : STATEMENT_PADRAO, detalhe }
+}
+
 const STATEMENT_PADRAO = 'UMA EXPERIÊNCIA DE PIZZA INESQUECÍVEL'
 
 /** Disco do hero (fração da coluna) e o quanto ele desce sobre o bloco seguinte. */
@@ -89,10 +111,6 @@ const BLACK: CSSProperties = {
 
 /** Largura média das caixas-altas da Archivo Black em em — para o "adjustsFontSizeToFit". */
 const LARGURA_CAPS = 0.74
-
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
@@ -130,34 +148,6 @@ function corpoQueCabe(texto: string, fracaoMax: number, ocupacao = 0.92): string
   const chars = Math.max(texto.length, 1)
   const fracao = Math.min(fracaoMax, ocupacao / (chars * LARGURA_CAPS))
   return larg(fracao)
-}
-
-/**
- * Reparte o texto da casa entre as DUAS vozes que o mostram, para o mesmo
- * texto não aparecer duas vezes na mesma rolagem: o STATEMENT leva a primeira
- * oração em caps gigantes (o manifesto da referência) e o cartão da casa leva
- * o que sobra. Oração curta ou longa demais não vira caps gigantes — aí o
- * statement usa a frase de DNA e o cartão fica com o texto inteiro.
- */
-function repartirDescricao(descricao: string | null | undefined): {
-  manifesto: string
-  detalhe: string | null
-} {
-  const texto = descricao?.trim() ?? ''
-  if (!texto) return { manifesto: STATEMENT_PADRAO, detalhe: null }
-
-  const corte = texto.search(/[—.!?]/)
-  const primeira = (corte === -1 ? texto : texto.slice(0, corte)).trim()
-  if (primeira.length < 8 || primeira.length > 54) {
-    return { manifesto: STATEMENT_PADRAO, detalhe: texto }
-  }
-  const resto = corte === -1 ? '' : texto.slice(corte + 1).trim()
-  return { manifesto: primeira.toUpperCase(), detalhe: resto || null }
-}
-
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 const ID_CARDAPIO = 'cardapio'
@@ -203,7 +193,7 @@ export function VitrineForno({ store, secoes, detalhes, initialProdutoId }: Vitr
   // descrição da loja (a derivação da RN). O hero não o imprime: a referência
   // não tem parágrafo no hero — é wordmark, botão e pizza.
   const { manifesto, detalhe } = useMemo(
-    () => repartirDescricao(conteudo.manifesto ?? store.descricao),
+    () => manifestoDoForno(conteudo.manifesto ?? store.descricao),
     [conteudo.manifesto, store.descricao],
   )
 
@@ -237,7 +227,7 @@ export function VitrineForno({ store, secoes, detalhes, initialProdutoId }: Vitr
                 preto do hero, o ouro do pôster e o creme da página. À
                 esquerda a casa (logo ou coroa) leva ao topo; à direita, a
                 sacola. `h-0` sticky: fica sobre a rolagem sem empurrar nada. */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="pointer-events-none flex items-start justify-between px-screen-x pt-3">
                 <div className="pointer-events-auto">
                   <BotaoForno href="/" rotulo={`${store.nome} — início da loja`}>
@@ -309,7 +299,7 @@ export function VitrineForno({ store, secoes, detalhes, initialProdutoId }: Vitr
                 {detalhe && <CasaForno nome={store.nome} descricao={detalhe} />}
 
                 {/* ── Cardápio: a lista completa sobre o creme ── */}
-                <section id={ID_CARDAPIO} className="scroll-mt-3 px-screen-x pt-11" aria-label="Cardápio">
+                <section id={ID_CARDAPIO} className="scroll-mt-[calc(var(--inset-top,0px)+12px)] px-screen-x pt-11" aria-label="Cardápio">
                   {secoesCardapio.map((secao) => (
                     <SecaoCardapio key={secao.chave} secao={secao} aoAbrirProduto={aoAbrirProduto} />
                   ))}
@@ -740,7 +730,7 @@ function SecaoCardapio({
   aoAbrirProduto: (p: ProdutoCatalogo) => void
 }) {
   return (
-    <div id={idDaSecao(secao.chave)} className="mb-[30px] scroll-mt-16">
+    <div id={idDaSecao(secao.chave)} className="mb-[30px] scroll-mt-[calc(var(--inset-top,0px)+64px)]">
       <h2
         className="font-display font-extrabold uppercase tracking-[0.6px] text-accent"
         style={{
@@ -828,12 +818,7 @@ function FechoForno({ store }: { store: VitrineWebProps['store'] }) {
   // Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o
   // cliente não divergirem na hidratação; meio minuto basta pra nunca mostrar
   // hora velha sem acordar a página à toa.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
 
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const hora = agora

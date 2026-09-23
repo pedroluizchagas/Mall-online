@@ -1,11 +1,18 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { formatarHorario, horarioDeHoje, normalizeStoreConteudo, relogioDaLoja } from '@mallevo/lib'
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao, prefereMenosMovimento, useHeroEmCena } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  prefereMenosMovimento,
+  useHeroEmCena,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -105,7 +112,7 @@ export function VitrineMesa({ store, secoes, detalhes, initialProdutoId }: Vitri
             <CartPersistence />
 
             {/* ── Header: nu sobre a foto → surface com fio depois do hero ── */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="relative">
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 border-b border-line bg-surface transition-opacity duration-300 motion-reduce:transition-none"
@@ -226,7 +233,7 @@ export function VitrineMesa({ store, secoes, detalhes, initialProdutoId }: Vitri
                 )}
 
                 {/* ── Cardápio-livro ── */}
-                <section id={ID_CARDAPIO} className="scroll-mt-[58px] pt-9" aria-labelledby="letreiro-cardapio">
+                <section id={ID_CARDAPIO} className="scroll-mt-[calc(var(--inset-top,0px)+58px)] pt-9" aria-labelledby="letreiro-cardapio">
                   <Letreiro id="letreiro-cardapio">Cardápio</Letreiro>
                   <div className="flex flex-col gap-[30px] px-screen-x">
                     {secoesComItens.map((secao) => (
@@ -266,7 +273,7 @@ export function VitrineMesa({ store, secoes, detalhes, initialProdutoId }: Vitri
 
 function SecaoDoCardapio({ secao, aoAbrirProduto }: { secao: SecaoCatalogo; aoAbrirProduto: (p: ProdutoCatalogo) => void }) {
   return (
-    <div id={idDaSecao(secao.chave)} className="scroll-mt-[70px]">
+    <div id={idDaSecao(secao.chave)} className="scroll-mt-[calc(var(--inset-top,0px)+70px)]">
       <div className="mb-4 flex flex-col items-center">
         <h2
           className="text-center font-display font-semibold text-ink"
@@ -289,7 +296,7 @@ function SecaoDoCardapio({ secao, aoAbrirProduto }: { secao: SecaoCatalogo; aoAb
 
 function VazioMesa({ nome }: { nome: string }) {
   return (
-    <section id={ID_CARDAPIO} className="flex flex-col items-center px-screen-x pt-9 text-center scroll-mt-[58px]" aria-label="Cardápio">
+    <section id={ID_CARDAPIO} className="flex flex-col items-center px-screen-x pt-9 text-center scroll-mt-[calc(var(--inset-top,0px)+58px)]" aria-label="Cardápio">
       <Ornamento />
       <p
         className="mt-[18px] font-display font-semibold text-ink"
@@ -309,12 +316,7 @@ function VazioMesa({ nome }: { nome: string }) {
 // ─────────────────────────────────────────────────────────────
 
 function FechoMesa({ store }: { store: VitrineWebProps['store'] }) {
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const meta = [
     hoje ? `Hoje ${formatarHorario(hoje)}` : null,

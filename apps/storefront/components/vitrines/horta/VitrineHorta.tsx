@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useCallback, useMemo, type CSSProperties } from 'react'
 import {
   abertoAgora,
   formatarHorario,
@@ -12,7 +12,15 @@ import {
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { FonteDna, Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  FonteDna,
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -88,10 +96,6 @@ const LARGURA_CAPS = 0.66
 
 const ID_CARDAPIO = 'cardapio'
 
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
-
 function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
 }
@@ -149,30 +153,10 @@ function corpoQueCabe(texto: string, fracaoMax: number, ocupacao = 0.92): string
   return larg(fracao)
 }
 
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-/**
- * Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o cliente
- * não divergirem na hidratação; meio minuto basta pra nunca mostrar hora
- * velha sem acordar a página à toa.
- */
-function useRelogioLoja(): Date | null {
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
-  return agora
-}
-
 export function VitrineHorta({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
   const conteudo = useMemo(() => normalizeStoreConteudo(store.conteudo), [store.conteudo])
   const campanha = conteudo.campanha
-  const agora = useRelogioLoja()
+  const agora = useRelogioDaLoja()
 
   // Fotos da casa: banner na frente, produtos completando — o hero, o bloco
   // "sobre" e o "visite" pegam uma cada, sem repetir.
@@ -246,7 +230,7 @@ export function VitrineHorta({ store, secoes, detalhes, initialProdutoId }: Vitr
                 página. À esquerda a casa (logo ou inicial) leva ao topo; à
                 direita, a sacola. `h-0` sticky: fica sobre a rolagem sem
                 empurrar nada. */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="pointer-events-none flex items-start justify-between px-screen-x pt-3">
                 <div className="pointer-events-auto">
                   <BotaoAdesivo href="/" rotulo={`${store.nome} — início da loja`}>
@@ -321,7 +305,7 @@ export function VitrineHorta({ store, secoes, detalhes, initialProdutoId }: Vitr
                 )}
 
                 {/* ── Cardápio: a lista completa em serifa sobre o creme ── */}
-                <section id={ID_CARDAPIO} className="scroll-mt-3 px-screen-x pt-10" aria-label="Cardápio">
+                <section id={ID_CARDAPIO} className="scroll-mt-[calc(var(--inset-top,0px)+12px)] px-screen-x pt-10" aria-label="Cardápio">
                   {secoesCardapio.map((secao) => (
                     <SecaoCardapio key={secao.chave} secao={secao} aoAbrirProduto={aoAbrirProduto} />
                   ))}
@@ -781,7 +765,7 @@ function SecaoCardapio({
   aoAbrirProduto: (p: ProdutoCatalogo) => void
 }) {
   return (
-    <div id={idDaSecao(secao.chave)} className="mb-[30px] scroll-mt-16">
+    <div id={idDaSecao(secao.chave)} className="mb-[30px] scroll-mt-[calc(var(--inset-top,0px)+64px)]">
       <h2
         className="font-display font-bold text-ink"
         style={{

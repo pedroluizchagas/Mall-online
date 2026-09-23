@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { ArrowUpRight, Eye, Heart, MessageCircle, X } from 'lucide-react'
 
@@ -10,11 +10,19 @@ import { momentoCurto } from './CartazPost'
 
 const NUMERO = new Intl.NumberFormat('pt-BR')
 
+/** O que o Tab alcança dentro do visor. */
+const SELETOR_FOCAVEL =
+  'a[href], button:not([disabled]), video[controls], [tabindex]:not([tabindex="-1"])'
+
 /**
  * Visor do post — o reel do Explorar no web: abre com `?post=<id>` sobre a
  * grade, toca o vídeo (ou mostra a foto) em retrato, legenda, tags e os
  * dois caminhos que o post oferece: a loja e o produto vitrinado, ambos em
  * `<slug>.mallevo.com.br`. Esc/backdrop fecham e limpam o `?post`.
+ *
+ * Teclado (A-20): ao abrir, o foco entra no painel; Tab e Shift+Tab circulam
+ * DENTRO dele (a grade atrás fica fora do alcance) e, ao fechar, o foco
+ * volta para o cartaz que abriu o visor.
  */
 export function VisorPost({ posts, urlsDasLojas }: { posts: PostSaguao[]; urlsDasLojas: Record<string, string> }) {
   const router = useRouter()
@@ -30,17 +38,69 @@ export function VisorPost({ posts, urlsDasLojas }: { posts: PostSaguao[]; urlsDa
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
   }, [pathname, router, searchParams])
 
+  const painelRef = useRef<HTMLDivElement>(null)
+  /** Quem abriu o visor — para devolver o foco ao fechar. */
+  const abridorRef = useRef<HTMLElement | null>(null)
+
   useEffect(() => {
     if (!post) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') fechar()
+
+    abridorRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
+
+    const focaveis = () => {
+      const painel = painelRef.current
+      if (!painel) return [] as HTMLElement[]
+      return [...painel.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL)].filter(
+        (el) => !el.hasAttribute('disabled') && el.offsetParent !== null,
+      )
     }
+
+    // Foco para dentro: o primeiro controle (fechar) ou o próprio painel.
+    const primeiro = focaveis()[0]
+    if (primeiro) primeiro.focus()
+    else painelRef.current?.focus()
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        fechar()
+        return
+      }
+      if (e.key !== 'Tab') return
+      // Armadilha de foco: o Tab dá a volta dentro do diálogo.
+      const lista = focaveis()
+      if (lista.length === 0) {
+        e.preventDefault()
+        painelRef.current?.focus()
+        return
+      }
+      const inicio = lista[0]
+      const fim = lista[lista.length - 1]
+      const atual = document.activeElement
+      const dentro = painelRef.current?.contains(atual instanceof Node ? atual : null)
+      if (!dentro) {
+        e.preventDefault()
+        ;(e.shiftKey ? fim : inicio).focus()
+        return
+      }
+      if (e.shiftKey && atual === inicio) {
+        e.preventDefault()
+        fim.focus()
+      } else if (!e.shiftKey && atual === fim) {
+        e.preventDefault()
+        inicio.focus()
+      }
+    }
+
     window.addEventListener('keydown', onKey)
     const anterior = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.style.overflow = anterior
+      // Devolve o foco ao cartaz de origem (se ele ainda está na página).
+      const abridor = abridorRef.current
+      abridorRef.current = null
+      if (abridor?.isConnected) abridor.focus()
     }
   }, [post, fechar])
 
@@ -59,7 +119,9 @@ export function VisorPost({ posts, urlsDasLojas }: { posts: PostSaguao[]; urlsDa
       onMouseDown={fechar}
     >
       <div
-        className="grid w-full max-w-[920px] overflow-hidden rounded-[24px] bg-[#18181B] text-white shadow-floating md:grid-cols-[minmax(0,380px)_1fr]"
+        ref={painelRef}
+        tabIndex={-1}
+        className="grid w-full max-w-[920px] overflow-hidden rounded-[24px] bg-[#18181B] text-white shadow-floating outline-none md:grid-cols-[minmax(0,380px)_1fr]"
         style={{ maxHeight: 'min(92vh, 760px)' }}
         onMouseDown={(e) => e.stopPropagation()}
       >
@@ -71,13 +133,18 @@ export function VisorPost({ posts, urlsDasLojas }: { posts: PostSaguao[]; urlsDa
               poster={post.thumb_url ?? undefined}
               controls
               autoPlay
+              muted
               playsInline
               loop
               className="absolute inset-0 h-full w-full object-contain"
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.media_url} alt="" className="absolute inset-0 h-full w-full object-contain" />
+            <img
+              src={post.media_url}
+              alt={post.descricao || `Publicação de ${post.loja_nome}`}
+              className="absolute inset-0 h-full w-full object-contain"
+            />
           )}
           <button
             type="button"

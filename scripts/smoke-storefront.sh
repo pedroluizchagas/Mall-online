@@ -10,7 +10,8 @@
 #   - cada uma das 18 vitrines devolve HTML DIFERENTE das outras (md5), que é o
 #     que mostra que o gate `preset × categoria` realmente troca o layout;
 #   - o rascunho hostil do `/preview` não injeta script (achado A-01);
-#   - a CSP do checkout e do preview está como esperado (achado A-13).
+#   - a CSP do checkout e do preview está como esperado (achado A-13);
+#   - host desconhecido responde 404 em vez do saguão (achado A-21).
 #
 # Uso: pnpm smoke:storefront            (ou PORT=3013 bash scripts/smoke-storefront.sh)
 set -uo pipefail
@@ -64,6 +65,9 @@ checar /saguao                  "localhost:${PORT}" 308
 checar /sitemap.xml             "localhost:${PORT}" 200
 checar /robots.txt              "localhost:${PORT}" 200
 checar /                        "www.mallevo.localhost" 200
+# Host fora dos domínios da Mallevo não serve o saguão (A-21): 404 seco, a
+# menos que NEXT_PUBLIC_ALLOW_UNKNOWN_HOST=true (previews da Vercel).
+checar /                        "dominio-de-terceiro.example" 404
 
 echo
 echo "── loja (${HOST_LOJA}) ──"

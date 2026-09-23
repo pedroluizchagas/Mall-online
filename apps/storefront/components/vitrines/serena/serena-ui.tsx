@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react'
 
 import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
+import { precoFinalDe } from '@/components/vitrines/_base'
 
 /**
  * Vocabulário gráfico da vitrine serena (arquétipo `serene`, beleza, skincare
@@ -56,15 +57,6 @@ export function larg(fator: number): string {
  */
 export const VEU_HERO =
   'linear-gradient(to bottom, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.02) 30%, rgba(0,0,0,0.30) 62%, rgba(0,0,0,0.62) 100%)'
-
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-export function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-export function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
 
 /** Percentual de desconto inteiro; 0 quando não há promoção válida. */
 export function descontoPct(p: ProdutoCatalogo): number {

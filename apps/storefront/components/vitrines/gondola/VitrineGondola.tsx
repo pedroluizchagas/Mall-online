@@ -5,9 +5,17 @@ import { formatarHorario, horarioDeHoje, normalizeStoreConteudo, relogioDaLoja, 
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao, prefereMenosMovimento } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  exigeEscolha,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
-import type { ProdutoCatalogo, ProdutoDetalhe, SecaoCatalogo } from '@/lib/catalog'
+import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
 import {
   AcaoGondola,
@@ -19,7 +27,6 @@ import {
   Letreiro,
   MAX_OFERTAS,
   descontoPct,
-  precoFinalDe,
 } from './gondola-ui'
 
 /**
@@ -45,11 +52,6 @@ import {
 const ID_OFERTAS = 'ofertas'
 /** Header (52) + busca (50) + chips (52): as âncoras param abaixo do bloco grudado. */
 const ALTURA_CHROME = 154
-
-function exigeEscolha(detalhe: ProdutoDetalhe | undefined): boolean {
-  if (!detalhe) return false
-  return detalhe.optionGroups.length + detalhe.modifierGroups.length > 0
-}
 
 export function VitrineGondola({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
   const conteudo = useMemo(() => normalizeStoreConteudo(store.conteudo), [store.conteudo])
@@ -186,12 +188,20 @@ export function VitrineGondola({ store, secoes, detalhes, initialProdutoId }: Vi
             <CartPersistence />
 
             {/* ── Bloco grudado: header claro + busca + chips ── */}
-            <div className="sticky top-0 z-30 border-b border-line bg-surface shadow-soft">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 border-b border-line bg-surface shadow-soft">
               <div className="flex h-[52px] items-center px-[calc(var(--space-screen-x,24px)-8px)]">
                 <AcaoGondola href="/" rotulo={`${store.nome} — início da loja`}>
                   {store.logo_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={store.logo_url} alt="" className="h-8 w-8 rounded-sm object-cover" style={{ boxShadow: '0 0 0 1px var(--line, #E4E4E7)' }} />
+                    <img
+                      src={store.logo_url}
+                      alt=""
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
+                      className="h-8 w-8 rounded-sm object-cover"
+                      style={{ boxShadow: '0 0 0 1px var(--line, #E4E4E7)' }}
+                    />
                   ) : (
                     <span className="flex h-8 w-8 items-center justify-center rounded-sm bg-accent font-display text-[12px] font-extrabold text-accent-ink" aria-hidden>
                       {iniciais}
@@ -297,7 +307,7 @@ export function VitrineGondola({ store, secoes, detalhes, initialProdutoId }: Vi
             ) : (
               <>
                 {ofertas.length > 0 && (
-                  <section id={ID_OFERTAS} className="pt-[18px]" aria-labelledby="letreiro-ofertas" style={{ scrollMarginTop: ALTURA_CHROME }}>
+                  <section id={ID_OFERTAS} className="pt-[18px]" aria-labelledby="letreiro-ofertas" style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_CHROME}px)` }}>
                     <div className="px-screen-x">
                       <Letreiro id="letreiro-ofertas" titulo="Ofertas do dia" contagem={ofertas.length} />
                     </div>
@@ -310,7 +320,7 @@ export function VitrineGondola({ store, secoes, detalhes, initialProdutoId }: Vi
                 )}
 
                 {secoesComItens.map((secao: SecaoCatalogo) => (
-                  <section key={secao.chave} id={idDaSecao(secao.chave)} className="px-screen-x pt-[22px]" aria-labelledby={`${idDaSecao(secao.chave)}-titulo`} style={{ scrollMarginTop: ALTURA_CHROME }}>
+                  <section key={secao.chave} id={idDaSecao(secao.chave)} className="px-screen-x pt-[22px]" aria-labelledby={`${idDaSecao(secao.chave)}-titulo`} style={{ scrollMarginTop: `calc(var(--inset-top, 0px) + ${ALTURA_CHROME}px)` }}>
                     <Letreiro id={`${idDaSecao(secao.chave)}-titulo`} titulo={secao.titulo} contagem={secao.produtos.length} />
                     {grade(secao.produtos)}
                   </section>
@@ -327,12 +337,7 @@ export function VitrineGondola({ store, secoes, detalhes, initialProdutoId }: Vi
 }
 
 function FechoGondola({ store }: { store: VitrineWebProps['store'] }) {
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   return (
     <footer className="mt-10 border-t border-line bg-surface px-screen-x pb-12 pt-6">

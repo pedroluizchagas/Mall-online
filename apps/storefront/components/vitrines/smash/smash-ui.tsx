@@ -78,11 +78,6 @@ export function corpoQueCabe(texto: string, maxPx: number, gutterPx = 24, ocupac
   return `min(calc(${maxPx}px * var(--type-factor, 1)), calc(${util} * ${ocupacao.toFixed(2)} / ${(chars * LARGURA_CAPS).toFixed(2)}))`
 }
 
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-export function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
 // ─────────────────────────────────────────────────────────────
 // Ícones de traço (família do ConsumerIcon: 24×24, round)
 // ─────────────────────────────────────────────────────────────
@@ -400,7 +395,13 @@ export function MolduraFoto({
       style={{ borderColor: MOLDURAS[indice % MOLDURAS.length], ...style }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt={alt} className="h-full w-full object-cover" loading={indice > 1 ? 'lazy' : undefined} />
+      <img
+        src={src}
+        alt={alt}
+        className="h-full w-full object-cover"
+        loading={indice > 1 ? 'lazy' : 'eager'}
+        fetchPriority={indice === 0 ? 'high' : undefined}
+      />
     </button>
   )
 }

@@ -20,9 +20,16 @@ import { VITRINES, type MoldeBarra, type VitrineCodigo } from '@mallevo/lib'
  * `BarraMenuSmash`, `BarraMenuRitual`). Medidas de um iPhone com notch
  * (status bar 47px, home indicator 34px), que é a moldura do preview.
  *
- * O chrome de topo de cada vitrine (`sticky top-0`: botão da casa, sacola,
- * header) desce a altura da status bar, como o `insets.top` faz no app. O
- * voltar do shell só entra no layout padrão: as vitrines já têm o botão da
+ * O chrome de topo de cada vitrine (botão da casa, sacola, header) desce a
+ * altura da status bar, como o `insets.top` faz no app. O shell publica isso
+ * como `--inset-top` no wrapper e as vitrines leem a var em
+ * `top-[var(--inset-top,0px)]` e nas âncoras
+ * (`scroll-mt-[calc(var(--inset-top,0px)+Xpx)]`) — antes era uma regra CSS
+ * global casada com a classe literal do Tailwind, que deslocava o chrome mas não
+ * as âncoras, e o salto de seção parava DEBAIXO dele (A-15). Fora da moldura
+ * a var não existe e o fallback `0px` vale.
+ *
+ * O voltar do shell só entra no layout padrão: as vitrines já têm o botão da
  * casa no canto esquerdo (no app é o chevron; no web, leva ao topo).
  *
  * Inerte de propósito: os itens do menu e o voltar levam ao shopping, que não
@@ -109,8 +116,7 @@ export function ShellApp({
     molde === 'pilula' ? HOME_INDICATOR + ALTURA_BARRA + 12 : 10 + 21 + 4 + 12 + HOME_INDICATOR
 
   return (
-    <div data-shell-app className="relative">
-      <style>{`[data-shell-app] .sticky.top-0{top:${STATUS_BAR}px}`}</style>
+    <div data-shell-app className="relative" style={{ '--inset-top': `${STATUS_BAR}px` } as CSSProperties}>
       <StatusBar />
       {vitrine === null && <BotaoVoltar />}
 

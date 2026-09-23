@@ -256,12 +256,16 @@ export function PalavraEmEscada({ palavra, className }: { palavra: string; class
 export function CenaDoPoster({
   src,
   recorte,
+  carregamento = 'lazy',
   className,
 }: {
   src: string
   recorte: boolean
+  /** A cena EM CARTAZ é o LCP da Torra (A-09); as pré-carregadas ficam lazy. */
+  carregamento?: 'lazy' | 'eager'
   className?: string
 }) {
+  const prioridade = carregamento === 'eager' ? 'high' : undefined
   if (recorte) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
@@ -269,6 +273,8 @@ export function CenaDoPoster({
         src={src}
         alt=""
         draggable={false}
+        loading={carregamento}
+        fetchPriority={prioridade}
         decoding="async"
         className={`absolute inset-0 h-full w-full object-contain ${className ?? ''}`}
       />
@@ -279,7 +285,15 @@ export function CenaDoPoster({
       className={`absolute inset-0 block overflow-hidden rounded-[999px] bg-surfaceMuted shadow-floating ${className ?? ''}`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={src} alt="" draggable={false} decoding="async" className="h-full w-full object-cover" />
+      <img
+        src={src}
+        alt=""
+        draggable={false}
+        loading={carregamento}
+        fetchPriority={prioridade}
+        decoding="async"
+        className="h-full w-full object-cover"
+      />
     </span>
   )
 }

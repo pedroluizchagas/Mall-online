@@ -1,4 +1,4 @@
-import { buscarStore, getStoreSlug } from '@/lib/tenant'
+import { getStore, getStoreSlug } from '@/lib/tenant'
 import { StoreThemeRoot } from '@/components/store/StoreThemeRoot'
 
 /**
@@ -11,15 +11,17 @@ import { StoreThemeRoot } from '@/components/store/StoreThemeRoot'
  * coluna de 480px sobre o fundo da pele, com fio lateral — fiel à spec, sem
  * redesenho. Layouts desktop nativos ficam para depois.
  *
- * Loja ausente (`buscarStore` → null): o layout renderiza sem pele e a página
- * dispara `notFound()` por conta própria.
+ * Loja ausente: o `notFound()` vive AQUI, não nas páginas. `loading.tsx`
+ * embrulha a página numa Suspense e o Next já mandou o status 200 quando ela
+ * decide 404 — o layout roda FORA dessa fronteira, então é o último ponto em
+ * que o 404 ainda é um 404 de verdade (e não um "soft 404" para o Google).
  */
 export default async function LojaLayout({ children }: { children: React.ReactNode }) {
-  const store = await buscarStore(getStoreSlug())
+  const store = await getStore(getStoreSlug())
 
   return (
     <StoreThemeRoot
-      theme={store?.theme ?? null}
+      theme={store.theme ?? null}
       className="mx-auto min-h-screen w-full max-w-[480px] bg-canvas md:border-x md:border-line"
     >
       {children}

@@ -10,7 +10,15 @@ import {
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  useHeroEmCena,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -69,10 +77,6 @@ interface SlideNoir {
   produto: ProdutoCatalogo | null
 }
 
-function precoFinalDe(p: ProdutoCatalogo): number {
-  return p.preco_promocional ?? p.preco
-}
-
 function temPromo(p: ProdutoCatalogo): boolean {
   return !!p.preco_promocional && p.preco_promocional < p.preco
 }
@@ -86,11 +90,6 @@ function comoIngredientes(descricao: string): string {
   const texto = descricao.trim()
   const pareceLista = texto.length <= 160 && !/[.!?;]/.test(texto) && texto.includes(',')
   return pareceLista ? texto.replace(/\s*,\s*/g, ' · ') : texto
-}
-
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 export function VitrineNoir({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
@@ -139,18 +138,7 @@ export function VitrineNoir({ store, secoes, detalhes, initialProdutoId }: Vitri
   // O hero em cena: dirige o autoplay (só roda com o hero à vista) e o header
   // (transparente sobre a foto, preto com fio depois dela) — os dois limiares
   // de `scrollY` da RN num só observer.
-  const heroRef = useRef<HTMLElement>(null)
-  const [heroEmCena, setHeroEmCena] = useState(true)
-  useEffect(() => {
-    const el = heroRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const obs = new IntersectionObserver(
-      ([entrada]) => setHeroEmCena(entrada.isIntersecting && entrada.intersectionRatio >= 0.3),
-      { threshold: [0, 0.3, 0.31] },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+  const { heroRef, emCena: heroEmCena } = useHeroEmCena<HTMLElement>()
 
   const rolarParaCardapio = useCallback(() => {
     document.getElementById(ID_CARDAPIO)?.scrollIntoView({
@@ -182,7 +170,7 @@ export function VitrineNoir({ store, secoes, detalhes, initialProdutoId }: Vitri
             {/* Chrome: transparente sobre a foto → preto com fio depois do
                 hero; o wordmark dourado em itálico nasce junto com o fundo.
                 `h-0` sticky: fica sobre a rolagem sem empurrar nada. */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="relative">
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 h-[58px] border-b bg-canvas transition-opacity duration-300 motion-reduce:transition-none"
@@ -243,7 +231,7 @@ export function VitrineNoir({ store, secoes, detalhes, initialProdutoId }: Vitri
             ) : (
               <>
                 {/* ── O cardápio-livro ── */}
-                <section id={ID_CARDAPIO} className="scroll-mt-[58px] px-screen-x pt-9" aria-label="Cardápio">
+                <section id={ID_CARDAPIO} className="scroll-mt-[calc(var(--inset-top,0px)+58px)] px-screen-x pt-9" aria-label="Cardápio">
                   <Eyebrow className="text-ink-muted">O cardápio</Eyebrow>
                   <h2
                     className="mt-[10px] font-display font-medium"
@@ -364,6 +352,7 @@ const HeroNoir = forwardRef<
                 src={slide.imagem}
                 alt=""
                 loading={i === 0 ? 'eager' : 'lazy'}
+                fetchPriority={i === 0 ? 'high' : undefined}
                 decoding="async"
                 draggable={false}
                 className={`absolute inset-0 h-full w-full object-cover ${
@@ -483,7 +472,7 @@ function SecaoLivro({
 }) {
   if (secao.produtos.length === 0) return null
   return (
-    <div id={idDaSecao(secao.chave)} className="mt-[34px] scroll-mt-[70px]">
+    <div id={idDaSecao(secao.chave)} className="mt-[34px] scroll-mt-[calc(var(--inset-top,0px)+70px)]">
       <Eyebrow as="h2" className="mb-[6px] text-[12px] text-accent">
         {secao.titulo}
       </Eyebrow>
@@ -689,7 +678,7 @@ function EspacoNoir({ foto, texto }: { foto: string; texto: string | null }) {
 
 function VazioNoir({ store }: { store: VitrineWebProps['store'] }) {
   return (
-    <section id={ID_CARDAPIO} className="scroll-mt-[58px] px-screen-x pt-9" aria-label="Cardápio">
+    <section id={ID_CARDAPIO} className="scroll-mt-[calc(var(--inset-top,0px)+58px)] px-screen-x pt-9" aria-label="Cardápio">
       <Eyebrow className="text-ink-muted">O cardápio</Eyebrow>
       <div className="mt-6 border-y border-line py-10 text-center">
         <p
@@ -714,12 +703,7 @@ function FechoNoir({ store }: { store: VitrineWebProps['store'] }) {
   // Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o
   // cliente não divergirem na hidratação; meio minuto basta pra nunca mostrar
   // hora velha sem acordar a página à toa.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
 
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const hora = agora ? agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null

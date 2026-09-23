@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useMemo, useRef, useState } from 'react'
 import { formatarHorario, horarioDeHoje, normalizeStoreConteudo, relogioDaLoja } from '@mallevo/lib'
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
@@ -10,12 +10,14 @@ import {
   StatusAberto,
   comCopiaDeLoop,
   idDaSecao,
+  precoFinalDe,
   prefereMenosMovimento,
   useCarrossel,
   useHeroEmCena,
+  useRelogioDaLoja,
 } from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
-import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
+import type { ProdutoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
 import {
   AcaoArtesa,
@@ -33,7 +35,6 @@ import {
   SecaoNumerada,
   VEU_BANDA,
   VEU_HERO,
-  precoFinalDe,
   tipoDe,
 } from './artesa-ui'
 
@@ -177,7 +178,7 @@ export function VitrineArtesa({ store, secoes, detalhes, initialProdutoId }: Vit
             <CartPersistence />
 
             {/* ── Header: transparente → barra espresso (accent) ao rolar ── */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="relative">
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 bg-accent transition-opacity duration-300 motion-reduce:transition-none"
@@ -556,12 +557,7 @@ function VazioArtesa({ nome, numero }: { nome: string; numero: string }) {
 // ─────────────────────────────────────────────────────────────
 
 function FechoArtesa({ store }: { store: VitrineWebProps['store'] }) {
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
 
   return (

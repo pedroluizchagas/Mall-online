@@ -14,7 +14,15 @@ import { formatarHorario, horarioDeHoje, normalizeStoreConteudo, relogioDaLoja }
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
-import { Sacola, StatusAberto, idDaSecao } from '@/components/vitrines/_base'
+import {
+  Sacola,
+  StatusAberto,
+  idDaSecao,
+  precoFinalDe,
+  prefereMenosMovimento,
+  useHeroEmCena,
+  useRelogioDaLoja,
+} from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo, SecaoCatalogo } from '@/lib/catalog'
 import { formatarReais } from '@/lib/format'
@@ -28,7 +36,6 @@ import {
   Sobrelinha,
   VEU_HERO,
   descontoPct,
-  precoFinalDe,
 } from './editorial-ui'
 
 /**
@@ -70,11 +77,6 @@ interface SlideEditorial {
   subtitulo: string | null
   cta: string
   produto: ProdutoCatalogo | null
-}
-
-/** Lido na hora do gesto: quem liga "reduzir movimento" no meio da visita é atendido. */
-function prefereMenosMovimento(): boolean {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 export function VitrineEditorial({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
@@ -141,18 +143,7 @@ export function VitrineEditorial({ store, secoes, detalhes, initialProdutoId }: 
   // O hero em cena dirige o autoplay (só roda com o hero à vista) e o header
   // (transparente sobre a foto, canvas com fio depois dela) — os dois
   // limiares de `scrollY` da RN num só observer.
-  const heroRef = useRef<HTMLElement>(null)
-  const [heroEmCena, setHeroEmCena] = useState(true)
-  useEffect(() => {
-    const el = heroRef.current
-    if (!el || typeof IntersectionObserver === 'undefined') return
-    const obs = new IntersectionObserver(
-      ([entrada]) => setHeroEmCena(entrada.isIntersecting && entrada.intersectionRatio >= 0.3),
-      { threshold: [0, 0.3, 0.31] },
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
+  const { heroRef, emCena: heroEmCena } = useHeroEmCena<HTMLElement>()
 
   const rolarParaLoja = useCallback(() => {
     document.getElementById(ID_LOJA)?.scrollIntoView({
@@ -184,7 +175,7 @@ export function VitrineEditorial({ store, secoes, detalhes, initialProdutoId }: 
             {/* Chrome: transparente sobre a foto → canvas com fio depois do
                 hero; o nome da casa nasce junto com o fundo. `h-0` sticky:
                 fica sobre a rolagem sem empurrar nada. */}
-            <div className="sticky top-0 z-30 h-0">
+            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
               <div className="relative">
                 <div
                   className="pointer-events-none absolute inset-x-0 top-0 h-[58px] border-b border-line bg-canvas transition-opacity duration-300 motion-reduce:transition-none"
@@ -245,7 +236,7 @@ export function VitrineEditorial({ store, secoes, detalhes, initialProdutoId }: 
             />
 
             {/* ── Identidade da loja: nome + meta, sem pills nem caixas ── */}
-            <section id={ID_LOJA} className="scroll-mt-[58px] px-screen-x pb-1 pt-6" aria-label="Sobre a loja">
+            <section id={ID_LOJA} className="scroll-mt-[calc(var(--inset-top,0px)+58px)] px-screen-x pb-1 pt-6" aria-label="Sobre a loja">
               <h1
                 className="font-display font-extrabold tracking-[-0.5px] text-ink"
                 style={{ fontSize: 'calc(24px * var(--type-factor, 1))', lineHeight: 1.2 }}
@@ -517,7 +508,7 @@ function SecaoEditorial({
 }) {
   const [expandida, setExpandida] = useState(false)
   return (
-    <section id={idDaSecao(secao.chave)} className="mt-[30px] scroll-mt-[70px]" aria-label={secao.titulo}>
+    <section id={idDaSecao(secao.chave)} className="mt-[30px] scroll-mt-[calc(var(--inset-top,0px)+70px)]" aria-label={secao.titulo}>
       <div className="mb-[14px] flex items-baseline justify-between px-screen-x">
         <h2
           className="font-display font-bold tracking-[-0.4px] text-ink"
@@ -740,12 +731,7 @@ function FechoEditorial({ store }: { store: VitrineWebProps['store'] }) {
   // Hora de parede da LOJA, viva. Nasce vazia para o servidor (UTC) e o
   // cliente não divergirem na hidratação; meio minuto basta pra nunca mostrar
   // hora velha sem acordar a página à toa.
-  const [agora, setAgora] = useState<Date | null>(null)
-  useEffect(() => {
-    setAgora(relogioDaLoja())
-    const id = setInterval(() => setAgora(relogioDaLoja()), 30_000)
-    return () => clearInterval(id)
-  }, [])
+  const agora = useRelogioDaLoja()
 
   const hoje = horarioDeHoje(store.horarios, agora ?? relogioDaLoja())
   const hora = agora ? agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : null

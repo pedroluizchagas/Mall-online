@@ -1,10 +1,9 @@
 import type { MetadataRoute } from 'next'
-import { headers } from 'next/headers'
 
 import { getStoreSlug, getStore } from '@/lib/tenant'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { agruparPorPiso } from '@mallevo/lib'
-import { carregarLojas, urlDaLoja, urlDoShopping } from '@/lib/saguao'
+import { carregarLojas, urlDaLoja, urlDoHostAtual, urlDoShopping } from '@/lib/saguao'
 
 /**
  * sitemap.xml por tenant (host-based — D1). Reflete a loja do host:
@@ -20,13 +19,6 @@ import { carregarLojas, urlDaLoja, urlDoShopping } from '@/lib/saguao'
  */
 export const dynamic = 'force-dynamic'
 
-function baseUrl(): string {
-  const h = headers()
-  const host = h.get('host') ?? ''
-  const proto = host.includes('localhost') ? 'http' : 'https'
-  return `${proto}://${host}`
-}
-
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const slug = getStoreSlug()
   if (!slug) return sitemapDoSaguao()
@@ -39,7 +31,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return []
   }
 
-  const base = baseUrl()
+  // Mesma normalização de host do saguão (`lib/saguao.ts`): protocolo por
+  // domínio e porta preservada — a heurística local montava a base com o
+  // header `host` cru (A-21).
+  const base = urlDoHostAtual()
   const now = new Date()
 
   const supabase = createSupabaseServer()
