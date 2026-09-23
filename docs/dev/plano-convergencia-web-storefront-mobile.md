@@ -290,6 +290,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Pronto quando: draft com `shape.radius: 'nope'` devolve 200 com o raio do arquétipo.
 
 **A-03 · Alto · web + lib + banco — referências a mídia aceitas sem checagem de origem**
+> **Feito em 2026-09-22** (`1fcccc8`). Lib: `caminhoPertenceAoTenant`, `urlPublicaDoBucket` e `novoPostSchemaPara({tenantId, storeId, supabaseUrl})`. Web: `filtrarUrlsDoTenant` em `lib/upload-servidor.ts`, aplicado a `criarPost`, `galeria_mantida` e `galeria_casa_mantida`. Banco: CHECK de prefixo em `store_posts` (`20260922100000`), **`NOT VALID`** — a checagem vale para toda escrita nova, e a migration traz a query de auditoria e os `VALIDATE CONSTRAINT` prontos para quando produção for conferida. Partner passou a consumir os mesmos helpers.
+
 - Onde: `apps/web/lib/actions/conteudo.ts:113-160` (`criarPost` grava `media_path`, `media_url`, `thumb_*` como vieram); `packages/lib/src/conteudo/posts.ts:200-214` (`novoPostSchema` só exige `min(1)` e `.url()`); `apps/web/lib/actions/produtos.ts:198-210` (`galeria_mantida` filtra só `^https?://`); `apps/web/lib/actions/loja-vitrine.ts:195` (`galeria_casa_mantida` idem).
 - O que acontece: um lojista autenticado pode gravar no feed público uma URL externa, ou o objeto de outro tenant, ou colocar qualquer URL em `metadata.galeria`/`conteudo.galeria_casa`.
 - Como resolver:
@@ -310,6 +312,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 ### 4.2 Integridade de dados e Storage
 
 **A-04 · Alto · web — mídia substituída ou removida nunca é apagada do bucket**
+> **Feito em 2026-09-22** (`1fcccc8`). `removerObjetosDoTenant` + `diffDeMidia` (puro, testado) cobrem galeria retirada, recorte trocado, foto principal substituída, logo/banner anteriores e fotos da casa removidas — sempre depois de a escrita dar certo. **Pendente:** a Edge Function de reconciliação em dry-run, que varre o que já ficou órfão antes desta correção.
+
 - Onde: `apps/web/lib/actions/produtos.ts:177-243` (`aplicarMidiaVitrine`: galeria antiga menos `mantidas` e recorte substituído não sofrem `.remove()`), `:1012-1016` (`excluirProduto` apaga só `foto_url`); `apps/web/lib/actions/loja-vitrine.ts:64-90` (`uploadAsset` não remove logo/banner anterior) e `:180-229` (`montarConteudo` não remove fotos da casa retiradas).
 - Como resolver:
   1. `lib/upload-servidor.ts` ganha `removerObjetosDoTenant(bucket, urls, tenantId)` (resolve URL pública → path, confere prefixo, `.remove()` best-effort com log estruturado).
@@ -320,6 +324,8 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 - Esforço: 1,5 dia.
 
 **A-17 · Médio · web + partner — comportamentos parciais do dashboard**
+> **Feito em 2026-09-22** (`1fcccc8`), com dois desvios registrados: (1) `especificacoes` ficou `true` também no template `food`, porque o seed dá ficha técnica à Margherita e o e2e afirma isso — desligar quebraria a suíte; (2) `createServerClient<Database>` sozinho gera 311 erros de `never` porque `@supabase/ssr` 0.4.1 e `supabase-js` 2.100 divergem na aridade dos genéricos, então o retorno é tipado com **uma** conversão comentada em `supabase/server.ts`; some ao subir o `@supabase/ssr`. Bug achado no caminho: `metadata.recorte` era perdido a cada edição, e o gate escondendo um bloco apagava o dado.
+
 - `publicarVitrine` zera `stores.conteudo` quando o FormData não traz `conteudo` (`loja-vitrine.ts:170,207-208`) e ignora `galeria_casa` nesse caso → separar "não enviou" de "enviou vazio": só gravar `null` quando `conteudo === ''` explícito.
 - Gate de mídia hardcoded (`produto-form.tsx:372`) → `DashboardTemplate.produto` ganha `midia: { galeria, recorte, especificacoes, unidade }` por template no registry da lib; o form lê daí.
 - Extensão do objeto derivada do nome do arquivo (`produtos.ts:185`) → usar `extensaoSegura(mime)` já existente em `loja-vitrine.ts:46-54` (mover para `lib/upload-servidor.ts`).
@@ -475,8 +481,9 @@ Formato: **ID · severidade · superfície**. Cada item traz onde está, o que a
 ## 5. Fase 6 — Endurecimento e fechamento do ciclo
 
 **Andamento em 2026-09-22.** Fechados: A-01, A-02, A-13, A-18 (`648869e`), A-08
-(`1c5c341`), A-16 (`872f224`), A-05, A-06, A-19 (`18b39b4`). Em execução:
-A-03/A-04/A-17 no dashboard e A-07/A-09/A-11/A-12/A-15/A-20/A-21 no storefront.
+(`1c5c341`), A-16 (`872f224`), A-22 passo 4 (`a682da2`), A-05, A-06, A-19
+(`18b39b4`), A-03, A-04, A-17 (`1fcccc8`). Em execução: A-07, A-09, A-11, A-12,
+A-15, A-20 e A-21 no storefront.
 Bloqueados por falta de Docker nesta máquina (`sudo` pede senha): `pnpm qa:local`,
 `supabase db reset` com o seed e o consumer fora do mock. Não executados por
 dependerem de decisão: merge em `main`, deploy de produção e o destino do apex.
