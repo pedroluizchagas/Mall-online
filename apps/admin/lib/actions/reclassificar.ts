@@ -21,7 +21,7 @@ export async function reclassificarLoja(formData: FormData) {
     data: { user },
   } = await userClient.auth.getUser()
   if (!user) return { erro: 'Não autenticado' }
-  if (user.user_metadata?.role !== 'admin') return { erro: 'Acesso negado' }
+  if (user.app_metadata?.role !== 'admin') return { erro: 'Acesso negado' }
 
   const dados = schema.safeParse({
     store_id: formData.get('store_id'),

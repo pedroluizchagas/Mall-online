@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!ativo) return
       setUser(session?.user ?? null)
       if (session?.user) {
-        const perfil = await getConsumer(supabase, session.user.id)
+        const perfil = await getConsumer(supabase)
         if (ativo) setConsumer(perfil)
       }
       if (ativo) setCarregando(false)
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        const perfil = await getConsumer(supabase, session.user.id)
+        const perfil = await getConsumer(supabase)
         setConsumer(perfil)
       } else {
         setConsumer(null)

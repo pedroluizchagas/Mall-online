@@ -129,7 +129,9 @@ export default function EtapaDocumentos() {
         online: false,
         pagarme_onboarding_status: 'pending',
       })
-      .select()
+      // Colunas pelo nome: CPF e CNH não são legíveis pela API, então
+      // `.select()` (todas) falharia. Mesmas colunas do `Courier` do store.
+      .select('id, nome, telefone, foto_url, tipo, status, online, pagarme_recipient_id, pagarme_onboarding_status, tenant_id, veiculo_tipo, veiculo_placa')
       .single()
 
     if (courierError) {

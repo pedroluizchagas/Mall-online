@@ -61,15 +61,19 @@ AS $$
   SELECT id FROM couriers WHERE user_id = auth.uid() LIMIT 1;
 $$;
 
--- Verifica se o usuário autenticado é admin
+-- Verifica se o usuário autenticado é admin.
+-- O papel vem de app_metadata, que só o servidor grava. user_metadata o
+-- próprio usuário edita pelo SDK — até a migration 20261010150000 era lido
+-- aqui, e qualquer conta virava admin.
 CREATE OR REPLACE FUNCTION is_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
+SET search_path = public
 AS $$
   SELECT COALESCE(
-    (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin',
+    (auth.jwt() -> 'app_metadata' ->> 'role') = 'admin',
     false
   );
 $$;
@@ -337,17 +341,12 @@ CREATE POLICY "consumers_update_proprio"
   USING (user_id = auth.uid())
   WITH CHECK (user_id = auth.uid());
 
--- Lojista pode ver dados básicos do consumidor de seus pedidos
+-- Lojista vê a linha do consumidor de seus pedidos — mas só as colunas
+-- comuns (ver privilégios de coluna abaixo)
 CREATE POLICY "consumers_select_lojista"
   ON consumers FOR SELECT
   TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM orders
-      WHERE orders.consumer_id = consumers.id
-      AND orders.tenant_id = my_tenant_id()
-    )
-  );
+  USING (consumer_has_order_with_tenant(id));
 
 -- Admin vê todos os consumidores
 CREATE POLICY "consumers_select_admin"
@@ -355,6 +354,15 @@ CREATE POLICY "consumers_select_admin"
   TO authenticated
   USING (is_admin());
 ```
+
+RLS escolhe linhas, não colunas: com só as policies, o lojista lia CPF, data
+de nascimento e todos os endereços de quem comprou dele. Desde a migration
+20261010150000 o SELECT de tabela é revogado e cada coluna comum recebe
+`GRANT SELECT (coluna)`; `cpf`, `data_nascimento` e `enderecos` ficam de fora
+para `anon` e `authenticated`. O próprio consumidor lê o perfil inteiro pela
+RPC `meu_perfil_consumidor()` (SECURITY DEFINER, filtra por `auth.uid()`);
+gravar continua sendo UPDATE na tabela. Coluna nova precisa de GRANT explícito,
+e `select('*')` em `consumers` falha para o cliente.
 
 -----
 
@@ -370,14 +378,23 @@ CREATE POLICY "couriers_select_proprio"
   USING (user_id = auth.uid());
 
 -- Lojista vê entregadores próprios vinculados ao seu tenant
--- e entregadores autônomos aprovados (para atribuição de pedidos)
+-- e entregadores autônomos aprovados (para atribuição de pedidos).
+-- `my_tenant_id() IS NOT NULL`: sem ele, qualquer conta logada — cliente
+-- inclusive — listava o pool inteiro.
 CREATE POLICY "couriers_select_lojista"
   ON couriers FOR SELECT
   TO authenticated
   USING (
-    (tenant_id = my_tenant_id())        -- entregador próprio
-    OR (tipo = 'autonomo' AND status = 'aprovado')  -- pool geral
+    tenant_id = my_tenant_id()                       -- entregador próprio
+    OR (tipo = 'autonomo' AND status = 'aprovado'
+        AND my_tenant_id() IS NOT NULL)              -- pool geral
   );
+
+-- Consumidor vê quem entrega (ou entregou) um pedido dele
+CREATE POLICY "couriers_select_consumidor"
+  ON couriers FOR SELECT
+  TO authenticated
+  USING (consumer_has_assignment_with_courier(id));
 
 -- Admin vê todos os entregadores
 CREATE POLICY "couriers_select_admin"
@@ -402,6 +419,16 @@ CREATE POLICY "couriers_update_admin"
   TO authenticated
   USING (is_admin());
 ```
+
+Como em `consumers`, o SELECT de tabela é revogado e as colunas comuns são
+liberadas uma a uma (migration 20261010150000): `cpf`, `cnh_numero` e
+`cnh_foto_url` não são legíveis por `anon` nem `authenticated`. O admin lê
+esses campos pela RPC `admin_documentos_entregadores(ids)`, que confere
+`is_admin()` no banco. A foto da CNH fica no bucket **privado**
+`courier-docs`: o entregador lê a própria pasta, o admin lê tudo e abre a
+foto por URL assinada. Coluna nova precisa de GRANT explícito, e
+`select('*')` (inclusive `insert(...).select()`) em `couriers` falha para o
+cliente.
 
 -----
 
@@ -818,9 +845,14 @@ CREATE TRIGGER trigger_limite_produtos
    Billing são verificados com `stripe.webhooks.constructEvent` usando
    `STRIPE_WEBHOOK_SECRET`. Requisições sem assinatura válida retornam 400
    sem processar nada.
-1. Campos sensíveis como `pagarme_recipient_id`, `stripe_customer_id`,
-   `cpf`, `cnpj` e `cnh_numero` nunca são retornados em queries públicas —
-   as policies garantem isso.
+1. Policy não esconde coluna: quem enxerga a linha enxerga todas as colunas
+   que tiver privilégio de ler. Por isso `cpf`/`cnh_numero`/`cnh_foto_url`
+   (couriers) e `cpf`/`data_nascimento`/`enderecos` (consumers) estão fora
+   dos privilégios de coluna de `anon` e `authenticated`, e só saem por RPC
+   SECURITY DEFINER que confere quem pede.
+1. Papel de autorização (admin) mora em `app_metadata`, que só o servidor
+   grava. `user_metadata` é editável pelo próprio usuário — serve para
+   rótulo e preferência, nunca para decidir acesso.
 1. A policy de `courier_locations` garante que o consumidor só enxerga
    a localização do entregador enquanto a entrega está ativa
    (status `aceita` ou `coletada`). Após entrega, a posição deixa de

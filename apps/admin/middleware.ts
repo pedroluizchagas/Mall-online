@@ -46,7 +46,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/entrar', request.url))
   }
 
-  if (user.user_metadata?.role !== 'admin') {
+  // O papel vem de app_metadata, que só o servidor grava. user_metadata o
+  // próprio usuário edita pelo SDK — conferir lá deixava qualquer conta entrar.
+  if (user.app_metadata?.role !== 'admin') {
     return NextResponse.redirect(new URL('/entrar?erro=acesso-negado', request.url))
   }
 

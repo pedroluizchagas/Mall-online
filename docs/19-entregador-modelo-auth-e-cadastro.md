@@ -1305,7 +1305,7 @@ CREATE POLICY "leitura_admin_courier"
   TO authenticated
   USING (
     bucket_id = 'courier-docs'
-    AND (auth.jwt() -> 'user_metadata' ->> 'role') = 'admin'
+    AND is_admin()  -- app_metadata; user_metadata o próprio usuário edita
   );
 ```
 

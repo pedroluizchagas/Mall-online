@@ -11,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 async function verificarAdmin(supabase: any): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.user_metadata?.role !== 'admin') {
+  if (!user || user.app_metadata?.role !== 'admin') {
     throw new Error('Acesso negado')
   }
 }
@@ -165,7 +165,7 @@ export async function getEntregadores(filtro?: {
   let query = supabase
     .from('couriers')
     .select(`
-      id, nome, telefone, cpf, foto_url, cnh_foto_url,
+      id, nome, telefone, foto_url,
       tipo, status, veiculo_tipo, veiculo_placa,
       pagarme_onboarding_status, criado_em, aprovado_em,
       tenants (nome_responsavel)
@@ -179,7 +179,58 @@ export async function getEntregadores(filtro?: {
 
   const { data, error } = await query.limit(100)
   if (error) return []
-  return data ?? []
+  return comDocumentos(supabase, data ?? [])
+}
+
+interface DocumentosEntregador {
+  id: string
+  cpf: string | null
+  cnh_foto_url: string | null
+}
+
+/**
+ * CPF e CNH não são legíveis direto na tabela (migration
+ * 20261010150000_seguranca_dados_pessoais): vêm pela RPC, que confere
+ * is_admin() no banco. A foto da CNH mora no bucket privado `courier-docs`,
+ * então o link vira uma URL assinada de 10 minutos.
+ */
+async function comDocumentos<T extends { id: string }>(
+  supabase: ReturnType<typeof createSupabaseServer>,
+  entregadores: T[]
+) {
+  if (entregadores.length === 0) return []
+
+  const { data: documentos } = await supabase.rpc('admin_documentos_entregadores', {
+    p_ids: entregadores.map((e) => e.id),
+  })
+  const porId = new Map<string, DocumentosEntregador>(
+    ((documentos ?? []) as DocumentosEntregador[]).map((d) => [d.id, d])
+  )
+
+  const caminhos = [...porId.values()]
+    .map((d) => caminhoNoBucket(d.cnh_foto_url))
+    .filter((c): c is string => c !== null)
+  const { data: assinadas } = caminhos.length
+    ? await supabase.storage.from('courier-docs').createSignedUrls(caminhos, 600)
+    : { data: [] }
+  const urlPorCaminho = new Map((assinadas ?? []).map((a) => [a.path, a.signedUrl]))
+
+  return entregadores.map((entregador) => {
+    const documento = porId.get(entregador.id)
+    const caminho = caminhoNoBucket(documento?.cnh_foto_url ?? null)
+    return {
+      ...entregador,
+      cpf: documento?.cpf ?? null,
+      cnh_foto_url: caminho ? urlPorCaminho.get(caminho) ?? null : null,
+    }
+  })
+}
+
+/** O banco guarda a URL pública antiga: `…/courier-docs/<uid>/cnh.jpg` → `<uid>/cnh.jpg`. */
+function caminhoNoBucket(url: string | null): string | null {
+  if (!url) return null
+  const caminho = url.split('/courier-docs/')[1]
+  return caminho ? caminho.split('?')[0] : null
 }
 
 export async function atualizarStatusEntregador(

@@ -21,10 +21,6 @@ import { useAuthStore } from '@/store/useAuthStore'
  * para "sem perfil carregado", que é o estado que já existia antes.
  */
 
-/** Colunas do perfil — uma lista só, usada aqui e no refresh da aba Perfil. */
-export const COLUNAS_CONSUMER =
-  'id, nome, telefone, foto_url, cpf, data_nascimento, enderecos'
-
 interface LinhaConsumer {
   id: string
   nome: string
@@ -52,12 +48,14 @@ export function paraPerfil(linha: LinhaConsumer) {
   }
 }
 
-async function buscar(userId: string) {
-  const { data } = await supabase
-    .from('consumers')
-    .select(COLUNAS_CONSUMER)
-    .eq('user_id', userId)
-    .maybeSingle()
+/**
+ * CPF, nascimento e endereços não são legíveis direto na tabela (migration
+ * 20261010150000_seguranca_dados_pessoais): o perfil do próprio usuário vem
+ * pela RPC, que filtra por auth.uid() no banco. Gravar continua sendo
+ * UPDATE em `consumers`.
+ */
+async function buscar() {
+  const { data } = await supabase.rpc('meu_perfil_consumidor').maybeSingle()
 
   return (data as LinhaConsumer | null) ?? null
 }
@@ -71,7 +69,7 @@ async function buscar(userId: string) {
  */
 export async function garantirConsumer(user: User): Promise<void> {
   try {
-    let linha = await buscar(user.id)
+    let linha = await buscar()
 
     if (!linha) {
       const metadata = user.user_metadata ?? {}
@@ -93,7 +91,7 @@ export async function garantirConsumer(user: User): Promise<void> {
       // abaixo acha a linha que a primeira criou.
       if (error && error.code !== '23505') return
 
-      linha = await buscar(user.id)
+      linha = await buscar()
     }
 
     if (linha) {

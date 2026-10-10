@@ -59,7 +59,7 @@ export default async function LayoutAdmin({
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/entrar')
 
-  const role = user.user_metadata?.role
+  const role = user.app_metadata?.role
   if (role !== 'admin') redirect('/dashboard')
 
   return (
@@ -124,7 +124,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // Verificar se o usuário é admin
 async function verificarAdmin(supabase: any): Promise<void> {
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.user_metadata?.role !== 'admin') {
+  if (!user || user.app_metadata?.role !== 'admin') {
     throw new Error('Acesso negado')
   }
 }
@@ -1232,8 +1232,9 @@ export default async function PaginaPlanos() {
 
 ## CHECKLIST DO MODULO
 
-- [ ] Usuário admin criado no Supabase com `user_metadata.role = 'admin'`
-  via Supabase Dashboard > Authentication > Users > editar metadados
+- [ ] Usuário admin com `app_metadata.role = 'admin'` — SQL editor:
+  `update auth.users set raw_app_meta_data = raw_app_meta_data || '{"role":"admin"}' where email = '…'`.
+  Nunca `user_metadata`: o próprio usuário edita esse campo pelo SDK
 - [ ] Middleware protege `/admin/*` verificando role no JWT (arquivo 08)
 - [ ] Layout do grupo `(admin)` faz segunda verificação server-side
 - [ ] `verificarAdmin()` chamada em todas as Server Actions admin

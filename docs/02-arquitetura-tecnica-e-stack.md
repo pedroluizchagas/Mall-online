@@ -372,7 +372,11 @@ Supabase Auth usando metadados no JWT:
 |Lojista   |`user_metadata.role = 'tenant'`  |Dashboard web + app lojista (mobile-partner)|
 |Consumidor|`user_metadata.role = 'consumer'`|App consumidor    |
 |Entregador|`user_metadata.role = 'courier'` |App entregador    |
-|Admin     |`user_metadata.role = 'admin'`   |Painel super admin|
+|Admin     |`app_metadata.role = 'admin'`    |Painel super admin|
+
+O papel de admin vem de `app_metadata`, que só o servidor grava; os outros
+rótulos ficam em `user_metadata`, que o próprio usuário edita — por isso
+nenhum deles decide acesso sozinho.
 
 As políticas RLS verificam o `role` e o ID correspondente para filtrar os dados.
 Detalhes completos das políticas estão no arquivo 05.

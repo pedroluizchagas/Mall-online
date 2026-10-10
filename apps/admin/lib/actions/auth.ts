@@ -32,7 +32,7 @@ export async function loginAdmin(formData: FormData) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (user?.user_metadata?.role !== 'admin') {
+  if (user?.app_metadata?.role !== 'admin') {
     await supabase.auth.signOut()
     return { erro: 'Acesso restrito a administradores.' }
   }

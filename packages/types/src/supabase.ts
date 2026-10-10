@@ -2748,6 +2748,15 @@ export type Database = {
           rota_id: string
         }[]
       }
+      admin_documentos_entregadores: {
+        Args: { p_ids: string[] }
+        Returns: {
+          cnh_foto_url: string
+          cnh_numero: string
+          cpf: string
+          id: string
+        }[]
+      }
       calcular_frete: {
         Args: {
           p_distancia_m: number
@@ -2786,6 +2795,10 @@ export type Database = {
         }[]
       }
       cfg: { Args: { p_chave: string }; Returns: number }
+      consumer_has_assignment_with_courier: {
+        Args: { p_courier_id: string }
+        Returns: boolean
+      }
       consumer_has_order_with_tenant: {
         Args: { p_consumer_id: string }
         Returns: boolean
@@ -2829,6 +2842,18 @@ export type Database = {
       get_user_id_by_email: { Args: { p_email: string }; Returns: string }
       increment_post_view: { Args: { post_id: string }; Returns: undefined }
       is_admin: { Args: never; Returns: boolean }
+      meu_perfil_consumidor: {
+        Args: never
+        Returns: {
+          cpf: string
+          data_nascimento: string
+          enderecos: Json
+          foto_url: string
+          id: string
+          nome: string
+          telefone: string
+        }[]
+      }
       montar_rota: {
         Args: { p_agrupar?: boolean; p_order_id: string }
         Returns: string

@@ -21,7 +21,7 @@ export default async function PaginaLojasOutros() {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) redirect('/entrar')
-  if (user.user_metadata?.role !== 'admin') redirect('/entrar?erro=acesso-negado')
+  if (user.app_metadata?.role !== 'admin') redirect('/entrar?erro=acesso-negado')
 
   // Categoria 'outros' é única globalmente (tenant_id IS NULL).
   const { data: catOutros } = (await supabase
