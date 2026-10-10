@@ -390,12 +390,18 @@ export function criarSupabaseMock() {
     channel: canalFake,
     removeChannel: () => {},
     /**
-     * Toda RPC vira no-op bem-sucedido. Aceita nome e argumentos porque as
-     * telas chamam com payload (ex.: `increment_post_view` no Explorar) e o
-     * retorno é ignorado — o contador só existe no backend real.
+     * `meu_perfil_consumidor` devolve o perfil da demo: no backend real a RPC
+     * filtra por auth.uid(), aqui pelo usuário falso — e lib/perfil.ts chama
+     * `.maybeSingle()` em cima dela, então precisa ser uma query, não uma
+     * Promise. As outras RPCs viram no-op bem-sucedido: as telas chamam com
+     * payload (ex.: `increment_post_view` no Explorar) e o retorno é ignorado
+     * — o contador só existe no backend real.
      */
-    async rpc(_fn?: string, _args?: Record<string, unknown>) {
-      return ok(null)
+    rpc(fn?: string, _args?: Record<string, unknown>) {
+      if (fn === 'meu_perfil_consumidor') {
+        return new MockQuery('consumers', db).select().eq('user_id', MOCK_USER.id)
+      }
+      return Promise.resolve(ok(null))
     },
   }
 }
