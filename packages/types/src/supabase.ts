@@ -2924,6 +2924,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      tenant_has_delivery_with_courier: {
+        Args: { p_courier_id: string }
+        Returns: boolean
+      }
       tenant_tracking_courier: {
         Args: { p_courier_id: string }
         Returns: boolean

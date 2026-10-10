@@ -385,17 +385,19 @@ CREATE POLICY "couriers_select_proprio"
   TO authenticated
   USING (user_id = auth.uid());
 
--- Lojista vê entregadores próprios vinculados ao seu tenant
--- e entregadores autônomos aprovados (para atribuição de pedidos).
--- `my_tenant_id() IS NOT NULL`: sem ele, qualquer conta logada — cliente
--- inclusive — listava o pool inteiro.
+-- Lojista vê os entregadores próprios do tenant, o pool de autônomos
+-- aprovados que estão ONLINE (despacho) e quem foi atribuído a pedidos da
+-- loja — pendente, aceita, coletada ou entregue —, para o histórico não
+-- perder o entregador quando ele fica offline. `my_tenant_id() IS NOT NULL`:
+-- sem ele, qualquer conta logada — cliente inclusive — listava o pool.
 CREATE POLICY "couriers_select_lojista"
   ON couriers FOR SELECT
   TO authenticated
   USING (
     tenant_id = my_tenant_id()                       -- entregador próprio
-    OR (tipo = 'autonomo' AND status = 'aprovado'
-        AND my_tenant_id() IS NOT NULL)              -- pool geral
+    OR (tipo = 'autonomo' AND status = 'aprovado' AND online
+        AND my_tenant_id() IS NOT NULL)              -- pool de despacho
+    OR tenant_has_delivery_with_courier(id)          -- pedidos da loja
   );
 
 -- Consumidor vê quem entrega (ou entregou) um pedido dele
