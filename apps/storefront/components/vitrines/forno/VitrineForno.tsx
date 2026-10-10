@@ -105,7 +105,7 @@ const VAZAMENTO = DISCO_HERO * 0.3 // 27,6% da largura
  * display do tema. Muda o esmagamento da voz, nunca o layout.
  */
 const BLACK: CSSProperties = {
-  fontFamily: '"Archivo Black", var(--font-display), var(--font-jakarta), sans-serif',
+  fontFamily: '"Archivo Black", var(--font-display, system-ui), var(--font-jakarta, system-ui), sans-serif',
   fontWeight: 400,
 }
 

@@ -83,7 +83,7 @@ const MARQUEE = ['SABOR DE VERDADE', 'INGREDIENTES DA ESTAÇÃO', 'FEITO À MÃO
  * display/body do tema. Muda o sabor da assinatura, nunca o layout.
  */
 const BALOO: CSSProperties = {
-  fontFamily: '"Baloo 2", var(--font-display), var(--font-jakarta), sans-serif',
+  fontFamily: '"Baloo 2", var(--font-display, system-ui), var(--font-jakarta, system-ui), sans-serif',
   fontWeight: 800,
 }
 const CAVEAT: CSSProperties = {

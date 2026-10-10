@@ -35,11 +35,15 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-jakarta)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-mono)', 'JetBrains Mono', 'monospace'],
+        // Toda `var()` de fonte leva valor de reserva: se a classe do next/font
+        // no <html> divergir do CSS (cache de build da Vercel, 2026-10-10), a
+        // var some e uma `var()` sem reserva invalida a declaração inteira — a
+        // página caía em Times New Roman em vez de só perder o Jakarta.
+        sans: ['var(--font-jakarta, system-ui)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono, monospace)', 'JetBrains Mono', 'monospace'],
         // Dirigidas por StoreTheme: fora da loja caem no Jakarta (:root).
-        display: ['var(--font-display)', 'var(--font-jakarta)', 'system-ui', 'sans-serif'],
-        body: ['var(--font-body)', 'var(--font-jakarta)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display, system-ui)', 'var(--font-jakarta, system-ui)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-body, system-ui)', 'var(--font-jakarta, system-ui)', 'system-ui', 'sans-serif'],
       },
       colors: {
         // Tokens dirigidos por StoreTheme: `var(--token, <fallback Mallevo>)`.

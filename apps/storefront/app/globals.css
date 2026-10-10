@@ -19,8 +19,8 @@
   --warning: #f2b84b;
   --danger: #ff6d5e;
   /* Tipografia: default Mallevo (Jakarta). StoreThemeRoot sobrescreve por loja. */
-  --font-display: var(--font-jakarta);
-  --font-body: var(--font-jakarta);
+  --font-display: var(--font-jakarta, system-ui);
+  --font-body: var(--font-jakarta, system-ui);
   --type-factor: 1;
   /* Forma/densidade: default Mallevo (= fallbacks do tailwind.config).
      Lojas com preset v2 sobrescrevem via StoreThemeRoot (toCssVars). */
@@ -47,8 +47,10 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--ink);
-  /* Corpo segue a pele da loja (StoreThemeRoot sobrescreve --font-body). */
-  font-family: var(--font-body), var(--font-jakarta), system-ui, sans-serif;
+  /* Corpo segue a pele da loja (StoreThemeRoot sobrescreve --font-body).
+     As `var()` têm reserva: sem ela, uma var ausente invalida a declaração
+     inteira e o navegador cai na serifa padrão (ver tailwind.config). */
+  font-family: var(--font-body, system-ui), var(--font-jakarta, system-ui), system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -59,7 +61,7 @@ a {
 }
 
 .font-mono {
-  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-family: var(--font-mono, monospace), 'JetBrains Mono', monospace;
 }
 
 /* Entrada ao rolar das composições de computador. Progressiva de propósito:
