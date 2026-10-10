@@ -31,6 +31,17 @@ const IGNORED_SUBDOMAINS = new Set(['www', 'app', 'admin', 'api'])
 /** Rotas do saguão no apex: home, Explorar e um piso. */
 const ROTAS_SAGUAO = /^\/(|explorar|piso\/[a-z0-9-]+)$/
 
+/**
+ * Termos de Uso e Política de Privacidade têm UM texto oficial, publicado em
+ * `mallevo.com.br` pela landing (repo lp-mallonline, apps/lp-consumidor) — as
+ * mesmas URLs que os apps abrem. Toda loja, a URL de deploy e o dev apontam
+ * para lá. No apex não há redirect: se um dia `mallevo.com.br` vier para o
+ * storefront, os documentos precisam vir junto (senão vira laço).
+ */
+const DOCUMENTOS_LEGAIS = /^\/(termos|privacidade)\/?$/
+const SITE_DOCUMENTOS = 'https://mallevo.com.br'
+const HOSTS_DOCUMENTOS = new Set(['mallevo.com.br', 'www.mallevo.com.br'])
+
 /** Host sem porta e em minúsculas — `Host:` não é case-sensitive. */
 function normalizarHost(hostname: string): string {
   return hostname.split(':')[0].toLowerCase()
@@ -87,6 +98,11 @@ export async function middleware(request: NextRequest) {
   }
 
   const slug = getSubdomain(hostname)
+
+  const legal = request.nextUrl.pathname.match(DOCUMENTOS_LEGAIS)
+  if (legal && !HOSTS_DOCUMENTOS.has(normalizarHost(hostname))) {
+    return NextResponse.redirect(`${SITE_DOCUMENTOS}/${legal[1]}`, 308)
+  }
 
   // Header `x-store-slug` injetado no request para as páginas lerem via
   // next/headers (roteamento host-based — D1; NÃO há rewrite para
