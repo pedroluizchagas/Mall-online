@@ -216,7 +216,7 @@ Regra original: nenhuma vitrine, em nenhuma superfície, inventa dado. O que nã
 
 **Ferramenta de QA (mantida):** com `STOREFRONT_ALLOW_PREVIEW_OVERRIDE=true`, `?preset=<arquetipo>&categoria=<slug>` troca pele e categoria só naquele request. Nunca ligar em produção.
 
-**Desktop (decisão mantida):** coluna central de 480px nas vitrines de loja; desktop nativo só depois e só nas mais usadas; saguão nasce responsivo.
+**Desktop (decisão mantida):** coluna central de 480px nas vitrines de loja; desktop nativo só depois e só nas mais usadas; saguão nasce responsivo. **Revista em 2026-10-10:** a coluna saiu do layout e virou decisão por página (`MolduraDaVitrine`); layout padrão e vitrine artesã já têm composição de computador — ver [05 "Largura no computador"](../store-theme/05-aplicacao-storefront-consumer.md).
 
 **Validação registrada:** tsc, 22 testes, `next build`, smoke das 18 com 200 e HTML distinto, capturas (2026-09-21).
 
@@ -622,7 +622,7 @@ Fechadas em 2026-09-19 (mantidas):
 | # | Pergunta | Decisão |
 |---|---|---|
 | 1 | Checkout do storefront | Veste a pele da loja. No app o checkout continua Mallevo |
-| 2 | Desktop | Coluna central de 480px nas vitrines; desktop nativo depois e só nas mais usadas. Saguão nasce responsivo |
+| 2 | Desktop | Coluna central de 480px nas vitrines; desktop nativo depois e só nas mais usadas. Saguão nasce responsivo. 2026-10-10: desktop nativo começou (padrão + artesã); as demais seguem na coluna |
 | 3 | Ordem das vitrines web | Onda 1 = alimentação e mercado (cumprida) |
 | 4 | Expor forma, modo escuro e fontes ao lojista | Não. Arquétipo + paleta + accent |
 | 5 | Saguão web no apex | Neste ciclo (entregue em código) |

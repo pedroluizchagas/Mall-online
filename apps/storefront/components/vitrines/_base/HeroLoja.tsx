@@ -38,7 +38,7 @@ export function HeroLoja({ store, conteudo }: { store: Store; conteudo: StoreCon
     <header>
       <div
         className={`relative w-full overflow-hidden ${
-          comFoto ? 'min-h-[320px] bg-ink' : 'min-h-[260px] bg-accent'
+          comFoto ? 'min-h-[320px] bg-ink md:min-h-[440px] lg:min-h-[520px]' : 'min-h-[260px] bg-accent md:min-h-[360px]'
         }`}
       >
         {comFoto ? (
@@ -59,7 +59,7 @@ export function HeroLoja({ store, conteudo }: { store: Store; conteudo: StoreCon
         ) : null}
 
         <div
-          className={`relative flex min-h-[inherit] flex-col justify-end gap-3 px-screen-x pb-6 pt-16 ${
+          className={`relative flex min-h-[inherit] flex-col justify-end gap-3 px-screen-x pb-6 pt-16 md:pb-12 md:mx-auto md:w-full md:max-w-[1200px] md:px-8 ${
             comFoto ? 'text-white' : 'text-accent-ink'
           }`}
         >
@@ -82,12 +82,12 @@ export function HeroLoja({ store, conteudo }: { store: Store; conteudo: StoreCon
             </p>
           ) : null}
 
-          <h1 className="font-display text-display-lg font-extrabold leading-[1.05] tracking-tight">
+          <h1 className="font-display text-display-lg font-extrabold leading-[1.05] tracking-tight md:max-w-[18ch] md:text-[clamp(36px,4.2vw,60px)]">
             {titulo}
           </h1>
 
           {subtitulo ? (
-            <p className="line-clamp-3 max-w-prose text-[15px] font-medium leading-snug opacity-90">
+            <p className="line-clamp-3 max-w-prose text-[15px] font-medium leading-snug opacity-90 md:text-[17px]">
               {subtitulo}
             </p>
           ) : null}
@@ -98,39 +98,41 @@ export function HeroLoja({ store, conteudo }: { store: Store; conteudo: StoreCon
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-b border-line bg-surface px-screen-x py-4">
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          {store.tempo_entrega != null ? (
-            <span className="text-[13px] font-semibold text-ink-muted">
-              {store.tempo_entrega} min
+      <div className="border-b border-line bg-surface">
+        <div className="flex flex-col gap-3 px-screen-x py-4 md:flex-row md:items-center md:justify-between md:gap-8 md:py-5 md:mx-auto md:w-full md:max-w-[1200px] md:px-8">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {store.tempo_entrega != null ? (
+              <span className="text-[13px] font-semibold text-ink-muted">
+                {store.tempo_entrega} min
+              </span>
+            ) : null}
+            <span
+              className={`text-[13px] font-semibold ${
+                fretGratis ? 'text-success' : 'text-ink-muted'
+              }`}
+            >
+              {fretGratis ? 'Frete grátis' : formatarReais(store.taxa_entrega ?? 0)}
             </span>
-          ) : null}
-          <span
-            className={`text-[13px] font-semibold ${
-              fretGratis ? 'text-success' : 'text-ink-muted'
-            }`}
-          >
-            {fretGratis ? 'Frete grátis' : formatarReais(store.taxa_entrega ?? 0)}
-          </span>
-          <StatusAberto horarios={store.horarios} />
-        </div>
+            <StatusAberto horarios={store.horarios} />
+          </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {metodos.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {metodos.map((m) => (
-                <Badge key={m}>{m}</Badge>
-              ))}
-            </div>
-          ) : (
-            <span />
-          )}
-          <a
-            href="#catalogo"
-            className="inline-flex h-10 items-center rounded-pill bg-accent px-5 text-sm font-extrabold text-accent-ink transition-opacity hover:opacity-90"
-          >
-            {cta}
-          </a>
+          <div className="flex flex-wrap items-center justify-between gap-3 md:gap-6">
+            {metodos.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {metodos.map((m) => (
+                  <Badge key={m}>{m}</Badge>
+                ))}
+              </div>
+            ) : (
+              <span />
+            )}
+            <a
+              href="#catalogo"
+              className="inline-flex h-10 items-center rounded-pill bg-accent px-5 text-sm font-extrabold text-accent-ink transition-opacity hover:opacity-90"
+            >
+              {cta}
+            </a>
+          </div>
         </div>
       </div>
     </header>

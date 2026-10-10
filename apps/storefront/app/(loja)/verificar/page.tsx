@@ -34,11 +34,13 @@ export default function VerificarPage({
   searchParams: { email?: string; next?: string }
 }) {
   return (
-    <main className="bg-canvas">
-      <VerificarClient
-        email={searchParams.email ?? ''}
-        next={destinoSeguro(searchParams.next)}
-      />
+    <main className="bg-canvas md:flex md:min-h-screen md:items-center md:justify-center md:px-6 md:py-12">
+      <div className="w-full md:max-w-[460px]">
+        <VerificarClient
+          email={searchParams.email ?? ''}
+          next={destinoSeguro(searchParams.next)}
+        />
+      </div>
     </main>
   )
 }

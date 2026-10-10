@@ -51,9 +51,9 @@ export function NavSecoes({ secoes }: { secoes: SecaoNav[] }) {
   return (
     <nav
       aria-label="Seções"
-      className="sticky top-[var(--inset-top,0px)] z-10 -mx-px border-b border-line bg-canvas/90 backdrop-blur"
+      className="sticky top-[var(--inset-top,0px)] z-10 border-b border-line bg-canvas/90 backdrop-blur"
     >
-      <ul className="flex gap-2 overflow-x-auto px-screen-x py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <ul className="flex gap-2 overflow-x-auto px-screen-x py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-auto md:w-full md:max-w-[1200px] md:px-8">
         {secoes.map((s) => {
           const atual = s.chave === ativa
           return (

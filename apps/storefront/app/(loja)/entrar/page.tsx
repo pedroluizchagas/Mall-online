@@ -37,8 +37,10 @@ export default function EntrarPage({
   searchParams: { next?: string }
 }) {
   return (
-    <main className="bg-canvas">
-      <EntrarClient next={destinoSeguro(searchParams.next)} />
+    <main className="bg-canvas md:flex md:min-h-screen md:items-center md:justify-center md:px-6 md:py-12">
+      <div className="w-full md:max-w-[460px]">
+        <EntrarClient next={destinoSeguro(searchParams.next)} />
+      </div>
     </main>
   )
 }

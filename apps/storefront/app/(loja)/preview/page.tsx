@@ -4,6 +4,7 @@ import { getStore, getStoreSlug } from '@/lib/tenant'
 import { carregarCatalogo, carregarDetalhesCatalogo } from '@/lib/catalog'
 import { aplicarRascunho, decodificarRascunho } from '@/lib/rascunho'
 import { escolherVitrineWeb } from '@/components/vitrines'
+import { ColunaCelular, MolduraDaVitrine } from '@/components/vitrines/MolduraDaVitrine'
 import { resolveVitrineDaLoja } from '@/lib/vitrine'
 import { StoreThemeRoot } from '@/components/store/StoreThemeRoot'
 import { ShellApp } from '@/components/store/ShellApp'
@@ -16,7 +17,8 @@ import { hasExplicitPreset } from '@mallevo/lib'
  *
  * O layout do grupo `(loja)` já injeta o tema PUBLICADO no `:root`; o
  * `StoreThemeRoot` aqui escreve o do rascunho depois no documento e vence a
- * cascata — sem duplicar wrapper de coluna.
+ * cascata. A largura sai da loja COM o rascunho (`MolduraDaVitrine`): trocar
+ * de arquétipo no editor pode trocar de vitrine.
  *
  * `?app=1` = moldura "App Mallevo" do dashboard: a mesma vitrine dentro do
  * chrome do app (status bar, voltar e barra de menu), ver `ShellApp`.
@@ -45,11 +47,13 @@ export default async function PreviewPage({
   return (
     <StoreThemeRoot theme={store.theme}>
       {searchParams.app === '1' ? (
-        <ShellApp vitrine={resolveVitrineDaLoja(store)} temTema={hasExplicitPreset(store.theme)}>
-          {vitrine}
-        </ShellApp>
+        <ColunaCelular>
+          <ShellApp vitrine={resolveVitrineDaLoja(store)} temTema={hasExplicitPreset(store.theme)}>
+            {vitrine}
+          </ShellApp>
+        </ColunaCelular>
       ) : (
-        vitrine
+        <MolduraDaVitrine store={store}>{vitrine}</MolduraDaVitrine>
       )}
     </StoreThemeRoot>
   )

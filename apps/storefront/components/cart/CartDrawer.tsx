@@ -44,8 +44,10 @@ export function CartDrawer({ onFechar }: { onFechar: () => void }) {
   if (itens.length === 0) return null
 
   return (
+    // Celular: bottom-sheet. Computador (≥768px): painel lateral à direita,
+    // de altura cheia — a página continua à vista ao lado.
     <div
-      className="fixed inset-0 z-30 flex flex-col justify-end"
+      className="fixed inset-0 z-30 flex flex-col justify-end md:flex-row"
       role="dialog"
       aria-modal="true"
       aria-label="Sacola"
@@ -54,11 +56,11 @@ export function CartDrawer({ onFechar }: { onFechar: () => void }) {
         type="button"
         aria-label="Fechar sacola"
         onClick={onFechar}
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/50 md:animate-surgir"
       />
 
-      <div className="relative flex max-h-[85vh] w-full flex-col rounded-t-lg bg-surface shadow-floating">
-        <div className="flex items-center justify-between px-4 pb-3 pt-4">
+      <div className="relative flex max-h-[85vh] w-full flex-col rounded-t-lg bg-surface shadow-floating md:h-full md:max-h-none md:w-[440px] md:rounded-none md:animate-entrar-direita">
+        <div className="flex items-center justify-between px-4 pb-3 pt-4 md:px-6 md:pb-4 md:pt-6">
           <div className="min-w-0">
             <h2 className="text-lg font-extrabold text-ink">Sacola</h2>
             {storeNome && (
@@ -95,7 +97,7 @@ export function CartDrawer({ onFechar }: { onFechar: () => void }) {
           ))}
         </div>
 
-        <div className="flex flex-col gap-2 px-4 pb-5 pt-3">
+        <div className="flex flex-col gap-2 px-4 pb-5 pt-3 md:border-t md:border-line md:px-6 md:pb-7 md:pt-5">
           <div className="flex justify-between text-sm font-medium text-ink-muted">
             <span>Subtotal</span>
             <span>{formatarReais(subtotal)}</span>

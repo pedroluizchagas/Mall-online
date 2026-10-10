@@ -67,6 +67,25 @@ const ICONES = {
       <path d="M9 7h8v8" />
     </>
   ),
+  'arrow-down': (
+    <>
+      <path d="M12 5v14" />
+      <path d="m6 13 6 6 6-6" />
+    </>
+  ),
+  // As duas linhas do menu da referência (não o hambúrguer de três).
+  menu: (
+    <>
+      <path d="M4 9h16" />
+      <path d="M4 15h16" />
+    </>
+  ),
+  close: (
+    <>
+      <path d="M6 6l12 12" />
+      <path d="M18 6 6 18" />
+    </>
+  ),
 } as const
 
 export type IconeArtesa = keyof typeof ICONES

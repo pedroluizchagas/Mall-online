@@ -11,3 +11,17 @@ export function resolveVitrineDaLoja(store: {
 }): VitrineCodigo | null {
   return resolveVitrine(getPresetExplicito(store.theme), store.categoria_slug)
 }
+
+/**
+ * Vitrines que já têm composição de COMPUTADOR (≥768px); o layout padrão
+ * (`null`) também tem. As demais ainda são só a largura de celular em que
+ * foram portadas do app: no desktop elas vestem a coluna central de 480px
+ * (`MolduraDaVitrine`) até ganharem a sua, porte a porte, cada uma contra o
+ * desktop da própria referência. Entrar nesta lista exige as duas
+ * composições no disco (guarda em `components/vitrines/__tests__`).
+ */
+export const VITRINES_COM_DESKTOP: readonly VitrineCodigo[] = ['artesa']
+
+export function vitrineTemDesktop(codigo: VitrineCodigo | null): boolean {
+  return codigo === null || VITRINES_COM_DESKTOP.includes(codigo)
+}

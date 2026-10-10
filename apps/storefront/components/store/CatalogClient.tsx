@@ -49,7 +49,7 @@ export function CatalogClient({
             </div>
           </>
         ) : (
-          <p className="px-6 py-12 text-center text-sm font-medium text-ink-muted">
+          <p className="px-6 py-12 text-center text-sm font-medium text-ink-muted md:py-24">
             Esta loja ainda não tem produtos disponíveis.
           </p>
         )

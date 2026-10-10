@@ -83,14 +83,16 @@ export default async function PedidoPage({
 
   return (
     <main className="bg-canvas">
-      <PedidoClient
-        pedidoInicial={data as unknown as PedidoCompleto}
-        loja={{
-          nome: store.nome,
-          telefone: store.telefone,
-          slug: store.slug,
-        }}
-      />
+      <div className="mx-auto w-full max-w-[640px] md:pt-6">
+        <PedidoClient
+          pedidoInicial={data as unknown as PedidoCompleto}
+          loja={{
+            nome: store.nome,
+            telefone: store.telefone,
+            slug: store.slug,
+          }}
+        />
+      </div>
     </main>
   )
 }

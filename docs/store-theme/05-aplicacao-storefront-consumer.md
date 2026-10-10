@@ -417,6 +417,22 @@ Dimensões/Material/Acabamento — separados por fios; sem specs cai na
 descrição) e CTA pill sólida com seta. Componentes:
 `components/loja/LojaArtesa.tsx` + `ProdutoArtesao.tsx`.
 
+*Computador (web, ≥768px — 2026-10-10)*: a primeira vitrine com composição
+própria de desktop, desenhada contra o desktop da referência de estúdio de
+interiores (intrstudio) e vestindo a mesma pele. Hero de TELA CHEIA com o nome
+gigante centralizado e a PÍLULA de vidro no pé (índice · "Ver peças" + seta ·
+sacola), dica "Role" e relógio vivo; barra espresso que desce quando o hero
+sai de cena; "(O ateliê)" com o statement em dois tons, fotos assimétricas e
+números REAIS (prazo, peças, taxa — nunca "anos de experiência"); "(Peças em
+destaque)" em galeria assimétrica (destaques do lojista ou uma peça de cada
+coleção); "(O que fazemos)" com as bandas virando linhas numa faixa escura
+que acendem a foto no hover; "(Coleções)" em tabuleiro foto/ficha; catálogo
+com a 1ª seção em trilho (≥5 peças) e as demais em grade; "(Como pedir)" com
+o que a loja aceita e cobra; fotos da casa; banda de chamada com o "hoje" da
+loja e rodapé escuro com a semana de horários. Abaixo de 768px continua o
+porte 1:1 do app. Componentes: `apps/storefront/components/vitrines/artesa/`
+(`artesa-dados.ts` = os dados das duas composições; `artesa-desktop.tsx`).
+
 **Vitrine noir gastronômica** (referência The Obscura, [02 §D]): fine dining
 em preto, marfim e dourado — hero dramático (glide de 700ms, o mais lento do
 sistema) com nome em serifa gigante caps e CTA de CONTORNO RETO em caps
@@ -494,6 +510,20 @@ preview. O `layout.tsx` monta `StoreThemeRoot` **uma vez**, e ele escreve as CSS
 vars no `:root` do documento — não num wrapper. Assim o `body` (overscroll, área
 fora da coluna de 480px no desktop) e qualquer portal herdam a pele. Páginas
 legais, "loja não encontrada" e o saguão ficam de fora do grupo: são Mallevo.
+
+### Largura no computador (2026-10-10)
+
+O layout do grupo não impõe mais a coluna de 480px: quem decide é a página,
+por `MolduraDaVitrine` (`components/vitrines/MolduraDaVitrine.tsx`). O layout
+padrão e as vitrines de `VITRINES_COM_DESKTOP` (`lib/vitrine.ts` — hoje só a
+**artesã**) ocupam a tela; as demais seguem na coluna de 480px até ganharem a
+sua composição, porte a porte, contra o desktop da própria referência. Entrar
+na lista exige as duas composições no disco (guarda em
+`components/vitrines/__tests__/desktop.test.ts`). O preview decide com a loja
+JÁ com o rascunho (trocar de arquétipo pode trocar de vitrine) e a moldura App
+é sempre a coluna. Peças compartilhadas a partir de 768px: o detalhe de
+produto vira diálogo de duas colunas, a sacola vira painel lateral, o checkout
+ganha resumo fixo à direita (≥1024px) e entrar/verificar viram cartão central.
 
 Decisão de produto: no storefront **o checkout veste a loja**. No app, não — lá
 o checkout é Mallevo, porque o app é o shopping e o storefront é a loja.

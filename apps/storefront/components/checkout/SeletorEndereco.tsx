@@ -185,7 +185,7 @@ export function SeletorEndereco({
 
       {modalAberto && (
         <div
-          className="fixed inset-0 z-40 flex flex-col justify-end"
+          className="fixed inset-0 z-40 flex flex-col justify-end md:items-center md:justify-center md:p-6"
           role="dialog"
           aria-modal="true"
           aria-label={adicionando ? 'Novo endereço' : 'Endereços salvos'}
@@ -197,7 +197,7 @@ export function SeletorEndereco({
             className="absolute inset-0 bg-black/50"
           />
 
-          <div className="relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-xl bg-surface">
+          <div className="relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-t-xl bg-surface md:max-w-[520px] md:rounded-xl md:shadow-floating">
             <div className="border-b border-line px-5 py-4">
               <h2 className="text-lg font-extrabold text-ink">
                 {adicionando ? 'Novo endereço' : 'Endereços salvos'}

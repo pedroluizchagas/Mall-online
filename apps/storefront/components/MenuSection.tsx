@@ -28,13 +28,16 @@ export function MenuSection({
   onSelect?: (id: string) => void
 }) {
   return (
-    <section id={id} className="mt-section scroll-mt-[calc(var(--inset-top,0px)+64px)] px-screen-x">
-      <h2 className="mb-1 font-display text-display-sm font-extrabold tracking-tight text-ink">
+    <section id={id} className="mt-section scroll-mt-[calc(var(--inset-top,0px)+64px)] px-screen-x md:mt-12 md:mx-auto md:w-full md:max-w-[1200px] md:px-8">
+      <h2 className="mb-1 font-display text-display-sm font-extrabold tracking-tight text-ink md:mb-3 md:text-[28px]">
         {titulo}
       </h2>
-      {produtos.map((p) => (
-        <ProductCard key={p.id} produto={p} onSelect={onSelect} />
-      ))}
+      {/* Computador: duas colunas de linhas — a lista do celular, lado a lado. */}
+      <div className="md:grid md:grid-cols-2 md:gap-x-10">
+        {produtos.map((p) => (
+          <ProductCard key={p.id} produto={p} onSelect={onSelect} />
+        ))}
+      </div>
     </section>
   )
 }

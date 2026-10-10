@@ -93,7 +93,7 @@ export function EntrarClient({ next }: { next: string }) {
       email
     )}&next=${encodeURIComponent(next)}`
     return (
-      <div className="flex min-h-screen flex-col bg-canvas px-6 pb-8 pt-24">
+      <div className="flex min-h-screen flex-col bg-canvas px-6 pb-8 pt-24 md:min-h-0 md:rounded-xl md:bg-surface md:px-10 md:py-12 md:shadow-soft">
         <div className="mb-8 flex flex-col items-center text-center">
           <span className="mb-6 flex h-20 w-20 items-center justify-center rounded-pill bg-accent text-accent-ink">
             <svg
@@ -146,7 +146,7 @@ export function EntrarClient({ next }: { next: string }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas px-6 pb-8 pt-14">
+    <div className="flex min-h-screen flex-col bg-canvas px-6 pb-8 pt-14 md:min-h-0 md:rounded-xl md:bg-surface md:px-10 md:py-12 md:shadow-soft">
       <span className="mb-8 flex h-14 w-14 items-center justify-center rounded-pill bg-accent text-accent-ink">
         <svg
           width="24"

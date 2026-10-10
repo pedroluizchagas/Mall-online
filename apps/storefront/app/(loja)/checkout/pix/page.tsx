@@ -14,7 +14,9 @@ export default function CheckoutPixPage({
 }) {
   return (
     <main className="bg-canvas">
-      <PixClient orderId={searchParams.order_id ?? null} />
+      <div className="mx-auto w-full max-w-[600px] md:pt-6">
+        <PixClient orderId={searchParams.order_id ?? null} />
+      </div>
     </main>
   )
 }

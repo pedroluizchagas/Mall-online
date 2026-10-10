@@ -1,7 +1,7 @@
 'use client'
 
-import { forwardRef, useCallback, useMemo, useRef, useState } from 'react'
-import { formatarHorario, horarioDeHoje, normalizeStoreConteudo, relogioDaLoja } from '@mallevo/lib'
+import { forwardRef, useCallback, useRef, useState } from 'react'
+import { formatarHorario, horarioDeHoje, relogioDaLoja } from '@mallevo/lib'
 
 import { CartPersistence } from '@/components/cart/CartPersistence'
 import { ProdutoModalHost } from '@/components/store/ProdutoModalHost'
@@ -10,7 +10,6 @@ import {
   StatusAberto,
   comCopiaDeLoop,
   idDaSecao,
-  precoFinalDe,
   prefereMenosMovimento,
   useCarrossel,
   useHeroEmCena,
@@ -18,7 +17,6 @@ import {
 } from '@/components/vitrines/_base'
 import type { VitrineWebProps } from '@/components/vitrines/tipos'
 import type { ProdutoCatalogo } from '@/lib/catalog'
-import { formatarReais } from '@/lib/format'
 import {
   AcaoArtesa,
   CREME,
@@ -35,8 +33,9 @@ import {
   SecaoNumerada,
   VEU_BANDA,
   VEU_HERO,
-  tipoDe,
 } from './artesa-ui'
+import { MIN_BANDAS, useDadosArtesa, type BandaArtesa, type DadosArtesa, type SlideArtesa } from './artesa-dados'
+import { ArtesaDesktop } from './artesa-desktop'
 
 /**
  * Vitrine artesã — layout PRÓPRIO do arquétipo `artisan` para casa &
@@ -56,6 +55,11 @@ import {
  * - demais seções em grid de cartões arredondados com chip-etiqueta branco;
  * - fotos da casa (`conteudo.galeria_casa`) numa seção numerada própria.
  *
+ * Duas composições dos MESMOS dados (`useDadosArtesa`): abaixo de 768px, o
+ * porte 1:1 do app (`ArtesaCelular`, este arquivo); a partir daí, a página
+ * de computador (`ArtesaDesktop`, artesa-desktop.tsx). O detalhe de produto
+ * e o `CartPersistence` são um só para as duas.
+ *
  * O que NÃO veio da RN: o botão "voltar" (a casa ocupa o lugar), a barra de
  * menu inferior, a status bar e a transição radial; o "Aberto" literal virou
  * o relógio vivo (`StatusAberto`). A sacola vive no header.
@@ -63,101 +67,9 @@ import {
 
 const ID_ATELIE = 'atelie'
 const ALTURA_HEADER = 58
-/** Bandas: mínimo para a seção valer (RN: 3), teto 6. */
-const MIN_BANDAS = 3
-const MAX_BANDAS = 6
-
-interface SlideArtesa {
-  imagem: string | null
-  titulo: string
-  apoio: string
-  cta: string
-  produto: ProdutoCatalogo | null
-}
-
-/** Statement em dois tons: 1ª frase em ink, o resto em accent. */
-function repartirEmDoisTons(texto: string | null | undefined): [string, string] {
-  const d = (texto ?? '').trim()
-  if (!d) return ['', '']
-  const ponto = d.indexOf('.')
-  if (ponto < 0 || ponto === d.length - 1) return [d, '']
-  return [d.slice(0, ponto + 1), d.slice(ponto + 1).trim()]
-}
 
 export function VitrineArtesa({ store, secoes, detalhes, initialProdutoId }: VitrineWebProps) {
-  const conteudo = useMemo(() => normalizeStoreConteudo(store.conteudo), [store.conteudo])
-  const campanha = conteudo.campanha
-
-  const secoesComItens = useMemo(() => secoes.filter((s) => s.produtos.length > 0), [secoes])
-  const todos = useMemo(() => secoesComItens.flatMap((s) => s.produtos), [secoesComItens])
-
-  // Cenas do hero: o nome da casa (ou a campanha) e até três peças com foto —
-  // `destaques` na frente; sem eles, a primeira seção (a derivação da RN).
-  const slides = useMemo<SlideArtesa[]>(() => {
-    const abertura: SlideArtesa = {
-      imagem: store.banner_url ?? null,
-      titulo: campanha?.titulo ?? store.nome,
-      apoio: campanha?.subtitulo ?? (campanha?.eyebrow ?? 'Conheça nosso trabalho'),
-      cta: campanha?.cta ?? 'Ver peças',
-      produto: null,
-    }
-    const escolhidos = (conteudo.destaques ?? [])
-      .map((id) => todos.find((p) => p.id === id))
-      .filter((p): p is ProdutoCatalogo => !!p && !!p.foto_url)
-    const fonte = escolhidos.length > 0 ? escolhidos : (secoesComItens[0]?.produtos ?? []).filter((p) => p.foto_url)
-    const pecas = fonte.slice(0, 3).map(
-      (p): SlideArtesa => ({
-        imagem: p.foto_url,
-        titulo: p.nome,
-        apoio: formatarReais(precoFinalDe(p)),
-        cta: 'Ver peça',
-        produto: p,
-      }),
-    )
-    return [abertura, ...pecas]
-  }, [store.banner_url, store.nome, campanha, conteudo.destaques, todos, secoesComItens])
-
-  const { heroRef, emCena: heroEmCena } = useHeroEmCena<HTMLElement>()
-  const headerEspresso = !heroEmCena
-
-  // Statement: o manifesto do lojista na frente; sem ele, a descrição.
-  const [fraseUm, fraseDois] = useMemo(() => repartirEmDoisTons(conteudo.manifesto ?? store.descricao), [conteudo.manifesto, store.descricao])
-
-  const meta = [
-    store.tempo_entrega != null ? `${store.tempo_entrega} min` : null,
-    store.taxa_entrega === 0 ? 'Entrega grátis' : store.taxa_entrega != null ? `Entrega ${formatarReais(store.taxa_entrega)}` : null,
-  ].filter((m): m is string => !!m)
-
-  const galeriaCasa = conteudo.galeria_casa ?? []
-
-  // "O que fazemos": uma banda por TIPO de peça (1ª palavra do nome), com a
-  // foto e a linha de apoio vindas da própria peça. Calculado aqui (e não na
-  // seção) para a numeração seguir a ordem da página.
-  const bandas = useMemo(() => {
-    const vistos = new Set<string>()
-    const out: { palavra: string; produto: ProdutoCatalogo }[] = []
-    for (const p of todos) {
-      if (!p.foto_url) continue
-      const palavra = tipoDe(p.nome)
-      const chave = palavra.toLowerCase()
-      if (vistos.has(chave)) continue
-      vistos.add(chave)
-      out.push({ palavra, produto: p })
-      if (out.length >= MAX_BANDAS) break
-    }
-    return out
-  }, [todos])
-
-  const rolarParaAtelie = useCallback(() => {
-    document.getElementById(ID_ATELIE)?.scrollIntoView({
-      behavior: prefereMenosMovimento() ? 'auto' : 'smooth',
-      block: 'start',
-    })
-  }, [])
-
-  // Numeração das seções, na ordem em que existem.
-  let numeroSecao = 0
-  const numerar = () => String(++numeroSecao).padStart(2, '0')
+  const dados = useDadosArtesa(store, secoes)
 
   return (
     <ProdutoModalHost
@@ -176,108 +88,148 @@ export function VitrineArtesa({ store, secoes, detalhes, initialProdutoId }: Vit
         return (
           <main className="relative min-h-screen bg-canvas text-ink">
             <CartPersistence />
-
-            {/* ── Header: transparente → barra espresso (accent) ao rolar ── */}
-            <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
-              <div className="relative">
-                <div
-                  className="pointer-events-none absolute inset-x-0 top-0 bg-accent transition-opacity duration-300 motion-reduce:transition-none"
-                  style={{ height: ALTURA_HEADER, opacity: headerEspresso ? 1 : 0 }}
-                  aria-hidden
-                />
-                <div
-                  className="relative flex items-center justify-between px-[calc(var(--space-screen-x,24px)-8px)]"
-                  style={{ height: ALTURA_HEADER }}
-                >
-                  <MarcaDaCasa nome={store.nome} logoUrl={store.logo_url} />
-                  <a
-                    href="/"
-                    className="min-w-0 flex-1 truncate px-2 text-center font-display text-[16px] font-semibold text-accent-ink transition-opacity duration-300 motion-reduce:transition-none"
-                    style={{ opacity: headerEspresso ? 1 : 0 }}
-                    aria-hidden={!headerEspresso}
-                    tabIndex={headerEspresso ? 0 : -1}
-                  >
-                    {store.nome}
-                  </a>
-                  <Sacola>
-                    {({ abrir: abrirSacola, totalItens }) => (
-                      <AcaoArtesa
-                        icone="bag"
-                        contador={totalItens}
-                        rotulo={totalItens > 0 ? `Sacola, ${totalItens} itens` : 'Sacola vazia'}
-                        aoTocar={abrirSacola}
-                      />
-                    )}
-                  </Sacola>
-                </div>
-              </div>
+            <div className="relative md:hidden">
+              <ArtesaCelular store={store} dados={dados} aoAbrirProduto={aoAbrirProduto} />
             </div>
-
-            {/* ── Hero: nome gigante arredondado + CTA de contorno ── */}
-            <HeroArtesa ref={heroRef} slides={slides} emCena={heroEmCena} aoAbrirProduto={aoAbrirProduto} aoVerPecas={rolarParaAtelie} />
-
-            {/* ── 01 · Statement em dois tons ── */}
-            <SecaoNumerada id={ID_ATELIE} numero={numerar()} rotulo="O ateliê">
-              {(fraseUm.length > 0 || fraseDois.length > 0) && (
-                <h1
-                  className="font-display font-semibold tracking-[-0.3px]"
-                  style={{ fontSize: 'calc(27px * var(--type-factor, 1))', lineHeight: 'calc(37px * var(--type-factor, 1))' }}
-                >
-                  <span className="text-ink">{fraseUm}</span>
-                  {fraseDois.length > 0 && <span className="text-accent"> {fraseDois}</span>}
-                </h1>
-              )}
-              <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-[13px] font-medium tracking-[0.3px] text-ink-muted">
-                {meta.map((m) => (
-                  <span key={m}>{m}</span>
-                ))}
-                <StatusAberto horarios={store.horarios} className="font-body text-[13px] font-medium tracking-[0.3px] text-ink-muted" />
-              </p>
-            </SecaoNumerada>
-
-            {todos.length === 0 ? (
-              <VazioArtesa nome={store.nome} numero={numerar()} />
-            ) : (
-              <>
-                {/* ── 02 · "O que fazemos" — bandas de foto ── */}
-                {bandas.length >= MIN_BANDAS && (
-                  <SecaoNumerada numero={numerar()} rotulo="O que fazemos" conteudoFullBleed>
-                    <BandasCriacoes bandas={bandas} aoAbrirProduto={aoAbrirProduto} />
-                  </SecaoNumerada>
-                )}
-
-                {/* ── 03 · Peças autorais: carrossel de um cartão com setas ── */}
-                {secoesComItens[0] && (
-                  <SecaoNumerada id={idDaSecao(secoesComItens[0].chave)} numero={numerar()} rotulo={secoesComItens[0].titulo}>
-                    <CarrosselPecas produtos={secoesComItens[0].produtos} aoAbrirProduto={aoAbrirProduto} />
-                  </SecaoNumerada>
-                )}
-
-                {/* ── 04+ · Demais seções em grid ── */}
-                {secoesComItens.slice(1).map((secao) => (
-                  <SecaoNumerada key={secao.chave} id={idDaSecao(secao.chave)} numero={numerar()} rotulo={secao.titulo}>
-                    <div className="grid grid-cols-2 gap-[14px]">
-                      {secao.produtos.map((p) => (
-                        <CardArtesa key={p.id} produto={p} aoTocar={() => aoAbrirProduto(p)} />
-                      ))}
-                    </div>
-                  </SecaoNumerada>
-                ))}
-              </>
-            )}
-
-            {/* ── Fotos da casa — a galeria do lojista, no mesmo ritmo ── */}
-            {galeriaCasa.length > 0 && (
-              <SecaoNumerada numero={numerar()} rotulo="A casa" conteudoFullBleed>
-                <GaleriaDaCasa fotos={galeriaCasa} nome={store.nome} />
-              </SecaoNumerada>
-            )}
-
-            <FechoArtesa store={store} />
+            <div className="hidden md:block">
+              <ArtesaDesktop store={store} dados={dados} aoAbrirProduto={aoAbrirProduto} />
+            </div>
           </main>
         )
       }}
     </ProdutoModalHost>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────
+// Celular — o porte 1:1 de LojaArtesa.tsx
+// ─────────────────────────────────────────────────────────────
+
+function ArtesaCelular({
+  store,
+  dados,
+  aoAbrirProduto,
+}: {
+  store: VitrineWebProps['store']
+  dados: DadosArtesa
+  aoAbrirProduto: (p: ProdutoCatalogo) => void
+}) {
+  const { secoesComItens, todos, slides, fraseUm, fraseDois, meta, galeriaCasa, bandas } = dados
+
+  const { heroRef, emCena: heroEmCena } = useHeroEmCena<HTMLElement>()
+  const headerEspresso = !heroEmCena
+
+  const rolarParaAtelie = useCallback(() => {
+    document.getElementById(ID_ATELIE)?.scrollIntoView({
+      behavior: prefereMenosMovimento() ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }, [])
+
+  // Numeração das seções, na ordem em que existem.
+  let numeroSecao = 0
+  const numerar = () => String(++numeroSecao).padStart(2, '0')
+
+  return (
+    <>
+      {/* ── Header: transparente → barra espresso (accent) ao rolar ── */}
+      <div className="sticky top-[var(--inset-top,0px)] z-30 h-0">
+        <div className="relative">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 bg-accent transition-opacity duration-300 motion-reduce:transition-none"
+            style={{ height: ALTURA_HEADER, opacity: headerEspresso ? 1 : 0 }}
+            aria-hidden
+          />
+          <div
+            className="relative flex items-center justify-between px-[calc(var(--space-screen-x,24px)-8px)]"
+            style={{ height: ALTURA_HEADER }}
+          >
+            <MarcaDaCasa nome={store.nome} logoUrl={store.logo_url} />
+            <a
+              href="/"
+              className="min-w-0 flex-1 truncate px-2 text-center font-display text-[16px] font-semibold text-accent-ink transition-opacity duration-300 motion-reduce:transition-none"
+              style={{ opacity: headerEspresso ? 1 : 0 }}
+              aria-hidden={!headerEspresso}
+              tabIndex={headerEspresso ? 0 : -1}
+            >
+              {store.nome}
+            </a>
+            <Sacola>
+              {({ abrir: abrirSacola, totalItens }) => (
+                <AcaoArtesa
+                  icone="bag"
+                  contador={totalItens}
+                  rotulo={totalItens > 0 ? `Sacola, ${totalItens} itens` : 'Sacola vazia'}
+                  aoTocar={abrirSacola}
+                />
+              )}
+            </Sacola>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Hero: nome gigante arredondado + CTA de contorno ── */}
+      <HeroArtesa ref={heroRef} slides={slides} emCena={heroEmCena} aoAbrirProduto={aoAbrirProduto} aoVerPecas={rolarParaAtelie} />
+
+      {/* ── 01 · Statement em dois tons ── */}
+      <SecaoNumerada id={ID_ATELIE} numero={numerar()} rotulo="O ateliê">
+        {(fraseUm.length > 0 || fraseDois.length > 0) && (
+          <h1
+            className="font-display font-semibold tracking-[-0.3px]"
+            style={{ fontSize: 'calc(27px * var(--type-factor, 1))', lineHeight: 'calc(37px * var(--type-factor, 1))' }}
+          >
+            <span className="text-ink">{fraseUm}</span>
+            {fraseDois.length > 0 && <span className="text-accent"> {fraseDois}</span>}
+          </h1>
+        )}
+        <p className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 font-body text-[13px] font-medium tracking-[0.3px] text-ink-muted">
+          {meta.map((m) => (
+            <span key={m}>{m}</span>
+          ))}
+          <StatusAberto horarios={store.horarios} className="font-body text-[13px] font-medium tracking-[0.3px] text-ink-muted" />
+        </p>
+      </SecaoNumerada>
+
+      {todos.length === 0 ? (
+        <VazioArtesa nome={store.nome} numero={numerar()} />
+      ) : (
+        <>
+          {/* ── 02 · "O que fazemos" — bandas de foto ── */}
+          {bandas.length >= MIN_BANDAS && (
+            <SecaoNumerada numero={numerar()} rotulo="O que fazemos" conteudoFullBleed>
+              <BandasCriacoes bandas={bandas} aoAbrirProduto={aoAbrirProduto} />
+            </SecaoNumerada>
+          )}
+
+          {/* ── 03 · Peças autorais: carrossel de um cartão com setas ── */}
+          {secoesComItens[0] && (
+            <SecaoNumerada id={idDaSecao(secoesComItens[0].chave)} numero={numerar()} rotulo={secoesComItens[0].titulo}>
+              <CarrosselPecas produtos={secoesComItens[0].produtos} aoAbrirProduto={aoAbrirProduto} />
+            </SecaoNumerada>
+          )}
+
+          {/* ── 04+ · Demais seções em grid ── */}
+          {secoesComItens.slice(1).map((secao) => (
+            <SecaoNumerada key={secao.chave} id={idDaSecao(secao.chave)} numero={numerar()} rotulo={secao.titulo}>
+              <div className="grid grid-cols-2 gap-[14px]">
+                {secao.produtos.map((p) => (
+                  <CardArtesa key={p.id} produto={p} aoTocar={() => aoAbrirProduto(p)} />
+                ))}
+              </div>
+            </SecaoNumerada>
+          ))}
+        </>
+      )}
+
+      {/* ── Fotos da casa — a galeria do lojista, no mesmo ritmo ── */}
+      {galeriaCasa.length > 0 && (
+        <SecaoNumerada numero={numerar()} rotulo="A casa" conteudoFullBleed>
+          <GaleriaDaCasa fotos={galeriaCasa} nome={store.nome} />
+        </SecaoNumerada>
+      )}
+
+      <FechoArtesa store={store} />
+    </>
   )
 }
 
@@ -381,7 +333,7 @@ function BandasCriacoes({
   bandas,
   aoAbrirProduto,
 }: {
-  bandas: { palavra: string; produto: ProdutoCatalogo }[]
+  bandas: BandaArtesa[]
   aoAbrirProduto: (p: ProdutoCatalogo) => void
 }) {
   return (

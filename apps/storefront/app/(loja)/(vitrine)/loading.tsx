@@ -9,19 +9,19 @@
 
 /**
  * Esqueleto da home da loja enquanto o catálogo carrega — na PELE da loja
- * (as vars já estão no `:root` pelo layout): hero, régua de status e seis
- * cartões, o molde comum às 18 vitrines. Server component: nenhum JS vai
- * para o cliente por causa dele.
+ * (as vars já estão no `:root` pelo layout): hero, régua de status e os
+ * cartões, o molde comum às 18 vitrines; no computador, em contêiner
+ * central. Server component: nenhum JS vai para o cliente por causa dele.
  */
 export default function CarregandoLoja() {
   return (
     <main className="min-h-screen bg-canvas" aria-busy="true" aria-label="Carregando a loja">
       <div className="animate-pulse">
         {/* Hero */}
-        <div className="h-[220px] w-full bg-surfaceMuted" />
+        <div className="h-[220px] w-full bg-surfaceMuted md:h-[56vh] md:max-h-[640px]" />
 
         {/* Régua de status: logo + nome + chip de abertura */}
-        <div className="mx-screen-x -mt-6 flex items-center gap-3 rounded-md bg-surface p-card shadow-soft">
+        <div className="mx-screen-x -mt-6 flex items-center gap-3 rounded-md bg-surface p-card shadow-soft md:mx-auto md:max-w-[1136px]">
           <div className="h-11 w-11 shrink-0 rounded-sm bg-surfaceMuted" />
           <div className="min-w-0 flex-1 space-y-2">
             <div className="h-4 w-1/2 rounded-pill bg-surfaceMuted" />
@@ -30,9 +30,9 @@ export default function CarregandoLoja() {
         </div>
 
         {/* Seis cartões de produto */}
-        <div className="mx-screen-x mt-section grid grid-cols-2 gap-3">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="rounded-md border border-line bg-surface p-2">
+        <div className="mx-screen-x mt-section grid grid-cols-2 gap-3 md:mx-auto md:mt-12 md:max-w-[1136px] md:grid-cols-3 md:gap-6 lg:grid-cols-4">
+          {Array.from({ length: 8 }, (_, i) => (
+            <div key={i} className={`rounded-md border border-line bg-surface p-2 ${i >= 6 ? 'hidden md:block' : ''}`}>
               <div className="aspect-square w-full rounded-sm bg-surfaceMuted" />
               <div className="mt-2 h-3 w-4/5 rounded-pill bg-surfaceMuted" />
               <div className="mt-2 h-3 w-1/2 rounded-pill bg-surfaceMuted" />

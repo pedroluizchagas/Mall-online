@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { buscarStore, getStore, getStoreSlug } from '@/lib/tenant'
 import { carregarCatalogo, carregarDetalhesCatalogo } from '@/lib/catalog'
 import { escolherVitrineWeb } from '@/components/vitrines'
+import { MolduraDaVitrine } from '@/components/vitrines/MolduraDaVitrine'
 
 /**
  * Página da loja. Server Component, host-based (D1): slug ← middleware
@@ -51,5 +52,9 @@ export default async function HomePage() {
   const detalhes = await carregarDetalhesCatalogo(produtoIds)
 
   const Vitrine = escolherVitrineWeb(store)
-  return <Vitrine store={store} secoes={secoes} detalhes={detalhes} />
+  return (
+    <MolduraDaVitrine store={store}>
+      <Vitrine store={store} secoes={secoes} detalhes={detalhes} />
+    </MolduraDaVitrine>
+  )
 }

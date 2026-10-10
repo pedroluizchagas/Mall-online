@@ -6,10 +6,10 @@ import { StoreThemeRoot } from '@/components/store/StoreThemeRoot'
  * checkout, pedido e auth. Veste a pele da loja UMA vez aqui (StoreThemeRoot
  * no `:root`), em vez de página por página.
  *
- * Coluna central (decisão 2026-09-19): as vitrines são especificadas em
- * largura de celular (docs/store-theme/05 §5.6). No desktop, a página é uma
- * coluna de 480px sobre o fundo da pele, com fio lateral — fiel à spec, sem
- * redesenho. Layouts desktop nativos ficam para depois.
+ * Largura (2026-10-10): o layout NÃO impõe mais a coluna de 480px. Quem
+ * decide é a página — o layout com composição de computador ocupa a tela
+ * toda; a vitrine que ainda é só celular veste a coluna (`MolduraDaVitrine`).
+ * Os fluxos (checkout, entrar, pedido) têm contêiner próprio.
  *
  * Loja ausente: o `notFound()` vive AQUI, não nas páginas. `loading.tsx`
  * embrulha a página numa Suspense e o Next já mandou o status 200 quando ela
@@ -20,10 +20,7 @@ export default async function LojaLayout({ children }: { children: React.ReactNo
   const store = await getStore(getStoreSlug())
 
   return (
-    <StoreThemeRoot
-      theme={store.theme ?? null}
-      className="mx-auto min-h-screen w-full max-w-[480px] bg-canvas md:border-x md:border-line"
-    >
+    <StoreThemeRoot theme={store.theme ?? null} className="min-h-screen w-full bg-canvas">
       {children}
     </StoreThemeRoot>
   )

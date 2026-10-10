@@ -7,6 +7,25 @@ import type { Config } from 'tailwindcss'
  * mapeia para web — convertido para CSS box-shadow. Storefront é uma superfície
  * isolada (D1/D5), com seu próprio bundle e tema.
  */
+
+/**
+ * Cor dirigida por StoreTheme que ACEITA o modificador de opacidade
+ * (`bg-canvas/90`, `text-ink/60`). Com a var crua o Tailwind não tem canal
+ * alfa onde injetar e DESCARTA a classe em silêncio — era o caso de
+ * `bg-warning/20` no aviso de receita e de `bg-canvas/90` na régua de seções.
+ * Sem modificador, a classe continua sendo a var pura.
+ *
+ * O tipo do Tailwind só declara `string`, mas o runtime aceita cor como
+ * função (`{ opacityValue }`) — daí o cast.
+ */
+function tema(cssVar: string): string {
+  const cor = ({ opacityValue }: { opacityValue?: string }) =>
+    opacityValue === undefined || opacityValue.startsWith('var(')
+      ? cssVar
+      : `color-mix(in srgb, ${cssVar} calc(${opacityValue} * 100%), transparent)`
+  return cor as unknown as string
+}
+
 const config: Config = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -27,31 +46,31 @@ const config: Config = {
         // Sem tema injetado, o fallback reproduz exatamente a paleta Mallevo
         // (ver app/globals.css :root). Lojas com preset v2 sobrescrevem as vars
         // no wrapper StoreThemeRoot. Ver docs/store-theme/04 §4.3.
-        canvas: 'var(--bg, #F1F1F3)',
-        canvasAlt: 'var(--surface-alt, #E7E7EA)',
-        surface: 'var(--surface, #FFFFFF)',
-        surfaceMuted: 'var(--surface-alt, #E7E7EA)',
+        canvas: tema('var(--bg, #F1F1F3)'),
+        canvasAlt: tema('var(--surface-alt, #E7E7EA)'),
+        surface: tema('var(--surface, #FFFFFF)'),
+        surfaceMuted: tema('var(--surface-alt, #E7E7EA)'),
         // Texto
         ink: {
-          DEFAULT: 'var(--ink, #111216)',
-          muted: 'var(--ink-muted, #5E6168)',
+          DEFAULT: tema('var(--ink, #111216)'),
+          muted: tema('var(--ink-muted, #5E6168)'),
           soft: '#8B8E94',
         },
         // Linhas
         line: {
-          DEFAULT: 'var(--line, #E4E4E7)',
+          DEFAULT: tema('var(--line, #E4E4E7)'),
         },
         // Accent (CTA primário) + cor de texto legível sobre ele (accent-ink).
         accent: {
-          DEFAULT: 'var(--accent, #D8FF3E)',
-          strong: 'var(--accent, #C8F22E)',
+          DEFAULT: tema('var(--accent, #D8FF3E)'),
+          strong: tema('var(--accent, #C8F22E)'),
           soft: 'var(--accent-soft, rgba(216, 255, 62, 0.18))',
-          ink: 'var(--accent-ink, #111216)',
+          ink: tema('var(--accent-ink, #111216)'),
         },
         // Status
-        warning: 'var(--warning, #F2B84B)',
-        success: 'var(--success, #8ED14F)',
-        danger: 'var(--danger, #FF6D5E)',
+        warning: tema('var(--warning, #F2B84B)'),
+        success: tema('var(--success, #8ED14F)'),
+        danger: tema('var(--danger, #FF6D5E)'),
         info: '#5BB7FF',
       },
       borderRadius: {
@@ -89,6 +108,34 @@ const config: Config = {
         soft: '0 4px 12px rgba(0, 0, 0, 0.06)',
         medium: '0 8px 18px rgba(0, 0, 0, 0.10)',
         floating: '0 12px 24px rgba(0, 0, 0, 0.18)',
+      },
+      keyframes: {
+        // Dica "Role" do hero de computador: o ponto desce dentro do mouse.
+        'dica-rolar': {
+          '0%': { transform: 'translateY(0)', opacity: '0' },
+          '25%': { opacity: '1' },
+          '75%': { transform: 'translateY(11px)', opacity: '0' },
+          '100%': { transform: 'translateY(11px)', opacity: '0' },
+        },
+        surgir: {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'entrar-direita': {
+          from: { transform: 'translateX(100%)' },
+          to: { transform: 'translateX(0)' },
+        },
+        'subir-suave': {
+          from: { opacity: '0', transform: 'translateY(16px) scale(0.985)' },
+          to: { opacity: '1', transform: 'none' },
+        },
+      },
+      animation: {
+        'dica-rolar': 'dica-rolar 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite',
+        // Curva de ENTRADA do sistema (bezier 0.16,1,0.3,1).
+        surgir: 'surgir 320ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        'entrar-direita': 'entrar-direita 420ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        'subir-suave': 'subir-suave 380ms cubic-bezier(0.16, 1, 0.3, 1) both',
       },
     },
   },

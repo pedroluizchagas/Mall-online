@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { buscarStore, getStore, getStoreSlug } from '@/lib/tenant'
 import { carregarCatalogo, carregarDetalhesCatalogo } from '@/lib/catalog'
 import { escolherVitrineWeb } from '@/components/vitrines'
+import { MolduraDaVitrine } from '@/components/vitrines/MolduraDaVitrine'
 
 /**
  * /produto/[id] — deep-link indexável de produto (sitemap).
@@ -61,6 +62,8 @@ export default async function ProdutoPage({ params }: { params: { id: string } }
 
   const Vitrine = escolherVitrineWeb(store)
   return (
-    <Vitrine store={store} secoes={secoes} detalhes={detalhes} initialProdutoId={params.id} />
+    <MolduraDaVitrine store={store}>
+      <Vitrine store={store} secoes={secoes} detalhes={detalhes} initialProdutoId={params.id} />
+    </MolduraDaVitrine>
   )
 }

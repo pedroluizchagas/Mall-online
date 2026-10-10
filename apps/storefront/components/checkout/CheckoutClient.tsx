@@ -284,168 +284,197 @@ export function CheckoutClient({ loja }: { loja: LojaCheckout }) {
 
   const qtdTotal = itens.reduce((a, i) => a + i.quantidade, 0)
 
-  return (
-    <div className="min-h-screen bg-canvas pb-32">
-      <header className="flex items-center gap-3 px-4 py-4">
-        <button
-          type="button"
-          onClick={() => router.back()}
-          aria-label="Voltar"
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-surfaceMuted text-ink"
-        >
-          <svg
-            width="18"
-            height="18"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="M15 6l-6 6 6 6" />
-          </svg>
-        </button>
-        <h1 className="text-base font-extrabold text-ink">Seu pedido</h1>
-      </header>
-
-      <div className="px-6 pt-1">
-        <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
-          Pedido em
-        </p>
-        <p className="text-xl font-extrabold tracking-tight text-ink">
-          {store_nome ?? loja.nome}
-        </p>
-      </div>
-
-      <div className="px-6 pt-6">
-        <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
-          Seus itens
-        </p>
-        <div className="overflow-hidden rounded-lg bg-surface shadow-soft">
-          {itens.map((item) => (
-            <ItemCarrinhoCard key={item.linha_id} item={item} readonly />
-          ))}
-        </div>
-      </div>
-
-      {ehAgendamento && itemAgendamento?.agendamento && (
-        <div className="px-6 pt-6">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
-            Quando
-          </p>
-          <div className="rounded-lg bg-surface p-4 shadow-soft">
-            <p className="text-sm font-bold text-ink">
-              📅 {formatarAgendamento(itemAgendamento.agendamento)}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {ehAgendamento && (
-        <div className="px-6 pt-6">
-          <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
-            Local
-          </p>
-          <div className="rounded-lg bg-surface p-4 shadow-soft">
-            <p className="text-sm font-semibold text-ink">
-              {store_nome ?? loja.nome}
-            </p>
-            <p className="mt-1 text-xs text-ink-muted">
-              Atendimento no estabelecimento.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {!ehAgendamento && (
-        <SeletorEndereco
-          enderecos={consumer?.enderecos ?? []}
-          selecionado={enderecoSelecionado}
-          onSelecionar={setEnderecoSelecionado}
-        />
-      )}
-
-      <SeletorPagamento
-        loja={loja}
-        selecionado={formaPagamento}
-        onSelecionar={setFormaPagamento}
+  const resumo = (
+    <div className="flex flex-col gap-2 rounded-lg bg-surface p-4 shadow-soft">
+      <LinhaResumo
+        rotulo={`Subtotal (${qtdTotal} ${
+          qtdTotal === 1 ? 'item' : 'itens'
+        })`}
+        valor={formatarReais(subtotal)}
       />
-
-      {formaPagamento === 'online_cartao' && (
-        <>
-          <FormularioCartao onChange={setDadosCartao} />
-          <SeletorParcelas
-            total={total}
-            selecionado={installments}
-            onSelecionar={setInstallments}
-          />
-        </>
-      )}
-
-      <div className="px-6 pt-6">
-        <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-ink-muted">
-          Observações do pedido (opcional)
-        </label>
-        <textarea
-          value={observacoes}
-          onChange={(e) => setObservacoes(e.target.value)}
-          placeholder="Ex: interfone 201, deixar com porteiro…"
-          maxLength={200}
-          rows={3}
-          className="w-full resize-none rounded-md border border-line bg-surface px-4 py-3 text-sm font-medium text-ink outline-none placeholder:text-ink-soft focus:border-ink"
+      {!ehAgendamento && (
+        <LinhaResumo
+          rotulo="Taxa de entrega"
+          valor={
+            store_taxa_entrega === 0
+              ? 'Grátis'
+              : formatarReais(store_taxa_entrega)
+          }
+          valorAccent={store_taxa_entrega === 0}
         />
-      </div>
+      )}
+      <div className="my-1 h-px bg-line" />
+      <LinhaResumo
+        rotulo="Total"
+        valor={formatarReais(total)}
+        destacado
+      />
+    </div>
+  )
 
-      <div className="px-6 pt-6">
-        <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
-          Resumo
+  const acao = (
+    <>
+      {mensagemErro && (
+        <p
+          role="alert"
+          className="mb-2 rounded-md bg-danger/15 px-3 py-2 text-xs font-semibold text-danger"
+        >
+          {mensagemErro}
         </p>
-        <div className="flex flex-col gap-2 rounded-lg bg-surface p-4 shadow-soft">
-          <LinhaResumo
-            rotulo={`Subtotal (${qtdTotal} ${
-              qtdTotal === 1 ? 'item' : 'itens'
-            })`}
-            valor={formatarReais(subtotal)}
-          />
-          {!ehAgendamento && (
-            <LinhaResumo
-              rotulo="Taxa de entrega"
-              valor={
-                store_taxa_entrega === 0
-                  ? 'Grátis'
-                  : formatarReais(store_taxa_entrega)
-              }
-              valorAccent={store_taxa_entrega === 0}
-            />
-          )}
-          <div className="my-1 h-px bg-line" />
-          <LinhaResumo
-            rotulo="Total"
-            valor={formatarReais(total)}
-            destacado
-          />
+      )}
+      <button
+        type="button"
+        onClick={handleFazerPedido}
+        disabled={processando}
+        className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
+      >
+        {processando ? 'Processando…' : labelBotao}
+      </button>
+    </>
+  )
+
+  // Celular: uma coluna com a ação presa ao pé da tela (o checkout da RN).
+  // Computador (≥1024px): o formulário à esquerda e o resumo com a ação numa
+  // coluna à direita que acompanha a rolagem — o total nunca sai de vista.
+  return (
+    <div className="min-h-screen bg-canvas pb-32 lg:pb-20">
+      <div className="mx-auto w-full max-w-[1120px] lg:px-8">
+        <header className="flex items-center gap-3 px-4 py-4 lg:px-0 lg:pb-6 lg:pt-10">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            aria-label="Voltar"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-surfaceMuted text-ink"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M15 6l-6 6 6 6" />
+            </svg>
+          </button>
+          <h1 className="text-base font-extrabold text-ink lg:text-lg">Seu pedido</h1>
+        </header>
+
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-12">
+          <div className="min-w-0">
+            <div className="px-6 pt-1 lg:px-0">
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-widest text-ink-soft">
+                Pedido em
+              </p>
+              <p className="text-xl font-extrabold tracking-tight text-ink lg:text-[28px]">
+                {store_nome ?? loja.nome}
+              </p>
+            </div>
+
+            <div className="px-6 pt-6 lg:px-0">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
+                Seus itens
+              </p>
+              <div className="overflow-hidden rounded-lg bg-surface shadow-soft">
+                {itens.map((item) => (
+                  <ItemCarrinhoCard key={item.linha_id} item={item} readonly />
+                ))}
+              </div>
+            </div>
+
+            {ehAgendamento && itemAgendamento?.agendamento && (
+              <div className="px-6 pt-6 lg:px-0">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
+                  Quando
+                </p>
+                <div className="rounded-lg bg-surface p-4 shadow-soft">
+                  <p className="text-sm font-bold text-ink">
+                    📅 {formatarAgendamento(itemAgendamento.agendamento)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {ehAgendamento && (
+              <div className="px-6 pt-6 lg:px-0">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
+                  Local
+                </p>
+                <div className="rounded-lg bg-surface p-4 shadow-soft">
+                  <p className="text-sm font-semibold text-ink">
+                    {store_nome ?? loja.nome}
+                  </p>
+                  <p className="mt-1 text-xs text-ink-muted">
+                    Atendimento no estabelecimento.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="lg:-mx-6">
+              {!ehAgendamento && (
+                <SeletorEndereco
+                  enderecos={consumer?.enderecos ?? []}
+                  selecionado={enderecoSelecionado}
+                  onSelecionar={setEnderecoSelecionado}
+                />
+              )}
+
+              <SeletorPagamento
+                loja={loja}
+                selecionado={formaPagamento}
+                onSelecionar={setFormaPagamento}
+              />
+
+              {formaPagamento === 'online_cartao' && (
+                <>
+                  <FormularioCartao onChange={setDadosCartao} />
+                  <SeletorParcelas
+                    total={total}
+                    selecionado={installments}
+                    onSelecionar={setInstallments}
+                  />
+                </>
+              )}
+            </div>
+
+            <div className="px-6 pt-6 lg:px-0">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-wide text-ink-muted">
+                Observações do pedido (opcional)
+              </label>
+              <textarea
+                value={observacoes}
+                onChange={(e) => setObservacoes(e.target.value)}
+                placeholder="Ex: interfone 201, deixar com porteiro…"
+                maxLength={200}
+                rows={3}
+                className="w-full resize-none rounded-md border border-line bg-surface px-4 py-3 text-sm font-medium text-ink outline-none placeholder:text-ink-soft focus:border-ink"
+              />
+            </div>
+
+            <div className="px-6 pt-6 lg:hidden">
+              <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
+                Resumo
+              </p>
+              {resumo}
+            </div>
+          </div>
+
+          <aside className="hidden lg:sticky lg:top-8 lg:block lg:pt-1" aria-label="Resumo do pedido">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wide text-ink-muted">
+              Resumo
+            </p>
+            {resumo}
+            <div className="mt-4">{acao}</div>
+          </aside>
         </div>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 border-t border-line bg-surface px-4 pb-6 pt-3">
-        {mensagemErro && (
-          <p
-            role="alert"
-            className="mb-2 rounded-md bg-danger/15 px-3 py-2 text-xs font-semibold text-danger"
-          >
-            {mensagemErro}
-          </p>
-        )}
-        <button
-          type="button"
-          onClick={handleFazerPedido}
-          disabled={processando}
-          className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-60"
-        >
-          {processando ? 'Processando…' : labelBotao}
-        </button>
+      <div className="fixed inset-x-0 bottom-0 border-t border-line bg-surface px-4 pb-6 pt-3 lg:hidden">
+        {acao}
       </div>
     </div>
   )

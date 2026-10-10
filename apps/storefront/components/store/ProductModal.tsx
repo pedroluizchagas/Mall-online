@@ -290,9 +290,12 @@ export function ProductModal({
     onFechar()
   }
 
+  // Celular: bottom-sheet (o ModalProduto da RN). Computador (≥768px):
+  // diálogo central em duas colunas — a foto fica parada à esquerda e só os
+  // detalhes rolam, com o CTA preso ao pé da coluna da direita.
   return (
     <div
-      className="fixed inset-0 z-30 flex items-end justify-center"
+      className="fixed inset-0 z-30 flex items-end justify-center md:items-center md:p-6"
       role="dialog"
       aria-modal="true"
       aria-label={produto.nome}
@@ -302,12 +305,12 @@ export function ProductModal({
         type="button"
         aria-label="Fechar"
         onClick={onFechar}
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/40 md:bg-black/55 md:animate-surgir"
       />
 
-      <div className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-t-xl bg-surface">
+      <div className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-hidden rounded-t-xl bg-surface md:h-[min(86vh,760px)] md:max-h-none md:max-w-[1000px] md:flex-row md:rounded-xl md:shadow-floating md:animate-subir-suave">
         {/* Drag handle */}
-        <div className="flex justify-center pb-1 pt-2.5">
+        <div className="flex justify-center pb-1 pt-2.5 md:hidden">
           <div className="h-1 w-10 rounded-full bg-line" />
         </div>
 
@@ -316,153 +319,169 @@ export function ProductModal({
           type="button"
           aria-label="Fechar"
           onClick={onFechar}
-          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-surface shadow-soft transition-opacity hover:opacity-75"
+          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-surface shadow-soft transition-opacity hover:opacity-75 md:right-5 md:top-5 md:h-10 md:w-10"
         >
           <CloseIcon />
         </button>
 
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          {/* Foto (do variant ativo, se houver) */}
+        {/* Foto no computador: coluna própria, que não rola */}
+        <div className="relative hidden shrink-0 bg-canvasAlt md:block md:w-[48%]">
           {fotoExibida ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={fotoExibida}
-              alt=""
-              className="h-60 w-full bg-canvasAlt object-cover"
-            />
+            <img src={fotoExibida} alt="" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
-            <div className="flex h-60 w-full items-center justify-center bg-canvasAlt">
-              <span className="text-5xl text-ink-soft" aria-hidden>
-                &#9634;
-              </span>
-            </div>
+            <span className="absolute inset-0 flex items-center justify-center text-6xl text-ink-soft" aria-hidden>
+              &#9634;
+            </span>
           )}
+        </div>
 
-          <div className="flex flex-col gap-4 p-sheet">
-            {/* Título + preço */}
-            <div className="flex items-start justify-between gap-4">
-              <h2 className="min-w-0 flex-1 font-display text-display-md font-extrabold tracking-tight text-ink">
-                {produto.nome}
-              </h2>
-              <div className="flex flex-col items-end">
-                <span className="text-lg font-extrabold text-ink">
-                  {formatarReais(precoBase)}
-                </span>
-                {temPromo ? (
-                  <span className="text-[13px] text-ink-soft line-through">
-                    {formatarReais(precoOriginal)}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {/* Foto no celular (do variant ativo, se houver) */}
+            <div className="md:hidden">
+              {fotoExibida ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={fotoExibida}
+                  alt=""
+                  className="h-60 w-full bg-canvasAlt object-cover"
+                />
+              ) : (
+                <div className="flex h-60 w-full items-center justify-center bg-canvasAlt">
+                  <span className="text-5xl text-ink-soft" aria-hidden>
+                    &#9634;
                   </span>
-                ) : null}
-              </div>
+                </div>
+              )}
             </div>
 
-            {exigeReceita ? (
-              <div className="flex items-start gap-2.5 rounded-md border border-warning bg-warning/20 p-3">
-                <InfoIcon />
-                <p className="flex-1 text-[13px] font-medium leading-snug text-ink">
-                  <span className="font-extrabold">Exige receita médica.</span>{' '}
-                  Anexe a receita ao finalizar o pedido.
-                </p>
+            <div className="flex flex-col gap-4 p-sheet md:gap-5 md:px-9 md:pb-8 md:pt-14">
+              {/* Título + preço */}
+              <div className="flex items-start justify-between gap-4 md:flex-col md:gap-3">
+                <h2 className="min-w-0 flex-1 font-display text-display-md font-extrabold tracking-tight text-ink md:pr-10 md:text-[clamp(24px,2.2vw,32px)] md:leading-[1.15]">
+                  {produto.nome}
+                </h2>
+                <div className="flex flex-col items-end md:flex-row md:items-baseline md:gap-2.5">
+                  <span className="text-lg font-extrabold text-ink md:text-xl">
+                    {formatarReais(precoBase)}
+                  </span>
+                  {temPromo ? (
+                    <span className="text-[13px] text-ink-soft line-through md:text-[15px]">
+                      {formatarReais(precoOriginal)}
+                    </span>
+                  ) : null}
+                </div>
               </div>
-            ) : null}
 
-            {produto.descricao ? (
-              <p className="text-sm font-medium leading-relaxed text-ink-muted">
-                {produto.descricao}
-              </p>
-            ) : null}
+              {exigeReceita ? (
+                <div className="flex items-start gap-2.5 rounded-md border border-warning bg-warning/20 p-3">
+                  <InfoIcon />
+                  <p className="flex-1 text-[13px] font-medium leading-snug text-ink">
+                    <span className="font-extrabold">Exige receita médica.</span>{' '}
+                    Anexe a receita ao finalizar o pedido.
+                  </p>
+                </div>
+              ) : null}
 
-            {/* Grupos de variações */}
-            {temVariants
-              ? optionGroups.map((grupo) => (
-                  <GrupoVariants
-                    key={grupo.id}
-                    grupo={grupo}
-                    selecionada={selecoesVariant[grupo.id] ?? null}
-                    optionAlcancavel={(optionId) =>
-                      optionAlcancavel(grupo.id, optionId)
-                    }
-                    aoSelecionar={(optionId) =>
-                      selecionarOption(grupo.id, optionId)
-                    }
-                  />
-                ))
-              : null}
+              {produto.descricao ? (
+                <p className="text-sm font-medium leading-relaxed text-ink-muted">
+                  {produto.descricao}
+                </p>
+              ) : null}
 
-            {/* Grupos de modificadores */}
-            {modifierGroups.map((grupo) => (
-              <GrupoModifiers
-                key={grupo.id}
-                grupo={grupo}
-                selecionados={selecoes[grupo.id] ?? EMPTY_SET}
-                aoAlternar={(modifierId) => alternarSelecao(grupo, modifierId)}
-              />
-            ))}
+              {/* Grupos de variações */}
+              {temVariants
+                ? optionGroups.map((grupo) => (
+                    <GrupoVariants
+                      key={grupo.id}
+                      grupo={grupo}
+                      selecionada={selecoesVariant[grupo.id] ?? null}
+                      optionAlcancavel={(optionId) =>
+                        optionAlcancavel(grupo.id, optionId)
+                      }
+                      aoSelecionar={(optionId) =>
+                        selecionarOption(grupo.id, optionId)
+                      }
+                    />
+                  ))
+                : null}
 
-            {/* Observações */}
-            <label className="flex flex-col gap-1.5">
-              <span className="text-[13px] font-semibold text-ink">
-                Observações (opcional)
-              </span>
-              <textarea
-                value={observacoes}
-                onChange={(e) => setObservacoes(e.target.value)}
-                placeholder="Ex.: sem cebola, ponto da carne..."
-                maxLength={140}
-                rows={3}
-                className="resize-none rounded-md border border-line bg-surface px-3 py-2.5 text-sm font-medium text-ink outline-none placeholder:text-ink-soft focus:border-ink"
-              />
-            </label>
+              {/* Grupos de modificadores */}
+              {modifierGroups.map((grupo) => (
+                <GrupoModifiers
+                  key={grupo.id}
+                  grupo={grupo}
+                  selecionados={selecoes[grupo.id] ?? EMPTY_SET}
+                  aoAlternar={(modifierId) => alternarSelecao(grupo, modifierId)}
+                />
+              ))}
 
-            {/* Quantidade */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-ink">Quantidade</span>
-              <div className="flex items-center gap-3.5">
-                <QtyButton
-                  rotulo="Diminuir quantidade"
-                  desabilitado={quantidade === 1}
-                  onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
-                >
-                  &minus;
-                </QtyButton>
-                <span className="w-7 text-center text-lg font-extrabold text-ink">
-                  {quantidade}
+              {/* Observações */}
+              <label className="flex flex-col gap-1.5">
+                <span className="text-[13px] font-semibold text-ink">
+                  Observações (opcional)
                 </span>
-                <QtyButton
-                  rotulo="Aumentar quantidade"
-                  primario
-                  onClick={() => setQuantidade((q) => q + 1)}
-                >
-                  +
-                </QtyButton>
+                <textarea
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  placeholder="Ex.: sem cebola, ponto da carne..."
+                  maxLength={140}
+                  rows={3}
+                  className="resize-none rounded-md border border-line bg-surface px-3 py-2.5 text-sm font-medium text-ink outline-none placeholder:text-ink-soft focus:border-ink"
+                />
+              </label>
+
+              {/* Quantidade */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-ink">Quantidade</span>
+                <div className="flex items-center gap-3.5">
+                  <QtyButton
+                    rotulo="Diminuir quantidade"
+                    desabilitado={quantidade === 1}
+                    onClick={() => setQuantidade((q) => Math.max(1, q - 1))}
+                  >
+                    &minus;
+                  </QtyButton>
+                  <span className="w-7 text-center text-lg font-extrabold text-ink">
+                    {quantidade}
+                  </span>
+                  <QtyButton
+                    rotulo="Aumentar quantidade"
+                    primario
+                    onClick={() => setQuantidade((q) => q + 1)}
+                  >
+                    +
+                  </QtyButton>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* CTA fixo */}
-        <div className="border-t border-line px-4 pb-6 pt-3">
-          {erroValidacao ? (
-            <p className="mb-2 text-center text-xs font-semibold text-danger">
-              {erroValidacao}
-            </p>
-          ) : null}
-          <button
-            type="button"
-            onClick={handleAdicionar}
-            disabled={!!erroValidacao}
-            className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
-          >
-            {temVariants && !selecaoVariantCompleta
-              ? optionGroups.length > 1
-                ? `Selecione ${optionGroups
-                    .map((g) => g.nome.toLowerCase())
-                    .join(' e ')}`
-                : `Selecione ${
-                    optionGroups[0]?.nome.toLowerCase() ?? 'opção'
-                  }`
-              : `Adicionar — ${formatarReais(totalItem)}`}
-          </button>
+          {/* CTA fixo */}
+          <div className="border-t border-line px-4 pb-6 pt-3 md:px-9 md:pb-7 md:pt-4">
+            {erroValidacao ? (
+              <p className="mb-2 text-center text-xs font-semibold text-danger">
+                {erroValidacao}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={handleAdicionar}
+              disabled={!!erroValidacao}
+              className="flex h-14 w-full items-center justify-center rounded-pill bg-accent text-[15px] font-extrabold text-accent-ink transition-opacity hover:opacity-90 disabled:opacity-40"
+            >
+              {temVariants && !selecaoVariantCompleta
+                ? optionGroups.length > 1
+                  ? `Selecione ${optionGroups
+                      .map((g) => g.nome.toLowerCase())
+                      .join(' e ')}`
+                  : `Selecione ${
+                      optionGroups[0]?.nome.toLowerCase() ?? 'opção'
+                    }`
+                : `Adicionar — ${formatarReais(totalItem)}`}
+            </button>
+          </div>
         </div>
       </div>
     </div>

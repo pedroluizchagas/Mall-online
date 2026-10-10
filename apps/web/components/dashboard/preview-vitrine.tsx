@@ -16,7 +16,8 @@ import { urlPreviewDaLoja, type RascunhoPreview } from '@/lib/storefront-url'
  *
  * Três molduras: celular (390px — a largura em que as vitrines foram
  * desenhadas e a mesma que o app Mallevo veste, porque as vitrines web são
- * portes 1:1 das do app), computador (coluna central de 480px sobre a pele) e
+ * portes 1:1 das do app), computador (1280px: a composição de computador da
+ * vitrine quando ela tem uma, senão a coluna central de 480px sobre a pele) e
  * App Mallevo (a mesma vitrine dentro do chrome do app — status bar, voltar e
  * barra de menu —, que o storefront veste com `?app=1`; é a MESMA página, não
  * o app RN rodando).
