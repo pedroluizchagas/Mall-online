@@ -353,6 +353,14 @@ CREATE POLICY "consumers_select_admin"
   ON consumers FOR SELECT
   TO authenticated
   USING (is_admin());
+
+-- Entregador vê o cliente das próprias entregas (aceita, coletada ou
+-- entregue — oferta pendente ou recusada não conta). Sem ela, o embed
+-- `consumers!inner (nome)` do app do entregador derrubava a entrega inteira.
+CREATE POLICY "consumers_select_entregador"
+  ON consumers FOR SELECT
+  TO authenticated
+  USING (courier_delivers_to_consumer(id));
 ```
 
 RLS escolhe linhas, não colunas: com só as policies, o lojista lia CPF, data

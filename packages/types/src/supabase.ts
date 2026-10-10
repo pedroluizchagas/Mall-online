@@ -2811,6 +2811,10 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: boolean
       }
+      courier_delivers_to_consumer: {
+        Args: { p_consumer_id: string }
+        Returns: boolean
+      }
       courier_elegivel: {
         Args: {
           p_courier_id: string

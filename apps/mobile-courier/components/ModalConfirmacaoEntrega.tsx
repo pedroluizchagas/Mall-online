@@ -23,7 +23,7 @@ export function ModalConfirmacaoEntrega({
   onConfirmar,
   onFechar,
 }: Props) {
-  const { courier } = useAuthStore()
+  const { user } = useAuthStore()
   const [modo, setModo] = useState<'codigo' | 'foto'>('codigo')
   const [codigo, setCodigo] = useState('')
   const [fotoUri, setFotoUri] = useState<string | null>(null)
@@ -70,12 +70,14 @@ export function ModalConfirmacaoEntrega({
 
     let comprovante_url: string | undefined
 
-    if (modo === 'foto' && fotoUri && courier?.id) {
+    if (modo === 'foto' && fotoUri && user?.id) {
       try {
         const resposta = await fetch(fotoUri)
         const blob = await resposta.blob()
         const buffer = await blob.arrayBuffer()
-        const caminho = `${courier.id}/comprovante-${Date.now()}.jpg`
+        // A pasta é o auth.uid(): é o que a policy de upload do courier-docs
+        // exige. Com o courier.id o upload era recusado e a foto se perdia.
+        const caminho = `${user.id}/comprovante-${Date.now()}.jpg`
 
         const { error } = await supabase.storage
           .from('courier-docs')
