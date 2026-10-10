@@ -227,6 +227,9 @@ importers:
       '@types/react':
         specifier: ~19.2.18
         version: 19.2.18
+      babel-preset-expo:
+        specifier: ~57.0.10
+        version: 57.0.10(@babel/core@7.29.0)(@babel/runtime@7.29.2)(expo@57.0.20)(react-refresh@0.14.2)
       tailwindcss:
         specifier: ^3.4.0
         version: 3.4.19(yaml@2.8.3)
@@ -336,6 +339,9 @@ importers:
       '@types/react':
         specifier: ~19.2.18
         version: 19.2.18
+      babel-preset-expo:
+        specifier: ~57.0.10
+        version: 57.0.10(@babel/core@7.29.0)(@babel/runtime@7.29.2)(expo@57.0.20)(react-refresh@0.14.2)
       tailwindcss:
         specifier: ^3.4.0
         version: 3.4.19(yaml@2.8.3)
@@ -469,6 +475,9 @@ importers:
       '@types/react':
         specifier: ~19.2.18
         version: 19.2.18
+      babel-preset-expo:
+        specifier: ~57.0.10
+        version: 57.0.10(@babel/core@7.29.0)(@babel/runtime@7.29.2)(expo@57.0.20)(react-refresh@0.14.2)
       tailwindcss:
         specifier: ^3.4.0
         version: 3.4.19(yaml@2.8.3)
