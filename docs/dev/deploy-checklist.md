@@ -97,6 +97,10 @@ eof` = sem certificado) → `vercel domains inspect mallevo.com.br`.
 
 - `STOREFRONT_ALLOW_PREVIEW_OVERRIDE` — liga o `?preset=&categoria=` que troca a
   pele de qualquer loja. **Nunca** em produção; é ferramenta de QA.
+- `STOREFRONT_LOJA_PREVIEW=<slug>` — faz a URL `*.vercel.app` do deploy servir
+  essa loja em vez do saguão (a URL de deploy nunca carrega slug). Só em
+  Preview, de preferência por deploy (`vercel deploy -e ...`), nunca em
+  produção: lá o saguão de `storefront-mallevo.vercel.app` sumiria.
 - `NEXT_PUBLIC_ALLOW_UNKNOWN_HOST` — só para Previews da Vercel.
 - `PREVIEW_FRAME_ANCESTORS` — acrescenta origens que podem embutir o `/preview`
   em iframe. Vazio em produção significa: só o dashboard.

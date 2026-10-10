@@ -81,6 +81,19 @@ function getSubdomain(hostname: string): string | null {
   return null
 }
 
+/**
+ * Revisar uma LOJA num deploy de Preview: a URL da Vercel é apex (ver
+ * `DOMINIOS_APEX`) e nunca carrega slug. Com `STOREFRONT_LOJA_PREVIEW=<slug>`
+ * no deploy — variável de Preview, NUNCA de produção —, essa URL serve a loja
+ * em vez do saguão. Domínio de loja e máquina local não mudam.
+ */
+function lojaDoPreview(hostname: string): string | null {
+  const slug = process.env.STOREFRONT_LOJA_PREVIEW
+  if (!slug) return null
+  const host = normalizarHost(hostname)
+  return DOMINIOS_APEX.some((d) => host === d || host.endsWith(`.${d}`)) ? slug : null
+}
+
 export async function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') || ''
 
@@ -97,7 +110,7 @@ export async function middleware(request: NextRequest) {
     })
   }
 
-  const slug = getSubdomain(hostname)
+  const slug = getSubdomain(hostname) ?? lojaDoPreview(hostname)
 
   const legal = request.nextUrl.pathname.match(DOCUMENTOS_LEGAIS)
   if (legal && !HOSTS_DOCUMENTOS.has(normalizarHost(hostname))) {
