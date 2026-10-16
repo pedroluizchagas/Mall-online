@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ExternalLink, Monitor, Smartphone, Store } from 'lucide-react'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 import { urlPreviewDaLoja, type RascunhoPreview } from '@/lib/storefront-url'
 
@@ -114,31 +114,32 @@ export function PreviewVitrine({
   return (
     <div ref={areaRef} className="flex w-full flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex gap-1 rounded-xl p-1" style={{ background: 'var(--bg-3)' }}>
+        {/* Seletores segmentados da casa: trilho de vidro claro, opção ativa em tinta. */}
+        <div className="flex gap-1 rounded-full bg-bg p-1 ring-1 ring-inset ring-line">
           {(
             [
-              ['celular', 'Celular', Smartphone],
-              ['computador', 'Computador', Monitor],
-              ['app', 'App Mallevo', Store],
+              ['celular', 'Celular', 'smartphone'],
+              ['computador', 'Computador', 'monitor'],
+              ['app', 'App Mallevo', 'store'],
             ] as const
-          ).map(([valor, rotulo, Icone]) => (
+          ).map(([valor, rotulo, icone]) => (
             <button
               key={valor}
               type="button"
               onClick={() => setDispositivo(valor)}
-              className="inline-flex items-center gap-1.5 rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition-all"
+              aria-pressed={dispositivo === valor}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold transition-colors"
               style={{
-                background: dispositivo === valor ? 'var(--bg)' : 'transparent',
-                color: dispositivo === valor ? 'var(--ink)' : 'var(--ink-3)',
-                boxShadow: dispositivo === valor ? 'var(--shadow-sm)' : 'none',
+                background: dispositivo === valor ? 'var(--ink)' : 'transparent',
+                color: dispositivo === valor ? 'var(--bg)' : 'var(--ink-2)',
               }}
             >
-              <Icone size={13} />
+              <PartnerIcon name={icone} size={14} strokeWidth={2} />
               {rotulo}
             </button>
           ))}
         </div>
-        <div className="flex gap-1 rounded-xl p-1" style={{ background: 'var(--bg-3)' }}>
+        <div className="flex gap-1 rounded-full bg-bg p-1 ring-1 ring-inset ring-line">
           {(
             [
               ['inicio', 'Início'],
@@ -150,11 +151,11 @@ export function PreviewVitrine({
               type="button"
               onClick={() => setTela(valor)}
               disabled={valor === 'produto' && !produtoId}
-              className="rounded-[10px] px-3 py-1.5 text-[11px] font-semibold transition-all disabled:opacity-40"
+              aria-pressed={tela === valor}
+              className="h-8 rounded-full px-3 text-[12px] font-semibold transition-colors disabled:opacity-40"
               style={{
-                background: tela === valor ? 'var(--bg)' : 'transparent',
-                color: tela === valor ? 'var(--ink)' : 'var(--ink-3)',
-                boxShadow: tela === valor ? 'var(--shadow-sm)' : 'none',
+                background: tela === valor ? 'var(--ink)' : 'transparent',
+                color: tela === valor ? 'var(--bg)' : 'var(--ink-2)',
               }}
             >
               {rotulo}
@@ -183,7 +184,7 @@ export function PreviewVitrine({
                 : 'relative overflow-hidden rounded-xl border-[6px] shadow-xl'
             }
             style={{
-              borderColor: 'var(--ink)',
+              borderColor: 'var(--marquee)',
               background: 'var(--bg)',
               width: larguraPainel,
               height: alturaEscalada,
@@ -193,7 +194,7 @@ export function PreviewVitrine({
               <div
                 aria-hidden
                 className="pointer-events-none absolute left-1/2 top-2 z-10 h-[18px] w-[92px] -translate-x-1/2 rounded-full"
-                style={{ background: 'var(--ink)' }}
+                style={{ background: 'var(--marquee)' }}
               />
             )}
             {src && (
@@ -211,7 +212,7 @@ export function PreviewVitrine({
               <div
                 role="status"
                 className="pointer-events-none absolute left-1/2 top-8 z-20 -translate-x-1/2 rounded-full px-3 py-1 text-[11px] font-semibold shadow-md"
-                style={{ background: 'var(--ink)', color: 'var(--bg)' }}
+                style={{ background: 'var(--marquee)', color: '#fff' }}
               >
                 Atualizando…
               </div>
@@ -233,7 +234,7 @@ export function PreviewVitrine({
             className="inline-flex items-center gap-1 font-semibold hover:underline"
             style={{ color: 'var(--ink-2)' }}
           >
-            Abrir o preview em nova aba <ExternalLink size={11} />
+            Abrir o preview em nova aba <PartnerIcon name="external" size={11} />
           </a>
         )}
       </div>

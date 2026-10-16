@@ -2,6 +2,7 @@
 
 import { useCallback, useState, type ReactNode } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { cx } from '@/lib/cx'
 
 interface AbaDef {
   id: string
@@ -15,6 +16,7 @@ export interface AbasProps {
   defaultId?: string
 }
 
+/** Abas em pílula (a ativa é tinta) — as mesmas do PageHeader. */
 export function Abas({ defs, searchParam, defaultId }: AbasProps) {
   const fallback = defaultId ?? defs[0]?.id ?? ''
   const router = useRouter()
@@ -46,11 +48,7 @@ export function Abas({ defs, searchParam, defaultId }: AbasProps) {
 
   return (
     <div>
-      <div
-        role="tablist"
-        className="flex gap-1 mb-6 overflow-x-auto"
-        style={{ borderBottom: '1px solid var(--line)' }}
-      >
+      <div role="tablist" className="-m-1 mb-6 flex gap-1 overflow-x-auto p-1">
         {defs.map((aba) => {
           const isAtiva = aba.id === idAtivo
           return (
@@ -60,12 +58,10 @@ export function Abas({ defs, searchParam, defaultId }: AbasProps) {
               role="tab"
               aria-selected={isAtiva}
               onClick={() => trocarAba(aba.id)}
-              className="px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors"
-              style={
-                isAtiva
-                  ? { borderColor: 'var(--brick)', color: 'var(--ink)' }
-                  : { borderColor: 'transparent', color: 'var(--ink-3)' }
-              }
+              className={cx(
+                'h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-[13.5px] font-semibold transition-colors duration-200',
+                isAtiva ? 'bg-ink text-bg' : 'text-ink-2 hover:bg-bg hover:text-ink',
+              )}
             >
               {aba.label}
             </button>

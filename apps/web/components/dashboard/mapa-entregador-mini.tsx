@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from 'react'
 import { createSupabaseClient } from '@/lib/supabase/client'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface Props {
   courierId: string
 }
 
+/** O entregador em rota: posição ao vivo e o atalho para o mapa. */
 export function MapaEntregadorMini({ courierId }: Props) {
   const [loc, setLoc] = useState<{ latitude: number; longitude: number } | null>(null)
-  const supabase = createSupabaseClient()
 
   useEffect(() => {
+    const supabase = createSupabaseClient()
+
     async function carregar() {
       const { data } = await supabase
         .from('courier_locations')
@@ -22,7 +25,7 @@ export function MapaEntregadorMini({ courierId }: Props) {
       if (data) setLoc(data)
     }
 
-    carregar()
+    void carregar()
 
     const canal = supabase
       .channel(`loc-${courierId}`)
@@ -36,50 +39,45 @@ export function MapaEntregadorMini({ courierId }: Props) {
         },
         (payload) => {
           setLoc({ latitude: payload.new.latitude, longitude: payload.new.longitude })
-        }
+        },
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(canal) }
+    return () => {
+      void supabase.removeChannel(canal)
+    }
   }, [courierId])
 
-  if (!loc) {
-    return (
-      <div
-        className="rounded-xl h-20 flex items-center justify-center"
-        style={{ background: 'var(--bg-2)' }}
-      >
-        <p className="text-sm text-ink-3">Aguardando localização...</p>
-      </div>
-    )
-  }
-
-  const linkMaps = `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`
-
   return (
-    <div
-      className="rounded-xl p-4"
-      style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-ink">Entregador em rota</p>
-        <span className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--ok)' }}>
-          <span
-            className="w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{ background: 'var(--ok)' }}
-          />
-          Ao vivo
-        </span>
+    <div className="cartao flex items-center gap-4 p-4">
+      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-bg-2 text-ink">
+        <PartnerIcon name="route" size={19} strokeWidth={1.9} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-[14px] font-semibold text-ink">
+          Entregador em rota
+          {loc && (
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-bold" style={{ color: 'var(--ok)' }}>
+              <span className="pulso size-1.5 rounded-full" style={{ background: 'var(--ok)' }} />
+              ao vivo
+            </span>
+          )}
+        </p>
+        <p className="mt-0.5 text-[12.5px] text-ink-3">
+          {loc ? 'A posição atualiza sozinha enquanto ele estiver a caminho.' : 'Aguardando a primeira localização…'}
+        </p>
       </div>
-      <a
-        href={linkMaps}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-sm font-medium underline"
-        style={{ color: 'var(--brick-dk)' }}
-      >
-        Ver no Google Maps
-      </a>
+      {loc && (
+        <a
+          href={`https://maps.google.com/?q=${loc.latitude},${loc.longitude}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-ink px-4 text-[13px] font-bold text-bg transition-opacity hover:opacity-90"
+        >
+          Ver no mapa
+          <PartnerIcon name="external" size={14} strokeWidth={2.2} />
+        </a>
+      )}
     </div>
   )
 }

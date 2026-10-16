@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
-import { CheckCircle2, Sparkles } from 'lucide-react'
 import type { StoreThemeConfig } from '@mallevo/lib'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { FluxoOnboarding } from './fluxo'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export interface DadosOnboarding {
   nome_responsavel: string
@@ -35,6 +35,11 @@ export default function PaginaOnboarding() {
   const [showSplash, setShowSplash] = useState(true)
   const [splashPhase, setSplashPhase] = useState<number>(0)
   const [contaCriada, setContaCriada] = useState(false)
+
+  // Quem pediu menos movimento entra direto no cadastro: a abertura é só cena.
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) setShowSplash(false)
+  }, [])
 
   useEffect(() => {
     if (!showSplash) return
@@ -137,7 +142,7 @@ function Splash({ splashPhase }: { splashPhase: number }) {
     <motion.div
       exit={{ opacity: 0, scale: 1.05, filter: 'blur(10px)' }}
       transition={{ duration: 0.8, ease: 'easeInOut' }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#09090B] overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-marquee overflow-hidden"
     >
       <motion.div
         initial={{ opacity: 0, scale: 0 }}
@@ -146,7 +151,7 @@ function Splash({ splashPhase }: { splashPhase: number }) {
           scale: splashPhase === 6 ? 40 : 0,
         }}
         transition={{ duration: 0.8, ease: 'easeInOut' }}
-        className="absolute w-[150px] h-[150px] bg-[#C1F148] rounded-full blur-[60px] z-20 pointer-events-none"
+        className="absolute w-[150px] h-[150px] bg-brick rounded-full blur-[60px] z-20 pointer-events-none"
       />
 
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full">
@@ -197,7 +202,7 @@ function Splash({ splashPhase }: { splashPhase: number }) {
                 className="absolute text-5xl md:text-7xl lg:text-8xl font-semibold text-white text-center tracking-tight leading-[1.1]"
               >
                 Construindo o seu <br />
-                <span className="text-[#C1F148]">ecossistema</span>
+                <span className="text-brick">ecossistema</span>
               </motion.h2>
             )}
             {splashPhase === 5 && (
@@ -231,13 +236,13 @@ function TelaSucesso() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#09090B] overflow-hidden p-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-marquee overflow-hidden p-6"
     >
       <motion.div
         initial={{ opacity: 0.4, scale: 0 }}
         animate={{ opacity: [0.4, 0.6, 0.5], scale: [0, 5, 6] }}
         transition={{ duration: 2, ease: 'easeOut' }}
-        className="absolute w-[200px] h-[200px] bg-[#C1F148] rounded-full blur-[100px] pointer-events-none"
+        className="absolute w-[200px] h-[200px] bg-glow rounded-full blur-[100px] pointer-events-none"
       />
 
       <div className="relative z-10 flex flex-col items-center text-center max-w-lg">
@@ -245,9 +250,9 @@ function TelaSucesso() {
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ duration: 0.8, type: 'spring', bounce: 0.5 }}
-          className="w-24 h-24 md:w-28 md:h-28 rounded-3xl bg-[#C1F148] flex items-center justify-center mb-8 shadow-[0_0_80px_rgba(193,241,72,0.5)]"
+          className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-brick flex items-center justify-center mb-8 shadow-[0_0_80px_rgba(193,241,72,0.5)]"
         >
-          <CheckCircle2 className="w-12 h-12 md:w-14 md:h-14 text-[#09090B]" strokeWidth={2.5} />
+          <PartnerIcon name="check-circle" size={48} className="md:w-14 md:h-14 text-brick-ink" strokeWidth={2.5} />
         </motion.div>
 
         <motion.div
@@ -256,11 +261,11 @@ function TelaSucesso() {
           transition={{ delay: 0.4, duration: 0.6 }}
           className="flex items-center gap-2 mb-4"
         >
-          <Sparkles className="w-5 h-5 text-[#C1F148]" />
-          <span className="text-sm font-semibold text-[#C1F148] tracking-wider uppercase">
+          <PartnerIcon name="spark" size={20} className="text-brick" />
+          <span className="text-sm font-semibold text-brick tracking-wider uppercase">
             Sua conta está pronta
           </span>
-          <Sparkles className="w-5 h-5 text-[#C1F148]" />
+          <PartnerIcon name="spark" size={20} className="text-brick" />
         </motion.div>
 
         <motion.h2
@@ -269,7 +274,7 @@ function TelaSucesso() {
           transition={{ delay: 0.5, duration: 0.7 }}
           className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4 leading-tight"
         >
-          Bem-vindo ao <span className="text-[#C1F148]">Mallevo</span>
+          Boas-vindas ao <span className="italic text-brick">Mallevo</span>
         </motion.h2>
 
         <motion.p
@@ -287,7 +292,7 @@ function TelaSucesso() {
           transition={{ delay: 1, duration: 0.5 }}
           className="flex items-center gap-3 text-zinc-500 text-sm"
         >
-          <div className="w-4 h-4 border-2 border-[#C1F148] border-t-transparent rounded-full animate-spin" />
+          <div className="w-4 h-4 border-2 border-brick border-t-transparent rounded-full animate-spin" />
           <span>Preparando seu dashboard…</span>
         </motion.div>
       </div>

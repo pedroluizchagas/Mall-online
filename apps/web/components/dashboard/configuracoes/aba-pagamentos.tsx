@@ -47,12 +47,12 @@ export function AbaPagamentos({ loja }: { loja: any }) {
 
       <form action={dispatch} className="space-y-3">
         {estado?.erro && (
-          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
+          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--err-lt)', color: 'var(--err)' }}>
             {estado.erro}
           </p>
         )}
         {estado?.sucesso && (
-          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#e6f7e3', color: 'var(--ok)' }}>
+          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--ok-lt)', color: 'var(--ok)' }}>
             Métodos de pagamento atualizados.
           </p>
         )}
@@ -65,8 +65,8 @@ export function AbaPagamentos({ loja }: { loja: any }) {
                 key={metodo.id}
                 className="flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-colors"
                 style={{
-                  border: ativo ? '1px solid var(--brick)' : '1px solid var(--line)',
-                  background: ativo ? 'rgba(193,241,72,0.08)' : 'transparent',
+                  border: ativo ? '1px solid var(--ink)' : '1px solid var(--line)',
+                  background: ativo ? 'var(--bg-2)' : 'transparent',
                 }}
               >
                 <input
@@ -83,13 +83,13 @@ export function AbaPagamentos({ loja }: { loja: any }) {
                   }
                   className="w-4 h-4 rounded border-2 flex-shrink-0 transition-colors"
                   style={{
-                    background: ativo ? 'var(--brick)' : 'transparent',
-                    borderColor: ativo ? 'var(--brick)' : 'var(--line)',
+                    background: ativo ? 'var(--ink)' : 'transparent',
+                    borderColor: ativo ? 'var(--ink)' : 'var(--line-2)',
                   }}
                 >
                   {ativo && (
                     <svg viewBox="0 0 10 10" className="w-full h-full p-0.5" fill="none">
-                      <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--brick-ink)' }} />
+                      <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--bg)' }} />
                     </svg>
                   )}
                 </button>

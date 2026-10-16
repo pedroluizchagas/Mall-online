@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface Bar {
   h: string
@@ -10,55 +10,63 @@ interface Bar {
 interface Props {
   data: Bar[]
   height?: number
-  autoplay?: boolean
+  /** Índice da barra do agora (a hora em curso). */
+  agora?: number
 }
 
-export function BarChart({ data, height = 120, autoplay = true }: Props) {
-  const [activeIdx, setActiveIdx] = useState(-1)
-
-  useEffect(() => {
-    if (!autoplay || !data.length) return
-    const i = setInterval(() => {
-      setActiveIdx((prev) => (prev + 1) % data.length)
-    }, 1800)
-    return () => clearInterval(i)
-  }, [autoplay, data.length])
-
+/**
+ * Barras por hora, monocromáticas: horas passadas em grafite (≥ 3:1 sobre
+ * branco), o agora em tinta com o ponto aceso em cima, horas que ainda não
+ * chegaram em trilho claro. O número aparece no hover/foco — nada piscando
+ * sozinho.
+ */
+export function BarChart({ data, height = 120, agora = -1 }: Props) {
+  const [ativo, setAtivo] = useState(-1)
   const max = Math.max(...data.map((d) => d.n), 1)
 
   return (
-    <div className="flex items-end gap-1.5 relative" style={{ height, padding: '4px 0' }}>
-      {data.map((d, i) => (
-        <div
-          key={i}
-          className="flex-1 flex flex-col items-center gap-1.5 cursor-pointer h-full justify-end"
-          onMouseEnter={() => setActiveIdx(i)}
-        >
+    <div className="flex items-end gap-1.5" style={{ height }} onMouseLeave={() => setAtivo(-1)}>
+      {data.map((d, i) => {
+        const futuro = agora >= 0 && i > agora
+        const ehAgora = i === agora
+        const realcado = i === ativo
+        return (
           <div
-            className="w-full rounded-md relative transition-all duration-300"
-            style={{
-              height: `${(d.n / max) * 100}%`,
-              background: i === activeIdx ? 'var(--brick-dk)' : 'var(--brick)',
-              minHeight: 4,
-            }}
+            key={d.h}
+            className="relative flex h-full flex-1 flex-col items-center justify-end gap-1.5 outline-none"
+            onMouseEnter={() => setAtivo(i)}
+            onFocus={() => setAtivo(i)}
+            onBlur={() => setAtivo(-1)}
+            tabIndex={0}
+            aria-label={`${d.h}: ${d.n} ${d.n === 1 ? 'pedido' : 'pedidos'}`}
           >
-            {i === activeIdx && (
-              <div
-                className="absolute left-1/2 -translate-x-1/2 px-2 py-1 rounded-md whitespace-nowrap font-bold"
-                style={{
-                  top: -32,
-                  background: 'var(--ink)',
-                  color: 'var(--bg)',
-                  fontSize: 10,
-                }}
-              >
-                {d.n} pedidos
-              </div>
+            {realcado && (
+              <span className="pointer-events-none absolute -top-1 left-1/2 z-[1] -translate-x-1/2 -translate-y-full whitespace-nowrap rounded-full bg-ink px-2 py-1 text-[10.5px] font-bold text-bg">
+                {d.n} {d.n === 1 ? 'pedido' : 'pedidos'}
+              </span>
             )}
+            {ehAgora && (
+              <span aria-hidden className="pulso size-1.5 shrink-0 rounded-full" style={{ background: 'var(--brick)', boxShadow: '0 0 0 2px var(--ink)' }} />
+            )}
+            <div
+              className="w-full rounded-[5px] transition-[height,background-color] duration-500 ease-entrada"
+              style={{
+                // A altura útil desconta o rótulo da hora e o ponto do agora (≈34px),
+                // senão as barras mais altas batem no teto e empatam.
+                height: futuro ? 4 : `max(4px, calc((100% - 34px) * ${d.n / max}))`,
+                background: futuro
+                  ? 'var(--bg-3)'
+                  : ehAgora || realcado
+                    ? 'var(--ink)'
+                    : d.n === 0
+                      ? 'var(--bg-3)'
+                      : 'var(--ink-4)',
+              }}
+            />
+            <span className={`text-[10px] font-semibold ${ehAgora ? 'text-ink' : 'text-ink-3'}`}>{d.h}</span>
           </div>
-          <div className="text-[10px] text-ink-3 font-medium">{d.h}</div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

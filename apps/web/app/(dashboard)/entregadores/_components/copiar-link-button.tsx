@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Check } from 'lucide-react'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const BTN =
   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors'
@@ -32,7 +32,7 @@ export function CopiarLinkButton({ link, rotulo = 'Copiar link' }: { link: strin
           : { background: 'var(--bg)', color: 'var(--ink-2)', borderColor: 'var(--line)' }
       }
     >
-      {copiado ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+      {copiado ? <PartnerIcon name="check" size={14} /> : <PartnerIcon name="copy" size={14} />}
       {copiado ? 'Copiado!' : rotulo}
     </button>
   )

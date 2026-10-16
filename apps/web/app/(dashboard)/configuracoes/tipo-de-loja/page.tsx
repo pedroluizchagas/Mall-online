@@ -5,6 +5,7 @@ import {
   getTemplateByStore,
 } from '@mallevo/lib'
 import { TipoDeLojaCard } from '@/components/dashboard/tipo-de-loja-card'
+import { PageHeader } from '@/components/dashboard/page-header'
 
 type StoreComCategoria = {
   nome: string | null
@@ -31,7 +32,8 @@ export default async function PaginaTipoDeLoja() {
     .from('stores')
     .select('nome, categoria:categories!stores_categoria_id_fkey(id, slug, nome, icone)')
     .eq('tenant_id', tenant.id)
-    .single()) as { data: StoreComCategoria | null }
+    .limit(1)
+    .maybeSingle()) as { data: StoreComCategoria | null }
 
   const template = getTemplateByStore(loja ?? {})
   const pisos = loja?.categoria?.slug
@@ -39,16 +41,18 @@ export default async function PaginaTipoDeLoja() {
     : []
 
   return (
-    <div className="p-9 max-w-2xl">
-      <h1 className="font-display text-[32px] leading-tight text-ink mb-6">
-        Tipo de loja
-      </h1>
+    <div className="max-w-3xl p-6 sm:p-9">
+      <PageHeader
+        sobrelinha="Minha loja"
+        titulo="Tipo de loja"
+        subtitulo="O que o seu ramo liga no painel e onde a loja aparece no shopping."
+      />
 
       <TipoDeLojaCard
         categoriaNome={loja?.categoria?.nome ?? null}
-        categoriaIcone={loja?.categoria?.icone ?? null}
+        categoriaSlug={loja?.categoria?.slug ?? null}
         template={template}
-        pisos={pisos.map((p) => ({ slug: p.slug, nome: p.nome, icone: p.icone }))}
+        pisos={pisos.map((p) => ({ slug: p.slug, nome: p.nome }))}
       />
     </div>
   )

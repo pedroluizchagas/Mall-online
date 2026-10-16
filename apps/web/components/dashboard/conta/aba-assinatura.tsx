@@ -10,10 +10,10 @@ const LABELS_BILLING: Record<string, string> = {
 }
 
 const CORES_BILLING: Record<string, { bg: string; color: string }> = {
-  trial: { bg: '#dbeafe', color: '#1e40af' },
-  ativa: { bg: '#dcfce7', color: '#166534' },
-  em_atraso: { bg: '#fef3c7', color: '#92400e' },
-  cancelada: { bg: '#fee2e2', color: '#991b1b' },
+  trial: { bg: 'var(--sky-lt)', color: 'var(--sky)' },
+  ativa: { bg: 'var(--ok-lt)', color: 'var(--ok)' },
+  em_atraso: { bg: 'var(--warn-lt)', color: 'var(--warn)' },
+  cancelada: { bg: 'var(--err-lt)', color: 'var(--err)' },
   suspensa: { bg: 'var(--bg-2)', color: 'var(--ink-3)' },
 }
 
@@ -66,9 +66,9 @@ export function AbaAssinatura({ assinatura, linkPortal }: Props) {
       {assinatura?.billing_status === 'trial' && assinatura.trial_termina_em && (
         <div
           className="rounded-xl p-3 mb-4"
-          style={{ background: '#dbeafe', border: '1px solid #bfdbfe' }}
+          style={{ background: 'var(--sky-lt)', border: '1px solid var(--sky-lt)' }}
         >
-          <p className="text-sm" style={{ color: '#1e40af' }}>
+          <p className="text-sm" style={{ color: 'var(--sky)' }}>
             Período de teste até{' '}
             {new Date(assinatura.trial_termina_em).toLocaleDateString('pt-BR')}
           </p>

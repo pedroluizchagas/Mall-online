@@ -1,10 +1,10 @@
 'use client'
 
 import { useTransition } from 'react'
-import { CheckCircle2, RotateCcw } from 'lucide-react'
 import type { SupportTicketStatus } from '@mallevo/types'
 import { marcarResolvido, reabrirTicket } from '../actions'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface Props {
   ticketId: string
@@ -33,8 +33,8 @@ export function AcaoStatusButton({ ticketId, status }: Props) {
       style={{ background: 'var(--bg)', color: 'var(--ink-2)', borderColor: 'var(--line)' }}
     >
       {resolvido
-        ? <><RotateCcw className="w-3.5 h-3.5" /> Reabrir</>
-        : <><CheckCircle2 className="w-3.5 h-3.5" /> Marcar resolvido</>}
+        ? <><PartnerIcon name="undo" size={14} /> Reabrir</>
+        : <><PartnerIcon name="check-circle" size={14} /> Marcar resolvido</>}
     </button>
   )
 }

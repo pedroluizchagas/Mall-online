@@ -21,7 +21,7 @@ export async function getCategorias() {
 
   const { data, error } = await supabase
     .from('categories')
-    .select('id, nome, descricao, icone, ordem, ativa, tenant_id')
+    .select('id, nome, slug, descricao, icone, ordem, ativa, tenant_id')
     .or(`tenant_id.is.null,tenant_id.eq.${tenant?.id}`)
     .eq('ativa', true)
     .order('ordem', { ascending: true })
@@ -56,8 +56,8 @@ export async function criarCategoria(formData: FormData) {
 
   if (error) return { erro: error.message }
 
-  revalidatePath('/dashboard/categorias')
-  revalidatePath('/dashboard/produtos')
+  revalidatePath('/categorias')
+  revalidatePath('/produtos')
   return { sucesso: true }
 }
 
@@ -91,7 +91,7 @@ export async function atualizarCategoria(
 
   if (error) return { erro: error.message }
 
-  revalidatePath('/dashboard/categorias')
+  revalidatePath('/categorias')
   return { sucesso: true }
 }
 
@@ -119,6 +119,6 @@ export async function excluirCategoria(categoria_id: string) {
 
   if (error) return { erro: error.message }
 
-  revalidatePath('/dashboard/categorias')
+  revalidatePath('/categorias')
   return { sucesso: true }
 }

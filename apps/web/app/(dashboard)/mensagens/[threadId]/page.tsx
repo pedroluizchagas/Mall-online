@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, MessageCircle, Phone } from 'lucide-react'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import type { MessageAutorTipo, MessageThreadOrigem } from '@mallevo/types'
 import { marcarThreadLida } from '../actions'
@@ -8,6 +7,7 @@ import { MensagemBubble, type MensagemItem } from '../_components/mensagem-bubbl
 import { AcaoArquivarButton } from '../_components/acao-arquivar-button'
 import { RealtimeThread } from '../_components/realtime-thread'
 import { Composer } from '../_components/composer'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface LinhaThread {
   id: string
@@ -64,7 +64,7 @@ export default async function PaginaThread({ params }: { params: { threadId: str
   return (
     <div className="p-9 slide-up max-w-3xl mx-auto w-full">
       <Link href="/mensagens" className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-2 hover:text-ink mb-4">
-        <ArrowLeft className="w-3.5 h-3.5" /> Voltar para mensagens
+        <PartnerIcon name="back" size={14} /> Voltar para mensagens
       </Link>
 
       <header className="mb-5 p-4 rounded-2xl flex items-start justify-between gap-4 flex-wrap" style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}>
@@ -76,7 +76,7 @@ export default async function PaginaThread({ params }: { params: { threadId: str
               <>
                 <span>·</span>
                 <a href={`tel:${telefoneConsumer}`} className="inline-flex items-center gap-1 hover:underline">
-                  <Phone className="w-3 h-3" /> {telefoneConsumer}
+                  <PartnerIcon name="phone" size={12} /> {telefoneConsumer}
                 </a>
               </>
             )}
@@ -87,7 +87,7 @@ export default async function PaginaThread({ params }: { params: { threadId: str
 
       {mensagens.length === 0 ? (
         <div className="p-8 rounded-2xl text-center" style={{ background: 'var(--bg)', border: '1px dashed var(--line)' }}>
-          <MessageCircle className="w-6 h-6 mx-auto mb-2 text-ink-3" strokeWidth={1.75} />
+          <PartnerIcon name="chat" size={24} className="mx-auto mb-2 text-ink-3" strokeWidth={1.75} />
           <p className="text-sm text-ink-2 font-medium">Sem mensagens nesta conversa ainda.</p>
         </div>
       ) : (

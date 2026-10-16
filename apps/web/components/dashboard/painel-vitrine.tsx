@@ -1,5 +1,6 @@
 import { VITRINES, getVitrineDoArquetipo, resolveVitrine, type ArquetipoCodigo } from '@mallevo/lib'
 import { ARQUETIPOS } from '@mallevo/lib'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * "Sua vitrine": o que o estilo escolhido ATIVA de layout na categoria da loja,
@@ -26,31 +27,30 @@ export function PainelVitrine({
   if (ativa) {
     const v = VITRINES[ativa]
     return (
-      <div className="mb-5 rounded-2xl px-5 py-4" style={{ background: 'var(--brick-lt)', color: 'var(--ink)' }}>
-        <p className="text-[10px] font-semibold uppercase" style={{ letterSpacing: '0.14em', color: 'var(--ink-2)' }}>
-          Sua vitrine
-        </p>
-        <p className="mt-1 text-base font-bold">Vitrine ativada: {v.nome}</p>
-        <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--ink-2)' }}>
-          {v.descricao} É o layout que sua loja veste no app Mallevo e no site — veja ao lado.
-        </p>
-        <p className="mt-2 text-[11px]" style={{ color: 'var(--ink-3)' }}>
-          Ela usa a campanha, o texto da casa, os destaques e as fotos da casa da seção
-          "Conteúdo da vitrine"; produtos com recorte sem fundo ganham destaque.
-        </p>
+      <div className="cartao mb-5 flex gap-4 p-5">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-marquee text-[color:var(--brick)]">
+          <PartnerIcon name="check" size={17} strokeWidth={2.6} />
+        </span>
+        <div className="min-w-0">
+          <p className="micro text-ink-3">Sua vitrine</p>
+          <p className="mt-1.5 text-[16px] font-semibold tracking-[-0.015em] text-ink">Vitrine {v.nome} ativada</p>
+          <p className="mt-1 text-[13px] leading-relaxed text-ink-2">
+            {v.descricao} É o layout que sua loja veste no app Mallevo e no site — veja ao lado.
+          </p>
+          <p className="mt-2 text-[12px] leading-relaxed text-ink-3">
+            Ela usa a campanha, o texto da casa, os destaques e as fotos da casa da seção “Conteúdo da vitrine”;
+            produtos com recorte sem fundo ganham destaque.
+          </p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="mb-5 rounded-2xl px-5 py-4" style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}>
-      <p className="text-[10px] font-semibold uppercase" style={{ letterSpacing: '0.14em', color: 'var(--ink-3)' }}>
-        Sua vitrine
-      </p>
-      <p className="mt-1 text-base font-bold" style={{ color: 'var(--ink)' }}>
-        Layout padrão
-      </p>
-      <p className="mt-1 text-xs leading-relaxed">
+    <div className="cartao mb-5 p-5 text-ink-2">
+      <p className="micro text-ink-3">Sua vitrine</p>
+      <p className="mt-1.5 text-[16px] font-semibold tracking-[-0.015em] text-ink">Layout padrão</p>
+      <p className="mt-1 text-[13px] leading-relaxed">
         {doEstilo
           ? `O estilo ${ARQUETIPOS[preset].nome} tem a vitrine ${doEstilo.nome} em ${doEstilo.categorias
               .map(humanizar)

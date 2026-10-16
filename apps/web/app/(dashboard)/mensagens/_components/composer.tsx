@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition, type KeyboardEvent } from 'react'
-import { Send } from 'lucide-react'
 import { enviarMensagem } from '../actions'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const BTN =
   'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-opacity disabled:opacity-50'
@@ -63,7 +63,7 @@ export function Composer({ threadId }: { threadId: string }) {
           className={BTN}
           style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
         >
-          <Send className="w-4 h-4" />
+          <PartnerIcon name="send" size={16} />
           {pending ? 'Enviando…' : 'Enviar'}
         </button>
       </div>

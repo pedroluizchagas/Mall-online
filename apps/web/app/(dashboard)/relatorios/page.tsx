@@ -1,4 +1,3 @@
-import { BarChart3 } from 'lucide-react'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { createSupabaseServer } from '@/lib/supabase/server'
@@ -63,6 +62,10 @@ const ROTULOS_STATUS: Record<string, string> = {
 }
 
 const ROTULOS_PAGAMENTO: Record<string, string> = {
+  // Os valores que o checkout grava hoje (os mesmos rótulos do detalhe do pedido).
+  online_pix: 'Pix online',
+  online_cartao: 'Cartão online',
+  cartao_maquininha: 'Cartão na entrega',
   pix: 'PIX',
   cartao: 'Cartão',
   cartao_credito: 'Cartão de crédito',
@@ -154,7 +157,7 @@ export default async function PaginaRelatorios({ searchParams }: { searchParams:
 
       {semDados ? (
         <EmptyState
-          icone={BarChart3}
+          icone="chart"
           titulo="Sem pedidos no período"
           descricao="Quando houver pedidos no intervalo selecionado, métricas, distribuições e rankings aparecerão aqui."
         />

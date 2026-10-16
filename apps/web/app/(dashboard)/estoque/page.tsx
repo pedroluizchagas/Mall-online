@@ -1,4 +1,3 @@
-import { Boxes } from 'lucide-react'
 import { getProdutosEstoque } from '@/lib/actions/estoque'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { PainelEstoque } from '@/components/dashboard/painel-estoque'
@@ -23,7 +22,7 @@ export default async function PaginaEstoque() {
         <TelaUpgradeEstoque mensagem={erro} />
       ) : produtos.length === 0 ? (
         <EmptyState
-          icone={Boxes}
+          icone="box"
           titulo="Nenhum produto ainda"
           descricao="Cadastre produtos e ative o controle de estoque na edição de cada um para acompanhá-los aqui."
           cta={{ label: 'Cadastrar produto', href: '/produtos/novo' }}

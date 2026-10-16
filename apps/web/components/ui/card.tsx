@@ -7,11 +7,15 @@ interface Props extends HTMLAttributes<HTMLDivElement> {
   className?: string
 }
 
+/**
+ * Cartão da folha (CartaoFolha do app): superfície branca que acende sobre o
+ * fumê — sem borda visível, sombra curta. `hoverable` sobe 1px e aprofunda.
+ */
 export function Card({ children, hoverable, className = '', style, ...rest }: Props) {
   return (
     <div
-      className={`bg-bg border border-line rounded-lg p-5 transition-all ${
-        hoverable ? 'hover:border-line-2 hover:shadow-md hover:-translate-y-px cursor-pointer' : ''
+      className={`cartao p-5 transition-[box-shadow,transform] duration-300 ease-entrada ${
+        hoverable ? 'cursor-pointer hover:-translate-y-px hover:shadow-md' : ''
       } ${className}`}
       style={style}
       {...rest}

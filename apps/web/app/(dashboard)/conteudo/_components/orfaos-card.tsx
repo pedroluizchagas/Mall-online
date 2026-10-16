@@ -2,9 +2,9 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { AlertTriangle } from 'lucide-react'
 import { showToast } from '@/components/ui/toast'
 import { descartarOrfaosConteudo } from '@/lib/actions/conteudo'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /** Uploads que não viraram post (falha entre o envio e o registro) ocupando espaço. */
 export function OrfaosCard({ caminhos }: { caminhos: string[] }) {
@@ -33,7 +33,7 @@ export function OrfaosCard({ caminhos }: { caminhos: string[] }) {
       role="status"
     >
       <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: 'var(--bg)' }}>
-        <AlertTriangle className="w-4 h-4" style={{ color: 'var(--warn)' }} />
+        <PartnerIcon name="alert" size={16} style={{ color: 'var(--warn)' }} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-ink">

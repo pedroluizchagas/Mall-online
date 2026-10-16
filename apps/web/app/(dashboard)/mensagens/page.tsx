@@ -1,4 +1,3 @@
-import { MessageCircle } from 'lucide-react'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { createSupabaseServer } from '@/lib/supabase/server'
@@ -129,7 +128,7 @@ export default async function PaginaMensagens({ searchParams }: { searchParams: 
 
       {threads.length === 0 ? (
         <EmptyState
-          icone={MessageCircle}
+          icone="chat"
           titulo={
             filtro === 'arquivadas'
               ? 'Sem conversas arquivadas'

@@ -1,4 +1,3 @@
-import { Bike } from 'lucide-react'
 import { headers } from 'next/headers'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { EmptyState } from '@/components/dashboard/empty-state'
@@ -124,7 +123,7 @@ export default async function PaginaEntregadores({ searchParams }: { searchParam
         )}
         {semEntregadores ? (
           <EmptyState
-            icone={Bike}
+            icone="bike"
             titulo={
               filtro === 'ativos'
                 ? 'Nenhum entregador ativo'

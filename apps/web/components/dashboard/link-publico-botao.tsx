@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { ExternalLink } from 'lucide-react'
 
 import { urlDaLoja } from '@/lib/storefront-url'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface Props {
   slug: string | null
@@ -28,7 +28,7 @@ export function LinkPublicoBotao({ slug }: Props) {
           style={{ borderColor: 'var(--line-2)', color: 'var(--ink-3)', background: 'var(--bg)' }}
         >
           Ver loja pública
-          <ExternalLink className="w-3 h-3" />
+          <PartnerIcon name="external" size={12} />
         </button>
         {tooltipAberto && (
           <span
@@ -53,7 +53,7 @@ export function LinkPublicoBotao({ slug }: Props) {
       style={{ borderColor: 'var(--line-2)', color: 'var(--ink)', background: 'var(--bg)' }}
     >
       Ver loja pública
-      <ExternalLink className="w-3 h-3" />
+      <PartnerIcon name="external" size={12} />
     </a>
   )
 }

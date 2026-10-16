@@ -1,45 +1,63 @@
-import { Card } from '@/components/ui/card'
-import { ProductThumb } from '@/components/ui/product-thumb'
+import Link from 'next/link'
 import { money } from '@/lib/format'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export interface ProdutoMaisVendido {
-  id: string
   nome: string
-  preco: number
-  vendas_semana: number
+  /** Unidades vendidas no período (pedidos entregues). */
+  quantidade: number
+  /** Receita no período, em centavos. */
+  receita: number
 }
 
+/**
+ * Os mais vendidos de verdade (itens de pedidos entregues no período) — não
+ * os produtos mais recentes com "0 vendas". Sem venda, diz isso.
+ */
 export function MaisVendidosCard({ produtos }: { produtos: ProdutoMaisVendido[] }) {
-  return (
-    <Card className="!p-[22px]">
-      <div className="flex items-center justify-between mb-3.5">
-        <h3 className="m-0 text-base font-bold tracking-tight">Mais vendidos</h3>
-        <span className="font-mono text-[10px] text-ink-3">esta semana</span>
+  if (produtos.length === 0) {
+    return (
+      <div className="cartao flex flex-1 flex-col items-start justify-center p-6">
+        <span className="flex size-10 items-center justify-center rounded-full bg-bg-2 text-ink">
+          <PartnerIcon name="trend" size={18} strokeWidth={1.9} />
+        </span>
+        <p className="mt-4 text-[15px] font-semibold text-ink">Ainda sem vendas entregues</p>
+        <p className="mt-1 text-[13.5px] leading-relaxed text-ink-3">
+          Quando os pedidos forem entregues, os campeões da loja aparecem aqui.
+        </p>
+        <Link href="/conteudo/novo" className="sublinha mt-4 text-[13px] font-bold text-ink">
+          Publicar um produto no Explorar
+        </Link>
       </div>
+    )
+  }
 
-      {produtos.length === 0 && (
-        <div className="text-center text-ink-3 text-sm py-6">
-          Sem dados de vendas ainda.
-        </div>
-      )}
+  const maior = Math.max(...produtos.map((p) => p.quantidade), 1)
 
+  return (
+    <ol className="cartao flex flex-1 flex-col p-2">
       {produtos.map((p, i) => (
-        <div
-          key={p.id}
-          className={`flex items-center gap-3 py-2 ${i < produtos.length - 1 ? 'border-b border-line' : ''}`}
-        >
-          <span className="font-mono text-[11px] text-ink-3 w-4">
-            {String(i + 1).padStart(2, '0')}
-          </span>
-          <ProductThumb name={p.nome} size={36} />
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-[13px] truncate">{p.nome}</div>
-            <div className="text-[11px] text-ink-3">
-              {p.vendas_semana} vendas · {money(p.preco)}
+        <li key={p.nome} className="flex items-center gap-3.5 rounded-[14px] px-3 py-3">
+          <span className="w-5 shrink-0 font-mono text-[12px] text-ink-3">{String(i + 1).padStart(2, '0')}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline justify-between gap-3">
+              <p className="truncate text-[14px] font-semibold text-ink">{p.nome}</p>
+              <p className="shrink-0 text-[13px] font-bold text-ink tabular-nums">{money(p.receita)}</p>
+            </div>
+            <div className="mt-2 flex items-center gap-2.5">
+              <span className="block h-1 flex-1 overflow-hidden rounded-full bg-bg-2">
+                <span
+                  className="block h-full rounded-full bg-ink"
+                  style={{ width: `${Math.max(6, (p.quantidade / maior) * 100)}%` }}
+                />
+              </span>
+              <span className="shrink-0 text-[12px] font-medium text-ink-3 tabular-nums">
+                {p.quantidade} {p.quantidade === 1 ? 'vendido' : 'vendidos'}
+              </span>
             </div>
           </div>
-        </div>
+        </li>
       ))}
-    </Card>
+    </ol>
   )
 }

@@ -30,7 +30,7 @@ export interface VariantEditavel {
 }
 
 const inputCompacto =
-  'border rounded-lg px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'border rounded-lg px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 function comboKey(refs: Array<{ group_nome: string; option_valor: string }>): string {
   return refs
@@ -335,7 +335,7 @@ export function VariantsEditor({
       {erros.length > 0 && (
         <div
           className="px-3 py-2 rounded-lg text-xs space-y-0.5"
-          style={{ background: '#fde8e4', color: 'var(--err)' }}
+          style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
         >
           {erros.map((e, i) => (
             <div key={i}>• {e}</div>
@@ -455,8 +455,7 @@ export function VariantsEditor({
                 <button
                   type="button"
                   onClick={() => adicionarOption(gIdx)}
-                  className="text-xs font-medium hover:underline"
-                  style={{ color: 'var(--brick-dk)' }}
+                  className="text-xs font-bold text-ink underline-offset-2 hover:underline"
                 >
                   + Adicionar valor
                 </button>

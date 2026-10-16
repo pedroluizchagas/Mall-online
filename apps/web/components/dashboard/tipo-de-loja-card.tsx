@@ -1,20 +1,33 @@
 'use client'
 
-import { Check, Mail } from 'lucide-react'
 import type { DashboardTemplate } from '@mallevo/lib'
+import { iconeDaCategoria } from '@/lib/icones-categoria'
+import { PartnerIcon, type PartnerIconName } from '@/components/ui/partner-icon'
 
-// TODO(suporte): trocar por canal oficial quando o e-mail/help-desk estiver definido.
-const SUPORTE_EMAIL = 'support@mallevo.com.br'
+// Mesmo canal publicado na landing de parceiros.
+const SUPORTE_EMAIL = 'contato@mallevo.com.br'
+
+/** Ícone de sinalização de cada piso — o mesmo do diretório do app (Diretorio.tsx). */
+const ICONE_POR_PISO: Record<string, PartnerIconName> = {
+  'praca-alimentacao': 'utensils',
+  'moda-estilo': 'hanger',
+  saude: 'pulse',
+  beleza: 'scissors',
+  pet: 'paw',
+  'casa-vida': 'armchair',
+  mercado: 'basket',
+  servicos: 'wrench',
+  'presentes-diversao': 'gift',
+}
 
 interface PisoMin {
   slug: string
   nome: string
-  icone: string
 }
 
 interface Props {
   categoriaNome: string | null
-  categoriaIcone: string | null
+  categoriaSlug: string | null
   template: DashboardTemplate
   pisos: PisoMin[]
 }
@@ -45,56 +58,62 @@ function featuresDoTemplate(template: DashboardTemplate): string[] {
   return features
 }
 
-export function TipoDeLojaCard({ categoriaNome, categoriaIcone, template, pisos }: Props) {
+/**
+ * O tipo de loja e o que ele liga no painel: o modelo, os pisos onde a loja
+ * aparece no app e os módulos ativos. Ícones de linha da casa — nada de emoji.
+ */
+export function TipoDeLojaCard({ categoriaNome, categoriaSlug, template, pisos }: Props) {
   const features = featuresDoTemplate(template)
+  const IconeCategoria = iconeDaCategoria(categoriaSlug)
   const assuntoSuporte = encodeURIComponent(
     `Solicitação: troca de tipo de loja (atual: ${categoriaNome ?? 'não definido'})`,
   )
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex items-center gap-4 mb-5">
-          <span className="text-4xl">{categoriaIcone ?? '🏪'}</span>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-ink">
+    <div className="space-y-5">
+      <div className="cartao p-6">
+        <div className="flex items-center gap-4">
+          <span className="flex size-14 shrink-0 items-center justify-center rounded-full bg-marquee text-[color:var(--brick)]">
+            <IconeCategoria className="size-6" strokeWidth={1.8} />
+          </span>
+          <div className="min-w-0">
+            <h2 className="text-[22px] font-semibold tracking-[-0.03em] text-ink">
               {categoriaNome ?? 'Categoria não definida'}
             </h2>
-            <p className="text-sm text-ink-3 mt-0.5">
-              Template do dashboard:{' '}
-              <span className="font-semibold text-ink">{template.nome}</span>
+            <p className="mt-0.5 text-[13.5px] text-ink-3">
+              Modelo do painel: <span className="font-semibold text-ink">{template.nome}</span>
             </p>
           </div>
         </div>
 
         {pisos.length > 0 && (
-          <div className="mb-5">
-            <p className="text-xs uppercase tracking-wider font-semibold text-ink-3 mb-2">
-              Vitrines no app do consumidor
-            </p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-6 border-t border-line pt-5">
+            <p className="micro text-ink-3">Onde sua loja aparece no app</p>
+            <ul className="mt-3 flex flex-wrap gap-2">
               {pisos.map((p) => (
-                <span
+                <li
                   key={p.slug}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gray-100 text-sm text-ink"
+                  className="inline-flex items-center gap-2 rounded-full bg-bg-2 py-1.5 pl-2 pr-3.5 text-[13px] font-semibold text-ink"
                 >
-                  <span>{p.icone}</span>
+                  <span className="flex size-6 items-center justify-center rounded-full bg-bg text-ink">
+                    <PartnerIcon name={ICONE_POR_PISO[p.slug] ?? 'store'} size={13} strokeWidth={2} />
+                  </span>
                   {p.nome}
-                </span>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
         {features.length > 0 && (
-          <div>
-            <p className="text-xs uppercase tracking-wider font-semibold text-ink-3 mb-2">
-              Funcionalidades ativas
-            </p>
-            <ul className="space-y-1.5">
+          <div className="mt-6 border-t border-line pt-5">
+            <p className="micro text-ink-3">Funcionalidades ativas</p>
+            <ul className="mt-3 space-y-2.5">
               {features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-ink">
-                  <Check className="w-4 h-4 text-[#7CB342] flex-shrink-0" />
+                <li key={f} className="flex items-center gap-2.5 text-[14px] text-ink">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-marquee text-[color:var(--brick)]">
+                    <PartnerIcon name="check" size={11} strokeWidth={3} />
+                  </span>
                   {f}
                 </li>
               ))}
@@ -103,18 +122,17 @@ export function TipoDeLojaCard({ categoriaNome, categoriaIcone, template, pisos 
         )}
       </div>
 
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6">
-        <p className="text-sm text-amber-900 mb-4">
-          A categoria define como sua loja funciona no Mallevo. Para trocar, é
-          necessário falar com nosso suporte — assim garantimos que nada seja
-          perdido na transição.
+      <div className="rounded-[20px] p-6" style={{ background: 'var(--warn-lt)' }}>
+        <p className="text-[14px] leading-relaxed text-ink-2">
+          O tipo de loja define como ela funciona no Mallevo. Para trocar, fale com a gente — assim garantimos que
+          nada se perca na transição.
         </p>
         <a
           href={`mailto:${SUPORTE_EMAIL}?subject=${assuntoSuporte}`}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white border border-amber-300 text-amber-900 text-sm font-semibold hover:bg-amber-100 transition-colors"
+          className="mt-4 inline-flex h-10 items-center gap-2 rounded-full bg-ink px-4 text-[13.5px] font-bold text-bg transition-opacity hover:opacity-90"
         >
-          <Mail className="w-4 h-4" />
-          Falar com o suporte
+          <PartnerIcon name="mail" size={15} strokeWidth={2} />
+          Falar com a gente
         </a>
       </div>
     </div>

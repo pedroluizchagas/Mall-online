@@ -1,11 +1,11 @@
 'use client'
 
 import { useTransition } from 'react'
-import { Mail, Phone, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { revogarConvite } from '../actions'
 import { showToast } from '@/components/ui/toast'
 import { CopiarLinkButton } from './copiar-link-button'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const BTN =
   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border hover:bg-bg-2 transition-colors disabled:opacity-50'
@@ -62,9 +62,9 @@ export function ConviteCard({ convite, baseUrl }: { convite: ConviteItem; baseUr
             </span>
           </div>
           <div className="mt-1.5 flex items-center gap-3 text-[12px] text-ink-3 flex-wrap">
-            <span className="inline-flex items-center gap-1"><Phone className="w-3 h-3" />{convite.telefone}</span>
+            <span className="inline-flex items-center gap-1"><PartnerIcon name="phone" size={12} />{convite.telefone}</span>
             {convite.email && (
-              <span className="inline-flex items-center gap-1"><Mail className="w-3 h-3" />{convite.email}</span>
+              <span className="inline-flex items-center gap-1"><PartnerIcon name="mail" size={12} />{convite.email}</span>
             )}
           </div>
         </div>
@@ -78,7 +78,7 @@ export function ConviteCard({ convite, baseUrl }: { convite: ConviteItem; baseUr
             className={BTN}
             style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}
           >
-            <Trash2 className="w-3.5 h-3.5" /> {pending ? 'Revogando...' : 'Revogar'}
+            <PartnerIcon name="trash" size={14} /> {pending ? 'Revogando...' : 'Revogar'}
           </button>
         </div>
       </div>

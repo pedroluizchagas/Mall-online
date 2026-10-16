@@ -1,4 +1,3 @@
-import { LifeBuoy } from 'lucide-react'
 import type { SupportTicketStatus } from '@mallevo/types'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { EmptyState } from '@/components/dashboard/empty-state'
@@ -58,7 +57,7 @@ export default async function PaginaAjuda({ searchParams }: { searchParams: Sear
 
       {tickets.length === 0 ? (
         <EmptyState
-          icone={LifeBuoy}
+          icone="help"
           titulo={filtro === 'tudo' ? 'Nenhum ticket ainda' : 'Nenhum ticket para o filtro'}
           descricao={
             filtro === 'tudo'

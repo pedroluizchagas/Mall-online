@@ -1,6 +1,6 @@
-import { Phone, Bike } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { AlternarAtivoButton } from './alternar-ativo-button'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export type CourierStatus = 'pendente' | 'aprovado' | 'reprovado' | 'suspenso'
 
@@ -47,13 +47,13 @@ export function EntregadorCard({ entregador }: { entregador: EntregadorItem }) {
                 className="inline-flex items-center gap-1 text-[11px] font-semibold"
                 style={{ color: 'var(--ok)' }}
               >
-                <Bike className="w-3 h-3" /> Online
+                <PartnerIcon name="bike" size={12} /> Online
               </span>
             )}
           </div>
           {entregador.telefone && (
             <div className="mt-1.5 flex items-center gap-1.5 text-[12px] text-ink-3">
-              <Phone className="w-3 h-3" />
+              <PartnerIcon name="phone" size={12} />
               <span>{entregador.telefone}</span>
             </div>
           )}

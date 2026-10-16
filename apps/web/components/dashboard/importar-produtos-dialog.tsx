@@ -2,7 +2,6 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { FileUp, Upload, X } from 'lucide-react'
 import {
   importarProdutosCsv,
   type LinhaImportacaoProduto,
@@ -10,6 +9,7 @@ import {
 import { showToast } from '@/components/ui/toast'
 import { baixarCsv } from '@/lib/baixar-csv'
 import { gerarCsv, parseCsv, precoParaCentavos } from '@/lib/csv'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * Importação de produtos via CSV (dashboard-redesign Fase 3 §2).
@@ -179,7 +179,7 @@ export function ImportarProdutosDialog({ storeId }: { storeId: string }) {
         onClick={() => setAberto(true)}
         className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors"
       >
-        <Upload className="w-3.5 h-3.5" /> Importar CSV
+        <PartnerIcon name="upload" size={14} /> Importar CSV
       </button>
 
       {aberto && (
@@ -206,7 +206,7 @@ export function ImportarProdutosDialog({ storeId }: { storeId: string }) {
                 onClick={fechar}
                 className="p-1 rounded-full hover:bg-bg-2 transition-colors"
               >
-                <X className="w-4 h-4 text-ink-3" />
+                <PartnerIcon name="close" size={16} className="text-ink-3" />
               </button>
             </div>
 
@@ -218,8 +218,7 @@ export function ImportarProdutosDialog({ storeId }: { storeId: string }) {
               <button
                 type="button"
                 onClick={baixarModelo}
-                className="underline font-semibold"
-                style={{ color: 'var(--brick-dk)' }}
+                className="font-bold text-ink underline underline-offset-2"
               >
                 Baixar modelo
               </button>
@@ -232,7 +231,7 @@ export function ImportarProdutosDialog({ storeId }: { storeId: string }) {
               className="mt-4 w-full rounded-xl border-2 border-dashed px-4 py-6 flex flex-col items-center gap-2 hover:bg-bg-2 transition-colors"
               style={{ borderColor: 'var(--line-2)' }}
             >
-              <FileUp className="w-5 h-5 text-ink-3" />
+              <PartnerIcon name="upload" size={20} className="text-ink-3" />
               <span className="text-xs font-semibold text-ink-2">
                 {preview ? preview.nomeArquivo : 'Escolher arquivo .csv'}
               </span>
@@ -246,7 +245,7 @@ export function ImportarProdutosDialog({ storeId }: { storeId: string }) {
             />
 
             {erroArquivo && (
-              <p className="mt-3 text-xs font-semibold" style={{ color: 'var(--danger, #C0392B)' }}>
+              <p className="mt-3 text-xs font-semibold" style={{ color: 'var(--err)' }}>
                 {erroArquivo}
               </p>
             )}
@@ -301,7 +300,7 @@ export function ImportarProdutosDialog({ storeId }: { storeId: string }) {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-opacity disabled:opacity-50"
                 style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
               >
-                <Upload className="w-3.5 h-3.5" />
+                <PartnerIcon name="upload" size={14} />
                 {pending
                   ? 'Importando…'
                   : `Importar${preview ? ` ${preview.validas.length}` : ''}`}

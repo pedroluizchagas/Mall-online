@@ -1,8 +1,11 @@
 # Primitivos de UI do Dashboard
 
-Componentes compartilhados criados na Fase 1, PR 1
-(`docs/dashboard-redesign/05-componentes-e-padroes.md`). Adoção pelas
-páginas existentes virá nos PRs seguintes.
+Componentes compartilhados do painel. Desde out/2026 o painel fala a língua
+do app do lojista e da landing (marquise + folha): tokens em
+`app/globals.css`, peças da fachada em `marquise.tsx` (Sobrelinha,
+Statement, PlacaVidro, CartaoVidro, MoedaVidro, PontoAoVivo, BarraProgresso),
+peças do salão em `folha.tsx` (Folha, SecaoFolha, CartaoFolha) e os ícones
+da casa em `components/ui/partner-icon.tsx` (nomes, não componentes).
 
 ## PageHeader
 
@@ -22,15 +25,14 @@ import { PageHeader } from '@/components/dashboard/page-header'
 
 ```tsx
 import { Abas } from '@/components/dashboard/abas'
-;<Abas searchParam="aba" defs={[{ id: 'geral', label: 'Geral', render: () => <AbaGeral /> }]} />
+;<Abas searchParam="aba" defs={[{ id: 'geral', label: 'Geral', content: <AbaGeral /> }]} />
 ```
 
 ## EmptyState
 
 ```tsx
-import { Inbox } from 'lucide-react'
 import { EmptyState } from '@/components/dashboard/empty-state'
-;<EmptyState icone={Inbox} titulo="Sem pedidos hoje" cta={{ label: 'Compartilhar loja', href: '/minha-loja' }} />
+;<EmptyState icone="inbox" titulo="Sem pedidos hoje" cta={{ label: 'Compartilhar loja', href: '/minha-loja' }} />
 ```
 
 ## BannerStatus

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { StaffForm } from './staff-form'
 import {
   alternarAtivoStaff,
@@ -9,6 +8,7 @@ import {
   criarStaff,
   excluirStaff,
 } from '@/lib/actions/staff'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface StaffMembro {
   id: string
@@ -72,7 +72,7 @@ export function StaffLista({ storeId, staff }: Props) {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-colors"
             style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
           >
-            <Plus className="w-3.5 h-3.5" /> Adicionar profissional
+            <PartnerIcon name="plus" size={14} /> Adicionar profissional
           </button>
         )}
       </div>
@@ -149,14 +149,14 @@ export function StaffLista({ storeId, staff }: Props) {
                   className="px-3 py-1.5 rounded-lg text-xs border inline-flex items-center gap-1"
                   style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}
                 >
-                  <Pencil className="w-3 h-3" /> Editar
+                  <PartnerIcon name="edit" size={12} /> Editar
                 </button>
                 <button
                   onClick={() => aoExcluir(membro.id, membro.nome)}
                   className="px-3 py-1.5 rounded-lg text-xs border inline-flex items-center gap-1"
                   style={{ borderColor: 'var(--line)', color: 'var(--err)' }}
                 >
-                  <Trash2 className="w-3 h-3" /> Excluir
+                  <PartnerIcon name="trash" size={12} /> Excluir
                 </button>
               </div>
             )}

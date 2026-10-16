@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Flag, FlagOff } from 'lucide-react'
 import { sinalizarAvaliacao, removerSinalizacao } from '../actions'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const BTN_SECUNDARIO =
   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border hover:bg-bg-2 transition-colors disabled:opacity-50'
@@ -45,7 +45,7 @@ export function SinalizarDialog({ reviewId, sinalizada }: { reviewId: string; si
   if (sinalizada) {
     return (
       <button type="button" onClick={remover} disabled={pending} className={BTN_SECUNDARIO} style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
-        <FlagOff className="w-3.5 h-3.5" />
+        <PartnerIcon name="flag-off" size={14} />
         {pending ? 'Removendo...' : 'Remover sinalização'}
       </button>
     )
@@ -54,7 +54,7 @@ export function SinalizarDialog({ reviewId, sinalizada }: { reviewId: string; si
   return (
     <>
       <button type="button" onClick={() => setAberto(true)} className={BTN_SECUNDARIO} style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}>
-        <Flag className="w-3.5 h-3.5" /> Sinalizar
+        <PartnerIcon name="flag" size={14} /> Sinalizar
       </button>
 
       {aberto && (
@@ -81,7 +81,7 @@ export function SinalizarDialog({ reviewId, sinalizada }: { reviewId: string; si
               rows={3}
               maxLength={500}
               placeholder="Motivo da sinalização"
-              className="w-full mt-3 border rounded-xl px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-brick"
+              className="w-full mt-3 border rounded-[14px] px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-ink"
               style={{ borderColor: 'var(--line)' }}
               disabled={pending}
             />

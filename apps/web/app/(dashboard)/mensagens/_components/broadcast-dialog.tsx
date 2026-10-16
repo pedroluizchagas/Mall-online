@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Megaphone } from 'lucide-react'
 import { criarBroadcast } from '../actions'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const BTN_PRIMARIO =
   'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-opacity disabled:opacity-50'
@@ -52,7 +52,7 @@ export function BroadcastDialog() {
         className={BTN_PRIMARIO}
         style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
       >
-        <Megaphone className="w-4 h-4" /> Enviar broadcast
+        <PartnerIcon name="megaphone" size={16} /> Enviar broadcast
       </button>
 
       {aberto && (
@@ -86,7 +86,7 @@ export function BroadcastDialog() {
                 maxLength={4000}
                 rows={5}
                 placeholder="Escreva a mensagem que será enviada para cada cliente…"
-                className="w-full mt-1.5 border rounded-xl px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-brick font-normal resize-none placeholder:text-ink-3"
+                className="w-full mt-1.5 border rounded-[14px] px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-ink font-normal resize-none placeholder:text-ink-3"
                 style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
               />
             </label>

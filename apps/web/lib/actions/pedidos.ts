@@ -64,7 +64,7 @@ export async function atualizarStatusPedido(
 
   if (error) return { erro: error.message }
 
-  revalidatePath('/dashboard/pedidos')
+  revalidatePath('/pedidos')
   return { sucesso: true }
 }
 
@@ -125,7 +125,7 @@ export async function atribuirEntregador(
     .update({ status: 'aguardando_entregador' })
     .eq('id', pedido_id)
 
-  revalidatePath('/dashboard/pedidos')
+  revalidatePath('/pedidos')
   return { sucesso: true }
 }
 
@@ -147,7 +147,7 @@ export async function getPedidos(filtros?: {
     .from('orders')
     .select(`
       id, status, payment_status, forma_pagamento,
-      subtotal, taxa_entrega, total, criado_em,
+      subtotal, taxa_entrega, total, platform_fee_amount, criado_em,
       endereco_entrega, observacoes,
       tipo, agendamento_inicio_at, agendamento_fim_at, staff_id,
       service_staff:service_staff!staff_id (id, nome, cor),
@@ -193,7 +193,7 @@ export async function getPedidoPorId(pedido_id: string) {
     .from('orders')
     .select(`
       id, status, payment_status, forma_pagamento,
-      subtotal, taxa_entrega, total, criado_em,
+      subtotal, taxa_entrega, total, platform_fee_amount, criado_em,
       endereco_entrega, observacoes,
       cancelado_em, motivo_cancelamento,
       tipo, agendamento_inicio_at, agendamento_fim_at, staff_id,

@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ImagePlus, Plus, Trash2, X } from 'lucide-react'
 import { UNIDADES_VENDA } from '@mallevo/lib'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * Bloco "Mídia e vitrine" do formulário de produto — o que as vitrines do
@@ -33,7 +33,7 @@ export const LIMITE_ESPECIFICACOES = 12
 const TAMANHO_MAX_BYTES = 5 * 1024 * 1024
 
 const inputClass =
-  'w-full px-3 py-2 text-sm text-ink bg-bg rounded-xl border focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full px-3 py-2 text-sm text-ink bg-bg rounded-[14px] border focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 /** Gate por nicho — `DashboardTemplate.produto.midia` (@mallevo/lib). */
 export interface MidiaFlags {
@@ -152,7 +152,7 @@ export function MidiaVitrine({
               className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-ink-3 hover:text-ink"
               style={{ border: '1px dashed var(--line)' }}
             >
-              <ImagePlus size={18} />
+              <PartnerIcon name="image-plus" size={18} />
               <span className="text-[10px] font-semibold">Adicionar</span>
               <input
                 id="midia-galeria-arquivos"
@@ -207,7 +207,7 @@ export function MidiaVitrine({
                 className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full"
                 style={{ background: 'var(--ink)', color: 'var(--bg)' }}
               >
-                <X size={11} />
+                <PartnerIcon name="close" size={11} />
               </button>
             </div>
           )}
@@ -215,7 +215,7 @@ export function MidiaVitrine({
             className="inline-flex cursor-pointer items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold text-ink hover:bg-bg"
             style={{ border: '1px solid var(--line)' }}
           >
-            <ImagePlus size={14} />
+            <PartnerIcon name="image-plus" size={14} />
             {recorteAtual || novoRecorte ? 'Trocar recorte' : 'Enviar recorte'}
             <input
               id="midia-recorte-arquivo"
@@ -270,7 +270,7 @@ export function MidiaVitrine({
                 }
                 className="p-2 text-ink-3 hover:text-ink"
               >
-                <Trash2 size={15} />
+                <PartnerIcon name="trash" size={15} />
               </button>
             </div>
           ))}
@@ -280,7 +280,7 @@ export function MidiaVitrine({
               onClick={() => onChange({ ...valor, especificacoes: [...valor.especificacoes, ['', '']] })}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-2 hover:text-ink"
             >
-              <Plus size={14} /> Adicionar linha
+              <PartnerIcon name="plus" size={14} /> Adicionar linha
             </button>
           )}
         </div>
@@ -340,7 +340,7 @@ function Miniatura({ src, nova, aoRemover }: { src: string; nova?: boolean; aoRe
         className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full"
         style={{ background: 'var(--ink)', color: 'var(--bg)' }}
       >
-        <X size={11} />
+        <PartnerIcon name="close" size={11} />
       </button>
     </div>
   )

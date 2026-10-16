@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
 import type { SupportTicketPrioridade, SupportTicketStatus } from '@mallevo/types'
 import { Card } from '@/components/ui/card'
 import { AcaoStatusButton } from './acao-status-button'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export interface TicketItem {
   id: string
@@ -82,11 +82,7 @@ export function TicketCard({ ticket }: { ticket: TicketItem }) {
               <p className="mt-2 text-sm text-ink-2 leading-relaxed line-clamp-2">{snippet}</p>
             )}
           </div>
-          <ChevronDown
-            className="w-4 h-4 text-ink-3 shrink-0 transition-transform"
-            style={{ transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)' }}
-            aria-hidden
-          />
+          <PartnerIcon name="chevron-down" size={16} className="text-ink-3 shrink-0 transition-transform" style={{ transform: aberto ? 'rotate(180deg)' : 'rotate(0deg)' }} aria-hidden />
         </div>
       </button>
 

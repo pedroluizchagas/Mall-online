@@ -1,4 +1,3 @@
-import { Star } from 'lucide-react'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { EmptyState } from '@/components/dashboard/empty-state'
 import { createSupabaseServer } from '@/lib/supabase/server'
@@ -97,7 +96,7 @@ export default async function PaginaAvaliacoes({ searchParams }: { searchParams:
 
       {reviews.length === 0 ? (
         <EmptyState
-          icone={Star}
+          icone="star"
           titulo={semFiltros ? 'Sem avaliações ainda' : 'Nenhuma avaliação para os filtros aplicados'}
           descricao={
             semFiltros

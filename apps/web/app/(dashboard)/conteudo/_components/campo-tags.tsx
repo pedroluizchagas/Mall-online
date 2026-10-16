@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, type KeyboardEvent } from 'react'
-import { Plus, X } from 'lucide-react'
 import { LIMITES_POST, normalizarTag } from '@mallevo/lib'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const inputClass =
-  'flex-1 min-w-0 px-3 py-2 text-sm text-ink bg-bg rounded-xl border focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'flex-1 min-w-0 px-3 py-2 text-sm text-ink bg-bg rounded-[14px] border focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 /** Tags do post: chips + campo; Enter, vírgula ou "+" adiciona; até 5, normalizadas. */
 export function CampoTags({
@@ -62,10 +62,10 @@ export function CampoTags({
                 disabled={disabled}
                 aria-label={`Remover tag ${t}`}
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold transition-opacity hover:opacity-80 disabled:opacity-50"
-                style={{ background: 'var(--brick-lt)', color: 'var(--ink)' }}
+                style={{ background: 'var(--bg-2)', color: 'var(--ink)' }}
               >
                 #{t}
-                <X className="w-3 h-3" strokeWidth={2.4} />
+                <PartnerIcon name="close" size={12} strokeWidth={2.4} />
               </button>
             </li>
           ))}
@@ -93,7 +93,7 @@ export function CampoTags({
           className="w-10 h-10 rounded-xl flex items-center justify-center border hover:bg-bg-2 transition-colors disabled:opacity-50"
           style={{ borderColor: 'var(--line)', color: 'var(--ink)' }}
         >
-          <Plus className="w-4 h-4" strokeWidth={2.4} />
+          <PartnerIcon name="plus" size={16} strokeWidth={2.4} />
         </button>
       </div>
     </div>

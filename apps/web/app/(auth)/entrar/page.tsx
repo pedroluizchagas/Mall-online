@@ -1,15 +1,26 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { login } from '@/lib/actions/auth'
-import Link from 'next/link'
+import { useState } from 'react'
 import Image from 'next/image'
-import { Mail, Lock, Loader2, TrendingUp } from 'lucide-react'
+import Link from 'next/link'
+import { relogioDaLoja } from '@mallevo/lib'
+import { login } from '@/lib/actions/auth'
+import { cx } from '@/lib/cx'
+import { PartnerIcon } from '@/components/ui/partner-icon'
+import { Sobrelinha, Statement } from '@/components/dashboard/marquise'
+import { useAgora } from '@/components/dashboard/hooks/use-agora'
 
+const CONTATO = 'contato@mallevo.com.br'
+
+/**
+ * Entrar — quem ainda não entrou está "fora", na fachada: a marquise inteira
+ * (zinco, neon, grão, as cruzes de alinhamento da landing) com a portaria da
+ * cidade no topo, o statement da porta e a folha clara com o formulário.
+ * Nenhum número inventado: o painel mostra os da loja depois de entrar.
+ */
 export default function PaginaEntrar() {
   const [erro, setErro] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
-  const formRef = useRef<HTMLFormElement>(null)
 
   async function handleSubmit(formData: FormData) {
     setErro(null)
@@ -22,163 +33,224 @@ export default function PaginaEntrar() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-100 p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="w-full max-w-[1200px] bg-white rounded-[2.5rem] flex shadow-2xl overflow-hidden min-h-[700px]">
-        
-        {/* Left Side - Form */}
-        <div className="flex-1 flex flex-col justify-center p-8 sm:p-12 lg:px-20 relative">
-          <div className="w-full max-w-sm mx-auto">
-            <div className="mb-10">
-              <Image
-                src="/brand/mallevo-logo-black.png"
-                alt="Mallevo"
-                width={669}
-                height={106}
-                priority
-                className="h-8 w-auto mb-8"
-              />
-              <h1 className="text-3xl font-bold tracking-tight text-zinc-900 mb-2">
-                Fazer Login
-              </h1>
-              <p className="text-zinc-500">
-                Bem-vindo à Mallevo — acesse o seu painel.
-              </p>
+    <div className="sobre-escuro grao relative isolate min-h-[100dvh] overflow-hidden bg-marquee text-white">
+      <div aria-hidden className="glow-marquise pointer-events-none absolute inset-0 -z-10" />
+      <Cruzes />
+
+      <div className="relative mx-auto flex min-h-[100dvh] max-w-[1320px] flex-col px-5 md:px-8">
+        <header className="grid h-16 grid-cols-[1fr_auto_1fr] items-center md:h-[76px]">
+          <Portaria />
+          <Link href="/entrar" aria-label="Mallevo" className="col-start-1 block h-6 w-[152px] md:col-start-2 md:h-7 md:w-[177px]">
+            <Image
+              src="/brand/mallevo-logo-white.png"
+              alt="Mallevo"
+              width={669}
+              height={106}
+              priority
+              unoptimized
+              className="h-full w-auto"
+            />
+          </Link>
+          <div className="col-start-3 flex justify-end">
+            <Link
+              href="/onboarding"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[color:var(--m-glass)] px-4 text-[13.5px] font-bold text-white ring-1 ring-inset ring-[color:var(--m-line)] transition-colors hover:bg-[color:var(--m-glass-2)]"
+            >
+              <span className="hidden sm:inline">Cadastrar minha loja</span>
+              <span className="sm:hidden">Cadastrar</span>
+            </Link>
+          </div>
+        </header>
+
+        <main className="grid flex-1 items-center gap-12 py-10 lg:grid-cols-12 lg:gap-8 lg:py-16">
+          <div className="lg:col-span-6 xl:col-span-7">
+            <div className="entra">
+              <Sobrelinha aoVivo>Painel do lojista · Divinópolis</Sobrelinha>
             </div>
+            <div className="entra" style={{ ['--d' as string]: '0.06s' }}>
+              <Statement
+                className="mt-7 text-[clamp(46px,7vw,96px)]"
+                linha="Abra a porta"
+                acesa={<>da sua{' '}loja.</>}
+              />
+            </div>
+            <p
+              className="entra mt-7 max-w-[500px] text-[clamp(16px,1.25vw,18px)] leading-[1.6] text-[color:var(--m-ink-2)]"
+              style={{ ['--d' as string]: '0.16s' }}
+            >
+              Pedidos ao vivo, catálogo, vitrine e o dinheiro do dia — o mesmo balcão do app, na tela grande.
+            </p>
+          </div>
 
-            <form ref={formRef} action={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">
-                  E-mail
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Mail className="h-5 w-5 text-zinc-400" />
-                  </div>
-                  <input
-                    name="email"
-                    type="email"
-                    required
-                    placeholder="hi@mallevo.com"
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-[#18181B] focus:ring-0 transition-colors"
-                  />
-                </div>
-              </div>
+          <div className="entra lg:col-span-6 xl:col-span-5" style={{ ['--d' as string]: '0.24s' }}>
+            <div className="sobre-claro vidro-fosco relative mx-auto w-full max-w-[460px] rounded-[30px] p-7 text-ink shadow-[0_50px_100px_-40px_rgba(0,0,0,0.85)] sm:p-9 lg:ml-auto lg:mr-0">
+              <p className="micro text-ink-3">Já tenho loja no Mallevo</p>
+              <h2 className="mt-3 text-[30px] font-semibold leading-[1.05] tracking-[-0.04em]">Entre no seu balcão.</h2>
 
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-zinc-700">
-                    Senha
-                  </label>
-                  <a href="#" className="text-sm font-medium text-zinc-500 hover:text-zinc-900 transition-colors">
-                    Esqueceu?
-                  </a>
-                </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-zinc-400" />
-                  </div>
-                  <input
-                    name="senha"
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    className="w-full pl-11 pr-4 py-3 border-2 border-gray-200 rounded-xl text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-[#18181B] focus:ring-0 transition-colors"
-                  />
-                </div>
-              </div>
+              <form action={handleSubmit} className="mt-8 space-y-5">
+                <Campo
+                  id="email"
+                  rotulo="E-mail"
+                  icone="mail"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="voce@sualoja.com.br"
+                />
+                <Campo
+                  id="senha"
+                  rotulo="Senha"
+                  icone="lock"
+                  name="senha"
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="Sua senha"
+                  extra={
+                    <a
+                      href={`mailto:${CONTATO}?subject=${encodeURIComponent('Recuperar acesso ao painel Mallevo')}`}
+                      className="text-[13px] font-semibold text-ink-3 transition-colors hover:text-ink"
+                    >
+                      Esqueceu a senha?
+                    </a>
+                  }
+                />
 
-              {erro && (
-                <div className="p-3 bg-red-50 border border-red-100 rounded-lg text-sm text-red-600 text-center font-medium">
-                  {erro}
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={enviando}
-                className="w-full flex items-center justify-center gap-2 bg-[#18181B] text-[#C1F148] py-4 rounded-xl font-medium hover:bg-zinc-800 transition-all disabled:opacity-50 mt-2 shadow-lg shadow-zinc-900/20"
-              >
-                {enviando ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Entrando...
-                  </>
-                ) : (
-                  'Entrar na conta'
+                {erro && (
+                  <p
+                    role="alert"
+                    className="flex items-center gap-2 rounded-[14px] px-3.5 py-3 text-[13.5px] font-semibold"
+                    style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
+                  >
+                    <PartnerIcon name="close-circle" size={16} strokeWidth={2.1} className="shrink-0" />
+                    {erro}
+                  </p>
                 )}
-              </button>
-            </form>
 
-            <div className="mt-8 text-center">
-              <p className="text-zinc-500 text-sm">
-                Ainda não tem uma loja?{' '}
-                <Link href="/onboarding" className="text-[#18181B] font-semibold hover:underline">
-                  Criar agora
+                <button
+                  type="submit"
+                  disabled={enviando}
+                  className="group flex h-[52px] w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold transition-[background-color,transform] duration-300 ease-entrada bg-brick text-brick-ink hover:bg-brick-dk active:scale-[0.98] disabled:opacity-70"
+                >
+                  {enviando ? (
+                    <>
+                      <span
+                        aria-hidden
+                        className="size-4 animate-spin rounded-full border-2 border-[color:var(--brick-ink)] border-t-transparent"
+                      />
+                      Abrindo o balcão…
+                    </>
+                  ) : (
+                    <>
+                      Entrar no painel
+                      <PartnerIcon
+                        name="chevron-right"
+                        size={17}
+                        strokeWidth={2.4}
+                        className="transition-transform duration-300 ease-entrada group-hover:translate-x-0.5"
+                      />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <p className="mt-7 border-t border-line pt-6 text-center text-[14px] text-ink-3">
+                Ainda não tem loja no shopping?{' '}
+                <Link href="/onboarding" className="sublinha font-bold text-ink">
+                  Cadastrar minha loja
                 </Link>
               </p>
             </div>
           </div>
-        </div>
+        </main>
 
-        {/* Right Side - Branding Banner */}
-        <div className="hidden lg:flex w-[55%] p-4">
-          <div className="w-full h-full bg-[#18181B] rounded-[2rem] relative overflow-hidden flex flex-col justify-between p-12 lg:p-16">
-            
-            {/* Background Glow */}
-            <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#C1F148]/20 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-[-20%] left-[-10%] w-[400px] h-[400px] bg-[#C1F148]/10 rounded-full blur-[80px] pointer-events-none" />
+        <footer className="flex flex-col gap-2 border-t border-[color:var(--m-line)] py-5 text-[12.5px] text-[color:var(--m-ink-3)] sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} Mallevo · O shopping digital de Divinópolis</p>
+          <a href={`mailto:${CONTATO}`} className="sublinha self-start transition-colors hover:text-white sm:self-auto">
+            {CONTATO}
+          </a>
+        </footer>
+      </div>
+    </div>
+  )
+}
 
-            <div className="relative z-10 max-w-md">
-              <h2 className="text-5xl lg:text-6xl font-medium text-white leading-[1.1] tracking-tight">
-                Experimente o <br />
-                <span className="text-[#C1F148] italic pr-2">futuro</span> das <br />
-                vendas, hoje.
-              </h2>
-            </div>
+function Campo({
+  id,
+  rotulo,
+  icone,
+  extra,
+  ...input
+}: {
+  id: string
+  rotulo: string
+  icone: 'mail' | 'lock'
+  extra?: React.ReactNode
+} & React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <label htmlFor={id} className="text-[13.5px] font-semibold text-ink-2">
+          {rotulo}
+        </label>
+        {extra}
+      </div>
+      <div className="relative">
+        <PartnerIcon
+          name={icone}
+          size={17}
+          strokeWidth={1.9}
+          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-4"
+        />
+        <input
+          id={id}
+          required
+          className={cx(
+            'h-[52px] w-full rounded-[16px] bg-bg pl-11 pr-4 text-[15px] text-ink outline-none ring-1 ring-inset ring-line-2 transition-[box-shadow] duration-200 placeholder:text-ink-4',
+            'focus:ring-2 focus:ring-ink',
+          )}
+          {...input}
+        />
+      </div>
+    </div>
+  )
+}
 
-            {/* Floating UI Elements */}
-            <div className="relative z-10 w-full flex justify-end mt-12 h-64">
-              
-              {/* Main Card */}
-              <div className="absolute bottom-0 right-0 w-80 bg-zinc-100 rounded-3xl p-6 shadow-2xl border border-white/10 backdrop-blur-sm z-20 translate-x-4 translate-y-4">
-                <div className="mb-6">
-                  <Image
-                    src="/brand/mallevo-logo-black.png"
-                    alt="Mallevo"
-                    width={669}
-                    height={106}
-                    className="h-5 w-auto opacity-90"
-                  />
-                </div>
-                <p className="text-4xl font-semibold text-zinc-900 tracking-tight mb-1">
-                  R$ 12.347<span className="text-zinc-400 text-2xl">,23</span>
-                </p>
-                <p className="text-zinc-500 text-sm mb-8">Saldo disponível</p>
-                
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-zinc-800 font-medium text-sm">Cartão Principal</p>
-                    <p className="text-zinc-500 text-xs mt-0.5">3495 •••• •••• 6917</p>
-                  </div>
-                  <div className="bg-[#C1F148] text-zinc-900 text-xs font-semibold px-3 py-1.5 rounded-full">
-                    Ativo
-                  </div>
-                </div>
-              </div>
+/** A cidade e a hora dela — a portaria da landing. */
+function Portaria() {
+  const agora = useAgora(15_000)
+  const r = agora ? relogioDaLoja(agora) : null
+  return (
+    <p className="hidden items-center gap-2.5 text-[12px] font-semibold text-[color:var(--m-ink-2)] md:flex">
+      <PartnerIcon name="pin" size={15} strokeWidth={2.2} className="text-[color:var(--brick)]" />
+      Divinópolis, MG
+      <span className="font-mono tabular-nums text-white" suppressHydrationWarning>
+        {r ? `${String(r.getHours()).padStart(2, '0')}:${String(r.getMinutes()).padStart(2, '0')}` : '--:--'}
+      </span>
+    </p>
+  )
+}
 
-              {/* Smaller Stat Card behind */}
-              <div className="absolute bottom-20 right-64 w-48 bg-[#27272A] rounded-2xl p-5 shadow-xl border border-white/5 z-10 rotate-[-6deg] hover:rotate-0 transition-transform duration-500">
-                <div className="w-8 h-8 rounded-full bg-[#C1F148]/20 flex items-center justify-center mb-3">
-                  <TrendingUp className="w-4 h-4 text-[#C1F148]" />
-                </div>
-                <p className="text-white font-medium mb-0.5">Vendas Hoje</p>
-                <p className="text-2xl font-semibold text-[#C1F148]">+42%</p>
-              </div>
-
-            </div>
-          </div>
-        </div>
-
+/** As cruzes de alinhamento da fachada (o grid que a landing deixa à mostra). */
+function Cruzes() {
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-0 mx-auto max-w-[1320px] px-5 md:px-8">
+      <div className="relative h-full">
+        {[
+          ['0%', '22%'],
+          ['50%', '22%'],
+          ['100%', '22%'],
+          ['0%', '80%'],
+          ['100%', '80%'],
+        ].map(([x, y]) => (
+          <span
+            key={`${x}-${y}`}
+            className="absolute size-3 -translate-x-1/2 -translate-y-1/2 text-white/[0.16]"
+            style={{ left: x, top: y }}
+          >
+            <span className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-current" />
+            <span className="absolute left-0 top-1/2 h-px w-full -translate-y-1/2 bg-current" />
+          </span>
+        ))}
       </div>
     </div>
   )

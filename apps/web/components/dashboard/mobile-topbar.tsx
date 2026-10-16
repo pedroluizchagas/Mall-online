@@ -1,41 +1,46 @@
 'use client'
 
-import { Menu, Search } from 'lucide-react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
- * Barra superior exclusiva do mobile (dashboard-redesign Fase 5 §4). Some em
- * `md+` (a sidebar fixa assume). O hambúrguer abre o drawer via evento
- * `mallevo:menu`; a lupa abre o command palette (`mallevo:cmdk`) — mesmos
- * gatilhos que a sidebar já escuta, sem lift de estado para o layout server.
+ * Barra do topo no celular (some em `md+`, onde a sidebar fixa assume). É a
+ * portaria da marquise: transparente sobre a moldura, moedas de vidro. O menu
+ * abre o drawer (`mallevo:menu`) e a lupa, a busca (`mallevo:cmdk`) — os
+ * mesmos gatilhos que a sidebar escuta.
  */
 export function MobileTopbar({ nomeLoja }: { nomeLoja: string }) {
   return (
-    <div
-      className="md:hidden flex items-center gap-3 px-4 flex-shrink-0"
-      style={{ height: 56, borderBottom: '1px solid var(--line)' }}
-    >
+    <div className="sobre-escuro relative flex h-14 shrink-0 items-center gap-3 px-3 md:hidden">
       <button
         type="button"
         onClick={() => window.dispatchEvent(new CustomEvent('mallevo:menu'))}
         aria-label="Abrir menu de navegação"
-        className="p-2 -ml-2 rounded-lg"
-        style={{ color: 'var(--ink-2)' }}
+        className="flex size-10 items-center justify-center rounded-full bg-[color:var(--m-glass)] text-white ring-1 ring-inset ring-[color:var(--m-line)]"
       >
-        <Menu className="w-5 h-5" strokeWidth={2} />
+        <PartnerIcon name="menu" size={18} strokeWidth={2} />
       </button>
 
-      <span className="flex-1 min-w-0 truncate text-sm font-semibold" style={{ color: 'var(--ink)' }}>
-        {nomeLoja}
-      </span>
+      <Link href="/" aria-label={`Mallevo — ${nomeLoja}`} className="mx-auto block h-[19px] w-[120px]">
+        <Image
+          src="/brand/mallevo-logo-white.png"
+          alt="Mallevo"
+          width={669}
+          height={106}
+          priority
+          unoptimized
+          className="h-full w-auto"
+        />
+      </Link>
 
       <button
         type="button"
         onClick={() => window.dispatchEvent(new CustomEvent('mallevo:cmdk'))}
         aria-label="Buscar"
-        className="p-2 -mr-2 rounded-lg"
-        style={{ color: 'var(--ink-2)' }}
+        className="flex size-10 items-center justify-center rounded-full bg-[color:var(--m-glass)] text-white ring-1 ring-inset ring-[color:var(--m-line)]"
       >
-        <Search className="w-5 h-5" strokeWidth={1.75} />
+        <PartnerIcon name="search" size={18} strokeWidth={2} />
       </button>
     </div>
   )

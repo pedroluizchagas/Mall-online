@@ -1,7 +1,6 @@
 'use client'
 
 import { useFormState, useFormStatus } from 'react-dom'
-import { Monitor } from 'lucide-react'
 import { alterarSenha } from '@/lib/actions/auth'
 import { EmptyState } from '@/components/dashboard/empty-state'
 
@@ -20,7 +19,7 @@ function BotaoSalvar({ label = 'Salvar' }: { label?: string }) {
 }
 
 const inputClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 export function AbaSeguranca() {
   const [estado, dispatch] = useFormState(alterarSenha, null)
@@ -38,12 +37,12 @@ export function AbaSeguranca() {
 
         <form action={dispatch} className="space-y-4">
           {estado?.erro && (
-            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
+            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--err-lt)', color: 'var(--err)' }}>
               {estado.erro}
             </p>
           )}
           {estado?.sucesso && (
-            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#e6f7e3', color: 'var(--ok)' }}>
+            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--ok-lt)', color: 'var(--ok)' }}>
               Senha alterada com sucesso.
             </p>
           )}
@@ -88,7 +87,7 @@ export function AbaSeguranca() {
           </span>
         </div>
         <EmptyState
-          icone={Monitor}
+          icone="monitor"
           titulo="Lista de dispositivos em breve"
           descricao="Você poderá ver quais dispositivos estão conectados e encerrar todas as sessões com um clique."
         />

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import Image from 'next/image'
-import { ArrowLeft, ArrowRight, Check, Search } from 'lucide-react'
 import {
   ARQUETIPOS,
   RADIUS_STEPS_PX,
@@ -17,8 +16,9 @@ import {
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { logout } from '@/lib/actions/auth'
 import { schemaDadosLoja, schemaDadosResponsavel } from '@/lib/validations/onboarding'
-import { iconeDaCategoria } from './icones-categoria'
+import { iconeDaCategoria } from '@/lib/icones-categoria'
 import type { DadosOnboarding } from './page'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface Categoria {
   id: string
@@ -396,7 +396,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8, ease: 'easeOut' }}
-      className="fixed inset-0 z-40 flex flex-col bg-[#09090B] text-white overflow-hidden"
+      className="fixed inset-0 z-40 flex flex-col bg-marquee text-white overflow-hidden"
     >
       {/* Fundo: grid sutil + glow lime */}
       <div
@@ -412,11 +412,11 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 -right-40 w-[520px] h-[520px] rounded-full bg-[#C1F148] opacity-[0.06] blur-[140px]"
+        className="pointer-events-none absolute -top-40 -right-40 w-[520px] h-[520px] rounded-full bg-glow opacity-[0.06] blur-[140px]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -bottom-60 -left-60 w-[460px] h-[460px] rounded-full bg-[#C1F148] opacity-[0.04] blur-[160px]"
+        className="pointer-events-none absolute -bottom-60 -left-60 w-[460px] h-[460px] rounded-full bg-glow opacity-[0.04] blur-[160px]"
       />
 
       {/* Header */}
@@ -438,9 +438,9 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
               key={i}
               className={`h-1 rounded-full transition-all duration-500 ${
                 i === etapa
-                  ? 'w-8 bg-[#C1F148]'
+                  ? 'w-8 bg-brick'
                   : i < etapa
-                    ? 'w-2 bg-[#C1F148]/60'
+                    ? 'w-2 bg-brick/60'
                     : 'w-2 bg-white/15'
               }`}
             />
@@ -628,7 +628,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
       </main>
 
       {/* Footer com navegação */}
-      <footer className="relative z-10 shrink-0 border-t border-white/[0.06] bg-[#09090B]/80 backdrop-blur-md">
+      <footer className="relative z-10 shrink-0 border-t border-white/[0.06] bg-marquee/80 backdrop-blur-md">
         <div className="w-full max-w-3xl mx-auto px-6 lg:px-10 py-5 flex items-center justify-between gap-4">
           <button
             type="button"
@@ -636,7 +636,7 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
             disabled={etapa === 0 || carregando}
             className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/[0.04] transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <PartnerIcon name="back" size={16} />
             Voltar
           </button>
 
@@ -644,24 +644,24 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
             type="button"
             onClick={tratarContinuar}
             disabled={!podeAvancar}
-            className="flex items-center gap-2 bg-[#C1F148] text-[#09090B] px-7 py-3.5 rounded-xl font-semibold text-sm hover:bg-[#d4ff5c] transition-all shadow-[0_0_40px_rgba(193,241,72,0.25)] disabled:bg-white/[0.06] disabled:text-zinc-500 disabled:shadow-none disabled:cursor-not-allowed"
+            className="flex items-center gap-2 bg-brick text-brick-ink px-7 py-3.5 rounded-xl font-semibold text-sm hover:bg-brick-dk transition-all shadow-[0_0_40px_rgba(193,241,72,0.25)] disabled:bg-white/[0.06] disabled:text-zinc-500 disabled:shadow-none disabled:cursor-not-allowed"
           >
             {etapa === TOTAL_ETAPAS - 1 ? (
               carregando ? (
                 <>
                   Criando conta
-                  <div className="w-4 h-4 border-2 border-[#09090B] border-t-transparent rounded-full animate-spin" />
+                  <div className="w-4 h-4 border-2 border-brick-ink border-t-transparent rounded-full animate-spin" />
                 </>
               ) : (
                 <>
                   Criar minha conta
-                  <ArrowRight className="w-4 h-4" />
+                  <PartnerIcon name="arrow-right" size={16} />
                 </>
               )
             ) : (
               <>
                 Continuar
-                <ArrowRight className="w-4 h-4" />
+                <PartnerIcon name="arrow-right" size={16} />
               </>
             )}
           </button>
@@ -717,7 +717,7 @@ function PerguntaTexto({
           autoComplete={autoComplete}
           inputMode={inputMode}
           maxLength={maxLength}
-          className="w-full bg-transparent text-3xl md:text-4xl font-medium text-white placeholder:text-white/20 border-b-2 border-white/10 focus:border-[#C1F148] focus:outline-none pb-4 transition-colors duration-300"
+          className="w-full bg-transparent text-3xl md:text-4xl font-medium text-white placeholder:text-white/20 border-b-2 border-white/10 focus:border-brick focus:outline-none pb-4 transition-colors duration-300"
         />
       </div>
     </div>
@@ -753,7 +753,7 @@ function PerguntaCep({ cep, onChange, buscando, enderecoResolvido }: PerguntaCep
           onChange={(e) => onChange(mascararCep(e.target.value))}
           placeholder="00000-000"
           maxLength={9}
-          className="w-full bg-transparent text-4xl md:text-5xl font-medium text-white placeholder:text-white/20 border-b-2 border-white/10 focus:border-[#C1F148] focus:outline-none pb-4 tracking-[0.05em] transition-colors duration-300"
+          className="w-full bg-transparent text-4xl md:text-5xl font-medium text-white placeholder:text-white/20 border-b-2 border-white/10 focus:border-brick focus:outline-none pb-4 tracking-[0.05em] transition-colors duration-300"
         />
         <div className="mt-4 h-6 flex items-center text-sm text-zinc-500">
           {buscando ? (
@@ -772,11 +772,11 @@ function PerguntaCep({ cep, onChange, buscando, enderecoResolvido }: PerguntaCep
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.4 }}
-            className="mt-8 max-w-md p-5 rounded-2xl border border-[#C1F148]/20 bg-[#C1F148]/[0.04]"
+            className="mt-8 max-w-md p-5 rounded-2xl border border-brick/20 bg-brick/[0.04]"
           >
             <div className="flex items-start gap-3">
-              <div className="w-7 h-7 rounded-full bg-[#C1F148] flex items-center justify-center shrink-0 mt-0.5">
-                <Check className="w-4 h-4 text-[#09090B]" strokeWidth={3} />
+              <div className="w-7 h-7 rounded-full bg-brick flex items-center justify-center shrink-0 mt-0.5">
+                <PartnerIcon name="check" size={16} className="text-brick-ink" strokeWidth={3} />
               </div>
               <div className="text-sm">
                 <p className="text-white font-medium">
@@ -841,7 +841,7 @@ function PerguntaNumero({
             value={numero}
             onChange={(e) => onNumero(e.target.value)}
             placeholder="123"
-            className="w-full bg-transparent text-2xl md:text-3xl font-medium text-white placeholder:text-white/20 border-b-2 border-white/10 focus:border-[#C1F148] focus:outline-none pb-3 transition-colors duration-300"
+            className="w-full bg-transparent text-2xl md:text-3xl font-medium text-white placeholder:text-white/20 border-b-2 border-white/10 focus:border-brick focus:outline-none pb-3 transition-colors duration-300"
           />
         </div>
         <div>
@@ -853,7 +853,7 @@ function PerguntaNumero({
             value={complemento}
             onChange={(e) => onComplemento(e.target.value)}
             placeholder="Sala, andar…"
-            className="w-full bg-transparent text-2xl md:text-3xl font-medium text-white placeholder:text-white/20 border-b-2 border-white/10 focus:border-[#C1F148] focus:outline-none pb-3 transition-colors duration-300"
+            className="w-full bg-transparent text-2xl md:text-3xl font-medium text-white placeholder:text-white/20 border-b-2 border-white/10 focus:border-brick focus:outline-none pb-3 transition-colors duration-300"
           />
         </div>
       </div>
@@ -879,7 +879,7 @@ function EscolhaCategoria({
   return (
     <div className="relative">
       {/* Cabeçalho + busca: ficam fixos no topo enquanto as categorias rolam por baixo */}
-      <div className="sticky top-0 z-20 -mt-12 pt-12 lg:-mt-16 lg:pt-16 -mx-6 px-6 lg:-mx-10 lg:px-10 bg-[#09090B]">
+      <div className="sticky top-0 z-20 -mt-12 pt-12 lg:-mt-16 lg:pt-16 -mx-6 px-6 lg:-mx-10 lg:px-10 bg-marquee">
         <Eyebrow texto={`Passo 06 · ${TOTAL_ETAPAS}`} />
         <Titulo>Que tipo de negócio você tem?</Titulo>
         <Subtitulo>
@@ -888,20 +888,20 @@ function EscolhaCategoria({
         </Subtitulo>
 
         <div className="mt-10 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+          <PartnerIcon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" />
           <input
             type="text"
             value={busca}
             onChange={(e) => onBusca(e.target.value)}
             placeholder="Buscar categoria…"
-            className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#C1F148]/50 focus:bg-white/[0.05] transition-all"
+            className="w-full pl-12 pr-4 py-3.5 bg-white/[0.03] border border-white/[0.08] rounded-xl text-white placeholder:text-zinc-500 focus:outline-none focus:border-brick/50 focus:bg-white/[0.05] transition-all"
           />
         </div>
 
         {/* Gradiente de sombra: cards entram/saem "da sombra" ao rolar */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-full h-16 bg-gradient-to-b from-[#09090B] via-[#09090B]/70 to-transparent"
+          className="pointer-events-none absolute inset-x-0 top-full h-16 bg-gradient-to-b from-marquee via-marquee/70 to-transparent"
         />
       </div>
 
@@ -921,14 +921,14 @@ function EscolhaCategoria({
                 onClick={() => onSelecionar(cat.id)}
                 className={`group flex flex-col items-center justify-center gap-3 px-3 py-5 rounded-2xl border transition-all duration-300 text-center ${
                   ativo
-                    ? 'border-[#C1F148] bg-[#C1F148]/[0.08] shadow-[0_0_30px_rgba(193,241,72,0.12)]'
+                    ? 'border-brick bg-brick/[0.08] shadow-[0_0_30px_rgba(193,241,72,0.12)]'
                     : 'border-white/[0.06] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
                 }`}
               >
                 <div
                   className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
                     ativo
-                      ? 'bg-[#C1F148] text-[#09090B]'
+                      ? 'bg-brick text-brick-ink'
                       : 'bg-white/[0.04] text-zinc-300 group-hover:text-white'
                   }`}
                 >
@@ -960,8 +960,8 @@ function ConfirmacaoCategoria({ categoria }: { categoria: Categoria }) {
     <div>
       <Eyebrow texto={`Passo 07 · ${TOTAL_ETAPAS}`} />
       <div className="flex items-center gap-4 mb-3">
-        <div className="w-14 h-14 rounded-2xl bg-[#C1F148] flex items-center justify-center shadow-[0_0_40px_rgba(193,241,72,0.25)]">
-          <Icone className="w-7 h-7 text-[#09090B]" strokeWidth={2} />
+        <div className="w-14 h-14 rounded-2xl bg-brick flex items-center justify-center shadow-[0_0_40px_rgba(193,241,72,0.25)]">
+          <Icone className="w-7 h-7 text-brick-ink" strokeWidth={2} />
         </div>
         <div>
           <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider">Você escolheu</p>
@@ -991,8 +991,8 @@ function ConfirmacaoCategoria({ categoria }: { categoria: Categoria }) {
           <ul className="space-y-3">
             {features.map((f) => (
               <li key={f} className="flex items-center gap-3 text-zinc-200">
-                <span className="w-5 h-5 rounded-full bg-[#C1F148]/15 flex items-center justify-center shrink-0">
-                  <Check className="w-3 h-3 text-[#C1F148]" strokeWidth={3} />
+                <span className="w-5 h-5 rounded-full bg-brick/15 flex items-center justify-center shrink-0">
+                  <PartnerIcon name="check" size={12} className="text-brick" strokeWidth={3} />
                 </span>
                 <span className="text-base">{f}</span>
               </li>
@@ -1096,7 +1096,7 @@ function CartaoEstilo({
       onClick={onSelecionar}
       className={`group flex text-left rounded-2xl border overflow-hidden transition-all duration-300 ${
         selecionado
-          ? 'border-[#C1F148] bg-[#C1F148]/[0.06] shadow-[0_0_30px_rgba(193,241,72,0.12)]'
+          ? 'border-brick bg-brick/[0.06] shadow-[0_0_30px_rgba(193,241,72,0.12)]'
           : 'border-white/[0.06] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'
       }`}
     >
@@ -1159,7 +1159,7 @@ function CartaoEstilo({
                 {arq.nome}
               </p>
               {recomendado && (
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#C1F148] text-[#09090B]">
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brick text-brick-ink">
                   Recomendado
                 </span>
               )}
@@ -1171,11 +1171,11 @@ function CartaoEstilo({
           <span
             className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
               selecionado
-                ? 'bg-[#C1F148]'
+                ? 'bg-brick'
                 : 'border border-white/15 bg-white/[0.02] group-hover:border-white/25'
             }`}
           >
-            {selecionado && <Check className="w-3 h-3 text-[#09090B]" strokeWidth={3.5} />}
+            {selecionado && <PartnerIcon name="check" size={12} className="text-brick-ink" strokeWidth={3.5} />}
           </span>
         </div>
         <div className="flex gap-1 flex-wrap">
@@ -1218,7 +1218,7 @@ function EscolhaPlano({ planos, selecionado, onSelecionar }: EscolhaPlanoProps) 
               onClick={() => onSelecionar(plano.id)}
               className={`group relative flex flex-col text-left rounded-2xl border transition-all duration-300 overflow-hidden ${
                 ativo
-                  ? 'border-[#C1F148]/50 bg-gradient-to-b from-[#C1F148]/[0.08] via-[#C1F148]/[0.02] to-transparent shadow-[0_8px_40px_-12px_rgba(193,241,72,0.4)] ring-1 ring-[#C1F148]/20'
+                  ? 'border-brick/50 bg-gradient-to-b from-brick/[0.08] via-brick/[0.02] to-transparent shadow-[0_8px_40px_-12px_rgba(193,241,72,0.4)] ring-1 ring-brick/20'
                   : 'border-white/[0.06] bg-gradient-to-b from-white/[0.045] to-white/[0.005] hover:border-white/15 hover:from-white/[0.07]'
               }`}
             >
@@ -1226,7 +1226,7 @@ function EscolhaPlano({ planos, selecionado, onSelecionar }: EscolhaPlanoProps) 
               {ativo && (
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 w-40 h-32 bg-[#C1F148] opacity-[0.18] blur-3xl"
+                  className="pointer-events-none absolute -top-16 left-1/2 -translate-x-1/2 w-40 h-32 bg-glow opacity-[0.18] blur-3xl"
                 />
               )}
 
@@ -1240,11 +1240,11 @@ function EscolhaPlano({ planos, selecionado, onSelecionar }: EscolhaPlanoProps) 
                     aria-hidden
                     className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
                       ativo
-                        ? 'bg-[#C1F148] scale-100'
+                        ? 'bg-brick scale-100'
                         : 'border border-white/15 bg-white/[0.02] scale-90 group-hover:scale-100 group-hover:border-white/25'
                     }`}
                   >
-                    {ativo && <Check className="w-3 h-3 text-[#09090B]" strokeWidth={3.5} />}
+                    {ativo && <PartnerIcon name="check" size={12} className="text-brick-ink" strokeWidth={3.5} />}
                   </div>
                 </div>
 
@@ -1297,10 +1297,10 @@ function ItemPlano({ children, ativo }: { children: React.ReactNode; ativo: bool
     <li className="flex items-start gap-3 text-sm leading-relaxed text-zinc-300">
       <span
         className={`mt-[3px] w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-          ativo ? 'bg-[#C1F148] text-[#09090B]' : 'bg-white/[0.05] text-zinc-500'
+          ativo ? 'bg-brick text-brick-ink' : 'bg-white/[0.05] text-zinc-500'
         }`}
       >
-        <Check className="w-2.5 h-2.5" strokeWidth={4} />
+        <PartnerIcon name="check" size={10} strokeWidth={4} />
       </span>
       <span>{children}</span>
     </li>
@@ -1313,7 +1313,7 @@ function ItemPlano({ children, ativo }: { children: React.ReactNode; ativo: bool
 
 function Eyebrow({ texto }: { texto: string }) {
   return (
-    <p className="text-xs font-semibold tracking-[0.2em] uppercase text-[#C1F148]/70 mb-4">
+    <p className="text-xs font-semibold tracking-[0.2em] uppercase text-brick/70 mb-4">
       {texto}
     </p>
   )

@@ -7,7 +7,7 @@ import {
 } from '@/lib/actions/estoque'
 
 const inputClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 function BotaoSubmit({ label }: { label: string }) {
   const { pending } = useFormStatus()
@@ -97,7 +97,7 @@ export function ModalMovimentacao({ produto, tipo, onFechar }: Props) {
           </div>
 
           {estado?.erro && (
-            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
+            <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--err-lt)', color: 'var(--err)' }}>
               {estado.erro}
             </p>
           )}

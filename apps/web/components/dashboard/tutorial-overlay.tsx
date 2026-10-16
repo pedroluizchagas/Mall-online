@@ -4,33 +4,33 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTemplate } from '@mallevo/lib'
 import type { TemplateCodigo } from '@mallevo/lib'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { PartnerIcon, type PartnerIconName } from '@/components/ui/partner-icon'
 import { marcarTutorialVisto } from '@/lib/actions/tutorial'
 
-type Slide = { titulo: string; texto: string; emoji: string }
+type Slide = { titulo: string; texto: string; icone: PartnerIconName }
 
 const TUTORIAL_SLIDES: Record<TemplateCodigo, Slide[]> = {
   food: [
     {
-      emoji: '🍽️',
-      titulo: 'Bem-vindo ao Mallevo!',
+      icone: 'utensils',
+      titulo: 'Boas-vindas ao Mallevo',
       texto:
         'Sua loja é Praça de Alimentação. Vamos te mostrar os recursos otimizados para vender comida e bebida.',
     },
     {
-      emoji: '🍔',
+      icone: 'chef',
       titulo: 'Modificadores nos pratos',
       texto:
         'Adicione personalizações como ponto da carne, adicionais e retiradas. O cliente escolhe ao pedir e o preço atualiza automaticamente.',
     },
     {
-      emoji: '⏱️',
+      icone: 'clock',
       titulo: 'Tempo de preparo',
       texto:
         'Indique quanto tempo cada prato leva. O cliente vê ETA realista e fica menos ansioso esperando.',
     },
     {
-      emoji: '📋',
+      icone: 'orders',
       titulo: 'Painel de pedidos em tempo real',
       texto:
         'Pedidos chegam com som de alerta. Confirme, prepare e despache com 1 clique cada.',
@@ -38,25 +38,25 @@ const TUTORIAL_SLIDES: Record<TemplateCodigo, Slide[]> = {
   ],
   fashion: [
     {
-      emoji: '👗',
-      titulo: 'Bem-vindo ao Mallevo!',
+      icone: 'hanger',
+      titulo: 'Boas-vindas ao Mallevo',
       texto:
         'Sua loja é Moda & Vestuário. Vamos te mostrar os recursos otimizados para vender com tamanhos e cores.',
     },
     {
-      emoji: '🏷️',
+      icone: 'tag',
       titulo: 'Grade de variações',
       texto:
         'Cadastre tamanho × cor uma vez. O sistema cria automaticamente todos os SKUs com estoque, preço e foto independentes.',
     },
     {
-      emoji: '📦',
+      icone: 'box',
       titulo: 'Estoque por SKU',
       texto:
         'Cada combinação tem estoque próprio. Quando "M Preto" esgota, só esse SKU some — as outras cores continuam vendáveis.',
     },
     {
-      emoji: '🛍️',
+      icone: 'bag',
       titulo: 'Cliente vê foto da cor',
       texto:
         'Suba uma foto por variação e o cliente vê a peça da cor exata que está escolhendo.',
@@ -64,25 +64,25 @@ const TUTORIAL_SLIDES: Record<TemplateCodigo, Slide[]> = {
   ],
   pharmacy: [
     {
-      emoji: '💊',
-      titulo: 'Bem-vindo ao Mallevo!',
+      icone: 'pulse',
+      titulo: 'Boas-vindas ao Mallevo',
       texto:
         'Sua loja é Farmácia. Vamos te mostrar os recursos pensados para vender medicamentos com segurança.',
     },
     {
-      emoji: '📜',
+      icone: 'file',
       titulo: 'Registro ANVISA',
       texto:
         'Cadastre o registro ANVISA e o princípio ativo. Cliente confia mais, e você fica em conformidade.',
     },
     {
-      emoji: '⚠️',
+      icone: 'info',
       titulo: 'Receita médica',
       texto:
         'Marque produtos que exigem receita. O cliente vê um aviso destacado no app antes de fechar o pedido.',
     },
     {
-      emoji: '🩺',
+      icone: 'shield',
       titulo: 'Categoria regulatória',
       texto:
         'Classifique cada item (MIP, Lista A/B/C). Ajuda no controle interno e em relatórios futuros.',
@@ -90,19 +90,19 @@ const TUTORIAL_SLIDES: Record<TemplateCodigo, Slide[]> = {
   ],
   pet: [
     {
-      emoji: '🐶',
-      titulo: 'Bem-vindo ao Mallevo!',
+      icone: 'paw',
+      titulo: 'Boas-vindas ao Mallevo',
       texto:
         'Sua loja é Pet Shop. Vamos te mostrar os recursos para vender produtos com variação de porte e peso.',
     },
     {
-      emoji: '🏷️',
+      icone: 'tag',
       titulo: 'Variação por porte',
       texto:
         'Cadastre uma coleira ou ração com porte P/M/G/GG. Cada porte tem estoque próprio.',
     },
     {
-      emoji: '🐾',
+      icone: 'paw',
       titulo: 'Espécies atendidas',
       texto:
         'Indique quais espécies o produto serve (cães, gatos, aves...). Filtra melhor para o cliente certo.',
@@ -110,25 +110,25 @@ const TUTORIAL_SLIDES: Record<TemplateCodigo, Slide[]> = {
   ],
   services: [
     {
-      emoji: '✂️',
-      titulo: 'Bem-vindo ao Mallevo!',
+      icone: 'scissors',
+      titulo: 'Boas-vindas ao Mallevo',
       texto:
         'Sua loja é de Serviços. Vamos te mostrar os recursos para receber agendamentos online.',
     },
     {
-      emoji: '👥',
+      icone: 'users',
       titulo: 'Cadastre profissionais',
       texto:
         'Em Configurações > Profissionais, cadastre cada pessoa que atende, com cor própria para o calendário.',
     },
     {
-      emoji: '⏱️',
+      icone: 'clock',
       titulo: 'Defina duração do serviço',
       texto:
         'Cada serviço precisa de uma duração em minutos. Os horários disponíveis são calculados automaticamente.',
     },
     {
-      emoji: '📅',
+      icone: 'calendar',
       titulo: 'Agenda semanal',
       texto:
         'Em Agenda, veja todos os agendamentos da semana. Adicione bloqueios para almoço, folga e feriado.',
@@ -136,24 +136,24 @@ const TUTORIAL_SLIDES: Record<TemplateCodigo, Slide[]> = {
   ],
   generic: [
     {
-      emoji: '📦',
-      titulo: 'Bem-vindo ao Mallevo!',
+      icone: 'box',
+      titulo: 'Boas-vindas ao Mallevo',
       texto: 'Vamos te mostrar os principais recursos do dashboard.',
     },
     {
-      emoji: '🛍️',
+      icone: 'bag',
       titulo: 'Cadastre seus produtos',
       texto:
         'Adicione fotos, descrição e preços. Se vender em tamanhos/cores diferentes, ative variações no produto.',
     },
     {
-      emoji: '📋',
+      icone: 'orders',
       titulo: 'Acompanhe pedidos',
       texto:
         'Pedidos chegam em tempo real. Confirme, prepare e despache pelo painel.',
     },
     {
-      emoji: '💬',
+      icone: 'chat',
       titulo: 'Precisa de ajuda?',
       texto:
         'Em Tipo de loja você vê seu nicho atual. Para mudar, fale com nosso suporte.',
@@ -219,8 +219,7 @@ export function TutorialOverlay() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-        style={{ background: 'rgba(0,0,0,0.7)' }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(9,9,11,0.6)] p-4 backdrop-blur-[3px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="tutorial-titulo"
@@ -228,70 +227,65 @@ export function TutorialOverlay() {
         <motion.div
           ref={containerRef}
           tabIndex={-1}
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-          className="relative w-full max-w-md rounded-3xl outline-none"
-          style={{
-            background: 'var(--bg)',
-            boxShadow: '0 20px 60px -10px rgba(0,0,0,0.5)',
-          }}
+          initial={{ y: 16, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 8, opacity: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative w-full max-w-md overflow-hidden rounded-[30px] bg-bg shadow-lg outline-none"
         >
-          <button
-            type="button"
-            onClick={fechar}
-            disabled={pending}
-            aria-label="Pular tutorial"
-            className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-bg-2"
-            style={{ color: 'var(--ink-3)' }}
-          >
-            <X size={16} />
-          </button>
-
-          <div className="px-8 pt-10 pb-6 text-center">
-            <div className="text-6xl mb-5" aria-hidden="true">
-              {slide.emoji}
+          {/* Marquise do tutorial: o assunto do passo, aceso. */}
+          <div className="sobre-escuro grao relative isolate overflow-hidden bg-marquee px-8 pb-12 pt-7 text-white">
+            <div aria-hidden className="glow-marquise absolute inset-0 -z-10" />
+            <div className="flex items-center justify-between">
+              <p className="micro text-[color:var(--m-ink-3)]">
+                Passo {indice + 1} de {slides.length}
+              </p>
+              <button
+                type="button"
+                onClick={fechar}
+                disabled={pending}
+                aria-label="Pular tutorial"
+                className="-mr-2 flex size-8 items-center justify-center rounded-full text-[color:var(--m-ink-2)] transition-colors hover:bg-[color:var(--m-glass-2)] hover:text-white"
+              >
+                <PartnerIcon name="close" size={16} strokeWidth={2} />
+              </button>
             </div>
-            <h2
-              id="tutorial-titulo"
-              className="text-xl font-bold mb-3 tracking-tight"
-              style={{ color: 'var(--ink)' }}
+            <span
+              key={indice}
+              className="entra mt-7 flex size-16 items-center justify-center rounded-full bg-[color:var(--m-glass)] text-[color:var(--brick)] ring-1 ring-inset ring-[color:var(--m-line)]"
             >
+              <PartnerIcon name={slide.icone} size={28} strokeWidth={1.8} />
+            </span>
+          </div>
+
+          <div className="-mt-6 rounded-t-[26px] bg-bg px-8 pb-2 pt-7">
+            <h2 id="tutorial-titulo" className="text-[24px] font-semibold leading-tight tracking-[-0.03em] text-ink">
               {slide.titulo}
             </h2>
-            <p
-              className="text-[14px] leading-relaxed"
-              style={{ color: 'var(--ink-2)' }}
-            >
-              {slide.texto}
-            </p>
+            <p className="mt-3 text-[14.5px] leading-relaxed text-ink-2">{slide.texto}</p>
+
+            <div className="mt-6 flex gap-1.5" aria-hidden="true">
+              {slides.map((_, i) => (
+                <span
+                  key={i}
+                  className="block h-1.5 rounded-full transition-all duration-500 ease-entrada"
+                  style={{
+                    width: i === indice ? 22 : 6,
+                    background: i === indice ? 'var(--ink)' : 'var(--line-2)',
+                  }}
+                />
+              ))}
+            </div>
           </div>
 
-          <div className="flex justify-center gap-1.5 pb-5" aria-hidden="true">
-            {slides.map((_, i) => (
-              <span
-                key={i}
-                className="block rounded-full transition-all"
-                style={{
-                  width: i === indice ? 18 : 6,
-                  height: 6,
-                  background:
-                    i === indice ? 'var(--brick)' : 'var(--line-2)',
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between gap-2 px-6 pb-6">
+          <div className="flex items-center justify-between gap-2 px-6 pb-6 pt-5">
             <button
               type="button"
               onClick={anterior}
               disabled={indice === 0 || pending}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-medium transition-colors disabled:opacity-30"
-              style={{ color: 'var(--ink-2)' }}
+              className="flex h-11 items-center gap-1.5 rounded-full px-4 text-[13.5px] font-bold text-ink-2 transition-colors hover:bg-bg-2 disabled:opacity-30"
             >
-              <ChevronLeft size={15} />
+              <PartnerIcon name="chevron-left" size={15} strokeWidth={2.4} />
               Anterior
             </button>
 
@@ -299,8 +293,7 @@ export function TutorialOverlay() {
               type="button"
               onClick={fechar}
               disabled={pending}
-              className="text-[12px] font-medium underline-offset-4 hover:underline"
-              style={{ color: 'var(--ink-3)' }}
+              className="text-[12.5px] font-semibold text-ink-3 underline-offset-4 hover:text-ink hover:underline"
             >
               Pular tutorial
             </button>
@@ -309,14 +302,10 @@ export function TutorialOverlay() {
               type="button"
               onClick={proximo}
               disabled={pending}
-              className="flex items-center gap-1.5 px-5 py-2.5 rounded-full text-[13px] font-bold transition-transform hover:scale-[1.02] disabled:opacity-50"
-              style={{
-                background: 'var(--brick)',
-                color: 'var(--brick-ink)',
-              }}
+              className="flex h-11 items-center gap-1.5 rounded-full px-5 text-[13.5px] font-bold transition-colors bg-brick text-brick-ink hover:bg-brick-dk disabled:opacity-50"
             >
               {ultimo ? 'Começar a usar' : 'Próximo'}
-              {!ultimo && <ChevronRight size={15} />}
+              {!ultimo && <PartnerIcon name="chevron-right" size={15} strokeWidth={2.4} />}
             </button>
           </div>
         </motion.div>

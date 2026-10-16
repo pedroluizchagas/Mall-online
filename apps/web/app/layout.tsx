@@ -1,9 +1,13 @@
 import './globals.css'
+import type { Viewport } from 'next'
 import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google'
 
+// A voz da casa (a mesma do app do lojista e da landing): Plus Jakarta Sans,
+// com o itálico da linha acesa do statement. Mono só para hora, código e id.
 const jakarta = Plus_Jakarta_Sans({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700', '800'],
+  style: ['normal', 'italic'],
   variable: '--font-jakarta',
   display: 'swap',
 })
@@ -16,8 +20,13 @@ const jetbrains = JetBrains_Mono({
 })
 
 export const metadata = {
-  title: 'Mallevo — Painel do Lojista',
-  description: 'O shopping digital de Divinópolis',
+  title: 'Mallevo — Painel do lojista',
+  description: 'O balcão da sua loja no shopping digital de Divinópolis.',
+}
+
+export const viewport: Viewport = {
+  // A moldura do painel é a marquise: a barra do navegador acompanha.
+  themeColor: '#18181B',
 }
 
 /**

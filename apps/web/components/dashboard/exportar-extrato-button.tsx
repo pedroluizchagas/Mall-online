@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { ChevronDown, Download } from 'lucide-react'
 import { exportarExtratoCsv, type PeriodoExtrato } from '@/lib/actions/financeiro'
 import { showToast } from '@/components/ui/toast'
 import { baixarCsv } from '@/lib/baixar-csv'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * Exporta o extrato de repasses em CSV, com seletor de período no próprio
@@ -58,9 +58,9 @@ export function ExportarExtratoButton() {
         aria-expanded={aberto}
         className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors disabled:opacity-50"
       >
-        <Download className="w-3.5 h-3.5" />
+        <PartnerIcon name="download" size={14} />
         {pending ? 'Exportando…' : 'Extrato'}
-        <ChevronDown className="w-3 h-3" />
+        <PartnerIcon name="chevron-down" size={12} />
       </button>
 
       {aberto && (

@@ -130,7 +130,7 @@ export default async function PaginaAgenda({ searchParams }: Props) {
       {erro && (
         <div
           className="px-4 py-3 rounded-xl text-sm"
-          style={{ background: '#fde8e4', color: 'var(--err)' }}
+          style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
         >
           {erro}
         </div>

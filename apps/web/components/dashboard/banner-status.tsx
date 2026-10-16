@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { AlertTriangle, AlertCircle, Info, X } from 'lucide-react'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 type BannerSeveridade = 'info' | 'aviso' | 'erro'
 
@@ -26,9 +26,10 @@ export interface BannerStatusProps {
 const PRIORIDADE: Record<BannerSeveridade, number> = { erro: 0, aviso: 1, info: 2 }
 
 const ESTILOS = {
-  erro: { bg: '#fde8e4', border: '#f4b9ae', fg: '#7a2516', ctaBg: 'var(--err)', ctaFg: '#ffffff', Icone: AlertCircle },
-  aviso: { bg: '#fef3c7', border: '#fde68a', fg: '#92400e', ctaBg: '#92400e', ctaFg: '#fef3c7', Icone: AlertTriangle },
-  info: { bg: '#e6f0fb', border: '#bcd4ee', fg: '#1f3c66', ctaBg: 'var(--sky)', ctaFg: '#ffffff', Icone: Info },
+  // Texto do CTA na cor da folha: passa AA sobre o tom no claro e no escuro.
+  erro: { bg: 'var(--err-lt)', border: 'var(--err-line)', fg: 'var(--err)', ctaBg: 'var(--err)', ctaFg: 'var(--bg)', icone: 'close-circle' as const },
+  aviso: { bg: 'var(--warn-lt)', border: 'var(--warn-line)', fg: 'var(--warn)', ctaBg: 'var(--warn)', ctaFg: 'var(--bg)', icone: 'alert' as const },
+  info: { bg: 'var(--sky-lt)', border: 'var(--sky-lt)', fg: 'var(--sky)', ctaBg: 'var(--sky)', ctaFg: 'var(--bg)', icone: 'info' as const },
 } as const
 
 const chave = (id: BannerStatusItemId) => `banner-dismissed:${id}`
@@ -62,7 +63,7 @@ export function BannerStatus({ itens }: BannerStatusProps) {
     <div className="flex flex-col">
       {visiveis.map((item) => {
         const e = ESTILOS[item.severidade]
-        const { Icone } = e
+        const { icone } = e
         return (
           <div
             key={item.id}
@@ -75,7 +76,7 @@ export function BannerStatus({ itens }: BannerStatusProps) {
                 className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                 style={{ background: 'rgba(255,255,255,0.45)' }}
               >
-                <Icone className="w-4 h-4" />
+                <PartnerIcon name={icone} size={16} strokeWidth={2} />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold leading-tight">{item.titulo}</p>
@@ -103,7 +104,7 @@ export function BannerStatus({ itens }: BannerStatusProps) {
                   aria-label="Dispensar aviso"
                   className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 transition-colors"
                 >
-                  <X className="w-4 h-4" />
+                  <PartnerIcon name="close" size={16} />
                 </button>
               )}
             </div>

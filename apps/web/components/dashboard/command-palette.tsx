@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, CornerDownLeft } from 'lucide-react'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 import type { Comando } from './comandos'
 
 /**
@@ -104,45 +104,40 @@ export function CommandPalette({ comandos }: { comandos: Comando[] }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-[12vh]"
-      style={{ background: 'rgba(15,15,13,0.5)' }}
+      className="fixed inset-0 z-[90] flex items-start justify-center bg-[rgba(9,9,11,0.55)] p-4 pt-[12vh] backdrop-blur-[3px]"
       onMouseDown={() => setAberto(false)}
     >
+      {/* A busca é o concierge da marquise: vidro escuro, neon no canto. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Navegação rápida"
-        className="w-full max-w-lg rounded-2xl overflow-hidden shadow-xl"
-        style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+        className="sobre-escuro slide-up relative isolate w-full max-w-xl overflow-hidden rounded-[24px] text-white shadow-lg ring-1 ring-inset ring-[color:var(--m-line)]"
+        style={{ background: 'rgba(24, 24, 27, 0.97)' }}
         onMouseDown={(e) => e.stopPropagation()}
         onKeyDown={onKeyLista}
       >
+        <div aria-hidden className="glow-marquise pointer-events-none absolute inset-0 -z-10 opacity-80" />
+
         {/* Busca */}
-        <div
-          className="flex items-center gap-2.5 px-4"
-          style={{ borderBottom: '1px solid var(--line)', height: 52 }}
-        >
-          <Search className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--ink-3)' }} />
+        <div className="flex h-14 items-center gap-3 border-b border-[color:var(--m-line)] px-5">
+          <PartnerIcon name="search" size={18} strokeWidth={2} className="shrink-0 text-[color:var(--brick)]" />
           <input
             ref={inputRef}
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Ir para… (páginas, ações)"
-            className="flex-1 bg-transparent border-none outline-none text-sm"
-            style={{ color: 'var(--ink)' }}
+            className="flex-1 border-none bg-transparent text-[15px] text-white outline-none placeholder:text-[color:var(--m-ink-3)]"
           />
-          <kbd
-            className="text-[10px] font-mono px-1.5 py-0.5 rounded"
-            style={{ background: 'var(--bg-2)', color: 'var(--ink-3)' }}
-          >
+          <kbd className="rounded-full bg-[color:var(--m-glass-2)] px-2 py-0.5 font-mono text-[10.5px] text-[color:var(--m-ink-2)]">
             esc
           </kbd>
         </div>
 
         {/* Resultados */}
-        <div ref={listaRef} className="max-h-[52vh] overflow-y-auto py-1.5">
+        <div ref={listaRef} className="max-h-[52vh] overflow-y-auto p-2">
           {filtrados.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm" style={{ color: 'var(--ink-3)' }}>
+            <p className="px-4 py-8 text-center text-[14px] text-[color:var(--m-ink-2)]">
               Nada encontrado para “{busca}”.
             </p>
           ) : (
@@ -155,21 +150,14 @@ export function CommandPalette({ comandos }: { comandos: Comando[] }) {
                   type="button"
                   onMouseEnter={() => setIndice(i)}
                   onClick={() => selecionar(c)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                  style={{ background: ativo ? 'var(--bg-2)' : 'transparent' }}
+                  className="flex w-full items-center gap-3 rounded-[14px] px-3.5 py-2.5 text-left transition-colors"
+                  style={{ background: ativo ? 'var(--m-glass-2)' : 'transparent' }}
                 >
-                  <span
-                    className="text-[10px] uppercase font-semibold tracking-wider w-16 flex-shrink-0"
-                    style={{ color: 'var(--ink-3)' }}
-                  >
-                    {c.grupo}
-                  </span>
-                  <span className="flex-1 text-sm font-medium" style={{ color: 'var(--ink)' }}>
+                  <span className="micro w-20 shrink-0 text-[color:var(--m-ink-3)]">{c.grupo}</span>
+                  <span className={`flex-1 text-[14px] font-medium ${ativo ? 'text-white' : 'text-[color:var(--m-ink-2)]'}`}>
                     {c.label}
                   </span>
-                  {ativo && (
-                    <CornerDownLeft className="w-3.5 h-3.5 flex-shrink-0" style={{ color: 'var(--ink-3)' }} />
-                  )}
+                  {ativo && <PartnerIcon name="arrow-right" size={16} strokeWidth={2.2} className="shrink-0 text-[color:var(--brick)]" />}
                 </button>
               )
             })

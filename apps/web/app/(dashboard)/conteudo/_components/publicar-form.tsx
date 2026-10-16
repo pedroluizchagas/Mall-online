@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type DragEvent } from 'react'
 import Link from 'next/link'
-import { CloudUpload, Film, Images, X } from 'lucide-react'
 import { LIMITES_POST, formatarDuracaoSeg } from '@mallevo/lib'
 import { Card } from '@/components/ui/card'
 import { showToast } from '@/components/ui/toast'
@@ -10,6 +9,7 @@ import { criarPost, type ProdutoResumo } from '@/lib/actions/conteudo'
 import { analisarArquivo, enviarMidia, type EstadoUpload, type MidiaLocal } from '@/lib/upload-cliente'
 import { CampoTags } from './campo-tags'
 import { SeletorProduto } from './seletor-produto'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * Publicar — escolher (arrastar ou clicar; foto ou vídeo) → preview +
@@ -120,7 +120,7 @@ export function PublicarForm({ tenantId, storeId, lojaNome }: { tenantId: string
             className="w-16 h-16 rounded-full flex items-center justify-center mb-5"
             style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
           >
-            {midia?.tipo === 'video' ? <Film className="w-7 h-7" /> : <Images className="w-7 h-7" />}
+            {midia?.tipo === 'video' ? <PartnerIcon name="reels" size={28} /> : <PartnerIcon name="gallery" size={28} />}
           </div>
           <h2 className="font-display text-[26px] leading-tight">Publicado!</h2>
           <p className="text-sm text-ink-3 mt-1.5 max-w-sm">Seu post já está no Explorar dos clientes, como {lojaNome}.</p>
@@ -159,12 +159,12 @@ export function PublicarForm({ tenantId, storeId, lojaNome }: { tenantId: string
           onDrop={aoSoltar}
           className="flex flex-col items-center justify-center text-center rounded-lg border-2 border-dashed px-6 py-14 cursor-pointer transition-colors"
           style={{
-            borderColor: arrastando ? 'var(--brick-dk)' : 'var(--line-2)',
-            background: arrastando ? 'var(--brick-lt)' : 'var(--bg-2)',
+            borderColor: arrastando ? 'var(--ink)' : 'var(--line-2)',
+            background: arrastando ? 'var(--bg-3)' : 'var(--bg-2)',
           }}
         >
           <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: 'var(--bg)' }}>
-            <CloudUpload className="w-6 h-6 text-ink-2" strokeWidth={1.75} />
+            <PartnerIcon name="upload" size={24} className="text-ink-2" strokeWidth={1.75} />
           </div>
           <span className="font-display text-[20px] leading-tight">Arraste uma foto ou um vídeo</span>
           <span className="text-sm text-ink-3 mt-1.5 max-w-md">
@@ -222,7 +222,7 @@ export function PublicarForm({ tenantId, storeId, lojaNome }: { tenantId: string
               className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-white"
               style={{ background: 'var(--veil)' }}
             >
-              <X className="w-4 h-4" />
+              <PartnerIcon name="close" size={16} />
             </button>
           )}
           {ocupado && (
@@ -261,7 +261,7 @@ export function PublicarForm({ tenantId, storeId, lojaNome }: { tenantId: string
               maxLength={LIMITES_POST.legenda}
               placeholder="Conte o que está no post…"
               disabled={ocupado}
-              className="w-full border rounded-xl px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-brick"
+              className="w-full border rounded-[14px] px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-ink"
               style={{ borderColor: 'var(--line)' }}
             />
             <p className="text-[11px] text-ink-3 text-right mt-1">

@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { Voltar } from '@/components/dashboard/voltar'
 import { badgeDoPost } from '@mallevo/lib'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { getPost, getProdutoResumo } from '@/lib/actions/conteudo'
@@ -22,12 +21,7 @@ export default async function PaginaPost({ params }: { params: { id: string } })
 
   return (
     <div className="p-9 space-y-5 slide-up">
-      <Link
-        href="/conteudo"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-3 hover:text-ink transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" /> Conteúdo
-      </Link>
+      <Voltar href="/conteudo">Conteúdo</Voltar>
 
       <PageHeader
         titulo={post.tipo === 'video' ? 'Vídeo' : 'Foto'}

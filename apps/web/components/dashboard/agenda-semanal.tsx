@@ -3,13 +3,13 @@
 import Link from 'next/link'
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Lock, Plus } from 'lucide-react'
 import type {
   AgendamentoCalendario,
   BloqueioCalendario,
   StaffCalendario,
 } from '@/lib/actions/agenda'
 import { criarBloqueio, excluirBloqueio } from '@/lib/actions/agenda'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface Props {
   storeId: string
@@ -190,7 +190,7 @@ export function AgendaSemanal({
             className="p-2 rounded-lg border hover:bg-bg-2 transition-colors"
             style={{ borderColor: 'var(--line)' }}
           >
-            <ChevronLeft className="w-4 h-4" />
+            <PartnerIcon name="chevron-left" size={16} />
           </button>
           <button
             onClick={irParaHoje}
@@ -205,7 +205,7 @@ export function AgendaSemanal({
             className="p-2 rounded-lg border hover:bg-bg-2 transition-colors"
             style={{ borderColor: 'var(--line)' }}
           >
-            <ChevronRight className="w-4 h-4" />
+            <PartnerIcon name="chevron-right" size={16} />
           </button>
           <p className="text-sm text-ink-2 ml-2 capitalize">
             {rotuloMesAno(semanaInicio)}
@@ -217,7 +217,7 @@ export function AgendaSemanal({
           className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-colors"
           style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
         >
-          <Plus className="w-3.5 h-3.5" /> Adicionar bloqueio
+          <PartnerIcon name="plus" size={14} /> Adicionar bloqueio
         </button>
       </div>
 
@@ -251,17 +251,22 @@ export function AgendaSemanal({
                 className="px-2 py-2 text-center"
                 style={{ borderBottom: '1px solid var(--line)', borderLeft: '1px solid var(--line)' }}
               >
-                <div
-                  className="text-[10px] uppercase font-semibold tracking-wider"
-                  style={{ color: ehHoje ? 'var(--brick)' : 'var(--ink-3)' }}
-                >
+                <div className="micro" style={{ color: ehHoje ? 'var(--ink)' : 'var(--ink-3)' }}>
                   {sigla}
                 </div>
+                {/* Hoje: o número na moeda de tinta com o ponto aceso. */}
                 <div
-                  className="text-[18px] font-bold"
-                  style={{ color: ehHoje ? 'var(--brick)' : 'var(--ink)' }}
+                  className="relative mx-auto mt-1 flex size-9 items-center justify-center rounded-full text-[17px] font-bold tabular-nums"
+                  style={ehHoje ? { background: 'var(--ink)', color: 'var(--bg)' } : { color: 'var(--ink)' }}
                 >
                   {numero}
+                  {ehHoje && (
+                    <span
+                      aria-hidden
+                      className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full ring-2 ring-[color:var(--bg)]"
+                      style={{ background: 'var(--brick)' }}
+                    />
+                  )}
                 </div>
               </div>
             )
@@ -324,7 +329,7 @@ export function AgendaSemanal({
                     }`}
                   >
                     <div className="flex items-center gap-1">
-                      <Lock className="w-2.5 h-2.5" />
+                      <PartnerIcon name="lock" size={10} />
                       <span className="truncate">
                         {evt.dado.motivo ?? 'Bloqueio'}
                       </span>
@@ -343,7 +348,7 @@ export function AgendaSemanal({
                 const top = topoDoEvento(evt.inicio)
                 const altura = alturaDoEvento(evt.inicio, evt.fim)
                 const cor =
-                  (evt.dado.staff_id && corPorStaff.get(evt.dado.staff_id)) ?? 'var(--brick)'
+                  (evt.dado.staff_id && corPorStaff.get(evt.dado.staff_id)) ?? 'var(--marquee)'
                 return (
                   <Link
                     key={evt.dado.id}
@@ -378,7 +383,7 @@ export function AgendaSemanal({
             <span key={s.id} className="inline-flex items-center gap-1">
               <span
                 className="inline-block w-3 h-3 rounded-full"
-                style={{ background: s.cor ?? 'var(--brick)' }}
+                style={{ background: s.cor ?? 'var(--marquee)' }}
               />
               {s.nome}
             </span>
@@ -407,7 +412,7 @@ export function AgendaSemanal({
             {erroForm && (
               <div
                 className="px-3 py-2 rounded-xl text-sm"
-                style={{ background: '#fde8e4', color: 'var(--err)' }}
+                style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
               >
                 {erroForm}
               </div>

@@ -23,7 +23,7 @@ export function BarraDistribuicao({ titulo, itens, formatarValor, vazio }: Props
 
   return (
     <Card>
-      <h2 className="font-bold text-base text-ink mb-4">{titulo}</h2>
+      <h2 className="mb-4 text-[16px] font-bold tracking-[-0.02em] text-ink">{titulo}</h2>
       {ordenados.length === 0 || total === 0 ? (
         <p className="text-sm text-ink-3">{vazio ?? 'Sem dados no período.'}</p>
       ) : (
@@ -50,7 +50,7 @@ export function BarraDistribuicao({ titulo, itens, formatarValor, vazio }: Props
                 >
                   <div
                     className="h-full rounded-full"
-                    style={{ width: `${pct}%`, background: 'var(--brick)' }}
+                    style={{ width: `${pct}%`, background: 'var(--ink)' }}
                   />
                 </div>
               </li>

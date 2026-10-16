@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Eye, EyeOff, Heart, MessageCircle, Trash2 } from 'lucide-react'
 import { LIMITES_POST, badgeDoPost, formatarDuracaoSeg, type Post } from '@mallevo/lib'
 import { Card } from '@/components/ui/card'
 import { showToast } from '@/components/ui/toast'
@@ -14,6 +13,7 @@ import {
 } from '@/lib/actions/conteudo'
 import { CampoTags } from './campo-tags'
 import { SeletorProduto } from './seletor-produto'
+import { PartnerIcon, type PartnerIconName } from '@/components/ui/partner-icon'
 
 const NUMERO = new Intl.NumberFormat('pt-BR')
 
@@ -111,9 +111,9 @@ export function PostEditor({ post, produtoInicial }: { post: Post; produtoInicia
         </div>
 
         <div className="grid grid-cols-3 gap-2" aria-label="Métricas do post">
-          <Metrica icone={Eye} rotulo="Views" valor={post.views} />
-          <Metrica icone={Heart} rotulo="Curtidas" valor={post.curtidas} />
-          <Metrica icone={MessageCircle} rotulo="Comentários" valor={post.comentarios} />
+          <Metrica icone="eye" rotulo="Views" valor={post.views} />
+          <Metrica icone="heart" rotulo="Curtidas" valor={post.curtidas} />
+          <Metrica icone="comment" rotulo="Comentários" valor={post.comentarios} />
         </div>
         <p className="text-xs text-ink-3 text-center lg:text-left">
           {post.tipo === 'video' && post.duracao_seg ? `${formatarDuracaoSeg(post.duracao_seg)} · ` : ''}
@@ -141,14 +141,14 @@ export function PostEditor({ post, produtoInicial }: { post: Post; produtoInicia
               disabled={ocupado || sinalizado}
               onClick={() => alternar(!oculto)}
               className="relative w-12 h-7 rounded-full transition-colors disabled:opacity-50 shrink-0"
-              style={{ background: !oculto ? 'var(--brick)' : 'var(--bg-3)' }}
+              style={{ background: !oculto ? 'var(--ink)' : 'var(--bg-3)' }}
             >
               <span
-                className="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform flex items-center justify-center"
+                className="absolute left-0 top-0.5 w-6 h-6 rounded-full bg-bg shadow-md transition-transform flex items-center justify-center"
                 style={{ transform: !oculto ? 'translateX(22px)' : 'translateX(2px)', color: 'var(--ink-2)' }}
                 aria-hidden
               >
-                {!oculto ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                {!oculto ? <PartnerIcon name="eye" size={14} /> : <PartnerIcon name="eye-off" size={14} />}
               </span>
             </button>
           </div>
@@ -169,7 +169,7 @@ export function PostEditor({ post, produtoInicial }: { post: Post; produtoInicia
                 maxLength={LIMITES_POST.legenda}
                 placeholder="Sem legenda"
                 disabled={ocupado}
-                className="w-full border rounded-xl px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-brick"
+                className="w-full border rounded-[14px] px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-ink"
                 style={{ borderColor: 'var(--line)' }}
               />
               <p className="text-[11px] text-ink-3 text-right mt-1">
@@ -231,7 +231,7 @@ export function PostEditor({ post, produtoInicial }: { post: Post; produtoInicia
                     : { borderColor: 'var(--err-line)', color: 'var(--err)' }
                 }
               >
-                <Trash2 className="w-3.5 h-3.5" />
+                <PartnerIcon name="trash" size={14} />
                 {removendo ? 'Removendo…' : confirmacao === 0 ? 'Remover' : confirmacao === 1 ? 'Continuar' : 'Remover de vez'}
               </button>
             </div>
@@ -242,12 +242,12 @@ export function PostEditor({ post, produtoInicial }: { post: Post; produtoInicia
   )
 }
 
-function Metrica({ icone: Icone, rotulo, valor }: { icone: typeof Eye; rotulo: string; valor: number }) {
+function Metrica({ icone, rotulo, valor }: { icone: PartnerIconName; rotulo: string; valor: number }) {
   return (
-    <div className="rounded-md border border-line bg-bg p-3 flex flex-col items-center gap-1">
-      <Icone className="w-4 h-4 text-ink-3" strokeWidth={1.75} />
-      <span className="font-display text-[22px] leading-none text-ink">{NUMERO.format(valor)}</span>
-      <span className="text-[10px] font-bold uppercase tracking-wider text-ink-3">{rotulo}</span>
+    <div className="cartao flex flex-col items-center gap-1.5 p-3">
+      <PartnerIcon name={icone} size={16} strokeWidth={1.9} className="text-ink-3" />
+      <span className="text-[22px] font-bold leading-none tracking-[-0.03em] text-ink tabular-nums">{NUMERO.format(valor)}</span>
+      <span className="micro text-ink-3">{rotulo}</span>
     </div>
   )
 }

@@ -49,7 +49,7 @@ export function ResponderForm({ reviewId }: { reviewId: string }) {
         rows={3}
         maxLength={2000}
         placeholder="Escreva uma resposta clara e cordial."
-        className="w-full border rounded-xl px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-brick"
+        className="w-full border rounded-[14px] px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-ink"
         style={{ borderColor: 'var(--line)' }}
         disabled={pending}
       />

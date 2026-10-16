@@ -61,12 +61,12 @@ export function AbaHorarios({
       <h2 className="font-semibold text-ink mb-4">Horários de funcionamento</h2>
 
       {erro && (
-        <p className="text-sm px-3 py-2 rounded-xl mb-4" style={{ background: '#fde8e4', color: 'var(--err)' }}>
+        <p className="text-sm px-3 py-2 rounded-xl mb-4" style={{ background: 'var(--err-lt)', color: 'var(--err)' }}>
           {erro}
         </p>
       )}
       {sucesso && (
-        <p className="text-sm px-3 py-2 rounded-xl mb-4" style={{ background: '#e6f7e3', color: 'var(--ok)' }}>
+        <p className="text-sm px-3 py-2 rounded-xl mb-4" style={{ background: 'var(--ok-lt)', color: 'var(--ok)' }}>
           Horários atualizados com sucesso.
         </p>
       )}
@@ -81,12 +81,15 @@ export function AbaHorarios({
               <div className="flex items-center gap-3 w-40">
                 <button
                   type="button"
+                  role="switch"
+                  aria-checked={ativo}
+                  aria-label={`Abre ${dia.label.toLowerCase()}`}
                   onClick={() => toggleDia(dia.id, !ativo)}
                   className="relative w-9 h-5 rounded-full transition-colors flex-shrink-0"
-                  style={{ background: ativo ? 'var(--brick)' : 'var(--bg-3)' }}
+                  style={{ background: ativo ? 'var(--ink)' : 'var(--bg-3)' }}
                 >
                   <span
-                    className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform"
+                    className="absolute left-0 top-0.5 w-4 h-4 bg-bg rounded-full shadow transition-transform"
                     style={{ transform: ativo ? 'translateX(16px)' : 'translateX(2px)' }}
                   />
                 </button>
@@ -101,7 +104,7 @@ export function AbaHorarios({
                     type="time"
                     value={horarioDia.abre}
                     onChange={(e) => atualizarHorario(dia.id, 'abre', e.target.value)}
-                    className="border rounded-xl px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick"
+                    className="border rounded-[14px] px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink"
                     style={{ borderColor: 'var(--line)' }}
                   />
                   <span className="text-ink-3 text-sm">até</span>
@@ -109,7 +112,7 @@ export function AbaHorarios({
                     type="time"
                     value={horarioDia.fecha}
                     onChange={(e) => atualizarHorario(dia.id, 'fecha', e.target.value)}
-                    className="border rounded-xl px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick"
+                    className="border rounded-[14px] px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink"
                     style={{ borderColor: 'var(--line)' }}
                   />
                 </div>

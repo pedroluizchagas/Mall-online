@@ -16,9 +16,9 @@ const PNG_MINIMO = Buffer.from(
 
 async function entrar(page: Page) {
   await page.goto('/entrar')
-  await page.getByPlaceholder('hi@mallevo.com').fill(QA.email)
+  await page.getByPlaceholder('voce@sualoja.com.br').fill(QA.email)
   await page.locator('input[name="senha"]').fill(QA.senha)
-  await page.getByRole('button', { name: /entrar na conta/i }).click()
+  await page.getByRole('button', { name: /entrar no painel/i }).click()
   await page.waitForURL((url) => !url.pathname.startsWith('/entrar'), { timeout: 60_000 })
 }
 

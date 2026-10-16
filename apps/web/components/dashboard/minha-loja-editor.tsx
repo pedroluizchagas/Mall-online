@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Check, Lock, Upload, Zap, ImagePlus } from 'lucide-react'
 import {
   ARQUETIPOS,
   PALETAS,
@@ -27,6 +26,7 @@ import { LinkPublicoBotao } from '@/components/dashboard/link-publico-botao'
 import { PreviewVitrine } from '@/components/dashboard/preview-vitrine'
 import { PainelVitrine } from '@/components/dashboard/painel-vitrine'
 import type { RascunhoPreview } from '@/lib/storefront-url'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export interface LojaEditorInicial {
   nome: string
@@ -245,7 +245,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                     color: saved ? '#fff' : 'var(--brick-ink)',
                   }}
                 >
-                  <Zap className="w-3 h-3" />
+                  <PartnerIcon name="send" size={12} />
                   {saving ? 'Publicando…' : saved ? 'Publicado!' : 'Publicar alterações'}
                 </button>
               </>
@@ -356,7 +356,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                     />
                   ) : (
                     <>
-                      <Upload className="w-5 h-5 text-ink-3" />
+                      <PartnerIcon name="upload" size={20} className="text-ink-3" />
                       <span className="text-[10px] text-ink-3 font-medium text-center leading-tight">
                         Enviar logo
                       </span>
@@ -390,7 +390,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                       background: 'var(--bg)',
                       color: 'var(--ink)',
                     }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--brick-dk)')}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--ink)')}
                     onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--line-2)')}
                   />
                 </div>
@@ -409,7 +409,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                       background: 'var(--bg)',
                       color: 'var(--ink)',
                     }}
-                    onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--brick-dk)')}
+                    onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--ink)')}
                     onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--line-2)')}
                   />
                 </div>
@@ -481,7 +481,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                         style={{
                           background: cor,
                           boxShadow: ativa
-                            ? '0 0 0 2px var(--bg), 0 0 0 4px var(--brick-dk)'
+                            ? '0 0 0 2px var(--bg), 0 0 0 4px var(--ink)'
                             : 'inset 0 0 0 1px rgba(0,0,0,0.12)',
                         }}
                       />
@@ -525,7 +525,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
                 style={{ background: 'var(--bg-2)', color: 'var(--ink-3)' }}
               >
-                <Lock className="w-3 h-3" />
+                <PartnerIcon name="lock" size={12} />
                 Bloqueada
               </div>
             </div>
@@ -554,7 +554,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{ background: 'var(--bg-2)' }}
                   >
-                    <ImagePlus className="w-5 h-5 text-ink-3" />
+                    <PartnerIcon name="image-plus" size={20} className="text-ink-3" />
                   </div>
                   <p className="text-sm font-semibold text-ink-2">Clique para enviar um banner</p>
                   <p className="text-xs text-ink-3">PNG, JPG ou WebP · Recomendado 1200 × 400px</p>
@@ -642,8 +642,8 @@ function PaletaChip({
       onClick={onSelecionar}
       className="flex items-center gap-2.5 pl-2.5 pr-3.5 py-2 rounded-full transition-all hover:opacity-90"
       style={{
-        border: `2px solid ${selecionada ? 'var(--brick-dk)' : 'var(--line)'}`,
-        background: selecionada ? 'var(--brick-lt)' : 'var(--bg)',
+        border: `2px solid ${selecionada ? 'var(--ink)' : 'var(--line)'}`,
+        background: 'var(--bg)',
       }}
     >
       <span className="flex -space-x-1.5">
@@ -661,7 +661,7 @@ function PaletaChip({
       </span>
       <span
         className="text-xs font-bold"
-        style={{ color: selecionada ? 'var(--brick-dk)' : 'var(--ink-2)' }}
+        style={{ color: selecionada ? 'var(--ink)' : 'var(--ink-2)' }}
       >
         {nome}
       </span>
@@ -700,8 +700,7 @@ function ArquetipoCard({
       onClick={onSelect}
       className="w-full text-left rounded-2xl overflow-hidden transition-all hover:opacity-90"
       style={{
-        border: `2px solid ${selected ? 'var(--brick-dk)' : 'var(--line)'}`,
-        outline: selected ? '3px solid var(--brick-lt)' : 'none',
+        border: `2px solid ${selected ? 'var(--ink)' : 'var(--line)'}`,
       }}
     >
       <div className="flex">
@@ -748,14 +747,14 @@ function ArquetipoCard({
         {/* Nome + descrição + check */}
         <div
           className="flex-1 min-w-0 flex flex-col justify-between py-3 px-4"
-          style={{ background: selected ? 'var(--brick-lt)' : 'var(--bg-2)' }}
+          style={{ background: selected ? 'var(--bg)' : 'var(--bg-2)' }}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
                 <p
                   className="text-sm font-bold truncate"
-                  style={{ color: selected ? 'var(--brick-dk)' : 'var(--ink)' }}
+                  style={{ color: 'var(--ink)' }}
                 >
                   {arq.nome}
                 </p>
@@ -774,9 +773,9 @@ function ArquetipoCard({
             </div>
             <div
               className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: selected ? 'var(--brick-dk)' : 'var(--line-2)' }}
+              style={{ background: selected ? 'var(--ink)' : 'var(--line-2)' }}
             >
-              {selected && <Check style={{ width: 12, height: 12, color: '#fff' }} />}
+              {selected && <PartnerIcon name="check" style={{ width: 12, height: 12, color: 'var(--brick)' }} strokeWidth={3} />}
             </div>
           </div>
           <div className="flex gap-1 mt-2">

@@ -1,97 +1,65 @@
 import Link from 'next/link'
-import { Card } from '@/components/ui/card'
-import { money } from '@/lib/format'
+import { money, partesDoValor } from '@/lib/format'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface Props {
-  proximoValor: number
-  proximaData: string
-  banco?: string
-  antecipacaoData?: string
-  antecipacaoCusto?: number
-  antecipacaoElegivel?: number
+  /** Repasses agendados ou processando (centavos). */
+  aReceber: number
+  /** Líquido dos pedidos entregues hoje — total − taxa de entrega − comissão (centavos). */
+  liquidoHoje: number
+  entreguesHoje: number
+  /** Recebedor Pagar.me ativo. Sem ele, o cartão vira o passo que falta. */
+  recebimentosAtivos: boolean
 }
 
-export function RepasseCard({
-  proximoValor,
-  proximaData,
-  banco = '—',
-  antecipacaoData,
-  antecipacaoCusto,
-  antecipacaoElegivel,
-}: Props) {
-  const valor = proximoValor.toFixed(2).replace('.', ',').split(',')
+/**
+ * Recebimentos no Início: o que está a caminho da conta e o líquido do dia —
+ * números de repasse e de pedido entregue, nada estimado.
+ */
+export function RepasseCard({ aReceber, liquidoHoje, entreguesHoje, recebimentosAtivos }: Props) {
+  if (!recebimentosAtivos) {
+    return (
+      <div className="cartao flex flex-1 flex-col items-start justify-center p-6">
+        <span className="flex size-10 items-center justify-center rounded-full bg-bg-2 text-ink">
+          <PartnerIcon name="wallet" size={18} strokeWidth={1.9} />
+        </span>
+        <p className="mt-4 text-[15px] font-semibold text-ink">Recebimentos ainda não ativos</p>
+        <p className="mt-1 text-[13.5px] leading-relaxed text-ink-3">
+          Conclua a verificação Pagar.me para receber pelos pedidos pagos online.
+        </p>
+        <Link
+          href="/configuracoes?aba=recebimentos"
+          className="mt-5 inline-flex h-10 items-center gap-1.5 rounded-full bg-ink px-4 text-[13px] font-bold text-bg transition-opacity hover:opacity-90"
+        >
+          Configurar recebimentos
+          <PartnerIcon name="chevron-right" size={14} strokeWidth={2.4} />
+        </Link>
+      </div>
+    )
+  }
+
+  const valor = partesDoValor(aReceber)
+
   return (
-    <Card
-      className="!p-[22px]"
-      style={{
-        background: 'var(--ink)',
-        color: 'var(--bg)',
-        borderColor: 'var(--ink)',
-      }}
-    >
-      <div className="flex items-center justify-between mb-3.5">
-        <h3
-          className="m-0 text-base font-bold tracking-tight"
-          style={{ color: 'var(--bg)' }}
-        >
-          Repasse
-        </h3>
-        <span
-          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
-          style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
-        >
-          D+7
-        </span>
-      </div>
+    <div className="cartao flex flex-1 flex-col p-6">
+      <p className="micro text-ink-3">A receber</p>
+      <p className="mt-3 flex items-baseline gap-1 text-ink">
+        <span className="text-[16px] font-semibold text-ink-3">R$</span>
+        <span className="text-[38px] font-bold leading-none tracking-[-0.04em] tabular-nums">{valor.inteiro}</span>
+        <span className="text-[20px] font-bold tracking-[-0.03em] text-ink-3 tabular-nums">{valor.decimal}</span>
+      </p>
+      <p className="mt-2 text-[13px] text-ink-3">em repasses agendados ou processando</p>
 
-      <div
-        className="text-[10px] uppercase font-semibold tracking-wider"
-        style={{ opacity: 0.5 }}
-      >
-        Próximo recebimento
-      </div>
-      <div className="flex items-baseline gap-1 mt-1.5">
-        <span className="text-sm" style={{ opacity: 0.7 }}>
-          R$
-        </span>
-        <span className="font-display" style={{ fontSize: 34 }}>
-          {valor[0]}
-          <span style={{ opacity: 0.7 }}>,{valor[1]}</span>
-        </span>
-      </div>
-      <div className="text-[11px] mt-0.5" style={{ opacity: 0.6 }}>
-        {proximaData} · {banco}
-      </div>
-
-      {antecipacaoData && antecipacaoCusto !== undefined && (
-        <div
-          className="mt-4 rounded-[14px]"
-          style={{
-            padding: 12,
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px dashed rgba(255,255,255,0.15)',
-          }}
-        >
-          <div className="text-[11px]" style={{ opacity: 0.8 }}>
-            Receber em{' '}
-            <strong style={{ color: 'var(--brick)' }}>{antecipacaoData} (D+2)</strong>?
-          </div>
-          <div className="text-[10px] mt-0.5" style={{ opacity: 0.5 }}>
-            R$ 0,75/pedido · total {money(antecipacaoCusto)}
-          </div>
-          <Link
-            href="/financeiro"
-            className="block mt-2.5 w-full text-center rounded-full font-bold text-xs cursor-pointer"
-            style={{
-              padding: '9px 12px',
-              background: 'var(--brick)',
-              color: 'var(--brick-ink)',
-            }}
-          >
-            Antecipar recebimento{antecipacaoElegivel ? ` · ${money(antecipacaoElegivel)}` : ''}
-          </Link>
+      <div className="mt-auto border-t border-line pt-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="micro whitespace-nowrap text-ink-3">Líquido hoje</p>
+          <p className="text-[16px] font-bold tracking-[-0.02em] text-ink tabular-nums">{money(liquidoHoje)}</p>
         </div>
-      )}
-    </Card>
+        <p className="mt-1.5 text-[12.5px] leading-snug text-ink-3">
+          {entreguesHoje} {entreguesHoje === 1 ? 'pedido entregue' : 'pedidos entregues'}, sem a taxa de entrega e a
+          comissão.
+        </p>
+      </div>
+    </div>
   )
 }

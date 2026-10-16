@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { getTemplateByStore } from '@mallevo/lib'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 import { createSupabaseServer } from '@/lib/supabase/server'
 import { getProdutos } from '@/lib/actions/produtos'
 import { ListaProdutos } from '@/components/dashboard/lista-produtos'
@@ -14,7 +15,7 @@ export default async function PaginaProdutos() {
   const { data: tenant } = await supabase.from('tenants').select('id').single()
   const { data: store } = await supabase
     .from('stores')
-    .select('id, nome')
+    .select('id, nome, categoria:categories!stores_categoria_id_fkey(id, slug, nome, icone)')
     .eq('tenant_id', tenant?.id ?? '')
     .limit(1)
     .maybeSingle()
@@ -27,17 +28,19 @@ export default async function PaginaProdutos() {
     )
   }
 
+  const template = getTemplateByStore(store as Parameters<typeof getTemplateByStore>[0])
   const { produtos, uso } = await getProdutos(store.id)
   const baixoEstoque = (produtos as any[]).filter((p) => p.track_stock && (p.stock_quantity ?? 0) < 10).length
 
   const subtitulo =
-    `${produtos.length} produtos · ${baixoEstoque} com estoque baixo` +
+    `${produtos.length} ${produtos.length === 1 ? 'produto' : 'produtos'} · ${baixoEstoque} com estoque baixo` +
     (uso ? ` · plano ${uso.atual}/${uso.maximo}` : '')
 
   return (
-    <div className="p-9 space-y-5 slide-up">
+    <div className="space-y-5 p-6 sm:p-9">
       <PageHeader
-        titulo="Catálogo"
+        sobrelinha="Catálogo"
+        titulo={template.produto.labels.produtoPlural}
         subtitulo={subtitulo}
         acoes={
           <>
@@ -45,10 +48,10 @@ export default async function PaginaProdutos() {
             <ImportarProdutosDialog storeId={store.id} />
             <Link
               href="/produtos/novo"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-colors"
-              style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+              className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-[13.5px] font-bold transition-colors bg-brick text-brick-ink hover:bg-brick-dk"
             >
-              <Plus className="w-3.5 h-3.5" /> Novo produto
+              <PartnerIcon name="plus" size={15} strokeWidth={2.4} />
+              Novo {template.produto.labels.produtoSingular.toLowerCase()}
             </Link>
           </>
         }

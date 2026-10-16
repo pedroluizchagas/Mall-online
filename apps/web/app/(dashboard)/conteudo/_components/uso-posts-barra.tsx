@@ -1,10 +1,10 @@
 /** Uso do teto de posts do plano (`plans.max_posts`), só quando há teto. */
 export function UsoPostsBarra({ atual, maximo }: { atual: number; maximo: number }) {
   const percentual = maximo > 0 ? Math.round((atual / maximo) * 100) : 0
-  const cor = percentual >= 90 ? 'var(--err)' : percentual >= 70 ? 'var(--warn)' : 'var(--brick-dk)'
+  const cor = percentual >= 90 ? 'var(--err)' : percentual >= 70 ? 'var(--warn)' : 'var(--ink)'
 
   return (
-    <div className="rounded-md p-4 border" style={{ background: 'var(--bg)', borderColor: 'var(--line)' }}>
+    <div className="cartao p-4 px-5">
       <div className="flex justify-between items-center mb-2">
         <span className="text-sm text-ink-2">Posts do plano</span>
         <span className="text-sm font-semibold text-ink">

@@ -1,10 +1,10 @@
 'use client'
 
 import { useTransition } from 'react'
-import { Download } from 'lucide-react'
 import { exportarProdutosCsv } from '@/lib/actions/produtos'
 import { showToast } from '@/components/ui/toast'
 import { baixarCsv } from '@/lib/baixar-csv'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /** Exporta o catálogo em CSV (mesmo formato aceito pelo import). */
 export function ExportarProdutosButton({ storeId }: { storeId: string }) {
@@ -31,7 +31,7 @@ export function ExportarProdutosButton({ storeId }: { storeId: string }) {
       disabled={pending}
       className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors disabled:opacity-50"
     >
-      <Download className="w-3.5 h-3.5" />
+      <PartnerIcon name="download" size={14} />
       {pending ? 'Exportando…' : 'Exportar CSV'}
     </button>
   )

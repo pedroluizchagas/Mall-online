@@ -1,30 +1,24 @@
-const PALETTE = [
-  { bg: '#f4c9b8', fg: '#b43a1b' },
-  { bg: '#cce4cf', fg: '#2f7a3a' },
-  { bg: '#c5dde8', fg: '#3a6e8a' },
-  { bg: '#f5dfa7', fg: '#b67a12' },
-  { bg: '#ead4e0', fg: '#8a2e4a' },
-]
-
 interface Props {
   name: string
   size?: number
 }
 
+/**
+ * Lugar da foto quando o produto ainda não tem uma: a inicial na voz da casa
+ * (Jakarta) sobre o fumê. Sem pastel por letra, sem serifa — o produto ganha
+ * cor quando ganha foto.
+ */
 export function ProductThumb({ name, size = 48 }: Props) {
-  const p = PALETTE[name.charCodeAt(0) % PALETTE.length]
-  const letter = (name[0] ?? '?').toUpperCase()
+  const letter = (name.trim()[0] ?? '?').toUpperCase()
   return (
     <div
-      className="rounded-md flex items-center justify-center flex-shrink-0 italic font-normal"
+      aria-hidden
+      className="flex flex-shrink-0 items-center justify-center rounded-[12px] bg-bg-2 font-bold text-ink-3"
       style={{
         width: size,
         height: size,
-        background: p.bg,
-        color: p.fg,
-        fontSize: size * 0.5,
-        fontFamily: 'Georgia, "Instrument Serif", serif',
-        border: '1px solid rgba(0,0,0,0.04)',
+        fontSize: Math.round(size * 0.4),
+        letterSpacing: '-0.03em',
       }}
     >
       {letter}

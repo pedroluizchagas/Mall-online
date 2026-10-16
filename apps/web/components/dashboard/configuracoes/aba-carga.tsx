@@ -5,7 +5,7 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { atualizarPerfilCarga } from '@/lib/actions/lojas'
 
 const inputClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 function BotaoSalvar({ label }: { label: string }) {
   const { pending } = useFormStatus()
@@ -53,7 +53,7 @@ export function AbaCarga({ loja }: { loja: any }) {
         {estado?.erro && (
           <p
             className="text-sm px-3 py-2 rounded-xl"
-            style={{ background: '#fde8e4', color: 'var(--err)' }}
+            style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
           >
             {estado.erro}
           </p>
@@ -61,7 +61,7 @@ export function AbaCarga({ loja }: { loja: any }) {
         {estado?.sucesso && (
           <p
             className="text-sm px-3 py-2 rounded-xl"
-            style={{ background: '#e6f7e3', color: 'var(--ok)' }}
+            style={{ background: 'var(--ok-lt)', color: 'var(--ok)' }}
           >
             Perfil de carga atualizado.
           </p>
@@ -92,8 +92,8 @@ export function AbaCarga({ loja }: { loja: any }) {
                   key={opcao.valor}
                   className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors"
                   style={{
-                    border: ativo ? '1px solid var(--brick)' : '1px solid var(--line)',
-                    background: ativo ? 'rgba(193,241,72,0.08)' : 'transparent',
+                    border: ativo ? '1px solid var(--ink)' : '1px solid var(--line)',
+                    background: ativo ? 'var(--bg-2)' : 'transparent',
                   }}
                 >
                   <input
@@ -102,7 +102,7 @@ export function AbaCarga({ loja }: { loja: any }) {
                     value={opcao.valor}
                     checked={ativo}
                     onChange={() => setModo(opcao.valor)}
-                    className="mt-0.5 accent-brick"
+                    className="mt-0.5 accent-ink"
                   />
                   <div>
                     <p className="text-sm font-medium text-ink">{opcao.label}</p>
@@ -162,7 +162,7 @@ export function AbaCarga({ loja }: { loja: any }) {
               type="checkbox"
               name="carga_refrigerada"
               defaultChecked={!!loja.carga_refrigerada}
-              className="mt-0.5 accent-brick"
+              className="mt-0.5 accent-ink"
             />
             <div>
               <p className="text-sm font-medium text-ink">Precisa de bag térmica</p>
@@ -181,7 +181,7 @@ export function AbaCarga({ loja }: { loja: any }) {
               type="checkbox"
               name="carga_fragil"
               defaultChecked={!!loja.carga_fragil}
-              className="mt-0.5 accent-brick"
+              className="mt-0.5 accent-ink"
             />
             <div>
               <p className="text-sm font-medium text-ink">Carga frágil</p>

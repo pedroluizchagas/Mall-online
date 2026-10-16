@@ -4,7 +4,7 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { atualizarConfigEntrega } from '@/lib/actions/lojas'
 
 const inputClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 function BotaoSalvar({ label }: { label: string }) {
   const { pending } = useFormStatus()
@@ -35,12 +35,12 @@ export function AbaEntrega({ loja }: { loja: any }) {
 
       <form action={dispatch} className="space-y-4">
         {estado?.erro && (
-          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
+          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--err-lt)', color: 'var(--err)' }}>
             {estado.erro}
           </p>
         )}
         {estado?.sucesso && (
-          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#e6f7e3', color: 'var(--ok)' }}>
+          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--ok-lt)', color: 'var(--ok)' }}>
             Configurações atualizadas.
           </p>
         )}
@@ -107,8 +107,8 @@ export function AbaEntrega({ loja }: { loja: any }) {
                   key={opcao.valor}
                   className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-colors"
                   style={{
-                    border: ativo ? '1px solid var(--brick)' : '1px solid var(--line)',
-                    background: ativo ? 'rgba(193,241,72,0.08)' : 'transparent',
+                    border: ativo ? '1px solid var(--ink)' : '1px solid var(--line)',
+                    background: ativo ? 'var(--bg-2)' : 'transparent',
                   }}
                 >
                   <input
@@ -116,7 +116,7 @@ export function AbaEntrega({ loja }: { loja: any }) {
                     name="usa_entregadores_proprios"
                     value={opcao.valor}
                     defaultChecked={ativo}
-                    className="mt-0.5 accent-brick"
+                    className="mt-0.5 accent-ink"
                   />
                   <div>
                     <p className="text-sm font-medium text-ink">{opcao.label}</p>

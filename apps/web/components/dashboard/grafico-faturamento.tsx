@@ -27,36 +27,52 @@ export function GraficoFaturamento({ dados }: Props) {
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={dados}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" />
-        <XAxis dataKey="data" tick={{ fontSize: 11, fill: 'var(--ink-3)' }} />
+        <CartesianGrid vertical={false} stroke="var(--line)" />
+        <XAxis
+          dataKey="data"
+          axisLine={false}
+          tickLine={false}
+          tick={{ fontSize: 11, fill: 'var(--ink-3)' }}
+          dy={6}
+        />
         <YAxis
-          tickFormatter={(v) => `R$${(v / 100).toFixed(0)}`}
+          axisLine={false}
+          tickLine={false}
+          width={56}
+          tickFormatter={(v) => `R$ ${(v / 100).toFixed(0)}`}
           tick={{ fontSize: 11, fill: 'var(--ink-3)' }}
         />
+        {/* Tooltip na cápsula escura da casa; líquido em tinta, bruto em grafite tracejado. */}
         <Tooltip
-          formatter={(value: number) => [formatarReais(value), '']}
-          labelStyle={{ color: 'var(--ink)' }}
+          formatter={(value: number, nome: string) => [formatarReais(value), nome]}
+          cursor={{ stroke: 'var(--line-2)' }}
+          labelStyle={{ color: 'rgba(255,255,255,0.66)', fontSize: 11, fontWeight: 700, marginBottom: 4 }}
+          itemStyle={{ color: '#fff', fontSize: 12.5, fontWeight: 600, padding: 0 }}
           contentStyle={{
-            background: 'var(--bg)',
-            border: '1px solid var(--line)',
-            borderRadius: 8,
+            background: 'rgba(17, 18, 22, 0.94)',
+            border: 'none',
+            borderRadius: 14,
+            padding: '10px 12px',
+            boxShadow: 'var(--shadow-lg)',
           }}
         />
         <Line
           type="monotone"
           dataKey="bruto"
           name="Bruto"
-          stroke="var(--ink-3)"
-          strokeWidth={2}
+          stroke="var(--ink-4)"
+          strokeWidth={1.75}
+          strokeDasharray="4 4"
           dot={false}
         />
         <Line
           type="monotone"
           dataKey="liquido"
           name="Líquido"
-          stroke="var(--brick)"
+          stroke="var(--ink)"
           strokeWidth={2.5}
           dot={false}
+          activeDot={{ r: 5, fill: 'var(--brick)', stroke: 'var(--ink)', strokeWidth: 2 }}
         />
       </LineChart>
     </ResponsiveContainer>

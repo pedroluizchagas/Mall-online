@@ -79,7 +79,7 @@ function HeatmapLinha({
               background:
                 v === 0
                   ? 'var(--bg-2)'
-                  : `color-mix(in srgb, var(--brick) ${Math.round(20 + intensidade * 80)}%, var(--bg-2))`,
+                  : `color-mix(in srgb, var(--ink) ${Math.round(12 + intensidade * 78)}%, var(--bg-2))`,
             }}
           />
         )

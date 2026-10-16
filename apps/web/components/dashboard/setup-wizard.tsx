@@ -1,12 +1,14 @@
 import Link from 'next/link'
-import { Package, Clock, Truck, CreditCard, ArrowRight, CheckCircle2, type LucideIcon } from 'lucide-react'
+import { PartnerIcon, type PartnerIconName } from '@/components/ui/partner-icon'
+import { BarraProgresso, Sobrelinha, Statement } from './marquise'
+import { Folha, SecaoFolha } from './folha'
 
 interface ProximoPasso {
   id: string
   titulo: string
   descricao: string
   href: string
-  icone: LucideIcon
+  icone: PartnerIconName
   concluido: boolean
 }
 
@@ -18,6 +20,11 @@ interface Props {
   entregaConfigurada: boolean
 }
 
+/**
+ * Início enquanto a loja não está pronta: a marquise diz quanto falta ("Sua
+ * loja, / quase no ar.") e a folha lista os passos — cada um leva direto à
+ * tela que o resolve.
+ */
 export function SetupWizard({
   nomeLoja,
   recebimentosOk,
@@ -29,184 +36,159 @@ export function SetupWizard({
     {
       id: 'recebimentos',
       titulo: 'Configurar recebimentos',
-      descricao: 'Conclua a verificação Pagar.me para receber pagamentos.',
+      descricao: 'Conclua a verificação Pagar.me para receber os pagamentos online.',
       href: '/configuracoes?aba=recebimentos',
-      icone: CreditCard,
+      icone: 'wallet',
       concluido: recebimentosOk,
     },
     {
       id: 'produtos',
       titulo: 'Cadastrar produtos',
-      descricao: 'Adicione seu catálogo para começar a vender.',
+      descricao: 'Monte o catálogo que a vitrine vai mostrar.',
       href: '/produtos/novo',
-      icone: Package,
+      icone: 'package',
       concluido: temProdutos,
     },
     {
       id: 'horarios',
       titulo: 'Horários de funcionamento',
-      descricao: 'Configure quando sua loja estará aberta para pedidos.',
-      href: '/configuracoes',
-      icone: Clock,
+      descricao: 'Diga quando a loja abre — o shopping mostra se ela está aberta agora.',
+      href: '/configuracoes?aba=horarios',
+      icone: 'clock',
       concluido: horariosConfigurados,
     },
     {
       id: 'entrega',
       titulo: 'Configurar entrega',
       descricao: 'Defina taxa, raio de atendimento e tempo médio.',
-      href: '/configuracoes',
-      icone: Truck,
+      href: '/configuracoes?aba=entrega',
+      icone: 'truck',
       concluido: entregaConfigurada,
     },
   ]
 
   const concluidos = proximosPassos.filter((p) => p.concluido).length
   const total = proximosPassos.length
-  const progresso = Math.round((concluidos / total) * 100)
+  const proximo = proximosPassos.find((p) => !p.concluido)
 
   return (
-    <div className="p-6 lg:p-9 slide-up">
-      <div className="max-w-3xl mx-auto">
-        <div className="mb-7">
-          <h1 className="font-display text-[34px] text-ink leading-tight">{nomeLoja}</h1>
-          <p className="text-[15px] text-ink-3 mt-1">
-            Complete a configuração abaixo para começar a receber pedidos.
-          </p>
-        </div>
-
-        {/* Progress hero */}
-        <div
-          className="relative rounded-xl p-7 mb-5 overflow-hidden"
-          style={{ background: 'var(--ink)' }}
-        >
-          <div
-            className="absolute -top-20 -right-20 w-72 h-72 rounded-full blur-3xl pointer-events-none"
-            style={{ background: 'var(--brick)', opacity: 0.07 }}
-          />
-          <div className="relative z-10 flex items-start justify-between gap-6">
-            <div>
-              <p
-                className="text-xs font-semibold uppercase tracking-widest mb-3"
-                style={{ color: 'rgba(245,245,240,0.5)' }}
-              >
-                Configuração da loja
-              </p>
-              <div className="flex items-end gap-3">
-                <span
-                  className="font-display leading-none tracking-tighter"
-                  style={{ fontSize: 56, color: 'var(--bg)' }}
-                >
-                  {progresso}
-                </span>
-                <span className="text-2xl font-semibold mb-1.5" style={{ color: 'rgba(245,245,240,0.5)' }}>
-                  %
-                </span>
-              </div>
-              <p className="text-sm mt-2" style={{ color: 'rgba(245,245,240,0.5)' }}>
-                <span className="font-medium" style={{ color: 'rgba(245,245,240,0.85)' }}>
-                  {concluidos}
-                </span>{' '}
-                de{' '}
-                <span className="font-medium" style={{ color: 'rgba(245,245,240,0.85)' }}>
-                  {total}
-                </span>{' '}
-                etapas concluídas
-              </p>
-            </div>
-
-            <div className="hidden sm:flex flex-col gap-2 pt-1">
-              {proximosPassos.map((passo) => (
-                <div key={passo.id} className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full"
-                    style={{
-                      background: passo.concluido ? 'var(--brick)' : 'rgba(245,245,240,0.15)',
-                    }}
-                  />
-                  <span
-                    className="text-xs"
-                    style={{ color: passo.concluido ? 'rgba(245,245,240,0.7)' : 'rgba(245,245,240,0.4)' }}
-                  >
-                    {passo.titulo}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div
-            className="relative z-10 mt-6 h-1 rounded-full overflow-hidden"
-            style={{ background: 'rgba(245,245,240,0.1)' }}
-          >
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{ background: 'var(--brick)', width: `${progresso}%` }}
+    <>
+      <section className="sobre-escuro relative px-6 pb-16 pt-8 text-white sm:px-10 sm:pt-10">
+        <div className="mx-auto grid max-w-[1280px] gap-10 xl:grid-cols-12 xl:items-end xl:gap-8">
+          <div className="entra xl:col-span-7">
+            <Sobrelinha aoVivo>Boas-vindas ao balcão · {nomeLoja}</Sobrelinha>
+            <Statement
+              className="mt-7 text-[clamp(42px,5vw,72px)]"
+              linha="Sua loja,"
+              acesa={<>quase no{' '}ar.</>}
             />
+            <p className="mt-5 max-w-[520px] text-[16px] leading-relaxed text-[color:var(--m-ink-2)]">
+              Faltam {total - concluidos} {total - concluidos === 1 ? 'passo' : 'passos'} para a vitrine abrir e os
+              pedidos começarem a chegar.
+            </p>
+            {proximo && (
+              <Link
+                href={proximo.href}
+                className="group mt-8 inline-flex h-12 items-center gap-2 rounded-full px-6 text-[15px] font-bold shadow-[0_14px_36px_-14px_rgba(193,241,72,0.6)] transition-colors"
+                style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+              >
+                {proximo.titulo}
+                <PartnerIcon
+                  name="chevron-right"
+                  size={16}
+                  strokeWidth={2.4}
+                  className="transition-transform duration-300 ease-entrada group-hover:translate-x-0.5"
+                />
+              </Link>
+            )}
+          </div>
+
+          <div className="entra xl:col-span-5" style={{ ['--d' as string]: '0.12s' }}>
+            <div className="rounded-[22px] bg-[color:var(--m-glass)] p-6 ring-1 ring-inset ring-[color:var(--m-line)]">
+              <p className="micro text-[color:var(--m-ink-3)]">Configuração da loja</p>
+              <p className="mt-3 flex items-baseline gap-2">
+                <span className="text-[56px] font-bold leading-none tracking-[-0.05em] tabular-nums">{concluidos}</span>
+                <span className="text-[20px] font-semibold text-[color:var(--m-ink-2)]">de {total} passos</span>
+              </p>
+              <BarraProgresso fracao={concluidos / total} className="mt-5" />
+              <ul className="mt-5 grid gap-2.5 sm:grid-cols-2">
+                {proximosPassos.map((passo) => (
+                  <li key={passo.id} className="flex items-center gap-2.5 text-[13px]">
+                    <span
+                      aria-hidden
+                      className="flex size-5 shrink-0 items-center justify-center rounded-full"
+                      style={{
+                        background: passo.concluido ? 'var(--brick)' : 'var(--m-glass-2)',
+                        color: 'var(--brick-ink)',
+                      }}
+                    >
+                      {passo.concluido && <PartnerIcon name="check" size={11} strokeWidth={3} />}
+                    </span>
+                    <span className={passo.concluido ? 'text-white' : 'text-[color:var(--m-ink-2)]'}>
+                      {passo.titulo}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
+      </section>
 
-        {/* Steps grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {proximosPassos.map((passo, index) => {
-            const Icon = passo.icone
-            return (
-              <Link
-                key={passo.id}
-                href={passo.href}
-                className={`group relative rounded-lg border p-5 transition-all ${
-                  passo.concluido
-                    ? 'opacity-70 hover:opacity-100'
-                    : 'hover:shadow-md hover:-translate-y-px'
-                }`}
-                style={{
-                  background: 'var(--bg)',
-                  borderColor: 'var(--line)',
-                }}
-              >
-                <div className="flex items-start gap-4">
-                  <div
-                    className="w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0"
-                    style={
-                      passo.concluido
-                        ? { background: 'var(--brick)', color: 'var(--brick-ink)' }
-                        : { background: 'var(--bg-2)', color: 'var(--ink-3)' }
-                    }
+      <Folha>
+        <div className="mx-auto max-w-[1280px] px-6 pt-10 sm:px-10 sm:pt-12">
+          <SecaoFolha sobrelinha="Próximos passos" titulo="Deixe a loja pronta para vender">
+            <ol className="grid gap-4 sm:grid-cols-2">
+              {proximosPassos.map((passo, index) => (
+                <li key={passo.id}>
+                  <Link
+                    href={passo.href}
+                    className={`cartao group flex h-full items-start gap-4 p-5 transition-[box-shadow,transform] duration-300 ease-entrada hover:-translate-y-px hover:shadow-md ${
+                      passo.concluido ? 'opacity-75 hover:opacity-100' : ''
+                    }`}
                   >
-                    {passo.concluido ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-semibold text-ink-3 font-mono">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <h3 className="text-[13.5px] font-semibold text-ink leading-tight">
-                        {passo.titulo}
-                      </h3>
-                    </div>
-                    <p className="text-[12.5px] text-ink-3 leading-relaxed">{passo.descricao}</p>
-                  </div>
-
-                  <ArrowRight
-                    className="w-4 h-4 flex-shrink-0 mt-1 transition-all text-ink-3 group-hover:translate-x-0.5"
-                  />
-                </div>
-
-                {passo.concluido && (
-                  <div className="absolute top-3.5 right-3.5">
                     <span
-                      className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-                      style={{ background: 'var(--brick-lt)', color: 'var(--ink)' }}
+                      className="flex size-11 shrink-0 items-center justify-center rounded-full"
+                      style={
+                        passo.concluido
+                          ? { background: 'var(--brick)', color: 'var(--brick-ink)' }
+                          : { background: 'var(--bg-2)', color: 'var(--ink)' }
+                      }
                     >
-                      Feito
+                      <PartnerIcon
+                        name={passo.concluido ? 'check' : passo.icone}
+                        size={19}
+                        strokeWidth={passo.concluido ? 2.6 : 1.9}
+                      />
                     </span>
-                  </div>
-                )}
-              </Link>
-            )
-          })}
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className="font-mono text-[11px] text-ink-3">{String(index + 1).padStart(2, '0')}</span>
+                        <span className="text-[15px] font-semibold leading-tight text-ink">{passo.titulo}</span>
+                        {passo.concluido && (
+                          <span
+                            className="rounded-full px-2 py-0.5 text-[10.5px] font-bold"
+                            style={{ background: 'var(--ok-lt)', color: 'var(--ok)' }}
+                          >
+                            Feito
+                          </span>
+                        )}
+                      </span>
+                      <span className="mt-1.5 block text-[13.5px] leading-relaxed text-ink-3">{passo.descricao}</span>
+                    </span>
+                    <PartnerIcon
+                      name="chevron-right"
+                      size={17}
+                      strokeWidth={2.2}
+                      className="mt-0.5 shrink-0 text-ink-3 transition-transform duration-300 ease-entrada group-hover:translate-x-0.5"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          </SecaoFolha>
         </div>
-      </div>
-    </div>
+      </Folha>
+    </>
   )
 }

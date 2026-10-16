@@ -1,4 +1,3 @@
-import { FileText } from 'lucide-react'
 import { formatarReais } from '@mallevo/lib'
 import { Card } from '@/components/ui/card'
 import { EmptyState } from '@/components/dashboard/empty-state'
@@ -12,7 +11,7 @@ export function AbaFaturas({ faturas }: Props) {
     return (
       <Card>
         <EmptyState
-          icone={FileText}
+          icone="file"
           titulo="Nenhuma fatura ainda"
           descricao="Quando suas mensalidades forem geradas, elas aparecerão aqui com link para PDF."
         />
@@ -46,8 +45,8 @@ export function AbaFaturas({ faturas }: Props) {
                 className="text-xs px-2 py-0.5 rounded-full font-medium"
                 style={
                   fatura.status === 'paid'
-                    ? { background: '#dcfce7', color: '#166534' }
-                    : { background: '#fee2e2', color: '#991b1b' }
+                    ? { background: 'var(--ok-lt)', color: 'var(--ok)' }
+                    : { background: 'var(--err-lt)', color: 'var(--err)' }
                 }
               >
                 {fatura.status === 'paid' ? 'Pago' : 'Pendente'}
@@ -58,8 +57,7 @@ export function AbaFaturas({ faturas }: Props) {
                   href={fatura.pdf_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs font-medium underline"
-                  style={{ color: 'var(--brick-dk)' }}
+                  className="text-xs font-bold text-ink underline underline-offset-2"
                 >
                   PDF
                 </a>

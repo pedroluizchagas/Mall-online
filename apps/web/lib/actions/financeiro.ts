@@ -375,7 +375,7 @@ export async function solicitarAntecipacao() {
 
   if (!resposta.ok) return { erro: resultado.error }
 
-  revalidatePath('/dashboard/financeiro')
+  revalidatePath('/financeiro')
   return { sucesso: true, dados: resultado }
 }
 

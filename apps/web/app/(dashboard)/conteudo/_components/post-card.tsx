@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { Eye, Images, Play } from 'lucide-react'
 import { badgeDoPost, formatarDuracaoSeg, type Post } from '@mallevo/lib'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const COR_BADGE = {
   success: { bg: 'var(--ok)', fg: 'var(--on-color)' },
@@ -35,7 +35,7 @@ export function PostCard({ post }: { post: Post }) {
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-ink-3">
-            <Images className="w-6 h-6" strokeWidth={1.5} />
+            <PartnerIcon name="gallery" size={24} strokeWidth={1.5} />
           </div>
         )}
 
@@ -44,7 +44,7 @@ export function PostCard({ post }: { post: Post }) {
             className="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
             style={{ background: 'var(--veil)' }}
           >
-            <Play className="w-2.5 h-2.5" fill="currentColor" strokeWidth={0} />
+            <PartnerIcon name="play" size={10} fill="currentColor" strokeWidth={0} />
             {formatarDuracaoSeg(post.duracao_seg)}
           </span>
         )}
@@ -53,7 +53,7 @@ export function PostCard({ post }: { post: Post }) {
           className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-white"
           style={{ background: 'var(--veil)' }}
         >
-          <Eye className="w-3 h-3" strokeWidth={2.2} />
+          <PartnerIcon name="eye" size={12} strokeWidth={2.2} />
           {NUMERO.format(post.views)}
         </span>
 

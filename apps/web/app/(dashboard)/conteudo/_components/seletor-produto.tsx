@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Link2, Search, X } from 'lucide-react'
 import { formatarReais } from '@mallevo/lib'
 import { buscarProdutosParaPost, type ProdutoResumo } from '@/lib/actions/conteudo'
 import { ProductThumb } from '@/components/ui/product-thumb'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const inputClass =
-  'w-full pl-9 pr-3 py-2 text-sm text-ink bg-bg rounded-xl border focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full pl-9 pr-3 py-2 text-sm text-ink bg-bg rounded-[14px] border focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 /**
  * Produto vinculado ao post: o Explorar mostra nome e preço e leva ao
@@ -73,7 +73,7 @@ export function SeletorProduto({
             className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-bg-2 transition-colors disabled:opacity-50"
             style={{ color: 'var(--ink-2)' }}
           >
-            <X className="w-4 h-4" />
+            <PartnerIcon name="close" size={16} />
           </button>
         </div>
       </div>
@@ -91,12 +91,12 @@ export function SeletorProduto({
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold border hover:bg-bg-2 transition-colors disabled:opacity-50"
           style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}
         >
-          <Link2 className="w-3.5 h-3.5" /> Vincular um produto
+          <PartnerIcon name="link" size={14} /> Vincular um produto
         </button>
       ) : (
         <div className="space-y-2">
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+            <PartnerIcon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
             <input
               value={termo}
               onChange={(e) => setTermo(e.target.value)}

@@ -1,23 +1,24 @@
 import { Skeleton } from '@/components/ui/skeleton'
 
 /**
- * Skeletons de página (dashboard-redesign Fase 5 §6). Espelham o esqueleto
- * das telas reais (PageHeader + conteúdo com `p-9`) para reduzir o "salto"
- * quando os dados chegam. Consumidos pelos `loading.tsx` de cada rota.
+ * Skeletons de página. Espelham o esqueleto das telas reais (PageHeader +
+ * cartões da folha com `p-9`) para a chegada dos dados não dar "salto".
+ * Consumidos pelos `loading.tsx` de cada rota.
  *
  * O wrapper carrega `role="status"` + label, então leitores de tela anunciam
- * "Carregando…" uma vez; os blocos internos são `aria-hidden`.
+ * "Carregando" uma vez; os blocos internos são `aria-hidden`.
  */
 
 function Header({ comAbas = false }: { comAbas?: boolean }) {
   return (
-    <div className="mb-6">
-      <Skeleton className="h-8 w-52" />
-      <Skeleton className="h-4 w-72 mt-3" />
+    <div className="mb-8">
+      <Skeleton className="h-3 w-24 rounded-full" />
+      <Skeleton className="mt-4 h-9 w-64 rounded-[12px]" />
+      <Skeleton className="mt-3 h-4 w-80 max-w-full rounded-full" />
       {comAbas && (
-        <div className="flex gap-4 mt-5">
+        <div className="mt-6 flex gap-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-5 w-24" />
+            <Skeleton key={i} className="h-9 w-28 rounded-full" />
           ))}
         </div>
       )}
@@ -25,30 +26,23 @@ function Header({ comAbas = false }: { comAbas?: boolean }) {
   )
 }
 
-/** Grade de KPIs + área de gráfico — usada em Início, Financeiro, Relatórios. */
+/** Grade de KPIs + área de gráfico — Financeiro, Relatórios, módulos. */
 export function SkeletonCards() {
   return (
-    <div role="status" aria-label="Carregando" className="p-9">
+    <div role="status" aria-label="Carregando" className="p-6 sm:p-9">
       <Header />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-xl p-5"
-            style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-          >
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-8 w-28 mt-3" />
-            <Skeleton className="h-3 w-16 mt-3" />
+          <div key={i} className="cartao p-5">
+            <Skeleton className="h-3 w-20 rounded-full" />
+            <Skeleton className="mt-4 h-8 w-28 rounded-[10px]" />
+            <Skeleton className="mt-4 h-3 w-16 rounded-full" />
           </div>
         ))}
       </div>
-      <div
-        className="rounded-xl mt-6 p-5"
-        style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-      >
-        <Skeleton className="h-4 w-32" />
-        <Skeleton className="h-52 w-full mt-4" />
+      <div className="cartao mt-6 p-5">
+        <Skeleton className="h-4 w-32 rounded-full" />
+        <Skeleton className="mt-5 h-52 w-full rounded-[14px]" />
       </div>
     </div>
   )
@@ -57,30 +51,27 @@ export function SkeletonCards() {
 /** Barra de filtros + linhas de tabela — Pedidos, Produtos, Estoque, etc. */
 export function SkeletonTabela({ linhas = 8 }: { linhas?: number }) {
   return (
-    <div role="status" aria-label="Carregando" className="p-9">
+    <div role="status" aria-label="Carregando" className="p-6 sm:p-9">
       <Header />
-      <div className="flex gap-2 mb-5">
-        <Skeleton className="h-10 flex-1 max-w-sm" />
-        <Skeleton className="h-10 w-28" />
-        <Skeleton className="h-10 w-28" />
+      <div className="mb-5 flex gap-2">
+        <Skeleton className="h-10 max-w-sm flex-1 rounded-full" />
+        <Skeleton className="h-10 w-28 rounded-full" />
+        <Skeleton className="h-10 w-28 rounded-full" />
       </div>
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-      >
+      <div className="cartao overflow-hidden">
         {Array.from({ length: linhas }).map((_, i) => (
           <div
             key={i}
             className="flex items-center gap-4 px-5 py-4"
             style={{ borderBottom: i < linhas - 1 ? '1px solid var(--line)' : 'none' }}
           >
-            <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
-            <div className="flex-1 min-w-0">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-3 w-24 mt-2" />
+            <Skeleton className="size-10 shrink-0 rounded-[12px]" />
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-4 w-40 rounded-full" />
+              <Skeleton className="mt-2 h-3 w-24 rounded-full" />
             </div>
             <Skeleton className="h-6 w-20 rounded-full" />
-            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-4 w-16 rounded-full" />
           </div>
         ))}
       </div>
@@ -91,20 +82,16 @@ export function SkeletonTabela({ linhas = 8 }: { linhas?: number }) {
 /** Lista de cards em coluna — Avaliações, Mensagens, Entregadores. */
 export function SkeletonLista({ itens = 5 }: { itens?: number }) {
   return (
-    <div role="status" aria-label="Carregando" className="p-9">
+    <div role="status" aria-label="Carregando" className="p-6 sm:p-9">
       <Header />
       <div className="flex flex-col gap-3">
         {Array.from({ length: itens }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-xl p-5 flex items-start gap-4"
-            style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-          >
-            <Skeleton className="h-11 w-11 rounded-full shrink-0" />
-            <div className="flex-1 min-w-0">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-3 w-full max-w-md mt-3" />
-              <Skeleton className="h-3 w-2/3 mt-2" />
+          <div key={i} className="cartao flex items-start gap-4 p-5">
+            <Skeleton className="size-11 shrink-0 rounded-full" />
+            <div className="min-w-0 flex-1">
+              <Skeleton className="h-4 w-36 rounded-full" />
+              <Skeleton className="mt-3 h-3 w-full max-w-md rounded-full" />
+              <Skeleton className="mt-2 h-3 w-2/3 rounded-full" />
             </div>
           </div>
         ))}
@@ -116,19 +103,48 @@ export function SkeletonLista({ itens = 5 }: { itens?: number }) {
 /** Colunas de formulário — Configurações, Minha conta, Minha loja. */
 export function SkeletonForm() {
   return (
-    <div role="status" aria-label="Carregando" className="p-9">
+    <div role="status" aria-label="Carregando" className="p-6 sm:p-9">
       <Header comAbas />
-      <div
-        className="rounded-xl p-6 max-w-2xl flex flex-col gap-5"
-        style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-      >
+      <div className="cartao flex max-w-2xl flex-col gap-5 p-6">
         {Array.from({ length: 5 }).map((_, i) => (
           <div key={i}>
-            <Skeleton className="h-3.5 w-28" />
-            <Skeleton className="h-10 w-full mt-2" />
+            <Skeleton className="h-3.5 w-28 rounded-full" />
+            <Skeleton className="mt-2.5 h-11 w-full rounded-[14px]" />
           </div>
         ))}
-        <Skeleton className="h-10 w-32 mt-2" />
+        <Skeleton className="mt-2 h-11 w-32 rounded-full" />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Início carregando: a marquise (vidro sobre a moldura escura) e a folha
+ * subindo por cima — o mesmo desenho da tela, sem números.
+ */
+export function SkeletonInicio() {
+  return (
+    <div role="status" aria-label="Carregando">
+      <div className="px-6 pb-16 pt-8 sm:px-10 sm:pt-10">
+        <div className="h-3 w-44 rounded-full bg-[color:var(--m-glass-2)]" />
+        <div className="mt-6 h-11 w-[min(420px,80%)] rounded-[14px] bg-[color:var(--m-glass-2)]" />
+        <div className="mt-3 h-11 w-[min(520px,90%)] rounded-[14px] bg-[color:var(--m-glass)]" />
+        <div className="mt-10 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-[104px] rounded-[18px] bg-[color:var(--m-glass)] ring-1 ring-inset ring-[color:var(--m-line)]" />
+          ))}
+        </div>
+      </div>
+      <div className="vidro-fosco relative -mt-6 min-h-[50vh] rounded-t-[28px] px-6 pt-10 sm:px-10">
+        <div className="grid gap-5 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="cartao p-5">
+              <Skeleton className="h-3 w-20 rounded-full" />
+              <Skeleton className="mt-3 h-5 w-40 rounded-full" />
+              <Skeleton className="mt-6 h-32 w-full rounded-[14px]" />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   )

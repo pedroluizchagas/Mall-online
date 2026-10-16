@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import { Flag, MessageCircle, Star } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { ResponderForm } from './responder-form'
 import { SinalizarDialog } from './sinalizar-dialog'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export interface ReviewItem {
   id: string
@@ -25,16 +25,10 @@ function Estrelas({ valor, rotulo, sm }: { valor: number; rotulo?: string; sm?: 
   return (
     <div className="inline-flex items-center gap-1" role="img" aria-label={`${rotulo ?? 'Avaliação'}: ${valor} de 5`}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          aria-hidden
-          className={dim}
-          strokeWidth={1.75}
-          style={{
+        <PartnerIcon name="star" key={n} aria-hidden className={dim} strokeWidth={1.75} style={{
             color: n <= valor ? 'var(--warn)' : 'var(--ink-3)',
             fill: n <= valor ? 'var(--warn)' : 'transparent',
-          }}
-        />
+          }} />
       ))}
       {rotulo && <span className="text-[11px] text-ink-3 ml-1 font-medium">{rotulo}</span>}
     </div>
@@ -63,7 +57,7 @@ export function ReviewCard({ review }: { review: ReviewItem }) {
                   border: '1px solid rgba(224,90,59,0.28)',
                 }}
               >
-                <Flag className="w-3 h-3" /> Sinalizada
+                <PartnerIcon name="flag" size={12} /> Sinalizada
               </span>
             )}
           </div>
@@ -111,7 +105,7 @@ export function ReviewCard({ review }: { review: ReviewItem }) {
           style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
         >
           <div className="flex items-center gap-1.5 text-[11px] font-semibold text-ink-2 mb-1.5">
-            <MessageCircle className="w-3.5 h-3.5" /> Sua resposta
+            <PartnerIcon name="chat" size={14} /> Sua resposta
             {review.respondida_em && (
               <span className="text-ink-3 font-normal">· {FORMATO_DATA.format(new Date(review.respondida_em))}</span>
             )}

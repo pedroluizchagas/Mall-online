@@ -1,7 +1,7 @@
 'use client'
 
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export function Paginacao({ pagina, totalPaginas }: { pagina: number; totalPaginas: number }) {
   const router = useRouter()
@@ -23,13 +23,13 @@ export function Paginacao({ pagina, totalPaginas }: { pagina: number; totalPagin
   return (
     <nav className="flex items-center justify-center gap-3 mt-6" aria-label="Paginação">
       <button type="button" onClick={() => ir(pagina - 1)} disabled={pagina <= 1} className={botao} style={{ borderColor: 'var(--line)' }}>
-        <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+        <PartnerIcon name="chevron-left" size={14} /> Anterior
       </button>
       <span className="text-xs text-ink-3">
         Página <strong className="text-ink">{pagina}</strong> de {totalPaginas}
       </span>
       <button type="button" onClick={() => ir(pagina + 1)} disabled={pagina >= totalPaginas} className={botao} style={{ borderColor: 'var(--line)' }}>
-        Próxima <ChevronRight className="w-3.5 h-3.5" />
+        Próxima <PartnerIcon name="chevron-right" size={14} />
       </button>
     </nav>
   )

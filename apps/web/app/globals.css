@@ -2,156 +2,256 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Tokens do painel do lojista = tokens do app do lojista
+ * (apps/mobile-partner/lib/partner-design.ts, espelho do consumidor) e da
+ * landing de parceiros. O painel é o mesmo balcão visto no computador:
+ * uma MOLDURA escura sempre acesa (a marquise, com o neon lima vazando) e,
+ * recortada nela, a FOLHA clara de zinco fumê onde mora o acervo.
+ *
+ * Os nomes antigos (--bg, --ink, --line, --brick…) continuam valendo — só
+ * mudaram de valor —, então os ~700 estilos inline do painel herdam a língua
+ * nova sem reescrita. Regras da casa (docs/system-design/partner/00-sistema.md):
+ *   - lima é caro: CTA, estado ativo, o ponto "ao vivo", a linha acesa;
+ *     nunca fundo de seção, nunca tinta sobre fundo claro (lá é marca-texto);
+ *   - elevação por luminosidade: superfície branca sobre o fumê;
+ *   - um hex, um lugar: cor nova entra aqui, não no componente.
+ */
 :root {
-  /* Shell (sidebar / outer dark) */
-  --shell: #1d1d1b;
-  --shell-2: #2a2a28;
-  --sidebar: #18181B;
-  --sidebar-2: #1f1f1d;
-  --sidebar-line: rgba(255, 255, 255, 0.06);
-  --sidebar-ink: #f5f5f0;
-  --sidebar-ink-2: rgba(245, 245, 240, 0.55);
-  --sidebar-ink-3: rgba(245, 245, 240, 0.35);
+  /* ── Marquise (a fachada) ─────────────────────────────────────────── */
+  --marquee: #18181b;
+  /* Lima-profundo: SÓ atmosfera (o neon, alpha ≤ 22%). Ação é --brick. */
+  --glow: #c1f148;
+  --m-glass: rgba(255, 255, 255, 0.07);
+  --m-glass-2: rgba(255, 255, 255, 0.12);
+  --m-line: rgba(255, 255, 255, 0.1);
+  --m-ink: #ffffff;
+  --m-ink-2: rgba(255, 255, 255, 0.66);
+  /* Micro e rótulos na marquise: 50% é o mínimo que passa AA no zinco. */
+  --m-ink-3: rgba(255, 255, 255, 0.5);
 
-  /* Content surface */
+  /* Moldura e sidebar vestem a marquise. */
+  --shell: var(--marquee);
+  --shell-2: #232326;
+  --sidebar: var(--marquee);
+  --sidebar-2: var(--m-glass);
+  --sidebar-line: rgba(255, 255, 255, 0.08);
+  --sidebar-ink: #fafafa;
+  --sidebar-ink-2: var(--m-ink-2);
+  --sidebar-ink-3: var(--m-ink-3);
+
+  /* ── Folha (o salão) ──────────────────────────────────────────────── */
+  --canvas: #f1f1f3;
+  /* Superfície: cartão, campo, painel — branca, acende sobre o fumê. */
   --bg: #ffffff;
-  --bg-2: #f6f6f3;
-  --bg-3: #ededea;
-  --ink: #0f0f0d;
-  --ink-2: #4a4a46;
-  --ink-3: #8a8a84;
-  --line: #ececea;
-  --line-2: #dcdcd8;
+  /* Preenchimento dentro de uma superfície (linhas de lista, trilhos). */
+  --bg-2: #f1f1f3;
+  --bg-3: #e7e7ea;
+  --ink: #111216;
+  --ink-2: #5e6168;
+  /* #6B6E75 é o cinza mais claro que passa AA no branco e no fumê. */
+  --ink-3: #6b6e75;
+  /* Só traço decorativo, ícone e placeholder — nunca texto de leitura. */
+  --ink-4: #8b8e94;
+  --line: #e4e4e7;
+  --line-2: #d4d4d8;
 
-  /* Brand lime (mantido do app atual) */
-  --brick: #c1f148;
-  --brick-dk: #a3d22a;
-  --brick-lt: #e9f9b8;
-  --brick-ink: #18181b;
+  /* ── Ação ─────────────────────────────────────────────────────────── */
+  /* O nome "brick" ficou da marca antiga; o valor é o accent do app. */
+  --brick: #d8ff3e;
+  --brick-dk: #c8f22e;
+  --brick-lt: #f3fccb;
+  --brick-ink: #111216;
+  --accent-ring: rgba(216, 255, 62, 0.34);
 
-  /* Accents secundários */
-  --mustard: #f2c94c;
-  --leaf: #6fcf3c;
+  /* Acentos secundários — mantidos por compatibilidade, nos tons do app. */
+  --mustard: #f2b84b;
+  --leaf: #8ed14f;
   --berry: #c75b8a;
-  --sky: #5b8ac7;
 
-  /* Status */
-  --ok: #4fb025;
-  --warn: #e0a61a;
-  --err: #e05a3b;
-  /* Fundos suaves de status (chips da "Saúde da loja") */
-  --ok-lt: #e9f5ee;
-  --warn-lt: #fbf3e0;
-  --err-lt: #fbeae6;
-  --sky-lt: #eaf2f9;
+  /* ── Status ───────────────────────────────────────────────────────── */
+  /* Na folha clara: tons escurecidos dos status do app (texto legível).
+     Os -vivo são os do app, para ponto aceso e para a marquise. */
+  --ok: #3e7a1c;
+  --warn: #9a6200;
+  --err: #c8372a;
+  --sky: #1f6fb0;
+  --ok-vivo: #8ed14f;
+  --warn-vivo: #f2b84b;
+  --err-vivo: #ff6d5e;
+  --sky-vivo: #5bb7ff;
+  --ok-lt: rgba(142, 209, 79, 0.18);
+  --warn-lt: rgba(242, 184, 75, 0.2);
+  --err-lt: rgba(255, 109, 94, 0.14);
+  --sky-lt: rgba(91, 183, 255, 0.16);
+  --ok-line: rgba(62, 122, 28, 0.22);
+  --warn-line: rgba(154, 98, 0, 0.24);
+  --err-line: rgba(200, 55, 42, 0.26);
 
-  /* Bordas de status (chips, avisos) e superfícies sobre mídia/escuro.
-     A-17: estas cores viviam soltas em rgba()/#fff dentro dos componentes
-     de Conteúdo e Minha Loja — agora são tokens e acompanham o tema. */
-  --ok-line: rgba(79, 176, 37, 0.25);
-  --warn-line: rgba(224, 166, 26, 0.30);
-  --err-line: rgba(224, 90, 59, 0.35);
   /* Texto/ícone sobre fundo de status ou sobre foto. */
   --on-color: #ffffff;
   /* Véu de leitura sobre foto/vídeo (cartazes do Conteúdo). */
-  --veil: rgba(15, 15, 13, 0.62);
-  --veil-forte: rgba(15, 15, 13, 0.70);
-  /* Vidro sobre superfície escura (--ink / --shell). */
+  --veil: rgba(17, 18, 22, 0.62);
+  --veil-forte: rgba(17, 18, 22, 0.72);
   --glass-sobre-escuro: rgba(255, 255, 255, 0.12);
-  --glass-sobre-foto: rgba(255, 255, 255, 0.30);
+  --glass-sobre-foto: rgba(255, 255, 255, 0.3);
 
-  /* Radii */
+  /* ── Forma ────────────────────────────────────────────────────────── */
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 20px;
   --r-xl: 28px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 0 rgba(15, 15, 13, 0.04), 0 1px 2px rgba(15, 15, 13, 0.03);
-  --shadow-md: 0 4px 16px -4px rgba(15, 15, 13, 0.06), 0 2px 4px rgba(15, 15, 13, 0.03);
-  --shadow-lg: 0 24px 60px -12px rgba(15, 15, 13, 0.18), 0 8px 16px rgba(15, 15, 13, 0.05);
+  /* Sombras curtas e difusas: o cartão acende, não flutua. */
+  --shadow-sm: 0 1px 2px rgba(17, 18, 22, 0.05);
+  --shadow-md: 0 1px 2px rgba(17, 18, 22, 0.04), 0 14px 34px -18px rgba(17, 18, 22, 0.2);
+  --shadow-lg: 0 32px 64px -28px rgba(17, 18, 22, 0.38), 0 12px 28px -14px rgba(17, 18, 22, 0.14);
+  --shadow-card: 0 1px 2px rgba(17, 18, 22, 0.04), 0 10px 30px -20px rgba(17, 18, 22, 0.18);
+
+  /* ── Movimento (as curvas do app) ─────────────────────────────────── */
+  --ease-entrada: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-saida: cubic-bezier(0.3, 0, 1, 1);
+  --ease-suave: cubic-bezier(0.4, 0, 0.2, 1);
+
+  color-scheme: light;
 }
 
-/* ── Modo escuro (dashboard-redesign Fase 5) ──────────────────────────────
-   Só a SUPERFÍCIE DE CONTEÚDO inverte; a sidebar já é escura por design e
-   mantém suas vars. Como quase toda a UI usa var(--bg/--ink/--line/…), a
-   troca de data-theme reflete de imediato. Definido por preferência do SO
-   e sobrescrito pela escolha explícita (ThemeToggle → localStorage). */
+/* ── Modo escuro ───────────────────────────────────────────────────────
+   A moldura já é a marquise; só a FOLHA escurece. Ela fica abaixo do zinco
+   da moldura (afunda) e os cartões sobem por luminosidade. Escolha do SO,
+   sobrescrita pelo ThemeToggle (localStorage). */
 :root[data-theme='dark'] {
-  --bg: #1b1b19;
-  --bg-2: #242421;
-  --bg-3: #2f2f2b;
-  --ink: #f4f4ef;
-  --ink-2: #b4b4ad;
-  --ink-3: #82827b;
-  --line: #2c2c29;
-  --line-2: #3a3a35;
+  --canvas: #111113;
+  --bg: #1c1c1f;
+  --bg-2: #242428;
+  --bg-3: #2e2e33;
+  --ink: #f4f4f5;
+  --ink-2: #b5b6bc;
+  --ink-3: #8e9097;
+  --ink-4: #6b6e75;
+  --line: #2a2a2f;
+  --line-2: #3a3a40;
 
-  /* Lime "selecionado" vira translúcido para funcionar sobre superfície escura */
-  --brick-lt: rgba(193, 241, 72, 0.16);
+  --brick-lt: rgba(216, 255, 62, 0.14);
 
-  --ok-lt: rgba(79, 176, 37, 0.18);
-  --warn-lt: rgba(224, 166, 26, 0.18);
-  --err-lt: rgba(224, 90, 59, 0.18);
-  --sky-lt: rgba(91, 138, 199, 0.18);
+  /* No escuro, os status do app já são legíveis. */
+  --ok: #8ed14f;
+  --warn: #f2b84b;
+  --err: #ff6d5e;
+  --sky: #5bb7ff;
+  --ok-lt: rgba(142, 209, 79, 0.14);
+  --warn-lt: rgba(242, 184, 75, 0.14);
+  --err-lt: rgba(255, 109, 94, 0.14);
+  --sky-lt: rgba(91, 183, 255, 0.14);
+  --ok-line: rgba(142, 209, 79, 0.26);
+  --warn-line: rgba(242, 184, 75, 0.28);
+  --err-line: rgba(255, 109, 94, 0.3);
 
-  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px -4px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 24px 60px -12px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 14px 34px -18px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 32px 64px -28px rgba(0, 0, 0, 0.8), 0 12px 28px -14px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 10px 30px -20px rgba(0, 0, 0, 0.6);
+
+  color-scheme: dark;
 }
 
-/* Scrollbar-thumb já usa vars; borda do thumb acompanha o --bg do tema. */
+/* ── Base ─────────────────────────────────────────────────────────────── */
+
+html {
+  background: var(--marquee);
+  -webkit-text-size-adjust: 100%;
+}
 
 html,
 body {
-  font-family: var(--font-jakarta), system-ui, sans-serif;
+  /* Reserva em toda var() de fonte: se a classe do next/font divergir do CSS
+     (cache de build), cai no sistema — nunca em Times New Roman. */
+  font-family: var(--font-jakarta, system-ui), system-ui, sans-serif;
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Acessibilidade (dashboard-redesign Fase 5 §5) ────────────────────────
-   Foco visível por teclado em toda a UI. Como quase tudo usa estilos inline,
-   não havia indicador de foco — navegação por teclado ficava invisível. Só
-   aparece em :focus-visible (teclado), não em clique de mouse. */
+body {
+  /* O espaço da Jakarta é estreito (~0,18em); +0,07em o leva ao padrão. */
+  word-spacing: 0.07em;
+  text-rendering: optimizeLegibility;
+}
+
+/* Campos e botões não herdam o espaçamento (o preflight não cobre). */
+button,
+input,
+select,
+textarea {
+  word-spacing: inherit;
+}
+
+::selection {
+  background: rgba(216, 255, 62, 0.75);
+  color: #111216;
+}
+
+/* ── Acessibilidade ───────────────────────────────────────────────────
+   Foco visível só por teclado. Na folha clara o anel é tinta (lima não se
+   vê sobre branco); nas superfícies escuras (moldura, marquise) é o accent. */
 :focus-visible {
-  outline: 2px solid var(--brick);
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 :focus:not(:focus-visible) {
   outline: none;
 }
+.sobre-escuro :focus-visible,
+.sobre-escuro:focus-visible {
+  outline-color: var(--brick);
+}
+/* Folha clara dentro da fachada (formulário do Entrar): volta à tinta. */
+.sobre-claro :focus-visible,
+.sobre-claro:focus-visible {
+  outline-color: var(--ink);
+}
 
-/* Pular para o conteúdo — primeiro tab da página; fica oculto até focado. */
+/* Pular para o conteúdo — primeiro tab da página; oculto até ganhar foco. */
 .skip-link {
   position: fixed;
-  top: 8px;
-  left: 8px;
+  top: 10px;
+  left: 10px;
   z-index: 100;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 10px 18px;
+  border-radius: 999px;
   background: var(--brick);
   color: var(--brick-ink);
   font-size: 13px;
   font-weight: 700;
-  transform: translateY(-150%);
-  transition: transform 0.2s ease;
+  transform: translateY(-160%);
+  transition: transform 0.3s var(--ease-entrada);
 }
 .skip-link:focus {
   transform: translateY(0);
 }
 
 .font-display {
-  font-family: var(--font-jakarta), sans-serif;
+  font-family: var(--font-jakarta, system-ui), system-ui, sans-serif;
   font-weight: 700;
   letter-spacing: -0.03em;
 }
 
 .font-mono {
-  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-family: var(--font-mono, ui-monospace), 'JetBrains Mono', ui-monospace, monospace;
+  word-spacing: 0;
 }
 
-/* Scrollbar */
+/* Barra de rolagem fina: trilho invisível, polegar de tinta translúcida. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(17, 18, 22, 0.2) transparent;
+}
+:root[data-theme='dark'] *,
+.sobre-escuro,
+.sobre-escuro * {
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -160,46 +260,166 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--line-2);
+  background: rgba(17, 18, 22, 0.18);
+  background-clip: padding-box;
+  border: 3px solid transparent;
   border-radius: 10px;
-  border: 2px solid var(--bg);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--ink-3);
+  background-color: rgba(17, 18, 22, 0.32);
+}
+:root[data-theme='dark'] ::-webkit-scrollbar-thumb,
+.sobre-escuro ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.16);
 }
 
-/* Animations */
-@keyframes pulse-dot {
+/* ── Peças da marca ───────────────────────────────────────────────────── */
+
+@layer components {
+  /* O micro em caixa alta que abre cada letreiro do app. */
+  .micro {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    word-spacing: 0;
+  }
+
+  /* O neon da marquise: lima-profundo em dois blobs difusos sobre o zinco
+     (GlowNeon do app: ≈22% no topo direito, ≈12% no pé esquerdo). */
+  .glow-marquise {
+    background-image:
+      radial-gradient(ellipse 72% 62% at 88% -8%, rgba(193, 241, 72, 0.2), rgba(193, 241, 72, 0.07) 45%, transparent 75%),
+      radial-gradient(ellipse 60% 55% at -2% 112%, rgba(193, 241, 72, 0.11), transparent 70%);
+  }
+
+  /* Grão de filme: tira o "chapado" das superfícies grandes. */
+  .grao {
+    position: relative;
+  }
+  .grao::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* A folha de vidro fosco: o fumê com as nuvens do iOS e o neon da
+     marquise atravessando no canto (VidroFosco do app). */
+  .vidro-fosco {
+    background-color: var(--canvas);
+    background-image:
+      radial-gradient(ellipse 70% 38% at 12% 0%, rgba(139, 142, 148, 0.1), transparent 70%),
+      radial-gradient(ellipse 52% 30% at 78% 6%, rgba(91, 183, 255, 0.05), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 50% 18%, rgba(255, 255, 255, 0.6), transparent 70%),
+      radial-gradient(ellipse 40% 26% at 100% 0%, rgba(193, 241, 72, 0.1), transparent 70%);
+    background-repeat: no-repeat;
+    background-size: 100% 1200px;
+  }
+  :root[data-theme='dark'] .vidro-fosco {
+    background-image:
+      radial-gradient(ellipse 60% 34% at 100% 0%, rgba(193, 241, 72, 0.06), transparent 70%),
+      radial-gradient(ellipse 70% 38% at 12% 0%, rgba(255, 255, 255, 0.025), transparent 70%);
+  }
+
+  /* A linha acesa no claro: lima não é tinta sobre branco, é marca-texto. */
+  .marca-texto {
+    background-image: linear-gradient(transparent 58%, var(--brick) 58%, var(--brick) 92%, transparent 92%);
+    background-repeat: no-repeat;
+    padding-inline: 0.06em;
+    margin-inline: -0.06em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  :root[data-theme='dark'] .marca-texto {
+    background-image: none;
+    color: var(--brick);
+  }
+
+  /* Sublinhado que corre da esquerda para a direita no hover. */
+  .sublinha {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: 100% 100%;
+    background-size: 0% 1px;
+    transition: background-size 0.45s var(--ease-entrada);
+  }
+  .sublinha:hover,
+  .sublinha:focus-visible {
+    background-position: 0% 100%;
+    background-size: 100% 1px;
+  }
+
+  /* Cartão da folha: superfície branca, fio de 1px quase invisível e a
+     sombra curta — elevação por luminosidade. */
+  .cartao {
+    background: var(--bg);
+    border-radius: var(--r-lg);
+    box-shadow: 0 0 0 1px rgba(17, 18, 22, 0.05), var(--shadow-card);
+  }
+  :root[data-theme='dark'] .cartao {
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), var(--shadow-card);
+  }
+}
+
+/* ── Movimento ────────────────────────────────────────────────────────── */
+
+/* O ponto "ao vivo": respira (motion.pulse 1300ms do app). */
+@keyframes pulso {
   0%,
   100% {
     opacity: 1;
     transform: scale(1);
   }
   50% {
-    opacity: 0.5;
-    transform: scale(1.4);
+    opacity: 0.35;
+    transform: scale(0.82);
   }
 }
-.pulse-dot {
-  animation: pulse-dot 1.5s ease-in-out infinite;
+.pulse-dot,
+.pulso {
+  animation: pulso 1.3s var(--ease-suave) infinite;
 }
 
+/* Entrada de página: sobe pouco e assenta na curva de ENTRADA do app. */
 @keyframes slide-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 .slide-up {
-  animation: slide-up 0.3s ease-out;
+  animation: slide-up 0.6s var(--ease-entrada) both;
 }
 
-/* Skeleton shimmer (dashboard-redesign Fase 5 §6). Faixa clara varre o bloco;
-   a cor base vem de var(--bg-3), então acompanha claro/escuro. */
+/* Bloco que surge do desfoque, com atraso por `--d` (escalonamento).
+   Termina em `none`: filtro residual prenderia o backdrop-filter dos vidros. */
+@keyframes surge {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+.entra {
+  animation: surge 0.9s var(--ease-entrada) both;
+  animation-delay: var(--d, 0s);
+}
+
+/* Skeleton: faixa clara varre o bloco; a base vem de --bg-3. */
 @keyframes skeleton-shimmer {
   100% {
     transform: translateX(100%);
@@ -214,20 +434,43 @@ body {
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.06),
-    transparent
-  );
-  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+  animation: skeleton-shimmer 1.4s var(--ease-suave) infinite;
+}
+:root[data-theme='dark'] .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
 }
 
-/* Respeita quem prefere menos movimento: sem shimmer, sem slide, sem pulse. */
+/* Quem prefere menos movimento: sem shimmer, sem entrada, sem pulso. */
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after,
   .slide-up,
-  .pulse-dot {
+  .entra,
+  .pulse-dot,
+  .pulso {
     animation: none;
   }
+}
+
+/* Campo de arquivo nativo: o botão vira a pílula de contorno da casa. */
+input[type='file'] {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+input[type='file']::file-selector-button {
+  margin-right: 12px;
+  height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease-suave);
+}
+input[type='file']::file-selector-button:hover {
+  background: var(--bg-3);
 }

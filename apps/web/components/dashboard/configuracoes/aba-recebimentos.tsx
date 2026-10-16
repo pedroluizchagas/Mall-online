@@ -17,11 +17,11 @@ const ROTULO_STATUS: Record<string, string> = {
 const COR_STATUS: Record<string, string> = {
   pending: 'var(--warn)',
   active: 'var(--ok)',
-  refused: 'var(--brick)',
-  suspended: 'var(--brick)',
+  refused: 'var(--err)',
+  suspended: 'var(--err)',
   registration: 'var(--warn)',
   affiliation: 'var(--warn)',
-  blocked: 'var(--brick)',
+  blocked: 'var(--err)',
   inactive: 'var(--ink-3)',
 }
 
@@ -163,7 +163,7 @@ export function AbaRecebimentos({ tenant }: Props) {
             </p>
           )}
           {erroKyc && (
-            <p className="text-xs text-center" style={{ color: 'var(--brick)' }}>
+            <p className="text-xs text-center" style={{ color: 'var(--err)' }}>
               {erroKyc}
             </p>
           )}

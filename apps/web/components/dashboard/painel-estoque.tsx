@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { BarraEstoque } from './barra-estoque'
 import { ModalMovimentacao } from './modal-movimentacao'
 import { toggleControleEstoque } from '@/lib/actions/estoque'
+import { showToast } from '@/components/ui/toast'
 
 interface Produto {
   id: string
@@ -31,30 +32,25 @@ export function PainelEstoque({ produtos }: Props) {
   return (
     <div className="space-y-6">
       {alertas.length > 0 && (
-        <div
-          className="rounded-xl p-4"
-          style={{ background: '#fef3c7', border: '1px solid #fde68a' }}
-        >
-          <p className="text-sm font-semibold mb-2" style={{ color: '#92400e' }}>
+        <div className="rounded-[20px] p-5" style={{ background: 'var(--warn-lt)' }}>
+          <p className="text-[14px] font-semibold" style={{ color: 'var(--warn)' }}>
             {alertas.length} produto{alertas.length !== 1 ? 's' : ''} com estoque baixo
           </p>
-          <div className="space-y-1">
+          <ul className="mt-2 space-y-1">
             {alertas.map((p) => (
-              <p key={p.id} className="text-sm" style={{ color: '#92400e' }}>
-                {p.nome} — {p.stock_quantity ?? 0} unidade
+              <li key={p.id} className="text-[13.5px] text-ink-2">
+                <span className="font-semibold text-ink">{p.nome}</span> — {p.stock_quantity ?? 0} unidade
                 {(p.stock_quantity ?? 0) !== 1 ? 's' : ''} restante
                 {(p.stock_quantity ?? 0) !== 1 ? 's' : ''}
-              </p>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       )}
 
       {produtosComEstoque.length > 0 && (
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-3">
-            Com controle de estoque
-          </p>
+          <p className="micro mb-3 text-ink-3">Com controle de estoque</p>
           <div className="space-y-3">
             {produtosComEstoque.map((produto) => (
               <CardEstoque key={produto.id} produto={produto} />
@@ -65,17 +61,11 @@ export function PainelEstoque({ produtos }: Props) {
 
       {semEstoque.length > 0 && (
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-ink-3 mb-3">
-            Sem controle de estoque
-          </p>
-          <div className="space-y-2">
+          <p className="micro mb-3 text-ink-3">Sem controle de estoque</p>
+          <div className="cartao divide-y divide-line overflow-hidden">
             {semEstoque.map((produto) => (
-              <div
-                key={produto.id}
-                className="rounded-xl px-4 py-3 flex items-center justify-between gap-3"
-                style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
-              >
-                <span className="text-sm text-ink">{produto.nome}</span>
+              <div key={produto.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
+                <span className="text-[14px] font-semibold text-ink">{produto.nome}</span>
                 <BotaoToggleEstoque
                   produtoId={produto.id}
                   ativar
@@ -112,18 +102,18 @@ function CardEstoque({ produto }: { produto: Produto }) {
   return (
     <>
       <div
-        className="rounded-xl p-4"
-        style={{ background: 'var(--bg)', border: `1px solid ${borderColor}` }}
+        className="cartao p-5"
+        style={borderColor !== 'var(--line)' ? { boxShadow: `0 0 0 1.5px ${borderColor}, var(--shadow-card)` } : undefined}
       >
         <div className="flex items-center justify-between mb-3">
           <div>
-            <p className="text-sm font-semibold text-ink">{produto.nome}</p>
+            <p className="text-[15px] font-semibold text-ink">{produto.nome}</p>
             {produto.categories?.nome && (
               <p className="text-xs text-ink-3 mt-0.5">{produto.categories.nome}</p>
             )}
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold" style={{ color: quantColor }}>
+            <p className="text-[28px] font-bold leading-none tracking-[-0.04em] tabular-nums" style={{ color: quantColor }}>
               {produto.stock_quantity ?? 0}
             </p>
             <p className="text-xs text-ink-3">unidades</p>
@@ -145,25 +135,24 @@ function CardEstoque({ produto }: { produto: Produto }) {
           </p>
         )}
 
-        <div className="flex gap-2 mt-3">
+        <div className="mt-4 flex gap-2">
           <button
+            type="button"
             onClick={() => setModalAberto('entrada')}
-            className="flex-1 py-2 rounded-full text-sm font-bold hover:opacity-90 transition-opacity"
-            style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+            className="h-10 flex-1 rounded-full bg-ink text-[13.5px] font-bold text-bg transition-opacity hover:opacity-90"
           >
             Entrada
           </button>
           <button
+            type="button"
             onClick={() => setModalAberto('ajuste')}
-            className="flex-1 py-2 rounded-full text-sm font-medium"
-            style={{ border: '1px solid var(--line)', color: 'var(--ink-2)' }}
+            className="h-10 flex-1 rounded-full text-[13.5px] font-bold text-ink ring-1 ring-inset ring-line-2 transition-colors hover:bg-bg-2"
           >
             Ajuste
           </button>
           <a
             href={`/estoque/${produto.id}`}
-            className="flex-1 py-2 rounded-full text-sm font-medium text-center"
-            style={{ border: '1px solid var(--line)', color: 'var(--ink-2)' }}
+            className="flex h-10 flex-1 items-center justify-center rounded-full text-[13.5px] font-bold text-ink ring-1 ring-inset ring-line-2 transition-colors hover:bg-bg-2"
           >
             Histórico
           </a>
@@ -217,25 +206,25 @@ function BotaoToggleEstoque({
     iniciar(async () => {
       const resultado = await toggleControleEstoque(produtoId, ativar)
       if (resultado?.erro) {
-        window.alert(resultado.erro)
+        showToast({ tipo: 'erro', titulo: 'Não foi possível alterar o controle', descricao: resultado.erro })
         return
       }
       router.refresh()
     })
   }
 
-  const estilo =
+  // Repetido em cada linha: contorno, nunca lima — o accent é caro.
+  const classe =
     variante === 'primario'
-      ? { background: 'var(--brick)', color: 'var(--brick-ink)' }
-      : { border: '1px solid var(--line)', color: 'var(--ink-3)' }
+      ? 'h-9 px-4 text-[13px] font-bold text-ink ring-1 ring-inset ring-line-2 hover:bg-bg-2'
+      : 'h-8 px-3 text-[12.5px] font-semibold text-ink-3 hover:bg-bg-2 hover:text-ink'
 
   return (
     <button
       type="button"
       onClick={handleClick}
       disabled={pendente}
-      className="text-xs px-3 py-1.5 rounded-full font-medium whitespace-nowrap disabled:opacity-50 hover:opacity-90 transition-opacity"
-      style={estilo}
+      className={`whitespace-nowrap rounded-full transition-colors disabled:opacity-50 ${classe}`}
     >
       {pendente ? 'Aguarde…' : label}
     </button>

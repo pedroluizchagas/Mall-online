@@ -19,7 +19,7 @@ interface Props {
 }
 
 const inputClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 const CORES_SUGERIDAS = [
   '#e8624a',
@@ -56,7 +56,7 @@ export function StaffForm({ action, staff, onCancelar }: Props) {
       {estado?.erro && (
         <div
           className="px-4 py-3 rounded-xl text-sm"
-          style={{ background: '#fde8e4', color: 'var(--err)' }}
+          style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
         >
           {estado.erro}
         </div>

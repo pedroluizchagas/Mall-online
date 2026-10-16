@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useTransition, type ReactNode } from 'react'
-import { UserPlus } from 'lucide-react'
 import { criarConvite } from '../actions'
 import { showToast } from '@/components/ui/toast'
 import { CopiarLinkButton } from './copiar-link-button'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const BTN_PRIMARIO =
   'inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold transition-opacity disabled:opacity-50'
 const INPUT =
-  'w-full mt-1.5 border rounded-xl px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-brick font-normal'
+  'w-full mt-1.5 border rounded-[14px] px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-ink font-normal'
 
 function Campo({ label, children }: { label: ReactNode; children: ReactNode }) {
   return <label className="block mt-3 text-xs font-semibold text-ink-2">{label}{children}</label>
@@ -48,7 +48,7 @@ export function ConvidarDialog({ baseUrl }: { baseUrl: string }) {
         className={BTN_PRIMARIO}
         style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
       >
-        <UserPlus className="w-4 h-4" /> Convidar entregador
+        <PartnerIcon name="user-plus" size={16} /> Convidar entregador
       </button>
 
       {aberto && (

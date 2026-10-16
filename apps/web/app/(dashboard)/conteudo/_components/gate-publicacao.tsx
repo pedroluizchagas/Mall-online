@@ -1,4 +1,4 @@
-import { ArrowRight, CreditCard } from 'lucide-react'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * Trava de publicação — a mesma do Partner App (`GatePublicacao`): só
@@ -8,31 +8,30 @@ import { ArrowRight, CreditCard } from 'lucide-react'
 export function GatePublicacao({ contexto }: { contexto: 'conteudo' | 'publicar' }) {
   return (
     <div
-      className="rounded-lg p-5 flex flex-col sm:flex-row sm:items-center gap-4"
-      style={{ background: 'var(--ink)', color: 'var(--bg)' }}
+      className="sobre-escuro relative isolate flex flex-col gap-4 overflow-hidden rounded-[20px] bg-marquee p-5 text-white sm:flex-row sm:items-center"
       role="status"
     >
+      <div aria-hidden className="glow-marquise pointer-events-none absolute inset-0 -z-10" />
       <div
-        className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-        style={{ background: 'var(--glass-sobre-escuro)' }}
+        className="flex size-10 shrink-0 items-center justify-center rounded-full text-[color:var(--brick)]"
+        style={{ background: 'var(--m-glass-2)' }}
       >
-        <CreditCard className="w-4.5 h-4.5" />
+        <PartnerIcon name="wallet" size={18} strokeWidth={2} />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold leading-tight">
           {contexto === 'publicar' ? 'Ative seus recebimentos para publicar' : 'Publicação bloqueada até ativar os recebimentos'}
         </p>
-        <p className="text-xs leading-snug mt-1" style={{ opacity: 0.65 }}>
+        <p className="mt-1 text-[12.5px] leading-snug text-[color:var(--m-ink-2)]">
           O Explorar mostra sua loja para todo o shopping. Conclua a verificação Pagar.me e a publicação é liberada na hora.
         </p>
       </div>
       <a
         href="/configuracoes?aba=recebimentos"
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold text-sm hover:opacity-90 transition-opacity shrink-0"
-        style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+        className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-[13.5px] font-bold transition-colors bg-brick text-brick-ink hover:bg-brick-dk"
       >
         Configurar recebimentos
-        <ArrowRight className="w-4 h-4" />
+        <PartnerIcon name="chevron-right" size={15} strokeWidth={2.4} />
       </a>
     </div>
   )

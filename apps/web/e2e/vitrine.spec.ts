@@ -10,9 +10,9 @@ const PRODUTO_MARGHERITA = '10000000-0000-4000-8000-000000000001'
 
 async function entrar(page: Page) {
   await page.goto('/entrar')
-  await page.getByPlaceholder('hi@mallevo.com').fill(QA.email)
+  await page.getByPlaceholder('voce@sualoja.com.br').fill(QA.email)
   await page.locator('input[name="senha"]').fill(QA.senha)
-  await page.getByRole('button', { name: /entrar na conta/i }).click()
+  await page.getByRole('button', { name: /entrar no painel/i }).click()
   await page.waitForURL((url) => !url.pathname.startsWith('/entrar'), { timeout: 60_000 })
 }
 
@@ -32,7 +32,7 @@ test.describe('Minha Loja', () => {
     await dispensarTutorial(page)
 
     // Badge lê a mesma tabela VITRINES do consumer/storefront.
-    await expect(page.getByText('Vitrine ativada: Forno')).toBeVisible()
+    await expect(page.getByText('Vitrine Forno ativada')).toBeVisible()
 
     // Seção nova, com o conteúdo carregado do banco. Não afirmamos o texto do
     // seed: este teste grava por cima, então fixá-lo faria a suíte passar uma

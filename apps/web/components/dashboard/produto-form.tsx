@@ -88,10 +88,10 @@ interface Props {
 }
 
 const inputClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 const inputCompacto =
-  'border rounded-lg px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'border rounded-lg px-3 py-1.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 const TAGS_SUGERIDAS = ['Vegetariano', 'Vegano', 'Sem glúten', 'Picante', 'Mais pedido']
 
@@ -542,7 +542,7 @@ export function ProdutoForm({
       {estado?.erro && (
         <div
           className="px-4 py-3 rounded-xl text-sm"
-          style={{ background: '#fde8e4', color: 'var(--err)' }}
+          style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
         >
           {estado.erro}
         </div>
@@ -757,7 +757,7 @@ export function ProdutoForm({
                 type="checkbox"
                 name="refrigerado"
                 defaultChecked={!!produto?.refrigerado}
-                className="accent-brick"
+                className="accent-ink"
               />
               Refrigerado
             </label>
@@ -766,7 +766,7 @@ export function ProdutoForm({
                 type="checkbox"
                 name="fragil"
                 defaultChecked={!!produto?.fragil}
-                className="accent-brick"
+                className="accent-ink"
               />
               Frágil
             </label>
@@ -834,7 +834,7 @@ export function ProdutoForm({
                 <span
                   key={t}
                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                  style={{ background: 'var(--brick-soft, #f4d8cd)', color: 'var(--brick-dk)' }}
+                  style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
                 >
                   {t}
                   <button
@@ -1080,8 +1080,7 @@ export function ProdutoForm({
                 <button
                   type="button"
                   onClick={() => adicionarModifier(gIdx)}
-                  className="text-xs font-medium hover:underline"
-                  style={{ color: 'var(--brick-dk)' }}
+                  className="text-xs font-bold text-ink underline-offset-2 hover:underline"
                 >
                   + Adicionar opção
                 </button>

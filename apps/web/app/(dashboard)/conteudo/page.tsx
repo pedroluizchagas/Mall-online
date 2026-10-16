@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { Clapperboard, Plus } from 'lucide-react'
 import { badgeDoPost, type Post } from '@mallevo/lib'
 import { PageHeader } from '@/components/dashboard/page-header'
 import { EmptyState } from '@/components/dashboard/empty-state'
@@ -10,6 +9,7 @@ import { FiltrosConteudo, type EstadoFiltro, type TipoFiltro } from './_componen
 import { PostCard } from './_components/post-card'
 import { OrfaosCard } from './_components/orfaos-card'
 import { UsoPostsBarra } from './_components/uso-posts-barra'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * Conteúdo — o que a loja publicou no Explorar do shopping (plano de
@@ -83,7 +83,7 @@ export default async function PaginaConteudo({ searchParams }: { searchParams: S
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-colors"
               style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
             >
-              <Plus className="w-3.5 h-3.5" /> Publicar
+              <PartnerIcon name="plus" size={14} /> Publicar
             </Link>
           ) : undefined
         }
@@ -101,7 +101,7 @@ export default async function PaginaConteudo({ searchParams }: { searchParams: S
 
       {filtrados.length === 0 ? (
         <EmptyState
-          icone={Clapperboard}
+          icone="reels"
           titulo={semFiltro ? 'Nenhum post ainda' : 'Nada com esse filtro'}
           descricao={
             semFiltro

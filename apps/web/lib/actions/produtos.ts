@@ -870,7 +870,7 @@ export async function criarProduto(store_id: string, formData: FormData) {
     if (erroVariantsSync) return { erro: erroVariantsSync }
   }
 
-  revalidatePath('/dashboard/produtos')
+  revalidatePath('/produtos')
   return { sucesso: true }
 }
 
@@ -1001,7 +1001,7 @@ export async function atualizarProduto(
     if (erroVariantsSync) return { erro: erroVariantsSync }
   }
 
-  revalidatePath('/dashboard/produtos')
+  revalidatePath('/produtos')
   return { sucesso: true }
 }
 
@@ -1026,7 +1026,7 @@ export async function toggleDisponibilidade(
 
   if (error) return { erro: error.message }
 
-  revalidatePath('/dashboard/produtos')
+  revalidatePath('/produtos')
   return { sucesso: true }
 }
 
@@ -1068,7 +1068,7 @@ export async function excluirProduto(produto_id: string) {
     tenant.id,
   )
 
-  revalidatePath('/dashboard/produtos')
+  revalidatePath('/produtos')
   return { sucesso: true }
 }
 

@@ -2,12 +2,13 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { Search, LayoutGrid, List as ListIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { toggleDisponibilidade, excluirProduto } from '@/lib/actions/produtos'
-import { Card } from '@/components/ui/card'
 import { ProductThumb } from '@/components/ui/product-thumb'
-import { Sparkline } from '@/components/ui/sparkline'
+import { PartnerIcon, type PartnerIconName } from '@/components/ui/partner-icon'
+import { showToast } from '@/components/ui/toast'
 import { money } from '@/lib/format'
+import { cx } from '@/lib/cx'
 
 interface Produto {
   id: string
@@ -30,6 +31,13 @@ interface Props {
   storeId: string
 }
 
+/** O preço que o cliente paga e, se houver promoção, o de antes riscado. */
+function precos(p: Produto): { atual: number; anterior: number | null } {
+  const promo = Number(p.preco_promocional ?? 0)
+  const preco = Number(p.preco)
+  return promo > 0 && promo < preco ? { atual: promo, anterior: preco } : { atual: preco, anterior: null }
+}
+
 export function ListaProdutos({ produtos }: Props) {
   const [view, setView] = useState<'grid' | 'list'>('grid')
   const [category, setCategory] = useState('Todos')
@@ -49,48 +57,46 @@ export function ListaProdutos({ produtos }: Props) {
 
   if (produtos.length === 0) {
     return (
-      <div className="text-center py-16 text-ink-3">
-        <p className="text-lg">Nenhum produto cadastrado ainda.</p>
-        <p className="text-sm mt-1">Clique em &quot;Novo produto&quot; para começar.</p>
+      <div className="cartao flex flex-col items-center px-6 py-16 text-center">
+        <span className="flex size-14 items-center justify-center rounded-full bg-bg-3 text-ink">
+          <PartnerIcon name="package" size={24} strokeWidth={1.8} />
+        </span>
+        <p className="mt-5 text-[22px] font-semibold tracking-[-0.03em] text-ink">Nenhum produto ainda</p>
+        <p className="mt-2 max-w-md text-[14.5px] text-ink-3">
+          Cadastre o primeiro para a vitrine abrir com ele — no app e no site.
+        </p>
       </div>
     )
   }
 
   return (
     <div className="slide-up">
-      {/* Toolbar */}
-      <div className="flex items-center gap-3 mb-4 flex-wrap">
-        <div
-          className="flex items-center gap-2 rounded-md"
-          style={{
-            padding: '7px 12px',
-            background: 'var(--bg-2)',
-            border: '1px solid var(--line)',
-            width: 240,
-          }}
-        >
-          <Search className="w-3.5 h-3.5 text-ink-3" />
+      {/* Barra: busca, categorias, grade/lista */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <label className="relative flex h-10 w-full items-center sm:w-[260px]">
+          <span className="sr-only">Buscar produto</span>
+          <PartnerIcon name="search" size={16} strokeWidth={2} className="pointer-events-none absolute left-3.5 text-ink-3" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar produto..."
-            className="bg-transparent border-none outline-none flex-1 text-[13px]"
+            placeholder="Buscar produto"
+            className="h-full w-full rounded-full bg-bg pl-10 pr-4 text-[13.5px] text-ink outline-none ring-1 ring-inset ring-line transition-shadow placeholder:text-ink-4 focus:ring-2 focus:ring-ink"
           />
-        </div>
+        </label>
 
-        <div className="flex gap-1 flex-1 overflow-x-auto">
+        <div className="-m-1 flex flex-1 gap-1 overflow-x-auto p-1">
           {cats.map((c) => {
             const active = category === c
             return (
               <button
                 key={c}
+                type="button"
                 onClick={() => setCategory(c)}
-                className="px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap border transition-colors"
-                style={
-                  active
-                    ? { background: 'var(--ink)', color: 'var(--bg)', borderColor: 'var(--ink)' }
-                    : { background: 'var(--bg)', color: 'var(--ink-2)', borderColor: 'var(--line)' }
-                }
+                aria-pressed={active}
+                className={cx(
+                  'h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold transition-colors',
+                  active ? 'bg-ink text-bg' : 'text-ink-2 hover:bg-bg hover:text-ink',
+                )}
               >
                 {c}
               </button>
@@ -98,281 +104,257 @@ export function ListaProdutos({ produtos }: Props) {
           })}
         </div>
 
-        <div
-          className="flex rounded-md"
-          style={{ background: 'var(--bg-2)', padding: 3 }}
-        >
-          <button
-            onClick={() => setView('grid')}
-            className="px-2.5 py-1.5 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5 transition-shadow"
-            style={
-              view === 'grid'
-                ? { background: 'var(--bg)', boxShadow: 'var(--shadow-sm)', color: 'var(--ink)' }
-                : { background: 'transparent', color: 'var(--ink-2)' }
-            }
-          >
-            <LayoutGrid className="w-3 h-3" /> Grade
-          </button>
-          <button
-            onClick={() => setView('list')}
-            className="px-2.5 py-1.5 rounded-md text-[11px] font-medium inline-flex items-center gap-1.5 transition-shadow"
-            style={
-              view === 'list'
-                ? { background: 'var(--bg)', boxShadow: 'var(--shadow-sm)', color: 'var(--ink)' }
-                : { background: 'transparent', color: 'var(--ink-2)' }
-            }
-          >
-            <ListIcon className="w-3 h-3" /> Lista
-          </button>
+        <div className="flex rounded-full bg-bg p-1 ring-1 ring-inset ring-line" role="group" aria-label="Visualização">
+          {(
+            [
+              { v: 'grid', rotulo: 'Grade', icone: 'gallery' },
+              { v: 'list', rotulo: 'Lista', icone: 'menu' },
+            ] as const
+          ).map((o) => (
+            <button
+              key={o.v}
+              type="button"
+              onClick={() => setView(o.v)}
+              aria-pressed={view === o.v}
+              className={cx(
+                'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12.5px] font-semibold transition-colors',
+                view === o.v ? 'bg-ink text-bg' : 'text-ink-2 hover:text-ink',
+              )}
+            >
+              <PartnerIcon name={o.icone} size={14} strokeWidth={2} />
+              {o.rotulo}
+            </button>
+          ))}
         </div>
       </div>
 
-      {view === 'grid' ? (
-        <div
-          className="grid gap-3.5"
-          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}
-        >
+      {shown.length === 0 ? (
+        <p className="cartao px-6 py-12 text-center text-[14px] text-ink-3">Nenhum produto com essa busca.</p>
+      ) : view === 'grid' ? (
+        <ul className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
           {shown.map((p) => (
-            <ProductCard key={p.id} produto={p} />
+            <li key={p.id}>
+              <ProductCard produto={p} />
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
-        <Card className="!p-0 overflow-hidden">
+        <div className="cartao overflow-hidden">
           <div
-            className="grid items-center px-4 py-2.5 border-b text-[11px] font-medium uppercase tracking-wider text-ink-3"
-            style={{
-              gridTemplateColumns: '50px 2fr 1fr 100px 100px 80px 60px',
-              gap: 12,
-              background: 'var(--bg-2)',
-              borderColor: 'var(--line)',
-            }}
+            className="micro hidden items-center gap-3 border-b border-line bg-bg-2 px-5 py-3 text-ink-3 md:grid"
+            style={{ gridTemplateColumns: '44px minmax(0,2fr) minmax(0,1fr) 110px 100px 132px' }}
           >
             <div />
             <div>Produto</div>
             <div>Categoria</div>
             <div>Preço</div>
             <div>Estoque</div>
-            <div>Vendas</div>
-            <div />
+            <div className="text-right">Disponível</div>
           </div>
-          {shown.map((p) => (
-            <ProductRow key={p.id} produto={p} />
-          ))}
-        </Card>
+          <ul className="divide-y divide-line">
+            {shown.map((p) => (
+              <ProductRow key={p.id} produto={p} />
+            ))}
+          </ul>
+        </div>
       )}
     </div>
+  )
+}
+
+/** Disponibilidade com resposta imediata: muda já e desfaz se o servidor recusar. */
+function useDisponibilidade(p: Produto) {
+  const router = useRouter()
+  const [disponivel, setDisponivel] = useState(p.disponivel)
+  const [, startTransition] = useTransition()
+  function alternar() {
+    const novo = !disponivel
+    setDisponivel(novo)
+    startTransition(async () => {
+      const r = await toggleDisponibilidade(p.id, novo)
+      if (r && 'erro' in r && r.erro) {
+        setDisponivel(!novo)
+        showToast({ tipo: 'erro', titulo: 'Não foi possível alterar', descricao: r.erro })
+        return
+      }
+      router.refresh()
+    })
+  }
+  return { disponivel, alternar }
+}
+
+function Selos({ p }: { p: Produto }) {
+  const totalModificadores = p.product_modifier_groups?.length ?? 0
+  const totalSkus = p.product_variants?.length ?? 0
+  const exigeReceita = p.metadata?.exige_receita === true
+  if (!totalModificadores && !totalSkus && !exigeReceita) return null
+  const selo = (icone: PartnerIconName, texto: string, tom?: 'aviso') => (
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"
+      style={tom === 'aviso' ? { background: 'var(--warn-lt)', color: 'var(--warn)' } : { background: 'var(--bg-2)', color: 'var(--ink-2)' }}
+    >
+      <PartnerIcon name={icone} size={11} strokeWidth={2.2} />
+      {texto}
+    </span>
+  )
+  return (
+    <span className="mt-2 flex flex-wrap gap-1">
+      {totalSkus > 0 && selo('tag', `${totalSkus} SKU${totalSkus > 1 ? 's' : ''}`)}
+      {totalModificadores > 0 && selo('plus', `${totalModificadores} ${totalModificadores > 1 ? 'adicionais' : 'adicional'}`)}
+      {exigeReceita && selo('file', 'Receita', 'aviso')}
+    </span>
   )
 }
 
 function ProductCard({ produto: p }: { produto: Produto }) {
-  const [, startTransition] = useTransition()
-  function toggle() {
-    startTransition(() => {
-      void toggleDisponibilidade(p.id, !p.disponivel)
-    })
-  }
+  const { disponivel, alternar } = useDisponibilidade(p)
   const baixo = p.track_stock && (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) < 10
   const esgotado = p.track_stock && (p.stock_quantity ?? 0) === 0
-  const totalModificadores = p.product_modifier_groups?.length ?? 0
-  const totalSkus = p.product_variants?.length ?? 0
-  const exigeReceita = p.metadata?.exige_receita === true
+  const { atual, anterior } = precos(p)
+
   return (
-    <Link
-      href={`/produtos/${p.id}`}
-      className="block rounded-lg overflow-hidden border border-line bg-bg transition-all hover:-translate-y-0.5 hover:shadow-md hover:border-line-2"
-    >
-      <div
-        className="relative flex items-center justify-center border-b border-line"
-        style={{
-          aspectRatio: '4 / 3',
-          background: 'linear-gradient(135deg, var(--bg-2), var(--bg-3))',
-        }}
-      >
+    <article className="cartao group relative flex h-full flex-col overflow-hidden transition-[box-shadow,transform] duration-300 ease-entrada hover:-translate-y-0.5 hover:shadow-md">
+      <Link href={`/produtos/${p.id}`} className="absolute inset-0 z-0 rounded-[20px]" aria-label={`Editar ${p.nome}`} />
+      <div className="pointer-events-none relative flex aspect-[4/3] items-center justify-center bg-bg-2">
         {p.foto_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={p.foto_url} alt={p.nome} className="w-full h-full object-cover" />
+          <img
+            src={p.foto_url}
+            alt=""
+            className={cx('h-full w-full object-cover transition-[filter] duration-300', !disponivel && 'grayscale')}
+          />
         ) : (
           <ProductThumb name={p.nome} size={64} />
         )}
-        <div className="absolute top-2 right-2" onClick={(e) => e.preventDefault()}>
-          <SwitchTiny checked={p.disponivel} onChange={toggle} />
-        </div>
-        {esgotado ? (
-          <div className="absolute bottom-2 left-2">
-            <ChipBadge variant="err">Esgotado</ChipBadge>
-          </div>
-        ) : baixo ? (
-          <div className="absolute bottom-2 left-2">
-            <ChipBadge variant="warn">Só {p.stock_quantity} em estoque</ChipBadge>
-          </div>
-        ) : null}
-      </div>
-      <div className="p-3">
-        {p.categories?.nome && (
-          <div className="text-[10px] text-ink-3 uppercase tracking-wider font-medium">
-            {p.categories.nome}
-          </div>
-        )}
-        <div className="text-sm font-medium leading-tight mt-0.5 truncate">{p.nome}</div>
-        <div className="flex items-baseline justify-between mt-2">
-          <div>
-            <div className="text-base font-semibold tracking-tight">{money(Number(p.preco))}</div>
-            {p.preco_promocional && (
-              <div className="text-[11px] text-ink-3 line-through">
-                {money(Number(p.preco_promocional))}
-              </div>
-            )}
-          </div>
-        </div>
-        {(totalModificadores > 0 || totalSkus > 0 || exigeReceita) && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            {totalSkus > 0 && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
-                style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
-              >
-                🏷️ {totalSkus} SKU{totalSkus > 1 ? 's' : ''}
-              </span>
-            )}
-            {totalModificadores > 0 && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
-                style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
-              >
-                🍔 {totalModificadores} modificador{totalModificadores > 1 ? 'es' : ''}
-              </span>
-            )}
-            {exigeReceita && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
-                style={{ background: '#f5dfa7', color: 'var(--warn)' }}
-              >
-                💊 Receita
-              </span>
-            )}
-          </div>
+        {(esgotado || baixo || !disponivel) && (
+          <span className="absolute bottom-2.5 left-2.5 flex gap-1">
+            {!disponivel && <Etiqueta tom="neutro">Pausado</Etiqueta>}
+            {esgotado ? <Etiqueta tom="err">Esgotado</Etiqueta> : baixo ? <Etiqueta tom="warn">Só {p.stock_quantity} em estoque</Etiqueta> : null}
+          </span>
         )}
       </div>
-    </Link>
+      <div className="pointer-events-none relative flex flex-1 flex-col p-4">
+        <div className="pointer-events-none">
+          {p.categories?.nome && <p className="micro truncate text-ink-3">{p.categories.nome}</p>}
+          <p className="mt-1 truncate text-[15px] font-semibold leading-tight text-ink">{p.nome}</p>
+          <Selos p={p} />
+        </div>
+        <div className="mt-auto flex items-end justify-between gap-2 pt-3">
+          <p className="pointer-events-none flex items-baseline gap-1.5">
+            <span className="text-[17px] font-bold tracking-[-0.02em] text-ink tabular-nums">{money(atual)}</span>
+            {anterior !== null && <span className="text-[12px] text-ink-3 line-through tabular-nums">{money(anterior)}</span>}
+          </p>
+          <Interruptor ligado={disponivel} onChange={alternar} rotulo={`${p.nome} disponível na vitrine`} />
+        </div>
+      </div>
+    </article>
   )
 }
 
 function ProductRow({ produto: p }: { produto: Produto }) {
+  const router = useRouter()
+  const { disponivel, alternar } = useDisponibilidade(p)
   const [, startTransition] = useTransition()
-  function toggle() {
-    startTransition(() => {
-      void toggleDisponibilidade(p.id, !p.disponivel)
-    })
-  }
+  const { atual, anterior } = precos(p)
+
   function remover() {
-    if (!confirm('Excluir este produto? Esta ação não pode ser desfeita.')) return
-    startTransition(() => {
-      void excluirProduto(p.id)
+    if (!confirm(`Excluir “${p.nome}”? Esta ação não pode ser desfeita.`)) return
+    startTransition(async () => {
+      const r = await excluirProduto(p.id)
+      if (r && 'erro' in r && r.erro) {
+        showToast({ tipo: 'erro', titulo: 'Não foi possível excluir', descricao: r.erro })
+        return
+      }
+      showToast({ tipo: 'sucesso', titulo: 'Produto excluído' })
+      router.refresh()
     })
   }
+
   const baixo = p.track_stock && (p.stock_quantity ?? 0) > 0 && (p.stock_quantity ?? 0) < 10
   const esgotado = p.track_stock && (p.stock_quantity ?? 0) === 0
+
   return (
-    <div
-      className="grid items-center px-4 py-2.5 border-b border-line"
-      style={{ gridTemplateColumns: '50px 2fr 1fr 100px 100px 80px 60px', gap: 12 }}
-    >
+    <li className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3 md:grid-cols-[44px_minmax(0,2fr)_minmax(0,1fr)_110px_100px_132px]">
       {p.foto_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={p.foto_url} alt={p.nome} className="w-10 h-10 rounded-md object-cover" />
+        <img src={p.foto_url} alt="" className="size-11 rounded-[12px] object-cover" />
       ) : (
-        <ProductThumb name={p.nome} size={40} />
+        <ProductThumb name={p.nome} size={44} />
       )}
-      <div>
-        <Link
-          href={`/produtos/${p.id}`}
-          className="text-[13px] font-medium hover:underline"
-        >
+      <div className="min-w-0">
+        <Link href={`/produtos/${p.id}`} className="block truncate text-[14px] font-semibold text-ink hover:underline">
           {p.nome}
         </Link>
-        {(p.product_variants?.length ?? 0) > 0 && (
-          <span
-            className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium align-middle"
-            style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
-          >
-            🏷️ {p.product_variants!.length} SKU{p.product_variants!.length > 1 ? 's' : ''}
-          </span>
-        )}
-        {(p.product_modifier_groups?.length ?? 0) > 0 && (
-          <span
-            className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium align-middle"
-            style={{ background: 'var(--bg-2)', color: 'var(--ink-2)' }}
-          >
-            🍔 {p.product_modifier_groups!.length} mod.
-          </span>
-        )}
-        {p.metadata?.exige_receita === true && (
-          <span
-            className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium align-middle"
-            style={{ background: '#f5dfa7', color: 'var(--warn)' }}
-          >
-            💊 Receita
-          </span>
-        )}
-        {p.descricao && (
-          <div className="text-[11px] text-ink-3 truncate">{p.descricao}</div>
-        )}
+        {p.descricao && <p className="truncate text-[12.5px] text-ink-3">{p.descricao}</p>}
+        <Selos p={p} />
       </div>
-      <div className="text-xs text-ink-2">{p.categories?.nome ?? '—'}</div>
-      <div className="text-[13px] font-medium">{money(Number(p.preco))}</div>
-      <div>
+      <div className="hidden truncate text-[13px] text-ink-2 md:block">{p.categories?.nome ?? '—'}</div>
+      <div className="hidden md:block">
+        <p className="text-[13.5px] font-semibold text-ink tabular-nums">{money(atual)}</p>
+        {anterior !== null && <p className="text-[11.5px] text-ink-3 line-through tabular-nums">{money(anterior)}</p>}
+      </div>
+      <div className="hidden md:block">
         {esgotado ? (
-          <ChipBadge variant="err">Esgotado</ChipBadge>
+          <Etiqueta tom="err">Esgotado</Etiqueta>
         ) : baixo ? (
-          <ChipBadge variant="warn">{p.stock_quantity}</ChipBadge>
+          <Etiqueta tom="warn">{p.stock_quantity} un.</Etiqueta>
         ) : (
-          <span className="text-[13px] text-ink-2">{p.stock_quantity ?? '—'}</span>
+          <span className="text-[13px] text-ink-2 tabular-nums">{p.track_stock ? `${p.stock_quantity ?? 0} un.` : '—'}</span>
         )}
       </div>
-      <div className="text-xs text-ink-2 flex items-center gap-1.5">
-        <Sparkline data={[2, 5, 3, 8, 6, 9, 4]} color="var(--leaf)" height={16} fill={false} />
-      </div>
-      <div className="flex items-center justify-end gap-2">
-        <SwitchTiny checked={p.disponivel} onChange={toggle} />
+      <div className="flex items-center justify-end gap-1.5">
+        <Interruptor ligado={disponivel} onChange={alternar} rotulo={`${p.nome} disponível na vitrine`} />
         <button
+          type="button"
           onClick={remover}
-          className="text-[11px] text-err hover:underline"
+          aria-label={`Excluir ${p.nome}`}
+          title="Excluir"
+          className="flex size-8 items-center justify-center rounded-full text-ink-3 transition-colors hover:bg-[color:var(--err-lt)] hover:text-[color:var(--err)]"
         >
-          Excluir
+          <PartnerIcon name="trash" size={15} strokeWidth={2} />
         </button>
       </div>
-    </div>
+    </li>
   )
 }
 
-function ChipBadge({ children, variant }: { children: React.ReactNode; variant: 'err' | 'warn' | 'ok' }) {
-  const styles =
-    variant === 'err'
-      ? { background: '#f4c9b8', color: 'var(--err)' }
-      : variant === 'warn'
-        ? { background: '#f5dfa7', color: 'var(--warn)' }
-        : { background: '#dff0cc', color: 'var(--ok)' }
+function Etiqueta({ children, tom }: { children: React.ReactNode; tom: 'err' | 'warn' | 'neutro' }) {
+  const estilo =
+    tom === 'err'
+      ? { background: 'var(--err-lt)', color: 'var(--err)' }
+      : tom === 'warn'
+        ? { background: 'var(--warn-lt)', color: 'var(--warn)' }
+        : { background: 'rgba(17,18,22,0.72)', color: '#fff' }
   return (
-    <span
-      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold"
-      style={styles}
-    >
+    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-bold backdrop-blur" style={estilo}>
       {children}
     </span>
   )
 }
 
-function SwitchTiny({ checked, onChange }: { checked: boolean; onChange: () => void }) {
+/** Interruptor da casa: trilho tinta quando ligado (lima não se lê sobre branco). */
+function Interruptor({ ligado, onChange, rotulo }: { ligado: boolean; onChange: () => void; rotulo: string }) {
   return (
     <button
-      onClick={onChange}
-      className="w-8 h-[18px] rounded-full relative transition-colors"
-      style={{ background: checked ? 'var(--brick)' : 'var(--line-2)' }}
+      type="button"
+      role="switch"
+      aria-checked={ligado}
+      aria-label={rotulo}
+      title={ligado ? 'Disponível na vitrine' : 'Pausado na vitrine'}
+      onClick={(e) => {
+        e.stopPropagation()
+        onChange()
+      }}
+      className="pointer-events-auto relative z-[1] h-6 w-10 shrink-0 rounded-full transition-colors duration-200"
+      style={{ background: ligado ? 'var(--ink)' : 'var(--line-2)' }}
     >
       <span
-        className="absolute top-0.5 w-3.5 h-3.5 bg-white rounded-full shadow transition-transform"
-        style={{ transform: `translateX(${checked ? 16 : 2}px)` }}
-      />
+        aria-hidden
+        className="absolute left-0.5 top-0.5 size-5 rounded-full bg-bg shadow-sm transition-transform duration-300 ease-entrada"
+        style={{ transform: `translateX(${ligado ? 16 : 0}px)` }}
+      >
+        {ligado && <span className="absolute inset-[7px] rounded-full" style={{ background: 'var(--brick)' }} />}
+      </span>
     </button>
   )
 }

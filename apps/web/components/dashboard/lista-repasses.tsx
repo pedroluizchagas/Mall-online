@@ -2,10 +2,10 @@ import { formatarReais } from '@mallevo/lib'
 import { Card } from '@/components/ui/card'
 
 const META: Record<string, { label: string; bg: string; color: string }> = {
-  agendado: { label: 'Agendado', bg: '#fbe8a0', color: '#8a6a00' },
-  processando: { label: 'Processando', bg: '#d1e1f5', color: '#2a4d7a' },
-  concluido: { label: 'Concluído', bg: '#dff0cc', color: '#2a6e1a' },
-  falhou: { label: 'Falhou', bg: '#fbd9cf', color: '#a83820' },
+  agendado: { label: 'Agendado', bg: 'var(--warn-lt)', color: 'var(--warn)' },
+  processando: { label: 'Processando', bg: 'var(--sky-lt)', color: 'var(--sky)' },
+  concluido: { label: 'Concluído', bg: 'var(--ok-lt)', color: 'var(--ok)' },
+  falhou: { label: 'Falhou', bg: 'var(--err-lt)', color: 'var(--err)' },
 }
 
 interface Props {

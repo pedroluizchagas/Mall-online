@@ -1,16 +1,16 @@
-import { Download, UserMinus } from 'lucide-react'
+import type { PartnerIconName } from '@/components/ui/partner-icon'
 import { EmptyState } from '@/components/dashboard/empty-state'
 
 export function AbaPrivacidade() {
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <CardEmBreve
-        icone={Download}
+        icone="download"
         titulo="Exportar meus dados"
         descricao="Em breve você poderá baixar uma cópia de tudo o que registramos sobre você (LGPD)."
       />
       <CardEmBreve
-        icone={UserMinus}
+        icone="user-minus"
         titulo="Excluir conta"
         descricao="Em breve você poderá solicitar a exclusão definitiva da sua conta e dos dados associados."
       />
@@ -23,15 +23,12 @@ function CardEmBreve({
   titulo,
   descricao,
 }: {
-  icone: typeof Download
+  icone: PartnerIconName
   titulo: string
   descricao: string
 }) {
   return (
-    <div
-      className="rounded-xl"
-      style={{ border: '1px solid var(--line)', background: 'var(--bg)' }}
-    >
+    <div className="cartao">
       <div className="flex items-center justify-end px-5 pt-4">
         <span
           className="text-[11px] px-2 py-0.5 rounded-full font-semibold"

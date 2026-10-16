@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ImagePlus, Search, X } from 'lucide-react'
 import { CONTEUDO_LIMITES, type StoreConteudo } from '@mallevo/lib'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * Seção "Conteúdo da vitrine" do editor de Minha Loja — a VOZ da loja que as
@@ -66,7 +66,7 @@ export interface ProdutoParaDestaque {
 }
 
 const inputClass =
-  'w-full px-3 py-2 text-sm text-ink bg-bg rounded-xl border focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full px-3 py-2 text-sm text-ink bg-bg rounded-[14px] border focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 const TAMANHO_MAX = 5 * 1024 * 1024
 
 export function ConteudoVitrine({
@@ -181,7 +181,7 @@ export function ConteudoVitrine({
                   <span className="flex-1 truncate text-sm text-ink">{p?.nome ?? 'Produto removido'}</span>
                   <button type="button" aria-label="Subir" disabled={i === 0} onClick={() => set({ destaques: mover(valor.destaques, i, i - 1) })} className="px-1.5 text-xs text-ink-3 hover:text-ink disabled:opacity-30">↑</button>
                   <button type="button" aria-label="Descer" disabled={i === valor.destaques.length - 1} onClick={() => set({ destaques: mover(valor.destaques, i, i + 1) })} className="px-1.5 text-xs text-ink-3 hover:text-ink disabled:opacity-30">↓</button>
-                  <button type="button" aria-label="Remover destaque" onClick={() => set({ destaques: valor.destaques.filter((d) => d !== id) })} className="p-1 text-ink-3 hover:text-ink"><X size={13} /></button>
+                  <button type="button" aria-label="Remover destaque" onClick={() => set({ destaques: valor.destaques.filter((d) => d !== id) })} className="p-1 text-ink-3 hover:text-ink"><PartnerIcon name="close" size={13} /></button>
                 </li>
               )
             })}
@@ -189,7 +189,7 @@ export function ConteudoVitrine({
         )}
         {valor.destaques.length < CONTEUDO_LIMITES.destaques && (
           <div className="relative">
-            <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+            <PartnerIcon name="search" size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
             <input id="conteudo-busca-destaque" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar produto para destacar…" aria-label="Buscar produto para destacar" className={`${inputClass} pl-9`} style={{ borderColor: 'var(--line)' }} />
             {(busca || candidatos.length > 0) && (
               <ul className="mt-1.5 max-h-56 overflow-y-auto rounded-xl" style={{ border: '1px solid var(--line)', background: 'var(--bg)' }}>
@@ -225,7 +225,7 @@ export function ConteudoVitrine({
           ))}
           {totalFotos < CONTEUDO_LIMITES.galeriaCasa && (
             <label className="flex h-20 w-20 cursor-pointer flex-col items-center justify-center gap-1 rounded-xl text-ink-3 hover:text-ink" style={{ border: '1px dashed var(--line)' }}>
-              <ImagePlus size={18} />
+              <PartnerIcon name="image-plus" size={18} />
               <span className="text-[10px] font-semibold">Adicionar</span>
               <input id="conteudo-casa-arquivos" type="file" multiple accept="image/jpeg,image/png,image/webp" aria-label="Adicionar fotos da casa" className="sr-only" onChange={(e) => { escolherFotos(e.target.files); e.target.value = '' }} />
             </label>
@@ -275,7 +275,7 @@ function Miniatura({ src, nova, aoRemover }: { src: string; nova?: boolean; aoRe
         <span className="absolute bottom-1 left-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase" style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}>nova</span>
       )}
       <button type="button" aria-label="Remover foto" onClick={aoRemover} className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full" style={{ background: 'var(--ink)', color: 'var(--bg)' }}>
-        <X size={11} />
+        <PartnerIcon name="close" size={11} />
       </button>
     </div>
   )

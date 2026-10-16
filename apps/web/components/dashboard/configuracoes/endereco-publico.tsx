@@ -2,10 +2,10 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { CheckCircle2, ExternalLink, ShieldAlert } from 'lucide-react'
 import { provisionarEnderecoPublico } from '@/lib/actions/lojas'
 import { statusEnderecoPublico, urlDaLoja } from '@/lib/storefront-url'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
  * Estado do endereço público da loja (`<slug>.mallevo.com.br`). Com o DNS na
@@ -44,9 +44,9 @@ export function EnderecoPublico({ slug, domain }: { slug: string | null; domain:
       role="status"
     >
       {status === 'ok' ? (
-        <CheckCircle2 className="h-4 w-4 shrink-0" style={{ color: 'var(--ok)' }} />
+        <PartnerIcon name="check-circle" size={16} className="shrink-0" style={{ color: 'var(--ok)' }} />
       ) : (
-        <ShieldAlert className="h-4 w-4 shrink-0" style={{ color: 'var(--err)' }} />
+        <PartnerIcon name="shield" size={16} className="shrink-0" style={{ color: 'var(--err)' }} />
       )}
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-ink">
@@ -57,7 +57,7 @@ export function EnderecoPublico({ slug, domain }: { slug: string | null; domain:
             ? 'Certificado emitido. Sua loja abre com cadeado em '
             : 'O slug atual ainda não foi provisionado; o navegador mostra "conexão não segura" em '}
           <a href={urlDaLoja(slug!)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 underline">
-            {slug}.mallevo.com.br <ExternalLink className="h-3 w-3" />
+            {slug}.mallevo.com.br <PartnerIcon name="external" size={12} />
           </a>
           .
         </p>

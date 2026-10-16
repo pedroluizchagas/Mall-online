@@ -14,7 +14,7 @@ export function BarraEstoque({ atual, minimo, maximo }: Props) {
       ? 'var(--err)'
       : atual <= minimo
       ? 'var(--warn)'
-      : 'var(--brick)'
+      : 'var(--ink)'
 
   return (
     <div className="space-y-1">

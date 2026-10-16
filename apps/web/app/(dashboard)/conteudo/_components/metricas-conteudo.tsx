@@ -1,4 +1,3 @@
-import { Clapperboard, Eye, Heart, MessageCircle } from 'lucide-react'
 import { postVisivelNoFeed, type Post } from '@mallevo/lib'
 import { KPI } from '@/components/ui/kpi'
 
@@ -13,10 +12,10 @@ export function MetricasConteudo({ posts }: { posts: Post[] }) {
     // `region` nomeada: o leitor de tela anuncia o bloco, e o número fica
     // distinguível da pílula de views que aparece em cada cartaz.
     <section aria-label="Métricas do conteúdo" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <KPI label="Posts no ar" value={NUMERO.format(noAr)} icon={Clapperboard} />
-      <KPI label="Visualizações" value={NUMERO.format(soma('views'))} icon={Eye} />
-      <KPI label="Curtidas" value={NUMERO.format(soma('curtidas'))} icon={Heart} />
-      <KPI label="Comentários" value={NUMERO.format(soma('comentarios'))} icon={MessageCircle} />
+      <KPI label="Posts no ar" value={NUMERO.format(noAr)} icon="reels" />
+      <KPI label="Visualizações" value={NUMERO.format(soma('views'))} icon="eye" />
+      <KPI label="Curtidas" value={NUMERO.format(soma('curtidas'))} icon="heart" />
+      <KPI label="Comentários" value={NUMERO.format(soma('comentarios'))} icon="comment" />
     </section>
   )
 }

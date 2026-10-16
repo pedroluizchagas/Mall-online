@@ -3,6 +3,7 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { criarProduto } from '@/lib/actions/produtos'
 import { getCategorias } from '@/lib/actions/categorias'
 import { ProdutoForm } from '@/components/dashboard/produto-form'
+import { Voltar } from '@/components/dashboard/voltar'
 
 export default async function PaginaNovoProduto() {
   const supabase = createSupabaseServer()
@@ -31,15 +32,9 @@ export default async function PaginaNovoProduto() {
 
   return (
     <div className="p-9 max-w-2xl">
-      <div className="mb-6">
-        <a
-          href="/produtos"
-          className="text-sm font-medium hover:underline"
-          style={{ color: 'var(--brick-dk)' }}
-        >
-          &larr; Voltar para produtos
-        </a>
-        <h1 className="font-display text-[28px] leading-tight text-ink mt-2">Novo produto</h1>
+      <div className="mb-8">
+        <Voltar href="/produtos">Catálogo</Voltar>
+        <h1 className="text-[32px] font-semibold leading-[1.02] tracking-[-0.04em] text-ink sm:text-[38px]">Novo produto</h1>
       </div>
 
       <ProdutoForm action={action} categorias={categorias} loja={store} />

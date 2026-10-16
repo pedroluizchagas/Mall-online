@@ -18,10 +18,10 @@ function BotaoSalvar({ label = 'Salvar' }: { label?: string }) {
 }
 
 const inputClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 const inputReadOnlyClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm bg-bg-2 text-ink-3 cursor-default select-all'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm bg-bg-2 text-ink-3 cursor-default select-all'
 
 interface Props {
   dados: {
@@ -44,12 +44,12 @@ export function AbaPessoa({ dados }: Props) {
 
       <form action={dispatch} className="space-y-4">
         {estado?.erro && (
-          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
+          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--err-lt)', color: 'var(--err)' }}>
             {estado.erro}
           </p>
         )}
         {estado?.sucesso && (
-          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#e6f7e3', color: 'var(--ok)' }}>
+          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--ok-lt)', color: 'var(--ok)' }}>
             Dados atualizados com sucesso.
           </p>
         )}

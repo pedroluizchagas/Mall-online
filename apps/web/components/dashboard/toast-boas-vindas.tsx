@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle2, Sparkles } from 'lucide-react'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export function ToastBoasVindas() {
   const searchParams = useSearchParams()
@@ -29,33 +29,29 @@ export function ToastBoasVindas() {
     <AnimatePresence>
       {visivel && (
         <motion.div
-          initial={{ opacity: 0, y: -40, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -40, scale: 0.95 }}
-          transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-          className="fixed top-6 right-6 z-50 max-w-sm"
+          initial={{ opacity: 0, y: -24, filter: 'blur(6px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transitionEnd: { filter: 'none' } }}
+          exit={{ opacity: 0, y: -16 }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed right-6 top-6 z-[70] max-w-sm"
+          role="status"
         >
+          {/* A cápsula escura da casa, com o neon da marquise no canto. */}
           <div
-            className="rounded-2xl shadow-2xl p-5 flex items-start gap-4 relative overflow-hidden"
-            style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+            className="sobre-escuro relative isolate flex items-start gap-4 overflow-hidden rounded-[22px] p-5 text-white shadow-lg ring-1 ring-inset ring-[color:var(--m-line)]"
+            style={{ background: 'rgba(24, 24, 27, 0.97)' }}
           >
-            <div
-              className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none"
-              style={{ background: 'var(--brick)', opacity: 0.1, filter: 'blur(40px)' }}
-            />
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 relative"
+            <div aria-hidden className="glow-marquise pointer-events-none absolute inset-0 -z-10" />
+            <span
+              className="flex size-11 shrink-0 items-center justify-center rounded-full"
               style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
             >
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-semibold text-ink">Conta criada com sucesso</h3>
-                <Sparkles className="w-4 h-4" style={{ color: 'var(--brick)' }} />
-              </div>
-              <p className="text-sm text-ink-3 leading-relaxed">
-                Bem-vindo à Mallevo! Sua loja está pronta. Configure os detalhes do seu negócio quando quiser.
+              <PartnerIcon name="check" size={20} strokeWidth={2.6} />
+            </span>
+            <div>
+              <p className="text-[15px] font-semibold">Sua loja está pronta.</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-[color:var(--m-ink-2)]">
+                Boas-vindas ao Mallevo. Configure os detalhes do seu negócio quando quiser — o Início mostra o que falta.
               </p>
             </div>
           </div>

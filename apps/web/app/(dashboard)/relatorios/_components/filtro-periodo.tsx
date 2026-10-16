@@ -4,7 +4,8 @@ import { useCallback } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { PERIODOS_VALIDOS, ROTULOS_PERIODO, type Periodo } from '../_lib/periodo'
 
-const ESTILO_PRIMARIO = { background: 'var(--brick)', color: 'var(--brick-ink)', borderColor: 'var(--brick)' }
+// Chip ativo é tinta (os chips do app): lima não é estado de filtro no claro.
+const ESTILO_PRIMARIO = { background: 'var(--ink)', color: 'var(--bg)', borderColor: 'var(--ink)' }
 const ESTILO_INATIVO = { background: 'var(--bg)', color: 'var(--ink-2)', borderColor: 'var(--line)' }
 
 export function FiltroPeriodo({ periodoAtivo }: { periodoAtivo: Periodo }) {

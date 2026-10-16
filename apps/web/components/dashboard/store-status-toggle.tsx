@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ChevronDown } from 'lucide-react'
 import { alternarStatusLoja } from '@/lib/actions/loja-vitrine'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 interface Props {
   inicialAtivo: boolean
@@ -71,10 +71,7 @@ export function StoreStatusToggle({ inicialAtivo }: Props) {
           className="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full pointer-events-none"
           style={{ background: corPonto }}
         />
-        <ChevronDown
-          aria-hidden
-          className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none text-ink-3"
-        />
+        <PartnerIcon name="chevron-down" size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-ink-3" aria-hidden />
       </div>
 
       {pendente !== null && (

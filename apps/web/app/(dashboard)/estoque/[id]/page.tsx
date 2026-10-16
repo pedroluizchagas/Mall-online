@@ -2,6 +2,7 @@ import { createSupabaseServer } from '@/lib/supabase/server'
 import { getHistoricoMovimentacoes } from '@/lib/actions/estoque'
 import { redirect } from 'next/navigation'
 import { Card } from '@/components/ui/card'
+import { Voltar } from '@/components/dashboard/voltar'
 
 const LABELS_TIPO: Record<string, string> = {
   entrada: 'Entrada',
@@ -11,10 +12,10 @@ const LABELS_TIPO: Record<string, string> = {
 }
 
 const CORES_TIPO: Record<string, { bg: string; color: string }> = {
-  entrada: { bg: '#dcfce7', color: '#166534' },
-  saida_pedido: { bg: '#dbeafe', color: '#1e40af' },
-  ajuste_positivo: { bg: '#dcfce7', color: '#166534' },
-  ajuste_negativo: { bg: '#fee2e2', color: '#991b1b' },
+  entrada: { bg: 'var(--ok-lt)', color: 'var(--ok)' },
+  saida_pedido: { bg: 'var(--sky-lt)', color: 'var(--sky)' },
+  ajuste_positivo: { bg: 'var(--ok-lt)', color: 'var(--ok)' },
+  ajuste_negativo: { bg: 'var(--err-lt)', color: 'var(--err)' },
 }
 
 export default async function PaginaHistoricoEstoque({
@@ -37,13 +38,10 @@ export default async function PaginaHistoricoEstoque({
 
   return (
     <div className="p-9 max-w-2xl slide-up">
-      <div className="flex items-center gap-2 mb-6 text-sm">
-        <a href="/produtos" className="font-medium hover:underline" style={{ color: 'var(--brick-dk)' }}>
-          Produtos
-        </a>
-        <span className="text-ink-3">/</span>
-        <span className="text-ink-2">Estoque — {produto.nome}</span>
-      </div>
+      <Voltar href="/estoque">Estoque</Voltar>
+      <h1 className="mb-8 text-[32px] font-semibold leading-[1.02] tracking-[-0.04em] text-ink sm:text-[38px]">
+        {produto.nome}
+      </h1>
 
       <Card className="mb-6">
         <div className="flex items-center justify-between">
@@ -54,7 +52,7 @@ export default async function PaginaHistoricoEstoque({
             </p>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold" style={{ color: 'var(--brick)' }}>
+            <p className="text-[34px] font-bold leading-none tracking-[-0.04em] text-ink tabular-nums">
               {produto.stock_quantity ?? 0}
             </p>
             <p className="text-xs text-ink-3">unidades</p>

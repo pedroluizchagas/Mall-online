@@ -1,7 +1,7 @@
 'use client'
 
 import { useSyncExternalStore } from 'react'
-import { CheckCircle2, AlertCircle, Info, X } from 'lucide-react'
+import { PartnerIcon, type PartnerIconName } from './partner-icon'
 
 export type ToastTipo = 'sucesso' | 'erro' | 'info'
 
@@ -50,12 +50,16 @@ export function showToast(input: ToastInput): void {
   }
 }
 
-const ESTILOS = {
-  sucesso: { barra: 'var(--ok)', Icone: CheckCircle2 },
-  erro: { barra: 'var(--err)', Icone: AlertCircle },
-  info: { barra: 'var(--sky)', Icone: Info },
-} as const
+const ESTILOS: Record<ToastTipo, { cor: string; icone: PartnerIconName }> = {
+  sucesso: { cor: 'var(--ok-vivo)', icone: 'check-circle' },
+  erro: { cor: 'var(--err-vivo)', icone: 'close-circle' },
+  info: { cor: 'var(--sky-vivo)', icone: 'info' },
+}
 
+/**
+ * Toaster — a cápsula de vidro escuro do app (o material da tab bar),
+ * flutuando sobre a folha. Ícone no tom do momento, texto branco.
+ */
 export function Toaster() {
   const itens = useSyncExternalStore(inscrever, lerFila, lerFilaServidor)
 
@@ -63,31 +67,36 @@ export function Toaster() {
     <div
       aria-live="polite"
       role="status"
-      className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100vw-2rem)] sm:w-96 pointer-events-none"
+      className="pointer-events-none fixed bottom-4 left-1/2 z-[70] flex w-[calc(100vw-2rem)] -translate-x-1/2 flex-col gap-2 sm:bottom-6 sm:left-auto sm:right-6 sm:w-96 sm:translate-x-0"
     >
       {itens.map((toast) => {
         const estilo = ESTILOS[toast.tipo]
-        const { Icone } = estilo
         return (
           <div
             key={toast.id}
-            className="slide-up rounded-xl shadow-lg border border-line bg-bg flex items-start gap-3 p-3.5 pointer-events-auto relative overflow-hidden"
+            className="sobre-escuro slide-up pointer-events-auto flex items-start gap-3 rounded-[20px] p-3.5 pl-4 text-white shadow-lg ring-1 ring-inset ring-[color:var(--m-line)] backdrop-blur-xl"
+            style={{ background: 'rgba(17, 18, 22, 0.94)' }}
           >
-            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: estilo.barra }} />
-            <Icone className="w-5 h-5 shrink-0 mt-0.5 ml-1" style={{ color: estilo.barra }} />
+            <PartnerIcon
+              name={estilo.icone}
+              size={19}
+              strokeWidth={2}
+              className="mt-px shrink-0"
+              color={estilo.cor}
+            />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold leading-tight">{toast.titulo}</p>
+              <p className="text-[13.5px] font-semibold leading-snug">{toast.titulo}</p>
               {toast.descricao && (
-                <p className="text-xs text-ink-3 mt-0.5 leading-relaxed">{toast.descricao}</p>
+                <p className="mt-0.5 text-[12.5px] leading-relaxed text-[color:var(--m-ink-2)]">{toast.descricao}</p>
               )}
             </div>
             <button
               type="button"
               onClick={() => remover(toast.id)}
               aria-label="Fechar"
-              className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-bg-2 transition-colors shrink-0"
+              className="-my-1 -mr-1 flex size-7 shrink-0 items-center justify-center rounded-full text-[color:var(--m-ink-2)] transition-colors hover:bg-[color:var(--m-glass-2)] hover:text-white"
             >
-              <X className="w-4 h-4 text-ink-3" />
+              <PartnerIcon name="close" size={15} strokeWidth={2} />
             </button>
           </div>
         )

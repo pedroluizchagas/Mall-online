@@ -1,10 +1,10 @@
 'use client'
 
 import { useTransition } from 'react'
-import { Download } from 'lucide-react'
 import { exportarRelatorioCsv } from '../actions'
 import { showToast } from '@/components/ui/toast'
 import type { Periodo } from '../_lib/periodo'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export function ExportarCsvButton({ periodo }: { periodo: Periodo }) {
   const [pending, startTransition] = useTransition()
@@ -38,7 +38,7 @@ export function ExportarCsvButton({ periodo }: { periodo: Periodo }) {
       disabled={pending}
       className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-line bg-bg text-xs font-semibold hover:bg-bg-2 transition-colors disabled:opacity-50"
     >
-      <Download className="w-3.5 h-3.5" />
+      <PartnerIcon name="download" size={14} />
       {pending ? 'Exportando...' : 'Exportar CSV'}
     </button>
   )

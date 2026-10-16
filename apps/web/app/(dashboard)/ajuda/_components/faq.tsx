@@ -1,5 +1,5 @@
-import { ChevronDown } from 'lucide-react'
 
+import { PartnerIcon } from '@/components/ui/partner-icon'
 const PERGUNTAS: { q: string; a: string }[] = [
   {
     q: 'Como ativo minha loja para começar a vender?',
@@ -40,10 +40,7 @@ export function Faq() {
           >
             <summary className="flex items-center justify-between gap-3 cursor-pointer list-none text-sm font-semibold text-ink">
               <span>{p.q}</span>
-              <ChevronDown
-                className="w-4 h-4 text-ink-3 shrink-0 transition-transform group-open:rotate-180"
-                aria-hidden
-              />
+              <PartnerIcon name="chevron-down" size={16} className="text-ink-3 shrink-0 transition-transform group-open:rotate-180" aria-hidden />
             </summary>
             <p className="mt-2 text-sm text-ink-2 leading-relaxed">{p.a}</p>
           </details>

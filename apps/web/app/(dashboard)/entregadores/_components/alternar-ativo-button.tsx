@@ -1,9 +1,9 @@
 'use client'
 
 import { useTransition } from 'react'
-import { Pause, Play } from 'lucide-react'
 import { alternarAtivoEntregador } from '../actions'
 import { showToast } from '@/components/ui/toast'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 const BTN =
   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border hover:bg-bg-2 transition-colors disabled:opacity-50'
@@ -35,7 +35,7 @@ export function AlternarAtivoButton({ courierId, ativo }: { courierId: string; a
       className={BTN}
       style={{ borderColor: 'var(--line)', color: 'var(--ink-2)' }}
     >
-      {ativo ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+      {ativo ? <PartnerIcon name="pause" size={14} /> : <PartnerIcon name="play" size={14} />}
       {pending ? 'Salvando...' : ativo ? 'Desativar' : 'Reativar'}
     </button>
   )

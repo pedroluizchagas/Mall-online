@@ -4,7 +4,7 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { atualizarEndereco } from '@/lib/actions/lojas'
 
 const inputClass =
-  'w-full border rounded-xl px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-brick transition-shadow'
+  'w-full border rounded-[14px] px-4 py-2.5 text-sm text-ink bg-bg focus:outline-none focus:ring-2 focus:ring-ink transition-shadow'
 
 function BotaoSalvar({ label }: { label: string }) {
   const { pending } = useFormStatus()
@@ -35,12 +35,12 @@ export function AbaLocalizacao({ loja }: { loja: any }) {
 
       <form action={dispatch} className="space-y-4">
         {estado?.erro && (
-          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#fde8e4', color: 'var(--err)' }}>
+          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--err-lt)', color: 'var(--err)' }}>
             {estado.erro}
           </p>
         )}
         {estado?.sucesso && (
-          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: '#e6f7e3', color: 'var(--ok)' }}>
+          <p className="text-sm px-3 py-2 rounded-xl" style={{ background: 'var(--ok-lt)', color: 'var(--ok)' }}>
             Endereço atualizado.
           </p>
         )}

@@ -12,13 +12,10 @@ export function UsoPlanoBarra({ atual, maximo, percentual }: Props) {
       ? 'var(--err)'
       : percentual >= 70
         ? 'var(--warn)'
-        : 'var(--brick-dk)'
+        : 'var(--ink)'
 
   return (
-    <div
-      className="rounded-md p-4 border"
-      style={{ background: 'var(--bg)', borderColor: 'var(--line)' }}
-    >
+    <div className="cartao p-4 px-5">
       <div className="flex justify-between items-center mb-2">
         <span className="text-sm text-ink-2">Produtos cadastrados</span>
         <span className="text-sm font-semibold text-ink">
