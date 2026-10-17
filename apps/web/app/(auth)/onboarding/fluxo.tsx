@@ -13,6 +13,7 @@ import {
   getTemplateBySlug,
   type ArquetipoCodigo,
   type DashboardTemplate,
+  type Vitrine,
 } from '@mallevo/lib'
 import { createSupabaseClient } from '@/lib/supabase/client'
 import { logout } from '@/lib/actions/auth'
@@ -1013,11 +1014,11 @@ function ConfirmacaoCategoria({ categoria }: { categoria: Categoria }) {
 }
 
 // ============================================================================
-// Etapa de estilo — a loja nasce vestida (StoreTheme). Primeiro as VITRINES
-// que a categoria ativa (getOpcoesDeVitrine, a mesma tabela do app e do
-// storefront), com a miniatura de verdade de cada uma; depois os estilos que
-// só vestem cores e tipografia sobre o layout padrão. Mesma lógica do editor
-// /minha-loja (components/dashboard/escolha-vitrine.tsx).
+// Etapa de estilo — a loja nasce vestida (StoreTheme). A vitrine segue o
+// estilo, em qualquer ramo (getOpcoesDeVitrine, a mesma tabela do app e do
+// storefront): primeiro as vitrines desenhadas para o ramo, depois as demais,
+// todas com a miniatura de verdade; por último os estilos sem vitrine. Mesma
+// lógica do editor /minha-loja (components/dashboard/escolha-vitrine.tsx).
 // ============================================================================
 
 interface EscolhaEstiloProps {
@@ -1027,116 +1028,139 @@ interface EscolhaEstiloProps {
 }
 
 function EscolhaEstilo({ categoriaSlug, selecionado, onSelecionar }: EscolhaEstiloProps) {
-  const { vitrines, soPele, recomendado } = getOpcoesDeVitrine(categoriaSlug)
-  const [verOutros, setVerOutros] = useState(
-    () => vitrines.length === 0 || (selecionado !== '' && soPele.includes(selecionado)),
-  )
-  const outrosAbertos = vitrines.length === 0 || verOutros
+  const { sugeridas, outras, soPele, recomendado } = getOpcoesDeVitrine(categoriaSlug)
 
   return (
     <div>
       <Eyebrow texto={`Passo 08 · ${TOTAL_ETAPAS}`} />
-      {vitrines.length > 0 ? (
+      <Titulo>Escolha a vitrine da sua loja.</Titulo>
+      <Subtitulo>
+        A vitrine é o layout que os clientes veem no site e no app; o estilo, as cores e a
+        tipografia.{' '}
+        {sugeridas.length > 0
+          ? 'Começamos pelas desenhadas para o seu ramo, mas todas valem para a sua loja'
+          : 'Escolha a que combina com a sua loja'}{' '}
+        — dá para trocar depois em &ldquo;Minha Loja&rdquo;.
+      </Subtitulo>
+
+      {sugeridas.length > 0 && (
         <>
-          <Titulo>Escolha a vitrine da sua loja.</Titulo>
-          <Subtitulo>
-            A vitrine é o layout que os clientes veem no site e no app; o estilo, as cores e a
-            tipografia. Estas foram desenhadas para o seu ramo — dá para trocar depois em
-            &ldquo;Minha Loja&rdquo;.
-          </Subtitulo>
-          <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-5">
-            {vitrines.map((v) => {
-              const ativa = selecionado === v.arquetipo
-              return (
-                <button
-                  key={v.codigo}
-                  type="button"
-                  onClick={() => onSelecionar(v.arquetipo)}
-                  aria-pressed={ativa}
-                  className="group min-w-0 rounded-2xl text-left"
-                >
-                  <span
-                    className={`relative block overflow-hidden rounded-2xl border transition-all duration-300 ${
-                      ativa
-                        ? 'border-brick shadow-[0_0_30px_rgba(193,241,72,0.18)]'
-                        : 'border-white/[0.08] group-hover:border-white/25'
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={`/vitrines/${v.codigo}.webp`}
-                      alt=""
-                      width={312}
-                      height={480}
-                      loading="lazy"
-                      decoding="async"
-                      className="block aspect-[13/20] w-full object-cover"
-                    />
-                    {ativa && (
-                      <span className="absolute right-2 top-2 w-6 h-6 rounded-full bg-brick flex items-center justify-center">
-                        <PartnerIcon name="check" size={13} className="text-brick-ink" strokeWidth={3.5} />
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-                    <span className={`text-sm font-semibold ${ativa ? 'text-white' : 'text-zinc-200'}`}>
-                      {v.nome}
-                    </span>
-                    {v.arquetipo === recomendado && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brick text-brick-ink">
-                        Recomendado
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-0.5 block text-[11px] leading-snug text-zinc-500 line-clamp-2">
-                    {v.descricao}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          <p className="mt-4 text-[11px] text-zinc-500">
-            As fotos são de lojas de exemplo — a sua vitrine veste o seu nome, a sua logo e os seus produtos.
+          <p className="mt-10 mb-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+            Para o seu ramo
           </p>
-        </>
-      ) : (
-        <>
-          <Titulo>Escolha o estilo da sua loja.</Titulo>
-          <Subtitulo>
-            O seu ramo ainda não tem vitrine própria: o estilo veste o layout padrão com cores,
-            formas e tipografia que os clientes verão no site e no app. Dá para trocar depois em
-            &ldquo;Minha Loja&rdquo;.
-          </Subtitulo>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-5">
+            {sugeridas.map((v) => (
+              <CartaoVitrine
+                key={v.codigo}
+                vitrine={v}
+                selecionada={selecionado === v.arquetipo}
+                recomendada={v.arquetipo === recomendado}
+                onSelecionar={() => onSelecionar(v.arquetipo)}
+              />
+            ))}
+          </div>
         </>
       )}
 
-      {vitrines.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setVerOutros((v) => !v)}
-          aria-expanded={outrosAbertos}
-          className="mt-10 flex w-full items-center justify-between gap-3 rounded-xl text-left"
-        >
-          <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
-            Outros estilos <span className="normal-case tracking-normal">· só cores e tipografia ({soPele.length})</span>
-          </span>
-          <PartnerIcon name={outrosAbertos ? 'chevron-up' : 'chevron-down'} size={16} className="text-zinc-500" />
-        </button>
-      )}
-      {outrosAbertos && (
-        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 ${vitrines.length > 0 ? 'mt-3' : 'mt-10'}`}>
-          {soPele.map((codigo) => (
-            <CartaoEstilo
-              key={codigo}
-              codigo={codigo}
-              selecionado={selecionado === codigo}
-              recomendado={codigo === recomendado}
-              onSelecionar={() => onSelecionar(codigo)}
-            />
-          ))}
-        </div>
-      )}
+      <p className="mt-10 mb-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+        {sugeridas.length > 0 ? 'Outras vitrines' : 'Vitrines'}
+      </p>
+      <div
+        className={`grid gap-x-3 gap-y-5 ${sugeridas.length > 0 ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3'}`}
+      >
+        {outras.map((v) => (
+          <CartaoVitrine
+            key={v.codigo}
+            vitrine={v}
+            selecionada={selecionado === v.arquetipo}
+            recomendada={v.arquetipo === recomendado}
+            compacto={sugeridas.length > 0}
+            onSelecionar={() => onSelecionar(v.arquetipo)}
+          />
+        ))}
+      </div>
+      <p className="mt-4 text-[11px] text-zinc-500">
+        As fotos são de lojas de exemplo — a sua vitrine veste o seu nome, a sua logo e os seus produtos.
+      </p>
+
+      <p className="mt-10 mb-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
+        Só cores e tipografia <span className="normal-case tracking-normal">· sem vitrine própria</span>
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
+        {soPele.map((codigo) => (
+          <CartaoEstilo
+            key={codigo}
+            codigo={codigo}
+            selecionado={selecionado === codigo}
+            recomendado={codigo === recomendado}
+            onSelecionar={() => onSelecionar(codigo)}
+          />
+        ))}
+      </div>
     </div>
+  )
+}
+
+/** A vitrine pela miniatura de verdade (storefront + loja-demo — `pnpm vitrines:miniaturas`). */
+function CartaoVitrine({
+  vitrine,
+  selecionada,
+  recomendada,
+  compacto = false,
+  onSelecionar,
+}: {
+  vitrine: Vitrine
+  selecionada: boolean
+  recomendada: boolean
+  compacto?: boolean
+  onSelecionar: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelecionar}
+      aria-pressed={selecionada}
+      className="group min-w-0 rounded-2xl text-left"
+    >
+      <span
+        className={`relative block overflow-hidden rounded-2xl border transition-all duration-300 ${
+          selecionada
+            ? 'border-brick shadow-[0_0_30px_rgba(193,241,72,0.18)]'
+            : 'border-white/[0.08] group-hover:border-white/25'
+        }`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`/vitrines/${vitrine.codigo}.webp`}
+          alt=""
+          width={312}
+          height={480}
+          loading="lazy"
+          decoding="async"
+          className="block aspect-[13/20] w-full object-cover"
+        />
+        {selecionada && (
+          <span className="absolute right-2 top-2 w-6 h-6 rounded-full bg-brick flex items-center justify-center">
+            <PartnerIcon name="check" size={13} className="text-brick-ink" strokeWidth={3.5} />
+          </span>
+        )}
+      </span>
+      <span className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+        <span className={`font-semibold ${compacto ? 'text-[13px]' : 'text-sm'} ${selecionada ? 'text-white' : 'text-zinc-200'}`}>
+          {vitrine.nome}
+        </span>
+        {recomendada && (
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brick text-brick-ink">
+            Recomendado
+          </span>
+        )}
+      </span>
+      <span
+        className={`mt-0.5 leading-snug text-zinc-500 ${compacto ? 'text-[10px] line-clamp-1' : 'text-[11px] line-clamp-2'}`}
+      >
+        {vitrine.descricao}
+      </span>
+    </button>
   )
 }
 

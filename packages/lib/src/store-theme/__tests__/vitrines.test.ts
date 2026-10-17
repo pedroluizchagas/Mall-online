@@ -56,34 +56,29 @@ describe('VITRINES — coerência da tabela', () => {
   })
 })
 
-describe('resolveVitrine', () => {
-  it('casa arquétipo + categoria', () => {
-    expect(resolveVitrine('slice', 'alimentos-bebidas')).toBe('forno')
-    expect(resolveVitrine('mono', 'vestuario-calcados')).toBe('passarela')
-    expect(resolveVitrine('fresh', 'mercado-conveniencia')).toBe('feira')
-    expect(resolveVitrine('clinic', 'veterinaria')).toBe('clinica')
-    expect(resolveVitrine('heritage', 'alimentos-bebidas')).toBe('mesa')
-    expect(resolveVitrine('market', 'mercado-conveniencia')).toBe('gondola')
-    expect(resolveVitrine('market', 'construcao-ferramentas')).toBe('gondola')
-    expect(resolveVitrine('soft', 'saloes-estetica')).toBe('cuidado')
-    expect(resolveVitrine('soft', 'pet-shop')).toBe('cuidado')
+describe('resolveVitrine — a vitrine segue o estilo, em qualquer ramo', () => {
+  it('cada estilo com vitrine veste a sua', () => {
+    expect(resolveVitrine('slice')).toBe('forno')
+    expect(resolveVitrine('mono')).toBe('passarela')
+    expect(resolveVitrine('fresh')).toBe('feira')
+    expect(resolveVitrine('clinic')).toBe('clinica')
+    expect(resolveVitrine('heritage')).toBe('mesa')
+    expect(resolveVitrine('market')).toBe('gondola')
+    expect(resolveVitrine('soft')).toBe('cuidado')
+    // Fora do ramo para o qual foi desenhada também (antes caía no layout padrão).
+    expect(resolveVitrine('editorial')).toBe('editorial')
+    expect(resolveVitrine('noir')).toBe('noir')
   })
 
-  it('arquétipo certo em categoria fora do gate → null (só pele)', () => {
-    expect(resolveVitrine('editorial', 'alimentos-bebidas')).toBeNull()
-    expect(resolveVitrine('noir', 'acessorios-joias')).toBeNull()
+  it('toda vitrine da tabela é alcançável pelo seu estilo', () => {
+    for (const v of lista) expect(resolveVitrine(v.arquetipo)).toBe(v.codigo)
   })
 
-  it('editorial e mono nunca disputam a mesma loja', () => {
-    expect(resolveVitrine('editorial', 'vestuario-calcados')).toBe('editorial')
-    expect(resolveVitrine('mono', 'vestuario-calcados')).toBe('passarela')
-  })
-
-  it('arquétipo sem vitrine, nulos e lixo → null, sem lançar', () => {
-    expect(resolveVitrine('tech', 'eletronicos-tecnologia')).toBeNull()
-    expect(resolveVitrine(null, 'alimentos-bebidas')).toBeNull()
-    expect(resolveVitrine('smash', null)).toBeNull()
-    expect(resolveVitrine('nao-existe', 'categoria-nova')).toBeNull()
+  it('estilo sem vitrine, nulos e lixo → null, sem lançar', () => {
+    for (const a of ARQUETIPOS_SEM_VITRINE) expect(resolveVitrine(a)).toBeNull()
+    expect(resolveVitrine(null)).toBeNull()
+    expect(resolveVitrine(undefined)).toBeNull()
+    expect(resolveVitrine('nao-existe')).toBeNull()
   })
 
   it('getVitrineDoArquetipo informa o editor', () => {
@@ -94,53 +89,53 @@ describe('resolveVitrine', () => {
   })
 })
 
-describe('getOpcoesDeVitrine — o que cada estilo rende na categoria', () => {
-  const todos = Object.keys(ARQUETIPOS).sort()
+describe('getOpcoesDeVitrine — como o editor apresenta as opções do ramo', () => {
+  const vitrines = lista.map((v) => v.codigo).sort()
 
   it.each(Object.keys(CATEGORIA_SLUG_TO_ARQUETIPO))(
-    '%s: cada estilo aparece uma vez, e só onde o gate concorda',
+    '%s: toda vitrine aparece uma vez; as sugeridas são as desenhadas para o ramo',
     (categoria) => {
-      const { vitrines, soPele } = getOpcoesDeVitrine(categoria)
-      expect([...vitrines.map((v) => v.arquetipo), ...soPele].sort()).toEqual(todos)
-      for (const v of vitrines) expect(resolveVitrine(v.arquetipo, categoria)).toBe(v.codigo)
-      for (const a of soPele) expect(resolveVitrine(a, categoria)).toBeNull()
+      const { sugeridas, outras, soPele } = getOpcoesDeVitrine(categoria)
+      expect([...sugeridas, ...outras].map((v) => v.codigo).sort()).toEqual(vitrines)
+      for (const v of sugeridas) expect(v.categorias as readonly string[]).toContain(categoria)
+      for (const v of outras) expect(v.categorias as readonly string[]).not.toContain(categoria)
+      expect([...soPele].sort()).toEqual([...ARQUETIPOS_SEM_VITRINE].sort())
     },
   )
 
-  it('segue a ordem da sugestão: o default da categoria abre a lista', () => {
-    const comida = getOpcoesDeVitrine('alimentos-bebidas')
-    expect(comida.vitrines.map((v) => v.codigo)).toEqual([
+  it('sugeridas seguem a ordem da sugestão: o default da categoria abre a lista', () => {
+    expect(getOpcoesDeVitrine('alimentos-bebidas').sugeridas.map((v) => v.codigo)).toEqual([
       'mesa', 'noir', 'torra', 'ritual', 'smash', 'horta', 'forno', 'feira',
     ])
-    // Sugeridos sem vitrine aqui vêm antes dos demais estilos.
-    expect(comida.soPele.slice(0, 2)).toEqual(['market', 'soft'])
+    expect(getOpcoesDeVitrine('acessorios-joias').sugeridas.map((v) => v.codigo)).toEqual(['serena', 'editorial'])
   })
 
-  it('default sem vitrine na categoria cai em soPele, as vitrines seguem a sugestão', () => {
-    const joias = getOpcoesDeVitrine('acessorios-joias')
-    expect(joias.vitrines.map((v) => v.codigo)).toEqual(['serena', 'editorial'])
-    expect(joias.soPele[0]).toBe('noir')
+  it('as outras vêm agrupadas pelo ramo para o qual foram desenhadas', () => {
+    const ramos = Object.keys(CATEGORIA_SLUG_TO_ARQUETIPO)
+    const ordem = getOpcoesDeVitrine('vestuario-calcados').outras.map((v) => ramos.indexOf(v.categorias[0]))
+    expect(ordem).toEqual([...ordem].sort((a, b) => a - b))
   })
 
-  it('recomenda a primeira vitrine; sem vitrine na categoria, o default de pele', () => {
+  it('recomenda a primeira vitrine sugerida; sem nenhuma, o default de pele', () => {
     expect(getOpcoesDeVitrine('alimentos-bebidas').recomendado).toBe('heritage')
     expect(getOpcoesDeVitrine('acessorios-joias').recomendado).toBe('serene')
     expect(getOpcoesDeVitrine('construcao-ferramentas').recomendado).toBe('market')
     expect(getOpcoesDeVitrine('eletronicos-tecnologia').recomendado).toBe('tech')
-    // O recomendado de categoria com vitrine sempre veste uma.
+    // O recomendado de categoria com vitrine sugerida sempre veste uma.
     for (const categoria of Object.keys(CATEGORIA_SLUG_TO_ARQUETIPO)) {
-      const { vitrines, recomendado } = getOpcoesDeVitrine(categoria)
-      if (vitrines.length > 0) expect(resolveVitrine(recomendado, categoria)).not.toBeNull()
+      const { sugeridas, recomendado } = getOpcoesDeVitrine(categoria)
+      if (sugeridas.length > 0) expect(resolveVitrine(recomendado)).not.toBeNull()
     }
   })
 
-  it('categoria sem vitrine nenhuma, nula ou desconhecida → só pele', () => {
-    expect(getOpcoesDeVitrine('eletronicos-tecnologia').vitrines).toEqual([])
-    expect(getOpcoesDeVitrine(null).vitrines).toEqual([])
-    expect(getOpcoesDeVitrine(undefined).soPele).toHaveLength(todos.length)
-    expect(getOpcoesDeVitrine('categoria-nova').vitrines).toEqual([])
-    expect(getOpcoesDeVitrine(null).recomendado).toBeNull()
-    expect(getOpcoesDeVitrine('categoria-nova').recomendado).toBeNull()
+  it('categoria nula ou desconhecida: nada sugerido, todas as vitrines disponíveis', () => {
+    for (const categoria of [null, undefined, 'categoria-nova']) {
+      const opcoes = getOpcoesDeVitrine(categoria)
+      expect(opcoes.sugeridas).toEqual([])
+      expect(opcoes.outras).toHaveLength(lista.length)
+      expect(opcoes.recomendado).toBeNull()
+    }
+    expect(getOpcoesDeVitrine('eletronicos-tecnologia').sugeridas).toEqual([])
   })
 })
 

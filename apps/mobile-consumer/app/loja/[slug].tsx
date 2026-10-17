@@ -242,10 +242,10 @@ export default function PaginaLoja() {
     'agendamento'
 
   // Vitrines por arquétipo: layout PRÓPRIO além da pele (docs/store-theme/05
-  // §5.6). A decisão `preset × categoria` mora em @mallevo/lib (`VITRINES`) —
-  // a mesma tabela que o storefront e o editor do lojista leem. Aqui só se
-  // mapeia o código para os componentes RN.
-  const vitrine = resolveVitrine(design.arquetipo, loja?.categoria_slug ?? null)
+  // §5.6). A decisão — a vitrine segue o estilo, em qualquer ramo — mora em
+  // @mallevo/lib (`VITRINES`), a mesma tabela que o storefront e o editor do
+  // lojista leem. Aqui só se mapeia o código para os componentes RN.
+  const vitrine = resolveVitrine(design.arquetipo)
 
   if (vitrine && loja) {
     // Um acesso de índice no lugar das cadeias de ternários: o registro é um

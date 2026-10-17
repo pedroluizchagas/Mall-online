@@ -2,15 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { resolveVitrineDaLoja, vitrineTemDesktop } from '../vitrine'
 
 describe('resolveVitrineDaLoja', () => {
-  it('preset v2 + categoria elegível → vitrine', () => {
-    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'slice' }, categoria_slug: 'alimentos-bebidas' })).toBe('forno')
-    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'fresh', palette: 'x' }, categoria_slug: 'mercado-conveniencia' })).toBe('feira')
+  it('preset v2 com vitrine → a vitrine dele, em qualquer ramo', () => {
+    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'slice' } })).toBe('forno')
+    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'fresh', palette: 'x' } })).toBe('feira')
+    // Noir numa joalheria: antes do 2026-10-17 caía no layout padrão.
+    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'noir' } })).toBe('noir')
   })
-  it('sem tema, tema v1 ou categoria fora do gate → padrão', () => {
-    expect(resolveVitrineDaLoja({ theme: null, categoria_slug: 'alimentos-bebidas' })).toBeNull()
-    expect(resolveVitrineDaLoja({ theme: { template: 'neon' }, categoria_slug: 'vestuario-calcados' })).toBeNull()
-    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'noir' }, categoria_slug: 'acessorios-joias' })).toBeNull()
-    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'tech' }, categoria_slug: 'eletronicos-tecnologia' })).toBeNull()
+  it('sem tema, tema v1 ou estilo sem vitrine → padrão', () => {
+    expect(resolveVitrineDaLoja({ theme: null })).toBeNull()
+    expect(resolveVitrineDaLoja({ theme: { template: 'neon' } })).toBeNull()
+    expect(resolveVitrineDaLoja({ theme: { v: 2, preset: 'tech' } })).toBeNull()
   })
 })
 

@@ -6,11 +6,11 @@ import { BotaoSacola, FechoLoja, HeroLoja } from './_base'
 import type { VitrineWebProps } from './tipos'
 
 /**
- * Layout padrão da loja — o que toda loja veste quando o arquétipo não tem
- * vitrine própria para a sua categoria (`resolveVitrine` → null). Já é
- * premium: hero com a voz do lojista (`stores.conteudo`), status real de
- * horários, régua de seções e fecho. É também a rede de segurança dos 6
- * arquétipos só com pele (heritage, soft, tech, market, utility, playful).
+ * Layout padrão da loja — o que a loja veste quando o estilo não tem vitrine
+ * própria (`resolveVitrine` → null) ou quando ela ainda não escolheu estilo.
+ * Já é premium: hero com a voz do lojista (`stores.conteudo`), status real de
+ * horários, régua de seções e fecho. É a rede de segurança dos 3 arquétipos
+ * só com pele (tech, utility, playful).
  *
  * Chrome de topo igual ao das vitrines (A-21): barra grudada com o nome da
  * loja e a sacola de `_base/Sacola` — não o FAB flutuante, que foi removido.

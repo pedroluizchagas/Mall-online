@@ -28,7 +28,7 @@ export type Store = {
   aceita_pix: boolean | null
   aceita_cartao_online: boolean | null
   categoria_id: string | null
-  /** Slug da categoria — gate de vitrine (`resolveVitrine`, @mallevo/lib). */
+  /** Slug da categoria (o ramo). A vitrine não depende dele: segue o estilo (`resolveVitrine`). */
   categoria_slug: string | null
   /** `StoreThemeConfig` cru — resolvido em @mallevo/lib. */
   theme: unknown | null

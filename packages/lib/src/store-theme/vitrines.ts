@@ -1,10 +1,13 @@
 /**
- * Vitrines — o LAYOUT próprio que um arquétipo ganha em certas categorias.
+ * Vitrines — o LAYOUT próprio de um arquétipo.
  *
  * Pele (tokens) e vitrine (layout) são eixos distintos: `resolveTheme` veste
- * qualquer loja com qualquer um dos 21 arquétipos; `resolveVitrine` decide se,
+ * qualquer loja com qualquer um dos 21 arquétipos; `resolveVitrine` diz se,
  * além da pele, a loja ganha uma fachada desenhada sob medida (docs/store-theme/05
- * §5.6). O gate é `preset × categoria_slug` — nunca por slug de loja.
+ * §5.6). A vitrine SEGUE O ESTILO escolhido, em qualquer ramo (decisão do
+ * produto em 2026-10-17: o lojista via só algumas vitrines no preview e o resto
+ * caía no layout padrão). As `categorias` de cada vitrine são os ramos para os
+ * quais ela foi desenhada — viram sugestão no editor, não restrição.
  *
  * Esta tabela é a ÚNICA fonte da decisão: consumer (RN), storefront (Next) e o
  * editor do lojista leem daqui. Vitrine nova = entrada nova aqui + componentes
@@ -27,7 +30,7 @@ export interface Vitrine {
   /** Nome de exibição para o lojista ("Vitrine ativada: Forno"). */
   readonly nome: string
   readonly arquetipo: ArquetipoCodigo
-  /** Categorias em que este arquétipo ganha a vitrine (fora delas: só pele). */
+  /** Ramos para os quais a vitrine foi desenhada — sugestão no editor; vale em qualquer ramo. */
   readonly categorias: readonly CategoriaSlug[]
   readonly barra: MoldeBarra
   /** Nomes dos componentes no consumer (`components/loja/`), para a guarda. */
@@ -205,27 +208,17 @@ export type VitrineCodigo = keyof typeof VITRINES
 const LISTA: readonly Vitrine[] = Object.values(VITRINES)
 
 /**
- * Decide a vitrine de uma loja. `null` = só pele + layout padrão.
- * Defensivo: aceita `preset`/`categoria` nulos (loja sem tema, categoria nova).
+ * A vitrine que a loja veste: a do estilo escolhido, em qualquer ramo.
+ * `null` = estilo sem vitrine (tech, utility, playful) ou loja sem estilo —
+ * só pele + layout padrão. Defensivo: aceita `preset` nulo ou desconhecido.
  */
-export function resolveVitrine(
-  preset: ArquetipoCodigo | string | null | undefined,
-  categoriaSlug: string | null | undefined,
-): VitrineCodigo | null {
-  if (!preset || !categoriaSlug) return null
-  const hit = LISTA.find(
-    (v) =>
-      v.arquetipo === preset &&
-      (v.categorias as readonly string[]).includes(categoriaSlug),
-  )
+export function resolveVitrine(preset: ArquetipoCodigo | string | null | undefined): VitrineCodigo | null {
+  if (!preset) return null
+  const hit = LISTA.find((v) => v.arquetipo === preset)
   return (hit?.codigo as VitrineCodigo | undefined) ?? null
 }
 
-/**
- * A vitrine que um arquétipo PODE ativar (independente da categoria) — para o
- * editor dizer "este estilo tem a vitrine Forno em Alimentos & Bebidas" ou
- * "este estilo usa o layout padrão".
- */
+/** A vitrine de um arquétipo como objeto (nome, descrição, ramos), ou `null`. */
 export function getVitrineDoArquetipo(
   preset: ArquetipoCodigo | string | null | undefined,
 ): Vitrine | null {
@@ -239,39 +232,49 @@ export const ARQUETIPOS_SEM_VITRINE: readonly ArquetipoCodigo[] = (
 ).filter((codigo) => !LISTA.some((v) => v.arquetipo === codigo))
 
 /**
- * O que a escolha de estilo rende NESTA categoria, para o editor apresentar
- * as opções pelo que o lojista ganha — não como 21 peles indistintas:
- *  - `vitrines`: estilos que ativam vitrine própria aqui, na ordem da
- *    sugestão da categoria (o default antes das alternativas);
- *  - `soPele`: os demais estilos — cores, tipografia e forma sobre o layout
- *    padrão —, os sugeridos para a categoria primeiro;
+ * Como o editor apresenta as opções para uma categoria — pelo que o lojista
+ * ganha, não como 21 peles indistintas:
+ *  - `sugeridas`: vitrines desenhadas para este ramo, na ordem da sugestão da
+ *    categoria (o default antes das alternativas);
+ *  - `outras`: as demais vitrines — valem aqui também (a vitrine segue o
+ *    estilo), agrupadas pelo ramo para o qual foram desenhadas;
+ *  - `soPele`: estilos sem vitrine nenhuma — cores, tipografia e forma sobre
+ *    o layout padrão —, os sugeridos para a categoria primeiro;
  *  - `recomendado`: o que o editor destaca e o onboarding pré-seleciona — a
- *    primeira vitrine da categoria, para a loja já nascer com layout próprio
- *    (em joias, construção e oficinas o default de pele não tem vitrine ali);
- *    sem vitrine na categoria, o default de sempre.
- * Categoria nula ou desconhecida → nenhuma vitrine (o gate depende dela) e
- * nenhuma recomendação.
+ *    primeira vitrine sugerida, para a loja já nascer com layout próprio (em
+ *    joias, construção e oficinas o default de pele não é vitrine do ramo);
+ *    sem nenhuma, o default de sempre.
+ * Categoria nula ou desconhecida → nada sugerido nem recomendado; todas as
+ * vitrines continuam disponíveis.
  */
 export interface OpcoesDeVitrine {
-  vitrines: readonly Vitrine[]
+  sugeridas: readonly Vitrine[]
+  outras: readonly Vitrine[]
   soPele: readonly ArquetipoCodigo[]
   recomendado: ArquetipoCodigo | null
 }
 
+/** Ordem canônica dos ramos — agrupa as `outras` vitrines por família. */
+const ORDEM_DOS_RAMOS: readonly string[] = Object.keys(CATEGORIA_SLUG_TO_ARQUETIPO)
+
 export function getOpcoesDeVitrine(categoriaSlug: string | null | undefined): OpcoesDeVitrine {
-  const { default: padrao, alternativas } = getArquetipoSugestao(categoriaSlug)
-  const sugeridos: ArquetipoCodigo[] = [padrao, ...alternativas]
-  const ordem = [
-    ...sugeridos,
-    ...(Object.keys(ARQUETIPOS) as ArquetipoCodigo[]).filter((c) => !sugeridos.includes(c)),
-  ]
-  const vitrines: Vitrine[] = []
-  const soPele: ArquetipoCodigo[] = []
-  for (const arquetipo of ordem) {
-    const codigo = resolveVitrine(arquetipo, categoriaSlug)
-    if (codigo) vitrines.push(VITRINES[codigo])
-    else soPele.push(arquetipo)
-  }
   const conhecida = !!categoriaSlug && categoriaSlug in CATEGORIA_SLUG_TO_ARQUETIPO
-  return { vitrines, soPele, recomendado: conhecida ? (vitrines[0]?.arquetipo ?? padrao) : null }
+  const { default: padrao, alternativas } = getArquetipoSugestao(categoriaSlug)
+  const sugeridos: ArquetipoCodigo[] = conhecida ? [padrao, ...alternativas] : []
+  const posicao = (a: ArquetipoCodigo) => {
+    const i = sugeridos.indexOf(a)
+    return i === -1 ? sugeridos.length : i
+  }
+  const sugeridas = LISTA.filter(
+    (v) => !!categoriaSlug && (v.categorias as readonly string[]).includes(categoriaSlug),
+  ).sort((a, b) => posicao(a.arquetipo) - posicao(b.arquetipo))
+  const ramo = (v: Vitrine) => ORDEM_DOS_RAMOS.indexOf(v.categorias[0])
+  const outras = LISTA.filter((v) => !sugeridas.includes(v)).sort((a, b) => ramo(a) - ramo(b))
+  const soPele = [...ARQUETIPOS_SEM_VITRINE].sort((a, b) => posicao(a) - posicao(b))
+  return {
+    sugeridas,
+    outras,
+    soPele,
+    recomendado: conhecida ? (sugeridas[0]?.arquetipo ?? padrao) : null,
+  }
 }

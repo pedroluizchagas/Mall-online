@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
 import {
   ARQUETIPOS,
   VITRINES,
@@ -14,16 +13,15 @@ import { cx } from '@/lib/cx'
 import { PartnerIcon } from '@/components/ui/partner-icon'
 
 /**
- * Escolha da cara da loja em Minha Loja, apresentada pelo que o lojista
- * GANHA na categoria dele (`getOpcoesDeVitrine`, mesma tabela VITRINES que o
- * app e o storefront leem):
- *  - as VITRINES próprias do ramo, cada uma com a miniatura de verdade (o
- *    storefront servindo a loja-demo daquela vitrine — `pnpm
- *    vitrines:miniaturas`), não um esquema de blocos coloridos;
- *  - os estilos que só vestem cores, tipografia e forma sobre o layout
- *    padrão, recolhidos quando há vitrine a escolher.
- * Antes eram 21 cartões iguais, sem dizer quais viravam vitrine — e o
- * escolhido podia ficar escondido no meio da lista.
+ * Escolha da cara da loja em Minha Loja. A vitrine SEGUE O ESTILO, em
+ * qualquer ramo (`resolveVitrine`, a mesma tabela VITRINES que o app e o
+ * storefront leem): o que o preview mostra é o que a loja publica. As opções
+ * vêm de `getOpcoesDeVitrine`:
+ *  - as vitrines desenhadas para o ramo da loja, primeiro;
+ *  - as demais vitrines, todas disponíveis, agrupadas por família;
+ *  - os estilos sem vitrine (só cores e tipografia sobre o layout padrão).
+ * Cada vitrine aparece pela miniatura de verdade (o storefront servindo a
+ * loja-demo dela — `pnpm vitrines:miniaturas`), não por um esquema desenhado.
  */
 
 export interface CategoriaDaLoja {
@@ -48,23 +46,11 @@ export function EscolhaVitrine({
   produtosComFoto: number
   aoEscolher: (preset: ArquetipoCodigo) => void
 }) {
-  const { vitrines, soPele, recomendado } = getOpcoesDeVitrine(categoria?.slug)
-  const ativa = resolveVitrine(preset, categoria?.slug)
-  const [verOutros, setVerOutros] = useState(() => vitrines.length === 0 || soPele.includes(preset))
-  const outrosAbertos = vitrines.length === 0 || verOutros
+  const { sugeridas, outras, soPele, recomendado } = getOpcoesDeVitrine(categoria?.slug)
+  const ativa = resolveVitrine(preset)
   const estilo = ARQUETIPOS[preset]
-
-  let explicacao: string
-  if (ativa) {
-    explicacao = `${VITRINES[ativa].descricao} É o layout da sua loja no app Mallevo e no site.`
-  } else if (!categoria) {
-    explicacao =
-      'Sua loja ainda não tem categoria, e é ela que libera as vitrines próprias. Até lá, o estilo veste o layout padrão com as cores, a tipografia e a forma dele.'
-  } else if (vitrines.length === 0) {
-    explicacao = `${categoria.nome} ainda não tem vitrine própria: o estilo veste o layout padrão com as cores, a tipografia e a forma dele.`
-  } else {
-    explicacao = `${estilo.nome} não tem vitrine própria em ${categoria.nome}: veste o layout padrão com as cores, a tipografia e a forma do estilo. Para um layout desenhado para o seu ramo, escolha uma das vitrines abaixo.`
-  }
+  const deOutroRamo =
+    !!ativa && !!categoria && !(VITRINES[ativa].categorias as readonly string[]).includes(categoria.slug)
 
   return (
     <div>
@@ -107,21 +93,21 @@ export function EscolhaVitrine({
             {ativa ? `Vitrine ${VITRINES[ativa].nome}` : 'Layout padrão'}
           </p>
           <p className="mt-0.5 text-[12px] font-medium text-ink-3">Estilo {estilo.nome}</p>
-          <p className="mt-2 text-[13px] leading-relaxed text-ink-2">{explicacao}</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-ink-2">
+            {ativa
+              ? `${VITRINES[ativa].descricao} É o layout da sua loja no app Mallevo e no site.`
+              : `${estilo.nome} não tem vitrine própria: veste o layout padrão com as cores, a tipografia e a forma do estilo.`}
+          </p>
+          {deOutroRamo && categoria && (
+            <p className="mt-1.5 text-[12px] leading-relaxed text-ink-3">
+              Desenhada para outro ramo — confira no preview se combina com a sua loja.
+            </p>
+          )}
           {ativa && (
             <p className="mt-1.5 text-[12px] leading-relaxed text-ink-3">
               Ela usa a campanha, o texto da casa, os destaques e as fotos da casa de “Conteúdo da vitrine”; produto
               com recorte sem fundo ganha destaque.
             </p>
-          )}
-          {!categoria && (
-            <Link
-              href="/configuracoes/tipo-de-loja"
-              className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-ink"
-            >
-              <span className="sublinha">Ver o tipo de loja</span>
-              <PartnerIcon name="chevron-right" size={13} strokeWidth={2.2} />
-            </Link>
           )}
           {produtosComFoto === 0 && (
             <div className="mt-3 flex items-start gap-2.5 rounded-xl bg-bg-2 px-3 py-2.5">
@@ -137,15 +123,15 @@ export function EscolhaVitrine({
         </div>
       </div>
 
-      {/* ── Vitrines próprias do ramo ────────────────────────────── */}
-      {categoria && vitrines.length > 0 && (
+      {/* ── Vitrines do ramo ─────────────────────────────────────── */}
+      {categoria && sugeridas.length > 0 && (
         <div className="mt-6">
           <p className="micro text-ink-3">Vitrines para {categoria.nome}</p>
           <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
-            Layout desenhado para o seu ramo, com as cores e a tipografia do estilo. A foto é uma loja de exemplo.
+            Desenhadas para o seu ramo. A foto é uma loja de exemplo; o preview mostra a sua.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3">
-            {vitrines.map((v) => (
+            {sugeridas.map((v) => (
               <CartaoVitrine
                 key={v.codigo}
                 vitrine={v}
@@ -158,42 +144,50 @@ export function EscolhaVitrine({
         </div>
       )}
 
+      {/* ── Todas as outras vitrines ─────────────────────────────── */}
+      <div className="mt-6">
+        <p className="micro text-ink-3">{sugeridas.length > 0 ? 'Outras vitrines' : 'Vitrines'}</p>
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
+          {sugeridas.length > 0
+            ? 'Desenhadas para outros ramos — também valem para a sua loja.'
+            : 'Escolha a que combina com a sua loja. A foto é uma loja de exemplo; o preview mostra a sua.'}
+        </p>
+        <div
+          className={cx(
+            'mt-3 grid gap-x-3 gap-y-4',
+            sugeridas.length > 0 ? 'grid-cols-3 sm:grid-cols-4' : 'grid-cols-2 sm:grid-cols-3',
+          )}
+        >
+          {outras.map((v) => (
+            <CartaoVitrine
+              key={v.codigo}
+              vitrine={v}
+              selecionada={preset === v.arquetipo}
+              recomendada={v.arquetipo === recomendado}
+              compacto={sugeridas.length > 0}
+              aoEscolher={() => aoEscolher(v.arquetipo)}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* ── Só a pele ────────────────────────────────────────────── */}
       <div className="mt-6">
-        {vitrines.length > 0 ? (
-          <button
-            type="button"
-            onClick={() => setVerOutros((v) => !v)}
-            aria-expanded={outrosAbertos}
-            className="flex w-full items-center justify-between gap-3 rounded-2xl px-1 py-1 text-left"
-          >
-            <span>
-              <span className="micro text-ink-3">Outros estilos</span>
-              <span className="ml-2 text-[12px] text-ink-3">só cores e tipografia · {soPele.length}</span>
-            </span>
-            <PartnerIcon name={outrosAbertos ? 'chevron-up' : 'chevron-down'} size={16} className="text-ink-3" />
-          </button>
-        ) : (
-          <p className="micro text-ink-3">Estilos</p>
-        )}
-        {outrosAbertos && (
-          <>
-            <p className="mt-1 px-1 text-[12px] leading-relaxed text-ink-3">
-              Vestem o layout padrão com as cores, a tipografia e a forma do estilo.
-            </p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {soPele.map((codigo) => (
-                <LinhaEstilo
-                  key={codigo}
-                  codigo={codigo}
-                  selecionado={preset === codigo}
-                  recomendado={codigo === recomendado}
-                  aoEscolher={() => aoEscolher(codigo)}
-                />
-              ))}
-            </div>
-          </>
-        )}
+        <p className="micro text-ink-3">Só cores e tipografia</p>
+        <p className="mt-1 text-[12px] leading-relaxed text-ink-3">
+          Estilos sem vitrine própria: vestem o layout padrão com as cores, a tipografia e a forma deles.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {soPele.map((codigo) => (
+            <LinhaEstilo
+              key={codigo}
+              codigo={codigo}
+              selecionado={preset === codigo}
+              recomendado={codigo === recomendado}
+              aoEscolher={() => aoEscolher(codigo)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   )
@@ -209,11 +203,14 @@ function CartaoVitrine({
   vitrine,
   selecionada,
   recomendada,
+  compacto = false,
   aoEscolher,
 }: {
   vitrine: Vitrine
   selecionada: boolean
   recomendada: boolean
+  /** Grade mais densa das "outras vitrines": nome e uma linha de descrição. */
+  compacto?: boolean
   aoEscolher: () => void
 }) {
   return (
@@ -241,10 +238,19 @@ function CartaoVitrine({
         )}
       </span>
       <span className="mt-2 flex min-w-0 items-center gap-1.5 px-0.5">
-        <span className="truncate text-[14px] font-semibold text-ink">{vitrine.nome}</span>
+        <span className={cx('truncate font-semibold text-ink', compacto ? 'text-[13px]' : 'text-[14px]')}>
+          {vitrine.nome}
+        </span>
         {recomendada && <SeloRecomendado />}
       </span>
-      <span className="block truncate px-0.5 text-[12px] text-ink-3">Estilo {ARQUETIPOS[vitrine.arquetipo].nome}</span>
+      <span
+        className={cx(
+          'px-0.5 leading-snug text-ink-3',
+          compacto ? 'line-clamp-1 text-[11px]' : 'mt-0.5 line-clamp-2 text-[12px]',
+        )}
+      >
+        {vitrine.descricao}
+      </span>
     </button>
   )
 }

@@ -2,14 +2,12 @@ import { getPresetExplicito, resolveVitrine, type VitrineCodigo } from '@mallevo
 
 /**
  * Qual vitrine (layout próprio) esta loja veste no web — a MESMA decisão do
- * consumer, tomada pela tabela `VITRINES` de @mallevo/lib: `preset` explícito
- * do `stores.theme` × `categoria_slug`. `null` = layout padrão (só pele).
+ * consumer, tomada pela tabela `VITRINES` de @mallevo/lib: a vitrine do
+ * `preset` explícito do `stores.theme`, em qualquer ramo. `null` = layout
+ * padrão (estilo sem vitrine ou loja sem estilo).
  */
-export function resolveVitrineDaLoja(store: {
-  theme: unknown | null
-  categoria_slug: string | null
-}): VitrineCodigo | null {
-  return resolveVitrine(getPresetExplicito(store.theme), store.categoria_slug)
+export function resolveVitrineDaLoja(store: { theme: unknown | null }): VitrineCodigo | null {
+  return resolveVitrine(getPresetExplicito(store.theme))
 }
 
 /**

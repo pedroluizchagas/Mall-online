@@ -88,8 +88,16 @@ lifestyle), **garden** (comida saudável), **slice** (pizzarias/cantinas),
 > disputando espaço com a barra. Só o layout padrão tem FAB — e ele flutua
 > acima da barra.
 
-**Gates** (em `app/loja/[slug].tsx`) — loja real que satisfaça os critérios
-veste o layout automaticamente; o resto segue no catálogo padrão:
+> **Desde 2026-10-17 a vitrine segue o estilo, em qualquer ramo**
+> (`resolveVitrine(preset)`, @mallevo/lib). O lojista via no preview só as
+> vitrines do ramo dele e o resto caía no layout padrão; agora todo estilo que
+> tem vitrine a ativa, e o preview mostra o que a loja publica no site e no
+> app. A lista abaixo virou os **ramos para os quais cada vitrine foi
+> desenhada**: o editor e o onboarding as SUGEREM primeiro
+> (`getOpcoesDeVitrine`), sem restringir. Só tech, utility e playful seguem
+> sem vitrine (layout padrão com a pele).
+
+**Ramos de desenho** (eram os gates de `app/loja/[slug].tsx`):
 - `editorial` + categoria ∈ {`vestuario-calcados`, `beleza-cosmeticos`,
   `acessorios-joias`} (`CATEGORIAS_VITRINE_EDITORIAL`);
 - `raw` + categoria `vestuario-calcados`;
@@ -542,14 +550,15 @@ vitrines: vitrine nova na lib sem porte web quebra o typecheck e o teste-guarda
 
 No dashboard, o lojista escolhe pela VITRINE, não pela pele: Minha Loja
 (`components/dashboard/escolha-vitrine.tsx`) e o passo de estilo do onboarding
-usam `getOpcoesDeVitrine(categoria)` da lib — as vitrines que a categoria
-ativa, cada uma com a miniatura real tirada do storefront (`pnpm
-vitrines:miniaturas`, ver docs/dev/qa-local.md), e os estilos só de pele
-recolhidos. O `recomendado` dela é a primeira vitrine da categoria (em
-`acessorios-joias`, `construcao-ferramentas` e `oficinas-manutencao` o default
-de pele não tem vitrine ali, então a loja nasce com Serena/Gôndola); sem
-vitrine na categoria, o default de sempre. Vitrine nova também precisa da
-miniatura — o teste do web cobra.
+usam `getOpcoesDeVitrine(categoria)` da lib — primeiro as vitrines desenhadas
+para o ramo, depois todas as outras (também valem), cada uma com a miniatura
+real tirada do storefront (`pnpm vitrines:miniaturas`, ver
+docs/dev/qa-local.md), e por fim os 3 estilos sem vitrine. O `recomendado` é a
+primeira vitrine do ramo (em `acessorios-joias`, `construcao-ferramentas` e
+`oficinas-manutencao` o default de pele não é vitrine desenhada para eles,
+então a loja nasce com Serena/Gôndola); sem nenhuma, o default de sempre.
+Vitrine de outro ramo ganha um aviso para conferir no preview. Vitrine nova
+também precisa da miniatura — o teste do web cobra.
 
 ### O vocabulário compartilhado (`components/vitrines/_base/`)
 

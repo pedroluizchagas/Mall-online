@@ -1,9 +1,9 @@
 /**
  * Registro das vitrines RN — a tabela `código → { fachada, PDP }`.
  *
- * A decisão de QUAL vitrine usar não mora aqui: é `resolveVitrine(preset,
- * categoria_slug)` em @mallevo/lib (tabela `VITRINES`), a mesma que o
- * storefront e o editor do lojista leem. Aqui só se mapeia o código para os
+ * A decisão de QUAL vitrine usar não mora aqui: é `resolveVitrine(preset)` em
+ * @mallevo/lib (tabela `VITRINES`), a mesma que o storefront e o editor do
+ * lojista leem. Aqui só se mapeia o código para os
  * componentes, como `VITRINES_WEB` faz do outro lado.
  *
  * Por que props COMUNS e não as props de cada componente: a união dos 18
