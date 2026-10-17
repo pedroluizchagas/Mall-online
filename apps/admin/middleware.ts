@@ -56,5 +56,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // Arquivos estáticos ficam de fora: sem isso a logo, os ícones e o
+  // manifest da tela de entrar eram redirecionados para /entrar (HTML no
+  // lugar da imagem) para quem ainda não entrou.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|manifest.webmanifest|brand/|icons/).*)'],
 }

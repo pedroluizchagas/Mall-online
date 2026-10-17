@@ -1,273 +1,349 @@
-import { getMetricasGlobais } from '@/lib/actions/admin'
+import Link from 'next/link'
 import { formatarReais } from '@mallevo/lib'
-import { GraficoGMV } from '@/components/admin/grafico-gmv'
-import { MiniCalendario } from '@/components/admin/mini-calendario'
-import {
-  Store,
-  Users,
-  ShoppingBag,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  AlertCircle,
-  ArrowUpRight,
-} from 'lucide-react'
+import { getVisaoGeral } from '@/lib/consultas'
+import { contagem, numero, quando, saudacao } from '@/lib/format'
+import { dataPorExtenso, horaDeDivinopolis, mesAtual, rotuloDoMes, somarMeses } from '@/lib/hoje'
+import { metaRecebimentos } from '@/lib/status'
+import { PlacaVidro, Sobrelinha, Statement } from '@/components/admin/marquise'
+import { Folha, SecaoFolha } from '@/components/admin/folha'
+import { KPI } from '@/components/admin/kpi'
+import { variacao } from '@/lib/metricas'
+import { BadgeStatus } from '@/components/admin/badge-status'
+import { Tijolo } from '@/components/admin/tijolo'
+import { FilaAcao, type ItemAcao } from '@/components/admin/visao-geral/fila-acao'
+import { GraficoMeses } from '@/components/admin/visao-geral/grafico-meses'
+import { BarraDistribuicao } from '@/components/admin/visao-geral/distribuicao'
+import { PartnerIcon, type PartnerIconName } from '@/components/ui/partner-icon'
 
-function saudar() {
-  const hora = new Date().getHours()
-  if (hora < 12) return 'Bom dia'
-  if (hora < 18) return 'Boa tarde'
-  return 'Boa noite'
-}
+export const dynamic = 'force-dynamic'
 
-export default async function PaginaAdminVisaoGeral() {
-  const metricas = await getMetricasGlobais()
+/**
+ * Visão geral — o shopping inteiro na arquitetura do Início do lojista:
+ *
+ * - MARQUISE (o que está ao vivo): saudação, o statement da casa, os números
+ *   de hoje em placas de vidro e a fila do que pede a administração.
+ * - FOLHA (o acervo): os últimos 12 meses, os lojistas por situação, o mês
+ *   corrente comparado com o mesmo trecho do anterior, quem chegou por último
+ *   e os atalhos dos bastidores.
+ *
+ * Todo número sai do banco; "hoje" e "mês" são de Divinópolis.
+ */
+export default async function PaginaVisaoGeral() {
+  const v = await getVisaoGeral()
+  const agora = new Date()
+  const mes = mesAtual(agora)
+  const nomeMesAnterior = rotuloDoMes(somarMeses(mes, -1)).split(' de ')[0]
 
-  const kpis = [
-    {
-      label: 'Lojistas Ativos',
-      valor: metricas.lojistas_ativos.toLocaleString('pt-BR'),
-      variacao: 15,
-      positivo: true,
-      icon: Store,
-      iconBg: 'bg-brick/10',
-      iconColor: 'text-brick-dk',
-    },
-    {
-      label: 'Assinaturas Ativas',
-      valor: metricas.assinaturas_ativas.toLocaleString('pt-BR'),
-      variacao: 9,
-      positivo: false,
-      icon: Users,
-      iconBg: 'bg-sky/10',
-      iconColor: 'text-sky',
-    },
-    {
-      label: 'GMV Hoje',
-      valor: formatarReais(metricas.gmv_hoje),
-      variacao: 7.2,
-      positivo: true,
-      icon: DollarSign,
-      iconBg: 'bg-berry/10',
-      iconColor: 'text-berry',
-    },
-    {
-      label: 'Comissões do Mês',
-      valor: formatarReais(metricas.receita_comissao_mes),
-      variacao: 2,
-      positivo: false,
-      icon: ShoppingBag,
-      iconBg: 'bg-mustard/10',
-      iconColor: 'text-warn',
-    },
-  ]
+  const itens: ItemAcao[] = []
+  if (v.pendentes.total > 0) {
+    const primeiro = v.pendentes.primeiros[0]
+    itens.push({
+      id: 'entregadores',
+      icone: 'bike',
+      titulo: `${contagem(v.pendentes.total, 'entregador aguardando', 'entregadores aguardando')} aprovação`,
+      descricao: `${v.pendentes.primeiros.map((p) => p.nome.split(/\s+/)[0]).join(', ')}${v.pendentes.total > 3 ? '…' : ''} — o primeiro chegou ${quando(primeiro.criadoEm, agora.getTime())}.`,
+      cta: { label: 'Revisar', href: '/admin/entregadores?status=pendente' },
+    })
+  }
+  if (v.recebimentosComProblema > 0) {
+    itens.push({
+      id: 'recebimentos',
+      icone: 'alert',
+      titulo: `${contagem(v.recebimentosComProblema, 'lojista', 'lojistas')} com recebimento travado`,
+      descricao: 'Recusado, bloqueado ou suspenso no Pagar.me — a loja não recebe pelo online.',
+      cta: { label: 'Ver lojistas', href: '/admin/lojistas?recebimentos=com_problema' },
+    })
+  }
+  if (v.assinaturasEmAtraso > 0) {
+    itens.push({
+      id: 'assinaturas',
+      icone: 'clock',
+      titulo: `${contagem(v.assinaturasEmAtraso, 'assinatura', 'assinaturas')} em atraso`,
+      descricao: 'O lojista já vê o aviso de regularização no painel dele.',
+      cta: { label: 'Ver lojistas', href: '/admin/lojistas?assinatura=em_atraso' },
+    })
+  }
+  if (v.lojasEmOutros > 0) {
+    itens.push({
+      id: 'outros',
+      icone: 'inbox',
+      titulo: `${contagem(v.lojasEmOutros, 'loja', 'lojas')} sem nicho definido`,
+      descricao: 'Estão em “Outros”: reclassifique para a loja ganhar o template e o piso certos.',
+      cta: { label: 'Reclassificar', href: '/admin/lojas-outros' },
+    })
+  }
 
-  const mesAtualLabel = new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  const resumo =
+    v.emAndamento === 0 && v.entregadoresOnline === 0
+      ? 'Tudo calmo no shopping agora — nenhum pedido em andamento.'
+      : [
+          v.emAndamento > 0 ? contagem(v.emAndamento, 'pedido em andamento', 'pedidos em andamento') : 'Nenhum pedido em andamento',
+          contagem(v.entregadoresOnline, 'entregador online', 'entregadores online'),
+        ].join(' · ')
 
-  return (
-    <div className="p-9 space-y-5 max-w-[1400px]">
-      {/* Page header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-[34px] leading-tight text-ink">
-            {saudar()}, Admin!
-          </h1>
-          <p className="text-[13px] text-ink-3 mt-0.5">
-            Aqui está a visão geral da plataforma Mallevo.
-          </p>
-        </div>
-
-        <div
-          className="flex items-center gap-3 rounded-lg px-4 py-3 border"
-          style={{
-            background: 'var(--bg)',
-            borderColor: 'var(--line)',
-            boxShadow: 'var(--shadow-sm)',
-          }}
-        >
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(193,241,72,0.15)' }}
-          >
-            <span className="text-brick-dk text-sm font-bold">A</span>
-          </div>
-          <div className="text-right">
-            <p className="text-[13px] font-semibold text-ink leading-tight">Super Admin</p>
-            <p className="text-[11px] text-ink-3">Mallevo Plataforma</p>
-          </div>
-        </div>
-      </div>
-
-      {/* KPI cards */}
-      <div className="grid grid-cols-4 gap-[18px]">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon
-          return (
-            <div
-              key={kpi.label}
-              className="bg-bg border border-line rounded-lg p-5 hover:border-line-2 hover:shadow-md transition-all"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <p className="text-[13px] text-ink-3 font-medium leading-tight">{kpi.label}</p>
-                <div className={`w-7 h-7 rounded-full flex items-center justify-center ${kpi.iconBg}`}>
-                  <Icon size={15} className={kpi.iconColor} />
-                </div>
-              </div>
-
-              <p className="font-display text-[34px] leading-none text-ink mb-3">
-                {kpi.valor}
-              </p>
-
-              <div
-                className={`flex items-center gap-1 text-[11px] font-bold ${
-                  kpi.positivo ? 'text-ok' : 'text-err'
-                }`}
-              >
-                {kpi.positivo ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                <span>{kpi.positivo ? '+' : '-'}{kpi.variacao}% do mês passado</span>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Main content: chart + right column */}
-      <div className="grid grid-cols-[1fr_300px] gap-[18px]">
-        {/* GMV Chart */}
-        <div className="bg-bg border border-line rounded-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="font-bold text-[17px] tracking-tight text-ink">Visão Geral do GMV</h2>
-              <p className="text-[13px] text-ink-3 mt-0.5 capitalize">{mesAtualLabel}</p>
-            </div>
-            <select
-              className="text-[13px] border rounded-md px-3 py-2 text-ink-2 bg-bg
-                focus:outline-none focus:ring-2 focus:ring-brick cursor-pointer"
-              style={{ borderColor: 'var(--line)' }}
-            >
-              <option>Este ano</option>
-              <option>6 meses</option>
-              <option>3 meses</option>
-            </select>
-          </div>
-          <GraficoGMV />
-        </div>
-
-        {/* Right column */}
-        <div className="flex flex-col gap-[18px]">
-          <MiniCalendario />
-
-          {/* Quick stats */}
-          <div className="bg-bg border border-line rounded-lg p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-[13px] font-semibold text-ink">Atividade de Hoje</h3>
-              <a
-                href="/admin/financeiro"
-                className="text-[11px] text-brick-dk hover:underline flex items-center gap-0.5"
-              >
-                Ver tudo <ArrowUpRight size={11} />
-              </a>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { label: 'Pedidos entregues', valor: metricas.pedidos_hoje, pct: '68%', color: 'var(--brick)' },
-                { label: 'Entregadores ativos', valor: metricas.entregadores_aprovados, pct: '42%', color: 'var(--leaf)' },
-                { label: 'Lojistas com pedido', valor: metricas.lojistas_ativos, pct: '55%', color: 'var(--mustard)' },
-              ].map((item) => (
-                <div key={item.label}>
-                  <div className="flex justify-between text-[13px] mb-1.5">
-                    <span className="text-ink-3">{item.label}</span>
-                    <span className="font-semibold text-ink">{item.valor}</span>
-                  </div>
-                  <div className="h-1.5 bg-bg-3 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: item.pct, background: item.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom stats row */}
-      <div className="grid grid-cols-3 gap-[18px]">
-        <MetricaCard
-          label="Pedidos este mês"
-          valor={metricas.pedidos_mes.toLocaleString('pt-BR')}
-          sub="pedidos entregues"
-        />
-        <MetricaCard
-          label="GMV do mês"
-          valor={formatarReais(metricas.gmv_mes)}
-          sub="volume bruto de mercadorias"
-        />
-        <MetricaCard
-          label="Receita total do mês"
-          valor={formatarReais(metricas.receita_comissao_mes)}
-          sub="comissões da plataforma"
-          destaque
-        />
-      </div>
-
-      {/* Alert: repasses pendentes */}
-      {metricas.repasses_pendentes > 0 && (
-        <div
-          className="rounded-lg p-5 flex items-center justify-between"
-          style={{ background: '#fef3c7', border: '1px solid #fcd34d' }}
-        >
-          <div className="flex items-start gap-3">
-            <AlertCircle size={18} className="text-warn mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="text-[13px] font-semibold" style={{ color: '#92400e' }}>
-                Repasses pendentes de processamento
-              </p>
-              <p className="text-[13px] mt-0.5" style={{ color: '#b45309' }}>
-                Serão processados automaticamente pelo cron de meia-noite.
-              </p>
-            </div>
-          </div>
-          <p className="font-display text-[22px] whitespace-nowrap ml-4" style={{ color: '#92400e' }}>
-            {formatarReais(metricas.repasses_pendentes)}
-          </p>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function MetricaCard({
-  label,
-  valor,
-  sub,
-  destaque,
-}: {
-  label: string
-  valor: string
-  sub: string
-  destaque?: boolean
-}) {
-  if (destaque) {
-    return (
-      <div
-        className="rounded-lg p-5"
-        style={{ background: 'var(--sidebar)', border: '1px solid var(--sidebar-2)' }}
-      >
-        <p className="text-[10px] uppercase font-semibold tracking-wider mb-2 text-sidebar-ink-3">{label}</p>
-        <p className="font-display text-[34px] leading-none mb-1 text-sidebar-ink">{valor}</p>
-        <p className="text-[13px] text-sidebar-ink-3">{sub}</p>
-      </div>
-    )
+  const contexto = `vs. mesmo período de ${nomeMesAnterior}`
+  const delta = (atual: number, anterior: number) => {
+    const pct = variacao(atual, anterior)
+    return pct === null ? null : { pct, contexto }
   }
 
   return (
-    <div className="bg-bg border border-line rounded-lg p-5 shadow-sm">
-      <p className="text-[10px] uppercase font-semibold tracking-wider text-ink-3 mb-2">{label}</p>
-      <p className="font-display text-[34px] leading-none text-ink mb-1">{valor}</p>
-      <p className="text-[13px] text-ink-3">{sub}</p>
-    </div>
+    <>
+      {/* ── Marquise ───────────────────────────────────────────────── */}
+      <section aria-labelledby="titulo-visao" className="sobre-escuro relative px-6 pb-16 pt-7 text-white sm:px-10 sm:pt-9">
+        <div className="mx-auto max-w-[1280px]">
+          <div className="entra flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+            <Sobrelinha aoVivo>
+              {saudacao(horaDeDivinopolis(agora))}, {v.primeiroNome} · {dataPorExtenso(agora)}
+            </Sobrelinha>
+            <Link
+              href={`/admin/financeiro?mes=${mes}`}
+              className="group inline-flex h-9 items-center gap-2 rounded-full bg-[color:var(--m-glass)] pl-4 pr-3 text-[13px] font-semibold text-[color:var(--m-ink-2)] ring-1 ring-inset ring-[color:var(--m-line)] transition-colors hover:bg-[color:var(--m-glass-2)] hover:text-white"
+            >
+              Conciliação de {rotuloDoMes(mes).split(' de ')[0]}
+              <PartnerIcon name="chevron-right" size={14} strokeWidth={2.2} />
+            </Link>
+          </div>
+
+          <div className="mt-8 grid gap-12 xl:grid-cols-12 xl:gap-10">
+            <div className="xl:col-span-7">
+              <div className="entra" style={{ ['--d' as string]: '0.05s' }}>
+                <Statement
+                  id="titulo-visao"
+                  className="text-[clamp(42px,5vw,72px)]"
+                  linha="O shopping inteiro,"
+                  acesa={<>ao vivo.</>}
+                />
+                <p className="mt-5 text-[16px] leading-relaxed text-[color:var(--m-ink-2)]">{resumo}</p>
+              </div>
+
+              <div className="entra mt-9 grid grid-cols-2 gap-3 sm:grid-cols-3" style={{ ['--d' as string]: '0.14s' }}>
+                <PlacaVidro icone="cash" valor={formatarReais(v.hoje.gmv)} rotulo="GMV entregue hoje" />
+                <PlacaVidro icone="check-double" valor={numero(v.hoje.pedidos)} rotulo="Entregues hoje" />
+                <PlacaVidro icone="wallet" valor={formatarReais(v.hoje.comissoes)} rotulo="Comissões hoje" />
+                <PlacaVidro icone="orders" valor={numero(v.emAndamento)} rotulo="Em andamento agora" />
+                <PlacaVidro icone="store" valor={numero(v.lojistasAtivos)} rotulo="Lojistas ativos" href="/admin/lojistas" />
+                <PlacaVidro
+                  icone="bike"
+                  valor={numero(v.entregadoresOnline)}
+                  rotulo="Entregadores online"
+                  href="/admin/entregadores?status=aprovado"
+                />
+              </div>
+            </div>
+
+            <div className="entra xl:col-span-5 xl:self-end" style={{ ['--d' as string]: '0.22s' }}>
+              <div className="flex items-center justify-between">
+                <p className="micro text-[color:var(--m-ink-3)]">Pede sua ação</p>
+                {itens.length > 0 && (
+                  <span className="rounded-full bg-[color:var(--brick)] px-2 py-0.5 text-[11px] font-bold text-[color:var(--brick-ink)] tabular-nums">
+                    {itens.length}
+                  </span>
+                )}
+              </div>
+              <div className="mt-3">
+                <FilaAcao itens={itens} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Folha ──────────────────────────────────────────────────── */}
+      <Folha>
+        <div className="mx-auto flex max-w-[1280px] flex-col gap-12 px-6 pt-10 sm:px-10 sm:pt-12">
+          <div className="grid gap-x-6 gap-y-12 xl:grid-cols-12">
+            <SecaoFolha
+              id="movimento"
+              className="flex flex-col xl:col-span-8"
+              sobrelinha="Últimos 12 meses · pedidos entregues"
+              titulo="Movimento do shopping"
+              acao={{ label: 'Conciliação', href: '/admin/financeiro' }}
+            >
+              <GraficoMeses
+                serie={v.serie.map((p) => ({
+                  mes: p.mes,
+                  curto: rotuloDoMes(p.mes, 'curto'),
+                  longo: rotuloDoMes(p.mes),
+                  gmv: p.gmv,
+                  pedidos: p.pedidos,
+                  comissoes: p.comissoes,
+                }))}
+              />
+            </SecaoFolha>
+
+            <SecaoFolha
+              id="lojistas"
+              className="flex flex-col xl:col-span-4"
+              sobrelinha={contagem(v.lojistasTotal, 'lojista cadastrado', 'lojistas cadastrados')}
+              titulo="Lojistas por situação"
+              acao={{ label: 'Ver todos', href: '/admin/lojistas' }}
+            >
+              <div className="cartao flex flex-1 flex-col gap-7 p-5 sm:p-6">
+                <BarraDistribuicao
+                  rotulo="Assinatura"
+                  segmentos={[
+                    { id: 'ativa', rotulo: 'Ativa', valor: v.distribuicao.assinatura.ativa ?? 0, tom: 'ok' },
+                    { id: 'trial', rotulo: 'Em teste', valor: v.distribuicao.assinatura.trial ?? 0, tom: 'info' },
+                    { id: 'em_atraso', rotulo: 'Em atraso', valor: v.distribuicao.assinatura.em_atraso ?? 0, tom: 'aviso' },
+                    { id: 'cancelada', rotulo: 'Cancelada', valor: v.distribuicao.assinatura.cancelada ?? 0, tom: 'perigo' },
+                    { id: 'suspensa', rotulo: 'Suspensa', valor: v.distribuicao.assinatura.suspensa ?? 0, tom: 'neutro' },
+                    { id: 'sem', rotulo: 'Sem assinatura', valor: v.distribuicao.assinatura.sem ?? 0, tom: 'vazio' },
+                  ]}
+                />
+                <BarraDistribuicao
+                  rotulo="Recebimentos"
+                  segmentos={[
+                    { id: 'verificado', rotulo: 'Verificado', valor: v.distribuicao.recebimentos.verificado, tom: 'ok' },
+                    { id: 'em_andamento', rotulo: 'Em andamento', valor: v.distribuicao.recebimentos.em_andamento, tom: 'aviso' },
+                    { id: 'com_problema', rotulo: 'Com problema', valor: v.distribuicao.recebimentos.com_problema, tom: 'perigo' },
+                    { id: 'inativo', rotulo: 'Inativo', valor: v.distribuicao.recebimentos.inativo, tom: 'neutro' },
+                  ]}
+                />
+              </div>
+            </SecaoFolha>
+          </div>
+
+          <SecaoFolha
+            id="este-mes"
+            sobrelinha={`${rotuloDoMes(mes)} · até agora`}
+            titulo="Este mês"
+            acao={{ label: 'Abrir conciliação', href: `/admin/financeiro?mes=${mes}` }}
+          >
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <KPI
+                rotulo="Pedidos entregues"
+                valor={numero(v.mes.pedidos)}
+                delta={delta(v.comparacao.atual.pedidos, v.comparacao.anterior.pedidos)}
+              />
+              <KPI rotulo="GMV" valor={formatarReais(v.mes.gmv)} delta={delta(v.comparacao.atual.gmv, v.comparacao.anterior.gmv)} />
+              <KPI rotulo="Ticket médio" valor={formatarReais(v.mes.ticketMedio)} sub="GMV ÷ pedidos entregues" />
+              <KPI
+                rotulo="Comissões"
+                valor={formatarReais(v.mes.comissoes)}
+                delta={delta(v.comparacao.atual.comissoes, v.comparacao.anterior.comissoes)}
+                sub="O que fica com a plataforma"
+                destaque
+              />
+            </div>
+            {v.repassesACaminho.quantidade > 0 && (
+              <Link
+                href="/admin/financeiro"
+                className="cartao group mt-4 flex items-center gap-3.5 p-4 transition-shadow hover:shadow-md"
+              >
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-2 text-ink">
+                  <PartnerIcon name="route" size={18} strokeWidth={1.9} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold text-ink">
+                    {formatarReais(v.repassesACaminho.valor)} em{' '}
+                    {contagem(v.repassesACaminho.quantidade, 'repasse a caminho', 'repasses a caminho')}
+                  </span>
+                  <span className="block text-[12.5px] text-ink-3">Agendados ou em processamento no Pagar.me.</span>
+                </span>
+                <PartnerIcon
+                  name="chevron-right"
+                  size={16}
+                  strokeWidth={2.2}
+                  className="shrink-0 text-ink-3 transition-transform duration-300 ease-entrada group-hover:translate-x-0.5"
+                />
+              </Link>
+            )}
+          </SecaoFolha>
+
+          <div className="grid gap-x-6 gap-y-12 lg:grid-cols-2">
+            <SecaoFolha
+              id="novos"
+              className="flex flex-col"
+              sobrelinha="Chegaram por último"
+              titulo="Novos no shopping"
+              acao={{ label: 'Ver lojistas', href: '/admin/lojistas' }}
+            >
+              <div className="cartao flex flex-1 flex-col p-2">
+                {v.novosLojistas.length === 0 ? (
+                  <p className="px-4 py-10 text-center text-[14px] text-ink-3">Nenhum lojista cadastrado ainda.</p>
+                ) : (
+                  <ul className="m-0 flex list-none flex-col p-0">
+                    {v.novosLojistas.map((l, i) => (
+                      <li key={l.id} className={i > 0 ? 'border-t border-line' : undefined}>
+                        <Link
+                          href={`/admin/lojistas?busca=${encodeURIComponent(l.email || l.nome)}`}
+                          className="flex items-center gap-3.5 rounded-[14px] px-3 py-3 transition-colors hover:bg-bg-2"
+                        >
+                          <Tijolo nome={l.loja?.nome ?? l.nome} foto={l.loja?.logo} className="size-10" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[14px] font-semibold text-ink">{l.loja?.nome ?? l.nome}</span>
+                            <span className="block truncate text-[12.5px] text-ink-3">
+                              {l.loja ? `${l.nome} · ` : ''}{quando(l.criadoEm, agora.getTime())}
+                            </span>
+                          </span>
+                          <BadgeStatus meta={metaRecebimentos(l.recebimentos)} contexto="Recebimentos" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </SecaoFolha>
+
+            <SecaoFolha id="atalhos" className="flex flex-col" sobrelinha="Atalhos" titulo="Bastidores">
+              <div className="cartao flex flex-1 flex-col p-2">
+                <ul className="m-0 flex list-none flex-col p-0">
+                  {ATALHOS.map((a, i) => (
+                    <li key={a.href} className={i > 0 ? 'border-t border-line' : undefined}>
+                      <Link
+                        href={a.href}
+                        className="group flex items-center gap-3.5 rounded-[14px] px-3 py-3 transition-colors hover:bg-bg-2"
+                      >
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-2 text-ink transition-colors group-hover:bg-bg">
+                          <PartnerIcon name={a.icone} size={18} strokeWidth={1.9} />
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[14px] font-semibold text-ink">{a.rotulo}</span>
+                          <span className="block truncate text-[12.5px] text-ink-3">{a.descricao}</span>
+                        </span>
+                        <PartnerIcon
+                          name="chevron-right"
+                          size={16}
+                          strokeWidth={2.2}
+                          className="shrink-0 text-ink-3 transition-transform duration-300 ease-entrada group-hover:translate-x-0.5"
+                        />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </SecaoFolha>
+          </div>
+        </div>
+      </Folha>
+    </>
   )
 }
+
+const ATALHOS: { href: string; icone: PartnerIconName; rotulo: string; descricao: string }[] = [
+  {
+    href: '/admin/entregadores?status=pendente',
+    icone: 'bike',
+    rotulo: 'Aprovar entregadores',
+    descricao: 'A fila de cadastros, com a foto da CNH',
+  },
+  {
+    href: '/admin/lojas-outros',
+    icone: 'inbox',
+    rotulo: 'Reclassificar lojas',
+    descricao: 'Levar cada loja de “Outros” para o nicho certo',
+  },
+  {
+    href: '/admin/financeiro',
+    icone: 'wallet',
+    rotulo: 'Conciliação do mês',
+    descricao: 'GMV, comissões e repasses',
+  },
+  {
+    href: '/admin/planos#novo-plano',
+    icone: 'tag',
+    rotulo: 'Novo plano',
+    descricao: 'Nasce no Stripe e entra na lista de planos',
+  },
+]

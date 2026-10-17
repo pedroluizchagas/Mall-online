@@ -1,106 +1,106 @@
-import { getTenants } from '@/lib/actions/admin'
-import { TabelaTenants } from '@/components/admin/tabela-tenants'
-import { Store } from 'lucide-react'
+import { getLojistas, LIMITE_LISTA } from '@/lib/consultas'
+import { contagem } from '@/lib/format'
+import { GRUPOS_RECEBIMENTOS, STATUS_ASSINATURA } from '@/lib/status'
+import { PageHeader } from '@/components/admin/page-header'
+import { EmptyState } from '@/components/admin/empty-state'
+import { FiltroChips, hrefComFiltros } from '@/components/admin/filtros'
+import { CampoBusca } from '@/components/admin/campo-busca'
+import { ListaLojistas } from '@/components/admin/lojistas/lista-lojistas'
 
-const FILTROS = [
-  { label: 'Todos', valor: '' },
-  { label: 'Ativos', valor: 'ativa' },
-  { label: 'Trial', valor: 'trial' },
-  { label: 'Em atraso', valor: 'em_atraso' },
-  { label: 'Cancelados', valor: 'cancelada' },
+export const dynamic = 'force-dynamic'
+
+const BASE = '/admin/lojistas'
+
+const OPCOES_ASSINATURA = [
+  { valor: '', label: 'Todas' },
+  ...['ativa', 'trial', 'em_atraso', 'cancelada', 'suspensa'].map((s) => ({ valor: s, label: STATUS_ASSINATURA[s].rotulo })),
+  { valor: 'sem', label: 'Sem assinatura' },
 ]
 
-const FILTROS_PAGARME = [
-  { label: 'Todos', valor: '' },
-  { label: 'Ativo', valor: 'active' },
-  { label: 'Em análise', valor: 'affiliation' },
-  { label: 'Cadastro', valor: 'registration' },
-  { label: 'Pendente', valor: 'pending' },
-  { label: 'Recusado', valor: 'refused' },
-  { label: 'Bloqueado', valor: 'blocked' },
+const OPCOES_RECEBIMENTOS = [
+  { valor: '', label: 'Todos' },
+  ...Object.entries(GRUPOS_RECEBIMENTOS).map(([valor, g]) => ({ valor, label: g.rotulo })),
 ]
+
+/** Valor de filtro vindo da URL: só o que existe nas opções passa. */
+function opcaoValida(valor: string | undefined, opcoes: { valor: string }[]): string | undefined {
+  return valor && opcoes.some((o) => o.valor === valor) ? valor : undefined
+}
 
 export default async function PaginaLojistas({
   searchParams,
 }: {
-  searchParams: { status?: string; busca?: string; pagarme_status?: string }
+  searchParams: { assinatura?: string; recebimentos?: string; busca?: string }
 }) {
-  const tenants = await getTenants({
-    billing_status: searchParams.status,
-    busca: searchParams.busca,
-    pagarme_status: searchParams.pagarme_status,
-  })
+  const assinatura = opcaoValida(searchParams.assinatura, OPCOES_ASSINATURA)
+  const recebimentos = opcaoValida(searchParams.recebimentos, OPCOES_RECEBIMENTOS)
+  const busca = (searchParams.busca ?? '').slice(0, 80)
+  const atuais = { assinatura, recebimentos, busca: busca || undefined }
 
-  const statusAtual = searchParams.status ?? ''
-  const pagarmeAtual = searchParams.pagarme_status ?? ''
-
-  function buildHref(params: Record<string, string | undefined>) {
-    const merged = {
-      status: statusAtual || undefined,
-      pagarme_status: pagarmeAtual || undefined,
-      ...params,
-    }
-    const qs = Object.entries(merged)
-      .filter(([, v]) => v)
-      .map(([k, v]) => `${k}=${v}`)
-      .join('&')
-    return `/admin/lojistas${qs ? `?${qs}` : ''}`
-  }
+  const { lojistas, total, totalGeral, contagens } = await getLojistas({ assinatura, recebimentos, busca })
+  const somaDe = (c: Record<string, number>) => Object.values(c).reduce((s, n) => s + n, 0)
+  const filtrando = Boolean(assinatura || recebimentos || busca)
 
   return (
-    <div className="p-9 space-y-5 max-w-[1400px]">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-brick/10 flex items-center justify-center">
-            <Store size={17} className="text-brick-dk" />
-          </div>
-          <div>
-            <h1 className="font-bold text-[17px] tracking-tight text-ink">Lojistas</h1>
-            <p className="text-[13px] text-ink-3">{tenants.length} encontrado(s)</p>
-          </div>
+    <div className="slide-up p-6 sm:p-9">
+      <PageHeader
+        sobrelinha="Operar"
+        titulo="Lojistas"
+        subtitulo={`${contagem(totalGeral, 'lojista cadastrado', 'lojistas cadastrados')} — a assinatura vem do Stripe; os recebimentos, do Pagar.me.`}
+        acoes={
+          <CampoBusca
+            valorInicial={busca}
+            parametros={{ assinatura, recebimentos }}
+            placeholder="Buscar loja, nome, e-mail ou telefone"
+            rotulo="Buscar lojista"
+          />
+        }
+      />
+
+      <div className="mb-6 flex flex-col gap-2">
+        <FiltroChips
+          rotulo="Assinatura"
+          opcoes={OPCOES_ASSINATURA.map((o) => ({
+            label: o.label,
+            href: hrefComFiltros(BASE, atuais, { assinatura: o.valor || undefined }),
+            ativa: (assinatura ?? '') === o.valor,
+            contagem: o.valor ? contagens.assinatura[o.valor] ?? 0 : somaDe(contagens.assinatura),
+          }))}
+        />
+        <FiltroChips
+          rotulo="Recebimentos"
+          opcoes={OPCOES_RECEBIMENTOS.map((o) => ({
+            label: o.label,
+            href: hrefComFiltros(BASE, atuais, { recebimentos: o.valor || undefined }),
+            ativa: (recebimentos ?? '') === o.valor,
+            contagem: o.valor ? contagens.recebimentos[o.valor] ?? 0 : somaDe(contagens.recebimentos),
+          }))}
+        />
+      </div>
+
+      {lojistas.length === 0 ? (
+        <div className="cartao">
+          <EmptyState
+            icone={filtrando ? 'search' : 'store'}
+            titulo={filtrando ? 'Nenhum lojista com esses filtros' : 'Nenhum lojista ainda'}
+            descricao={
+              filtrando
+                ? 'Confira a busca ou volte para todos os lojistas.'
+                : 'Quando uma loja se cadastrar pelo painel, ela aparece aqui.'
+            }
+            cta={filtrando ? { label: 'Ver todos os lojistas', href: BASE } : undefined}
+          />
         </div>
-      </div>
-
-      {/* Filtros */}
-      <div className="flex gap-2 flex-wrap">
-        {FILTROS.map((f) => (
-          <a
-            key={f.valor || 'all'}
-            href={buildHref({ status: f.valor || undefined })}
-            className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${
-              statusAtual === f.valor
-                ? 'border-transparent text-brick-ink'
-                : 'bg-bg text-ink-2 border-line hover:border-line-2 hover:bg-bg-2'
-            }`}
-            style={statusAtual === f.valor ? { background: 'var(--brick)' } : {}}
-          >
-            {f.label}
-          </a>
-        ))}
-      </div>
-
-      <div className="flex gap-2 flex-wrap items-center">
-        <span className="text-[11px] uppercase tracking-wider text-ink-3 font-semibold mr-1">
-          Recebimentos
-        </span>
-        {FILTROS_PAGARME.map((f) => (
-          <a
-            key={f.valor || 'all'}
-            href={buildHref({ pagarme_status: f.valor || undefined })}
-            className={`px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all ${
-              pagarmeAtual === f.valor
-                ? 'border-transparent text-brick-ink'
-                : 'bg-bg text-ink-2 border-line hover:border-line-2 hover:bg-bg-2'
-            }`}
-            style={pagarmeAtual === f.valor ? { background: 'var(--brick)' } : {}}
-          >
-            {f.label}
-          </a>
-        ))}
-      </div>
-
-      <TabelaTenants tenants={tenants} />
+      ) : (
+        <>
+          <p className="mb-3 text-[13px] font-semibold text-ink-3" aria-live="polite">
+            {total > LIMITE_LISTA
+              ? `Mostrando ${LIMITE_LISTA} de ${total} — refine a busca para achar o resto.`
+              : contagem(total, 'lojista', 'lojistas')}
+          </p>
+          <ListaLojistas lojistas={lojistas} />
+        </>
+      )}
     </div>
   )
 }

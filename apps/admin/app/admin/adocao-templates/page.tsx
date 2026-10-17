@@ -1,346 +1,141 @@
-import { redirect } from 'next/navigation'
-import { BarChart3 } from 'lucide-react'
-import { createSupabaseServer } from '@/lib/supabase/server'
-import {
-  CATEGORIA_SLUG_TO_TEMPLATE,
-  TEMPLATES,
-  type TemplateCodigo,
-} from '@mallevo/lib'
+import Link from 'next/link'
+import { TEMPLATES, type TemplateCodigo } from '@mallevo/lib'
+import { getAdocao } from '@/lib/consultas'
+import { contagem, dataCurta, numero } from '@/lib/format'
+import { cx } from '@/lib/cx'
+import { PageHeader } from '@/components/admin/page-header'
+import { SecaoFolha } from '@/components/admin/folha'
+import { KPI } from '@/components/admin/kpi'
+import { PartnerIcon, type PartnerIconName } from '@/components/ui/partner-icon'
 
 export const dynamic = 'force-dynamic'
 
-type LinhaCategoria = {
-  id: string
-  slug: string | null
-  nome: string
-  ordem: number | null
-  total: number
-}
-
-type Troca = {
-  id: string
-  changed_at: string
-  motivo: string
-  categoria_anterior: string | null
-  categoria_nova: string
-  store_id: string
-  loja_nome?: string | null
-  cat_anterior_nome?: string | null
-  cat_nova_nome?: string | null
-}
-
-const TEMPLATE_CODIGOS: TemplateCodigo[] = [
-  'food',
-  'fashion',
-  'pharmacy',
-  'pet',
-  'services',
-  'generic',
+/** O traço da casa para cada template (os ícones de piso do app). */
+const TEMPLATES_EM_ORDEM: { codigo: TemplateCodigo; icone: PartnerIconName }[] = [
+  { codigo: 'food', icone: 'utensils' },
+  { codigo: 'fashion', icone: 'hanger' },
+  { codigo: 'pharmacy', icone: 'pulse' },
+  { codigo: 'pet', icone: 'paw' },
+  { codigo: 'services', icone: 'scissors' },
+  { codigo: 'generic', icone: 'box' },
 ]
 
-function agruparPorTemplate(
-  linhas: LinhaCategoria[],
-): Record<TemplateCodigo, number> {
-  const out: Record<TemplateCodigo, number> = {
-    food: 0,
-    fashion: 0,
-    pharmacy: 0,
-    pet: 0,
-    services: 0,
-    generic: 0,
-  }
-  for (const l of linhas) {
-    const slug = (l.slug ?? '') as keyof typeof CATEGORIA_SLUG_TO_TEMPLATE
-    const tpl = (CATEGORIA_SLUG_TO_TEMPLATE[slug] ?? 'generic') as TemplateCodigo
-    out[tpl] += l.total
-  }
-  return out
-}
+const pct = (parte: number, todo: number) => (todo > 0 ? Math.round((parte / todo) * 100) : 0)
 
-export default async function PaginaAdocaoTemplates() {
-  const supabase = createSupabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/entrar')
-  if (user.app_metadata?.role !== 'admin') redirect('/entrar?erro=acesso-negado')
-
-  // Categorias globais
-  const { data: categorias } = (await supabase
-    .from('categories')
-    .select('id, slug, nome, ordem')
-    .is('tenant_id', null)
-    .order('ordem')) as { data: Omit<LinhaCategoria, 'total'>[] | null }
-
-  const linhas: LinhaCategoria[] = []
-  for (const c of categorias ?? []) {
-    const { count } = await supabase
-      .from('stores')
-      .select('id', { count: 'exact', head: true })
-      .eq('categoria_id', c.id)
-    linhas.push({ ...c, total: count ?? 0 })
-  }
-
-  const totalLojas = linhas.reduce((acc, l) => acc + l.total, 0)
-  const lojasOutros =
-    linhas.find((l) => l.slug === 'outros')?.total ?? 0
-  const pctOutros =
-    totalLojas > 0 ? Math.round((lojasOutros / totalLojas) * 100) : 0
-
-  const porTemplate = agruparPorTemplate(linhas)
-  const maiorPorCategoria = Math.max(1, ...linhas.map((l) => l.total))
-
-  // Trocas dos últimos 30 dias
-  const desde = new Date()
-  desde.setDate(desde.getDate() - 30)
-
-  const { data: trocasRaw } = (await supabase
-    .from('store_categoria_changes')
-    .select(
-      'id, changed_at, motivo, categoria_anterior, categoria_nova, store_id',
-    )
-    .gte('changed_at', desde.toISOString())
-    .order('changed_at', { ascending: false })
-    .limit(50)) as { data: Troca[] | null }
-
-  const trocas = trocasRaw ?? []
-
-  // Hidratar nomes (loja + categorias) — pequeno volume, queries paralelas
-  const idsLojas = Array.from(new Set(trocas.map((t) => t.store_id)))
-  const idsCats = Array.from(
-    new Set(
-      trocas
-        .flatMap((t) => [t.categoria_anterior, t.categoria_nova])
-        .filter((x): x is string => Boolean(x)),
-    ),
-  )
-
-  const [resLojas, resCats] = await Promise.all([
-    idsLojas.length > 0
-      ? supabase.from('stores').select('id, nome').in('id', idsLojas)
-      : Promise.resolve({ data: [] as { id: string; nome: string | null }[] }),
-    idsCats.length > 0
-      ? supabase.from('categories').select('id, nome').in('id', idsCats)
-      : Promise.resolve({ data: [] as { id: string; nome: string }[] }),
-  ])
-
-  const lojasMap = new Map(
-    (resLojas.data ?? []).map((l: any) => [l.id, l.nome ?? '(sem nome)']),
-  )
-  const catsMap = new Map(
-    (resCats.data ?? []).map((c: any) => [c.id, c.nome]),
-  )
-
-  for (const t of trocas) {
-    t.loja_nome = lojasMap.get(t.store_id) ?? null
-    t.cat_anterior_nome = t.categoria_anterior
-      ? catsMap.get(t.categoria_anterior) ?? null
-      : null
-    t.cat_nova_nome = catsMap.get(t.categoria_nova) ?? null
-  }
+export default async function PaginaAdocao() {
+  const { totalLojas, semCategoria, linhas, porTemplate, trocas } = await getAdocao()
+  const emOutros = linhas.find((l) => l.slug === 'outros')?.total ?? 0
+  const categorias = [...linhas].sort((a, b) => b.total - a.total || a.nome.localeCompare(b.nome, 'pt-BR'))
+  const maior = Math.max(1, ...categorias.map((c) => c.total))
 
   return (
-    <div className="p-9 space-y-6 max-w-[1400px]">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-brick/10 flex items-center justify-center">
-          <BarChart3 size={17} className="text-brick-dk" />
-        </div>
-        <div>
-          <h1 className="font-bold text-[17px] tracking-tight text-ink">
-            Adoção de templates
-          </h1>
-          <p className="text-[13px] text-ink-3">
-            Distribuição de lojas por categoria e nicho derivado.
-          </p>
-        </div>
+    <div className="slide-up p-6 sm:p-9">
+      <PageHeader
+        sobrelinha="Diretório"
+        titulo="Adoção de templates"
+        subtitulo="Como as lojas se distribuem pelos nichos — e o template de painel que cada nicho dá ao lojista."
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KPI rotulo="Lojas no shopping" valor={numero(totalLojas)} />
+        <KPI rotulo="Em “Outros”" valor={numero(emOutros)} sub={`${pct(emOutros, totalLojas)}% do total — sem nicho definido`} />
+        <KPI rotulo="Sem categoria" valor={numero(semCategoria)} sub="Caem no template genérico" />
+        <KPI rotulo="Trocas de nicho" valor={numero(trocas.length)} sub="Nos últimos 30 dias" />
       </div>
 
-      {/* KPIs principais */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card label="Total de lojas" valor={totalLojas.toString()} />
-        <Card
-          label='Lojas em "Outros"'
-          valor={lojasOutros.toString()}
-          sub={`${pctOutros}% do total`}
-        />
-        <Card label="Trocas (30 dias)" valor={trocas.length.toString()} />
-      </div>
-
-      {/* Distribuição por template */}
-      <Section titulo="Por template (nicho derivado)">
-        <div
-          className="rounded-2xl p-5"
-          style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-        >
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {TEMPLATE_CODIGOS.map((codigo) => {
-              const t = TEMPLATES[codigo]
-              const total = porTemplate[codigo]
-              const pct =
-                totalLojas > 0
-                  ? Math.round((total / totalLojas) * 100)
-                  : 0
+      <div className="mt-12 flex flex-col gap-12">
+        <SecaoFolha id="templates" sobrelinha="Nicho derivado da categoria" titulo="Por template">
+          <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-3">
+            {TEMPLATES_EM_ORDEM.map(({ codigo, icone }) => {
+              const total = porTemplate[codigo] ?? 0
+              const fatia = pct(total, totalLojas)
               return (
-                <div
-                  key={codigo}
-                  className="rounded-xl px-3 py-3"
-                  style={{ background: 'var(--bg)' }}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span aria-hidden="true">{t.icone}</span>
-                    <p className="text-[12px] font-semibold text-ink-2">
-                      {t.nome}
-                    </p>
+                <li key={codigo} className="cartao flex list-none items-center gap-4 p-5">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-bg-2 text-ink">
+                    <PartnerIcon name={icone} size={20} strokeWidth={1.9} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-semibold text-ink">{TEMPLATES[codigo].nome}</p>
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-bg-2">
+                      <div className="h-full rounded-full bg-ink" style={{ width: `${total > 0 ? Math.max(fatia, 2) : 0}%` }} />
+                    </div>
                   </div>
-                  <p className="font-bold text-[20px] text-ink leading-none">
-                    {total}
+                  <p className="shrink-0 text-right">
+                    <span className="block text-[22px] font-bold leading-none tracking-[-0.03em] text-ink tabular-nums">
+                      {numero(total)}
+                    </span>
+                    <span className="mt-1 block text-[12px] font-semibold text-ink-3 tabular-nums">{fatia}%</span>
                   </p>
-                  <p className="text-[11px] text-ink-3 mt-0.5">{pct}%</p>
-                </div>
+                </li>
               )
             })}
-          </div>
+          </ul>
+        </SecaoFolha>
+
+        <div className="grid gap-x-6 gap-y-12 xl:grid-cols-12">
+          <SecaoFolha id="categorias" className="xl:col-span-7" sobrelinha={contagem(linhas.length, 'categoria global', 'categorias globais')} titulo="Por categoria">
+            <div className="cartao p-5 sm:p-6">
+              {categorias.length === 0 ? (
+                <p className="py-6 text-center text-[14px] text-ink-3">Nenhuma categoria global no banco.</p>
+              ) : (
+                <ul className="m-0 flex list-none flex-col gap-3 p-0">
+                  {categorias.map((c) => {
+                    const outros = c.slug === 'outros'
+                    return (
+                      <li key={c.id} className="grid grid-cols-[minmax(0,10rem)_minmax(0,1fr)_2.5rem] items-center gap-3 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)_3rem]">
+                        <span className={cx('truncate text-[13px]', outros ? 'font-semibold text-ink' : 'text-ink-2')}>
+                          {outros ? (
+                            <Link href="/admin/lojas-outros" className="sublinha">
+                              {c.nome}
+                            </Link>
+                          ) : (
+                            c.nome
+                          )}
+                        </span>
+                        <span className="h-2 overflow-hidden rounded-full bg-bg-2">
+                          <span
+                            className="block h-full rounded-full"
+                            style={{
+                              width: `${c.total > 0 ? Math.max((c.total / maior) * 100, 2) : 0}%`,
+                              background: outros ? 'var(--ink-4)' : 'var(--ink)',
+                            }}
+                          />
+                        </span>
+                        <span className="text-right text-[13px] font-bold text-ink tabular-nums">{numero(c.total)}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
+            </div>
+          </SecaoFolha>
+
+          <SecaoFolha id="trocas" className="xl:col-span-5" sobrelinha="Últimos 30 dias" titulo="Trocas de nicho">
+            <div className="cartao p-2">
+              {trocas.length === 0 ? (
+                <p className="px-4 py-10 text-center text-[14px] text-ink-3">Nenhuma loja trocou de nicho nos últimos 30 dias.</p>
+              ) : (
+                <ul className="m-0 flex list-none flex-col p-0">
+                  {trocas.map((t, i) => (
+                    <li key={t.id} className={cx('px-3 py-3.5', i > 0 && 'border-t border-line')}>
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="truncate text-[14px] font-semibold text-ink">{t.loja ?? 'Loja removida'}</span>
+                        <span className="shrink-0 text-[12px] text-ink-3 tabular-nums">{dataCurta(t.quando)}</span>
+                      </div>
+                      <p className="mt-1 flex min-w-0 items-center gap-1.5 text-[12.5px] text-ink-2">
+                        <span className="truncate">{t.de ?? 'Sem categoria'}</span>
+                        <PartnerIcon name="arrow-right" size={13} strokeWidth={2.2} className="shrink-0 text-ink-3" />
+                        <span className="truncate font-semibold text-ink">{t.para ?? '—'}</span>
+                      </p>
+                      <p className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-ink-3">{t.motivo}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </SecaoFolha>
         </div>
-      </Section>
-
-      {/* Distribuição por categoria (barras horizontais) */}
-      <Section titulo="Por categoria">
-        <div
-          className="rounded-2xl p-5 space-y-2"
-          style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-        >
-          {linhas.map((l) => {
-            const pctRel = Math.round((l.total / maiorPorCategoria) * 100)
-            return (
-              <div key={l.id} className="flex items-center gap-3">
-                <div className="w-44 flex-shrink-0 text-[12px] text-ink-2 truncate">
-                  {l.nome}
-                </div>
-                <div
-                  className="flex-1 h-5 rounded-full overflow-hidden"
-                  style={{ background: 'var(--bg)' }}
-                >
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{
-                      width: `${pctRel}%`,
-                      background:
-                        l.slug === 'outros'
-                          ? 'var(--ink-3)'
-                          : 'var(--brick)',
-                    }}
-                  />
-                </div>
-                <div className="w-12 text-right text-[12px] font-semibold text-ink">
-                  {l.total}
-                </div>
-              </div>
-            )
-          })}
-          {linhas.length === 0 && (
-            <p className="text-[13px] text-ink-3 text-center py-4">
-              Nenhuma categoria encontrada.
-            </p>
-          )}
-        </div>
-      </Section>
-
-      {/* Trocas recentes */}
-      <Section titulo="Trocas recentes (30 dias)">
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-        >
-          {trocas.length === 0 && (
-            <p className="text-[13px] text-ink-3 text-center py-8 px-5">
-              Nenhuma troca de categoria nos últimos 30 dias.
-            </p>
-          )}
-          {trocas.length > 0 && (
-            <table className="w-full text-[13px]">
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--line)' }}>
-                  <th className="text-left px-4 py-3 font-semibold text-ink-2">
-                    Data
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-ink-2">
-                    Loja
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-ink-2">
-                    Mudança
-                  </th>
-                  <th className="text-left px-4 py-3 font-semibold text-ink-2">
-                    Motivo
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {trocas.map((t) => (
-                  <tr
-                    key={t.id}
-                    style={{ borderBottom: '1px solid var(--line)' }}
-                  >
-                    <td className="px-4 py-3 text-ink-3 whitespace-nowrap">
-                      {new Date(t.changed_at).toLocaleDateString('pt-BR')}
-                    </td>
-                    <td className="px-4 py-3 text-ink font-medium">
-                      {t.loja_nome ?? '—'}
-                    </td>
-                    <td className="px-4 py-3 text-ink-2">
-                      {(t.cat_anterior_nome ?? '—') +
-                        ' → ' +
-                        (t.cat_nova_nome ?? '—')}
-                    </td>
-                    <td className="px-4 py-3 text-ink-3">
-                      <span className="line-clamp-2">{t.motivo}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </Section>
-    </div>
-  )
-}
-
-function Card({
-  label,
-  valor,
-  sub,
-}: {
-  label: string
-  valor: string
-  sub?: string
-}) {
-  return (
-    <div
-      className="rounded-2xl p-5"
-      style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-    >
-      <p className="text-[11px] uppercase tracking-wider text-ink-3 font-semibold">
-        {label}
-      </p>
-      <p className="font-bold text-[28px] text-ink leading-none mt-2">
-        {valor}
-      </p>
-      {sub && <p className="text-[12px] text-ink-3 mt-1">{sub}</p>}
-    </div>
-  )
-}
-
-function Section({
-  titulo,
-  children,
-}: {
-  titulo: string
-  children: React.ReactNode
-}) {
-  return (
-    <div>
-      <h2 className="text-[13px] font-semibold text-ink-2 mb-2">{titulo}</h2>
-      {children}
+      </div>
     </div>
   )
 }

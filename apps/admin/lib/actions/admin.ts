@@ -2,381 +2,153 @@
 
 import Stripe from 'stripe'
 import { revalidatePath } from 'next/cache'
-import { createSupabaseServer } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { createSupabaseServer } from '@/lib/supabase/server'
+import { exigirAdmin } from '@/lib/acesso'
+import { centavosDoTexto } from '@/lib/format'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-04-10',
+/**
+ * Mutações da administração. As leituras moram em lib/consultas.ts — aqui
+ * só entra o que grava, porque todo export deste arquivo vira um endpoint
+ * chamável pelo navegador. Por isso cada ação confere o papel e valida a
+ * entrada antes de tocar no banco.
+ */
+
+type Resultado = { sucesso: true } | { erro: string }
+
+/** Contadores da moldura (badges) e a Visão geral dependem do que muda aqui. */
+function revalidarAdministracao() {
+  revalidatePath('/admin', 'layout')
+}
+
+const schemaStatusLojista = z.object({
+  tenantId: z.string().uuid('Lojista inválido'),
+  ativo: z.boolean(),
 })
 
-async function verificarAdmin(supabase: any): Promise<void> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.app_metadata?.role !== 'admin') {
-    throw new Error('Acesso negado')
-  }
-}
+export async function atualizarStatusTenant(tenantId: string, ativo: boolean): Promise<Resultado> {
+  const entrada = schemaStatusLojista.safeParse({ tenantId, ativo })
+  if (!entrada.success) return { erro: entrada.error.errors[0].message }
 
-export async function getMetricasGlobais() {
   const supabase = createSupabaseServer()
-  await verificarAdmin(supabase)
+  await exigirAdmin()
 
-  const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
-  const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1)
-
-  const [
-    resTenants,
-    resPedidosHoje,
-    resPedidosMes,
-    resEntregadores,
-    resRepasses,
-    resAssinaturas,
-  ] = await Promise.all([
-    supabase
-      .from('tenants')
-      .select('id', { count: 'exact', head: true })
-      .eq('ativo', true),
-
-    supabase
-      .from('orders')
-      .select('id, total, platform_fee_amount', { count: 'exact' })
-      .gte('criado_em', hoje.toISOString())
-      .eq('status', 'entregue'),
-
-    supabase
-      .from('orders')
-      .select('id, total, platform_fee_amount', { count: 'exact' })
-      .gte('criado_em', inicioMes.toISOString())
-      .eq('status', 'entregue'),
-
-    supabase
-      .from('couriers')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'aprovado'),
-
-    supabase
-      .from('payouts')
-      .select('valor_liquido')
-      .in('status', ['agendado', 'processando']),
-
-    supabase
-      .from('tenant_subscriptions')
-      .select('id', { count: 'exact', head: true })
-      .in('billing_status', ['ativa', 'trial']),
-  ])
-
-  const pedidosHoje = resPedidosHoje.data ?? []
-  const pedidosMes = resPedidosMes.data ?? []
-
-  return {
-    lojistas_ativos: resTenants.count ?? 0,
-    entregadores_aprovados: resEntregadores.count ?? 0,
-    assinaturas_ativas: resAssinaturas.count ?? 0,
-    pedidos_hoje: resPedidosHoje.count ?? 0,
-    pedidos_mes: resPedidosMes.count ?? 0,
-    gmv_hoje: pedidosHoje.reduce((acc: number, p: any) => acc + p.total, 0),
-    gmv_mes: pedidosMes.reduce((acc: number, p: any) => acc + p.total, 0),
-    receita_comissao_hoje: pedidosHoje.reduce(
-      (acc: number, p: any) => acc + p.platform_fee_amount, 0
-    ),
-    receita_comissao_mes: pedidosMes.reduce(
-      (acc: number, p: any) => acc + p.platform_fee_amount, 0
-    ),
-    repasses_pendentes: (resRepasses.data ?? []).reduce(
-      (acc: number, r: any) => acc + r.valor_liquido, 0
-    ),
-  }
-}
-
-export async function getTenants(filtro?: {
-  billing_status?: string
-  busca?: string
-  pagarme_status?: string
-}) {
-  const supabase = createSupabaseServer()
-  await verificarAdmin(supabase)
-
-  let query = supabase
-    .from('tenants')
-    .select(`
-      id, nome_responsavel, email, telefone, ativo,
-      pagarme_onboarding_status, criado_em,
-      stores (id, nome),
-      tenant_subscriptions (
-        billing_status, trial_termina_em, periodo_fim,
-        plans (nome, preco_mensal)
-      )
-    `)
-    .order('criado_em', { ascending: false })
-
-  if (filtro?.busca) {
-    query = query.or(
-      `nome_responsavel.ilike.%${filtro.busca}%,email.ilike.%${filtro.busca}%`
-    )
-  }
-
-  if (filtro?.pagarme_status) {
-    query = query.eq('pagarme_onboarding_status', filtro.pagarme_status)
-  }
-
-  const { data, error } = await query.limit(100)
-  if (error) return []
-
-  if (filtro?.billing_status) {
-    return (data ?? []).filter(
-      (t: any) =>
-        t.tenant_subscriptions?.[0]?.billing_status === filtro.billing_status
-    )
-  }
-
-  return data ?? []
-}
-
-export async function atualizarStatusTenant(tenant_id: string, ativo: boolean) {
-  const supabase = createSupabaseServer()
-  await verificarAdmin(supabase)
-
-  const { error } = await supabase
-    .from('tenants')
-    .update({ ativo })
-    .eq('id', tenant_id)
-
+  const { error } = await supabase.from('tenants').update({ ativo }).eq('id', entrada.data.tenantId)
   if (error) return { erro: error.message }
 
   if (!ativo) {
-    await supabase
-      .from('tenant_subscriptions')
-      .update({ billing_status: 'suspensa' })
-      .eq('tenant_id', tenant_id)
+    await supabase.from('tenant_subscriptions').update({ billing_status: 'suspensa' }).eq('tenant_id', entrada.data.tenantId)
   }
 
-  revalidatePath('/admin/lojistas')
+  revalidarAdministracao()
   return { sucesso: true }
 }
 
-export async function getEntregadores(filtro?: {
-  status?: string
-  tipo?: string
-  pagarme_status?: string
-}) {
-  const supabase = createSupabaseServer()
-  await verificarAdmin(supabase)
-
-  let query = supabase
-    .from('couriers')
-    .select(`
-      id, nome, telefone, foto_url,
-      tipo, status, veiculo_tipo, veiculo_placa,
-      pagarme_onboarding_status, criado_em, aprovado_em,
-      tenants (nome_responsavel)
-    `)
-    .order('criado_em', { ascending: false })
-
-  if (filtro?.status) query = query.eq('status', filtro.status)
-  if (filtro?.tipo) query = query.eq('tipo', filtro.tipo)
-  if (filtro?.pagarme_status)
-    query = query.eq('pagarme_onboarding_status', filtro.pagarme_status)
-
-  const { data, error } = await query.limit(100)
-  if (error) return []
-  return comDocumentos(supabase, data ?? [])
-}
-
-interface DocumentosEntregador {
-  id: string
-  cpf: string | null
-  cnh_foto_url: string | null
-}
-
-/**
- * CPF e CNH não são legíveis direto na tabela (migration
- * 20261010150000_seguranca_dados_pessoais): vêm pela RPC, que confere
- * is_admin() no banco. A foto da CNH mora no bucket privado `courier-docs`,
- * então o link vira uma URL assinada de 10 minutos.
- */
-async function comDocumentos<T extends { id: string }>(
-  supabase: ReturnType<typeof createSupabaseServer>,
-  entregadores: T[]
-) {
-  if (entregadores.length === 0) return []
-
-  const { data: documentos } = await supabase.rpc('admin_documentos_entregadores', {
-    p_ids: entregadores.map((e) => e.id),
-  })
-  const porId = new Map<string, DocumentosEntregador>(
-    ((documentos ?? []) as DocumentosEntregador[]).map((d) => [d.id, d])
-  )
-
-  const caminhos = [...porId.values()]
-    .map((d) => caminhoNoBucket(d.cnh_foto_url))
-    .filter((c): c is string => c !== null)
-  const { data: assinadas } = caminhos.length
-    ? await supabase.storage.from('courier-docs').createSignedUrls(caminhos, 600)
-    : { data: [] }
-  const urlPorCaminho = new Map((assinadas ?? []).map((a) => [a.path, a.signedUrl]))
-
-  return entregadores.map((entregador) => {
-    const documento = porId.get(entregador.id)
-    const caminho = caminhoNoBucket(documento?.cnh_foto_url ?? null)
-    return {
-      ...entregador,
-      cpf: documento?.cpf ?? null,
-      cnh_foto_url: caminho ? urlPorCaminho.get(caminho) ?? null : null,
-    }
-  })
-}
-
-/** O banco guarda a URL pública antiga: `…/courier-docs/<uid>/cnh.jpg` → `<uid>/cnh.jpg`. */
-function caminhoNoBucket(url: string | null): string | null {
-  if (!url) return null
-  const caminho = url.split('/courier-docs/')[1]
-  return caminho ? caminho.split('?')[0] : null
-}
+const schemaStatusEntregador = z.object({
+  courierId: z.string().uuid('Entregador inválido'),
+  status: z.enum(['aprovado', 'reprovado', 'suspenso'], { errorMap: () => ({ message: 'Status inválido' }) }),
+})
 
 export async function atualizarStatusEntregador(
-  courier_id: string,
-  status: 'aprovado' | 'reprovado' | 'suspenso'
-) {
+  courierId: string,
+  status: 'aprovado' | 'reprovado' | 'suspenso',
+): Promise<Resultado> {
+  const entrada = schemaStatusEntregador.safeParse({ courierId, status })
+  if (!entrada.success) return { erro: entrada.error.errors[0].message }
+
   const supabase = createSupabaseServer()
-  await verificarAdmin(supabase)
+  const user = await exigirAdmin()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  const atualizacao: Record<string, any> = { status }
-
-  if (status === 'aprovado') {
+  const atualizacao: { status: string; aprovado_em?: string; aprovado_por?: string } = { status: entrada.data.status }
+  if (entrada.data.status === 'aprovado') {
     atualizacao.aprovado_em = new Date().toISOString()
-    atualizacao.aprovado_por = user?.id
+    atualizacao.aprovado_por = user.id
   }
 
-  const { error } = await supabase
-    .from('couriers')
-    .update(atualizacao)
-    .eq('id', courier_id)
-
+  const { error } = await supabase.from('couriers').update(atualizacao).eq('id', entrada.data.courierId)
   if (error) return { erro: error.message }
 
-  revalidatePath('/admin/entregadores')
+  revalidarAdministracao()
   return { sucesso: true }
 }
 
-export async function getPlanos() {
-  const supabase = createSupabaseServer()
-  await verificarAdmin(supabase)
-
-  const { data, error } = await supabase
-    .from('plans')
-    .select('*')
-    .order('preco_mensal')
-
-  if (error) return []
-  return data ?? []
-}
+const inteiro = (rotulo: string, minimo: number) =>
+  z
+    .number({ invalid_type_error: `${rotulo}: informe um número` })
+    .int(`${rotulo}: use um número inteiro`)
+    .min(minimo, `${rotulo}: o mínimo é ${minimo}`)
 
 const schemaPlano = z.object({
-  nome: z.string().min(2, 'Nome obrigatório'),
-  descricao: z.string().optional(),
-  preco_mensal: z.number().int().min(0),
-  max_lojas: z.number().int().min(1),
-  max_produtos: z.number().int().min(1),
-  max_entregadores: z.number().int().min(1),
+  nome: z.string().trim().min(2, 'Dê um nome ao plano (2 letras ou mais)').max(60, 'Nome muito longo'),
+  descricao: z.string().trim().max(200, 'Descrição muito longa').optional(),
+  preco_mensal: inteiro('Preço mensal', 0),
+  max_lojas: inteiro('Máximo de lojas', 1),
+  max_produtos: inteiro('Máximo de produtos', 1),
+  max_entregadores: inteiro('Máximo de entregadores', 1),
   tem_estoque: z.boolean(),
   tem_relatorios: z.boolean(),
   tem_antecipacao: z.boolean(),
   ativo: z.boolean(),
 })
 
-export async function criarPlano(formData: FormData) {
-  const supabase = createSupabaseServer()
-  await verificarAdmin(supabase)
+function numeroInteiro(valor: FormDataEntryValue | null): number {
+  const texto = String(valor ?? '').trim()
+  return texto ? Number(texto) : Number.NaN
+}
 
-  const preco_raw = formData.get('preco_mensal')
+export async function criarPlano(formData: FormData): Promise<Resultado> {
+  const supabase = createSupabaseServer()
+  await exigirAdmin()
 
   const dados = schemaPlano.safeParse({
     nome: formData.get('nome'),
-    descricao: formData.get('descricao') || undefined,
-    preco_mensal: preco_raw ? Math.round(parseFloat(String(preco_raw)) * 100) : 0,
-    max_lojas: parseInt(String(formData.get('max_lojas') ?? '1')),
-    max_produtos: parseInt(String(formData.get('max_produtos') ?? '30')),
-    max_entregadores: parseInt(String(formData.get('max_entregadores') ?? '1')),
+    descricao: String(formData.get('descricao') ?? '').trim() || undefined,
+    preco_mensal: centavosDoTexto(String(formData.get('preco_mensal') ?? '')),
+    max_lojas: numeroInteiro(formData.get('max_lojas')),
+    max_produtos: numeroInteiro(formData.get('max_produtos')),
+    max_entregadores: numeroInteiro(formData.get('max_entregadores')),
     tem_estoque: formData.get('tem_estoque') === 'true',
     tem_relatorios: formData.get('tem_relatorios') === 'true',
     tem_antecipacao: formData.get('tem_antecipacao') === 'true',
     ativo: true,
   })
-
   if (!dados.success) return { erro: dados.error.errors[0].message }
 
-  const stripeProduct = await stripe.products.create({
-    name: dados.data.nome,
-    description: dados.data.descricao,
-    metadata: { plataforma: 'mallevo' },
-  })
+  const chave = process.env.STRIPE_SECRET_KEY
+  if (!chave) return { erro: 'Stripe não configurado neste ambiente (STRIPE_SECRET_KEY).' }
 
-  let stripePrice = null
-  if (dados.data.preco_mensal > 0) {
-    stripePrice = await stripe.prices.create({
-      product: stripeProduct.id,
-      unit_amount: dados.data.preco_mensal,
-      currency: 'brl',
-      recurring: { interval: 'month' },
+  // O plano nasce no Stripe primeiro: sem produto e preço lá, a assinatura
+  // do lojista não teria o que cobrar.
+  let stripeProductId: string
+  let stripePriceId: string | null = null
+  try {
+    const stripe = new Stripe(chave, { apiVersion: '2024-04-10' })
+    const produto = await stripe.products.create({
+      name: dados.data.nome,
+      description: dados.data.descricao,
+      metadata: { plataforma: 'mallevo' },
     })
+    stripeProductId = produto.id
+    if (dados.data.preco_mensal > 0) {
+      const preco = await stripe.prices.create({
+        product: produto.id,
+        unit_amount: dados.data.preco_mensal,
+        currency: 'brl',
+        recurring: { interval: 'month' },
+      })
+      stripePriceId = preco.id
+    }
+  } catch (e) {
+    return { erro: `O Stripe recusou o plano: ${e instanceof Error ? e.message : 'erro desconhecido'}` }
   }
 
   const { error } = await supabase.from('plans').insert({
     ...dados.data,
-    stripe_product_id: stripeProduct.id,
-    stripe_price_id: stripePrice?.id ?? null,
+    stripe_product_id: stripeProductId,
+    stripe_price_id: stripePriceId,
   })
-
   if (error) return { erro: error.message }
 
   revalidatePath('/admin/planos')
   return { sucesso: true }
-}
-
-export async function getConciliacaoFinanceira(mes: string) {
-  const supabase = createSupabaseServer()
-  await verificarAdmin(supabase)
-
-  const inicio = new Date(`${mes}-01T00:00:00.000Z`)
-  const fim = new Date(inicio)
-  fim.setMonth(fim.getMonth() + 1)
-
-  const [resPedidos, resPayouts] = await Promise.all([
-    supabase
-      .from('orders')
-      .select('total, platform_fee_amount, status, payment_status, forma_pagamento')
-      .gte('atualizado_em', inicio.toISOString())
-      .lt('atualizado_em', fim.toISOString())
-      .eq('status', 'entregue'),
-
-    supabase
-      .from('payouts')
-      .select('valor_bruto, taxa_antecipacao, valor_liquido, status, tipo, antecipado')
-      .gte('criado_em', inicio.toISOString())
-      .lt('criado_em', fim.toISOString()),
-  ])
-
-  const pedidos = resPedidos.data ?? []
-  const payouts = resPayouts.data ?? []
-
-  return {
-    gmv_total: pedidos.reduce((acc: number, p: any) => acc + p.total, 0),
-    receita_comissao: pedidos.reduce(
-      (acc: number, p: any) => acc + p.platform_fee_amount, 0
-    ),
-    receita_antecipacao: payouts
-      .filter((p: any) => p.antecipado && p.status === 'concluido')
-      .reduce((acc: number, p: any) => acc + p.taxa_antecipacao, 0),
-    total_pedidos: pedidos.length,
-    total_repassado_lojistas: payouts
-      .filter((p: any) => p.tipo === 'lojista' && p.status === 'concluido')
-      .reduce((acc: number, p: any) => acc + p.valor_liquido, 0),
-    total_repassado_entregadores: payouts
-      .filter((p: any) => p.tipo === 'entregador' && p.status === 'concluido')
-      .reduce((acc: number, p: any) => acc + p.valor_liquido, 0),
-    payouts_pendentes: payouts
-      .filter((p: any) => ['agendado', 'processando'].includes(p.status))
-      .reduce((acc: number, p: any) => acc + p.valor_liquido, 0),
-  }
 }

@@ -1,149 +1,89 @@
-import { redirect } from 'next/navigation'
-import { Inbox } from 'lucide-react'
-import { createSupabaseServer } from '@/lib/supabase/server'
-import { ReclassificarModal } from '@/components/admin/reclassificar-modal'
+import { getLojasEmOutros } from '@/lib/consultas'
+import { contagem, dataCurta, quando } from '@/lib/format'
+import { urlDaLoja } from '@/lib/storefront-url'
+import { PageHeader } from '@/components/admin/page-header'
+import { EmptyState } from '@/components/admin/empty-state'
+import { Tijolo } from '@/components/admin/tijolo'
+import { Reclassificar } from '@/components/admin/diretorio/reclassificar'
+import { PartnerIcon } from '@/components/ui/partner-icon'
 
 export const dynamic = 'force-dynamic'
 
-type LojaOutros = {
-  id: string
-  nome: string | null
-  criado_em: string
-  tenant_id: string | null
-  categoria_id: string
-}
-
-type CategoriaOpcao = { id: string; slug: string | null; nome: string }
-
-export default async function PaginaLojasOutros() {
-  const supabase = createSupabaseServer()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect('/entrar')
-  if (user.app_metadata?.role !== 'admin') redirect('/entrar?erro=acesso-negado')
-
-  // Categoria 'outros' é única globalmente (tenant_id IS NULL).
-  const { data: catOutros } = (await supabase
-    .from('categories')
-    .select('id, slug, nome')
-    .eq('slug', 'outros')
-    .is('tenant_id', null)
-    .single()) as { data: CategoriaOpcao | null }
-
-  const lojas: LojaOutros[] = []
-  if (catOutros) {
-    const { data } = (await supabase
-      .from('stores')
-      .select('id, nome, criado_em, tenant_id, categoria_id')
-      .eq('categoria_id', catOutros.id)
-      .order('criado_em', { ascending: false })
-      .limit(200)) as { data: LojaOutros[] | null }
-    if (data) lojas.push(...data)
-  }
-
-  // Categorias para o seletor (todas globais menos 'outros')
-  const { data: categoriasRaw } = (await supabase
-    .from('categories')
-    .select('id, slug, nome, ordem')
-    .is('tenant_id', null)
-    .order('ordem')) as { data: (CategoriaOpcao & { ordem: number | null })[] | null }
-
-  const categoriasDisponiveis = (categoriasRaw ?? []).filter(
-    (c) => c.slug !== 'outros',
-  )
+/**
+ * Lojas em "Outros": quem escolheu a categoria genérica no cadastro e espera
+ * o nicho certo — sem ele, a loja fica com o template genérico e fora dos
+ * pisos temáticos do app. A mais antiga primeiro.
+ */
+export default async function PaginaLojasEmOutros() {
+  const { categoriaExiste, lojas, categorias } = await getLojasEmOutros()
+  const agora = Date.now()
 
   return (
-    <div className="p-9 space-y-5 max-w-[1400px]">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-brick/10 flex items-center justify-center">
-            <Inbox size={17} className="text-brick-dk" />
-          </div>
-          <div>
-            <h1 className="font-bold text-[17px] tracking-tight text-ink">
-              Lojas em "Outros"
-            </h1>
-            <p className="text-[13px] text-ink-3">
-              {lojas.length} loja(s) aguardando reclassificação para um nicho
-              específico.
-            </p>
-          </div>
-        </div>
-      </div>
+    <div className="slide-up p-6 sm:p-9">
+      <PageHeader
+        sobrelinha="Diretório"
+        titulo="Lojas em “Outros”"
+        subtitulo="Quem escolheu a categoria genérica no cadastro. Levar a loja para o nicho certo dá a ela o template do painel e o piso do app."
+      />
 
-      {!catOutros && (
-        <div
-          className="rounded-2xl px-5 py-4 text-[13px]"
-          style={{
-            background: '#fef3c7',
-            border: '1px solid #fde68a',
-            color: '#92400e',
-          }}
-        >
-          Categoria <code>outros</code> não foi encontrada no seed. Aplique o
-          seed antes de usar este painel.
+      {!categoriaExiste ? (
+        <div className="cartao">
+          <EmptyState
+            icone="alert"
+            titulo="A categoria “outros” não está no banco"
+            descricao="Ela vem do seed das categorias globais (tenant_id nulo). Aplique o seed para usar esta tela."
+          />
         </div>
-      )}
-
-      {catOutros && lojas.length === 0 && (
-        <div
-          className="rounded-2xl px-5 py-10 text-center"
-          style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-        >
-          <p className="text-[14px] font-medium text-ink mb-1">
-            Nenhuma loja em "Outros" no momento
+      ) : lojas.length === 0 ? (
+        <div className="cartao">
+          <EmptyState
+            icone="check-double"
+            titulo="Todas as lojas têm nicho"
+            descricao="Quando alguém escolher “Outros” no cadastro, a loja aparece aqui para você reclassificar."
+            cta={{ label: 'Ver adoção de templates', href: '/admin/adocao-templates' }}
+          />
+        </div>
+      ) : (
+        <>
+          <p className="mb-3 text-[13px] font-semibold text-ink-3">
+            {contagem(lojas.length, 'loja esperando', 'lojas esperando')} — a mais antiga primeiro.
           </p>
-          <p className="text-[12px] text-ink-3">
-            Quando lojistas escolherem a categoria genérica no onboarding, elas
-            aparecem aqui para você reclassificar manualmente.
-          </p>
-        </div>
-      )}
-
-      {catOutros && lojas.length > 0 && (
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{ background: 'var(--bg-2)', border: '1px solid var(--line)' }}
-        >
-          <table className="w-full text-[13px]">
-            <thead>
-              <tr style={{ borderBottom: '1px solid var(--line)' }}>
-                <th className="text-left px-4 py-3 font-semibold text-ink-2">
-                  Loja
-                </th>
-                <th className="text-left px-4 py-3 font-semibold text-ink-2">
-                  Cadastrada em
-                </th>
-                <th className="text-right px-4 py-3 font-semibold text-ink-2">
-                  Ação
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {lojas.map((loja) => (
-                <tr
-                  key={loja.id}
-                  style={{ borderBottom: '1px solid var(--line)' }}
-                >
-                  <td className="px-4 py-3 text-ink font-medium">
-                    {loja.nome ?? '(sem nome)'}
-                  </td>
-                  <td className="px-4 py-3 text-ink-3">
-                    {new Date(loja.criado_em).toLocaleDateString('pt-BR')}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <ReclassificarModal
-                      storeId={loja.id}
-                      storeNome={loja.nome ?? '(sem nome)'}
-                      categorias={categoriasDisponiveis}
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          <ul className="m-0 flex list-none flex-col gap-2 p-0">
+            {lojas.map((l) => (
+              <li key={l.id} className="cartao flex list-none flex-col gap-4 p-4 sm:flex-row sm:items-center">
+                <div className="flex min-w-0 flex-1 items-center gap-4">
+                  <Tijolo nome={l.nome} foto={l.logo} />
+                  <div className="min-w-0">
+                    <p className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-[14.5px] font-semibold text-ink">{l.nome}</span>
+                      {!l.noAr && <span className="shrink-0 text-[12px] font-semibold text-warn">Pausada</span>}
+                    </p>
+                    <p className="mt-0.5 truncate text-[12.5px] text-ink-3">
+                      {[l.lojista, l.email].filter(Boolean).join(' · ') || 'Lojista sem nome'}
+                    </p>
+                    <p className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-ink-3">
+                      <span title={dataCurta(l.criadoEm)}>Cadastrada {quando(l.criadoEm, agora)}</span>
+                      {l.slug && (
+                        <a
+                          href={urlDaLoja(l.slug)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group inline-flex min-w-0 items-center gap-1 font-mono text-[11.5px] text-ink-2 hover:text-ink"
+                        >
+                          <span className="truncate">{l.slug}.mallevo.com.br</span>
+                          <PartnerIcon name="external" size={12} strokeWidth={2} className="shrink-0 opacity-70 group-hover:opacity-100" />
+                        </a>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 self-end sm:self-auto">
+                  <Reclassificar storeId={l.id} storeNome={l.nome} categorias={categorias} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   )

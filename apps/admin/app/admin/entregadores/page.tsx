@@ -1,103 +1,122 @@
-import { getEntregadores } from '@/lib/actions/admin'
-import { TabelaEntregadores } from '@/components/admin/tabela-entregadores'
-import { Bike } from 'lucide-react'
+import { getEntregadores, LIMITE_LISTA } from '@/lib/consultas'
+import { contagem } from '@/lib/format'
+import { GRUPOS_RECEBIMENTOS } from '@/lib/status'
+import { PageHeader } from '@/components/admin/page-header'
+import { EmptyState } from '@/components/admin/empty-state'
+import { FiltroChips, hrefComFiltros } from '@/components/admin/filtros'
+import { CampoBusca } from '@/components/admin/campo-busca'
+import { ListaEntregadores } from '@/components/admin/entregadores/lista-entregadores'
 
-const FILTROS = [
-  { label: 'Pendentes', valor: 'pendente' },
-  { label: 'Aprovados', valor: 'aprovado' },
-  { label: 'Reprovados', valor: 'reprovado' },
-  { label: 'Suspensos', valor: 'suspenso' },
+export const dynamic = 'force-dynamic'
+
+const BASE = '/admin/entregadores'
+
+/** A tela abre na fila de aprovação — é o trabalho do dia a dia aqui. */
+const OPCOES_STATUS = [
+  { valor: 'pendente', label: 'Aguardando aprovação' },
+  { valor: 'aprovado', label: 'Aprovados' },
+  { valor: 'reprovado', label: 'Reprovados' },
+  { valor: 'suspenso', label: 'Suspensos' },
+  { valor: 'todos', label: 'Todos' },
 ]
 
-const FILTROS_PAGARME = [
-  { label: 'Todos', valor: '' },
-  { label: 'Ativo', valor: 'active' },
-  { label: 'Em análise', valor: 'affiliation' },
-  { label: 'Cadastro', valor: 'registration' },
-  { label: 'Pendente', valor: 'pending' },
-  { label: 'Recusado', valor: 'refused' },
-  { label: 'Bloqueado', valor: 'blocked' },
+const OPCOES_RECEBIMENTOS = [
+  { valor: '', label: 'Todos' },
+  ...Object.entries(GRUPOS_RECEBIMENTOS).map(([valor, g]) => ({ valor, label: g.rotulo })),
 ]
+
+const VAZIO: Record<string, { titulo: string; descricao: string }> = {
+  pendente: {
+    titulo: 'Ninguém aguardando aprovação',
+    descricao: 'Quando um entregador terminar o cadastro no app, ele entra nesta fila com a foto da CNH.',
+  },
+  aprovado: { titulo: 'Nenhum entregador aprovado', descricao: 'Os aprovados aparecem aqui, com quem está online agora.' },
+  reprovado: { titulo: 'Nenhum cadastro reprovado', descricao: 'Cadastros reprovados ficam aqui e podem ser reativados.' },
+  suspenso: { titulo: 'Nenhum entregador suspenso', descricao: 'Suspensos ficam aqui e podem ser reativados.' },
+  todos: { titulo: 'Nenhum entregador ainda', descricao: 'Os cadastros feitos pelo app do entregador aparecem aqui.' },
+}
 
 export default async function PaginaEntregadores({
   searchParams,
 }: {
-  searchParams: { status?: string; pagarme_status?: string }
+  searchParams: { status?: string; recebimentos?: string; busca?: string }
 }) {
-  const status = searchParams.status ?? 'pendente'
-  const pagarmeAtual = searchParams.pagarme_status ?? ''
-  const entregadores = await getEntregadores({
-    status,
-    pagarme_status: searchParams.pagarme_status,
-  })
+  const status = OPCOES_STATUS.some((o) => o.valor === searchParams.status) ? searchParams.status! : 'pendente'
+  const recebimentos = OPCOES_RECEBIMENTOS.some((o) => o.valor && o.valor === searchParams.recebimentos)
+    ? searchParams.recebimentos
+    : undefined
+  const busca = (searchParams.busca ?? '').slice(0, 80)
+  const atuais = { status: status === 'pendente' ? undefined : status, recebimentos, busca: busca || undefined }
 
-  function buildHref(params: Record<string, string | undefined>) {
-    const merged = {
-      status: status || undefined,
-      pagarme_status: pagarmeAtual || undefined,
-      ...params,
-    }
-    const qs = Object.entries(merged)
-      .filter(([, v]) => v)
-      .map(([k, v]) => `${k}=${v}`)
-      .join('&')
-    return `/admin/entregadores${qs ? `?${qs}` : ''}`
-  }
+  const { entregadores, total, totalGeral, contagens } = await getEntregadores({
+    status: status === 'todos' ? undefined : status,
+    recebimentos,
+    busca,
+  })
+  const somaDe = (c: Record<string, number>) => Object.values(c).reduce((s, n) => s + n, 0)
+  const filtrando = Boolean(recebimentos || busca)
+  const vazio = filtrando
+    ? { titulo: 'Nenhum entregador com esses filtros', descricao: 'Confira a busca ou limpe o filtro de recebimentos.' }
+    : VAZIO[status]
 
   return (
-    <div className="p-9 space-y-5 max-w-[1400px]">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-sky/10 flex items-center justify-center">
-            <Bike size={17} className="text-sky" />
-          </div>
-          <div>
-            <h1 className="font-bold text-[17px] tracking-tight text-ink">Entregadores</h1>
-            <p className="text-[13px] text-ink-3">{entregadores.length} encontrado(s)</p>
-          </div>
+    <div className="slide-up p-6 sm:p-9">
+      <PageHeader
+        sobrelinha="Operar"
+        titulo="Entregadores"
+        subtitulo={`${contagem(totalGeral, 'cadastro', 'cadastros')} feitos pelo app do entregador — confira a CNH antes de aprovar.`}
+        acoes={
+          <CampoBusca
+            valorInicial={busca}
+            parametros={{ status: atuais.status, recebimentos }}
+            placeholder="Buscar nome, telefone, placa ou loja"
+            rotulo="Buscar entregador"
+          />
+        }
+      />
+
+      <div className="mb-6 flex flex-col gap-2">
+        <FiltroChips
+          rotulo="Cadastro"
+          opcoes={OPCOES_STATUS.map((o) => ({
+            label: o.label,
+            href: hrefComFiltros(BASE, atuais, { status: o.valor === 'pendente' ? undefined : o.valor }),
+            ativa: status === o.valor,
+            contagem: o.valor === 'todos' ? somaDe(contagens.status) : contagens.status[o.valor] ?? 0,
+          }))}
+        />
+        <FiltroChips
+          rotulo="Recebimentos"
+          opcoes={OPCOES_RECEBIMENTOS.map((o) => ({
+            label: o.label,
+            href: hrefComFiltros(BASE, atuais, { recebimentos: o.valor || undefined }),
+            ativa: (recebimentos ?? '') === o.valor,
+            contagem: o.valor ? contagens.recebimentos[o.valor] ?? 0 : somaDe(contagens.recebimentos),
+          }))}
+        />
+      </div>
+
+      {entregadores.length === 0 ? (
+        <div className="cartao">
+          <EmptyState
+            icone={filtrando ? 'search' : 'bike'}
+            titulo={vazio.titulo}
+            descricao={vazio.descricao}
+            cta={status !== 'todos' || filtrando ? { label: 'Ver todos os entregadores', href: `${BASE}?status=todos` } : undefined}
+          />
         </div>
-      </div>
-
-      {/* Filtros */}
-      <div className="flex gap-2 flex-wrap">
-        {FILTROS.map((f) => (
-          <a
-            key={f.valor}
-            href={buildHref({ status: f.valor })}
-            className={`px-4 py-2 rounded-full text-[13px] font-medium border transition-all ${
-              status === f.valor
-                ? 'border-transparent text-brick-ink'
-                : 'bg-bg text-ink-2 border-line hover:border-line-2 hover:bg-bg-2'
-            }`}
-            style={status === f.valor ? { background: 'var(--brick)' } : {}}
-          >
-            {f.label}
-          </a>
-        ))}
-      </div>
-
-      <div className="flex gap-2 flex-wrap items-center">
-        <span className="text-[11px] uppercase tracking-wider text-ink-3 font-semibold mr-1">
-          Recebimentos
-        </span>
-        {FILTROS_PAGARME.map((f) => (
-          <a
-            key={f.valor || 'all'}
-            href={buildHref({ pagarme_status: f.valor || undefined })}
-            className={`px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all ${
-              pagarmeAtual === f.valor
-                ? 'border-transparent text-brick-ink'
-                : 'bg-bg text-ink-2 border-line hover:border-line-2 hover:bg-bg-2'
-            }`}
-            style={pagarmeAtual === f.valor ? { background: 'var(--brick)' } : {}}
-          >
-            {f.label}
-          </a>
-        ))}
-      </div>
-
-      <TabelaEntregadores entregadores={entregadores} />
+      ) : (
+        <>
+          <p className="mb-3 text-[13px] font-semibold text-ink-3" aria-live="polite">
+            {total > LIMITE_LISTA
+              ? `Mostrando ${LIMITE_LISTA} de ${total} — refine a busca para achar o resto.`
+              : status === 'pendente'
+                ? `${contagem(total, 'cadastro', 'cadastros')} na fila — o mais antigo primeiro.`
+                : contagem(total, 'entregador', 'entregadores')}
+          </p>
+          <ListaEntregadores entregadores={entregadores} />
+        </>
+      )}
     </div>
   )
 }

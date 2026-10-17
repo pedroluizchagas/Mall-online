@@ -1,90 +1,130 @@
-import { getPlanos } from '@/lib/actions/admin'
-import { FormularioPlano } from '@/components/admin/formulario-plano'
-import { formatarReais } from '@mallevo/lib'
-import { CreditCard, CheckCircle2, XCircle, Plus } from 'lucide-react'
+import { getPlanos, type Plano } from '@/lib/consultas'
+import { contagem, numero, partesDoValor } from '@/lib/format'
+import { cx } from '@/lib/cx'
+import { PageHeader } from '@/components/admin/page-header'
+import { SecaoFolha } from '@/components/admin/folha'
+import { EmptyState } from '@/components/admin/empty-state'
+import { FormularioPlano } from '@/components/admin/planos/formulario-plano'
+import { PartnerIcon } from '@/components/ui/partner-icon'
+
+export const dynamic = 'force-dynamic'
 
 export default async function PaginaPlanos() {
   const planos = await getPlanos()
+  const ativos = planos.filter((p) => p.ativo)
+  const inativos = planos.filter((p) => !p.ativo)
 
   return (
-    <div className="p-9 space-y-5 max-w-3xl">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-berry/10 flex items-center justify-center">
-          <CreditCard size={17} className="text-berry" />
+    <div className="slide-up p-6 sm:p-9">
+      <PageHeader
+        sobrelinha="Financeiro"
+        titulo="Planos"
+        subtitulo="A mensalidade de cada lojista, cobrada pelo Stripe Billing. Cada plano define os limites do painel."
+      />
+
+      {planos.length === 0 ? (
+        <div className="cartao mb-12">
+          <EmptyState
+            icone="tag"
+            titulo="Nenhum plano cadastrado"
+            descricao="Crie o primeiro plano abaixo — sem plano, o lojista não tem o que assinar."
+          />
         </div>
-        <h1 className="font-bold text-[17px] tracking-tight text-ink">Planos</h1>
+      ) : (
+        <div className="mb-12 flex flex-col gap-10">
+          <ul className="m-0 grid list-none gap-4 p-0 md:grid-cols-2 xl:grid-cols-3">
+            {ativos.map((p) => (
+              <CartaoPlano key={p.id} plano={p} />
+            ))}
+          </ul>
+          {inativos.length > 0 && (
+            <section aria-label="Planos inativos">
+              <p className="micro mb-3 text-ink-3">Inativos · {inativos.length}</p>
+              <ul className="m-0 grid list-none gap-4 p-0 md:grid-cols-2 xl:grid-cols-3">
+                {inativos.map((p) => (
+                  <CartaoPlano key={p.id} plano={p} />
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      )}
+
+      <SecaoFolha id="novo-plano" sobrelinha="Stripe Billing" titulo="Novo plano">
+        <div className="cartao max-w-3xl p-6 sm:p-7">
+          <FormularioPlano />
+        </div>
+      </SecaoFolha>
+    </div>
+  )
+}
+
+function CartaoPlano({ plano: p }: { plano: Plano }) {
+  const preco = partesDoValor(p.preco_mensal)
+  const recursos = [
+    { rotulo: 'Estoque', tem: p.tem_estoque },
+    { rotulo: 'Relatórios', tem: p.tem_relatorios },
+    { rotulo: 'Antecipação', tem: p.tem_antecipacao },
+  ]
+
+  return (
+    <li className={cx('cartao flex list-none flex-col p-6', !p.ativo && 'opacity-[0.72]')}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="truncate text-[21px] font-bold leading-tight tracking-[-0.025em] text-ink">{p.nome}</h2>
+          {p.descricao && <p className="mt-1 line-clamp-2 text-[13.5px] leading-snug text-ink-3">{p.descricao}</p>}
+        </div>
+        {!p.ativo && <span className="shrink-0 rounded-full bg-bg-3 px-2.5 py-1 text-[11.5px] font-bold text-ink-2">Inativo</span>}
       </div>
 
-      {/* Planos list */}
-      <div className="space-y-3">
-        {planos.map((plano: any) => (
-          <div
-            key={plano.id}
-            className={`bg-bg rounded-lg border p-5 transition-opacity ${
-              plano.ativo ? 'border-line' : 'border-line opacity-50'
-            }`}
-            style={{ boxShadow: 'var(--shadow-sm)' }}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2.5">
-                {plano.ativo ? (
-                  <CheckCircle2 size={16} className="text-ok flex-shrink-0" />
-                ) : (
-                  <XCircle size={16} className="text-ink-3 flex-shrink-0" />
-                )}
-                <div>
-                  <p className="font-semibold text-ink">{plano.nome}</p>
-                  {plano.descricao && (
-                    <p className="text-[13px] text-ink-3 mt-0.5">{plano.descricao}</p>
-                  )}
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-[17px] font-bold text-ink">
-                  {formatarReais(plano.preco_mensal)}
-                  <span className="text-[13px] font-normal text-ink-3">/mês</span>
-                </p>
-                {!plano.ativo && (
-                  <span className="text-[13px] text-ink-3">Inativo</span>
-                )}
-              </div>
-            </div>
+      <p className="mt-6 flex items-baseline gap-1.5 text-ink">
+        <span className="text-[15px] font-semibold text-ink-3">R$</span>
+        <span className="tabular-nums">
+          <span className="text-[40px] font-bold leading-none tracking-[-0.04em]">{preco.inteiro}</span>
+          <span className="text-[18px] font-bold tracking-[-0.02em]">{preco.decimal}</span>
+        </span>
+        <span className="text-[13px] font-semibold text-ink-3">/mês</span>
+      </p>
+      <p className="mt-2 flex items-center gap-1.5 text-[13px] font-semibold text-ink-2">
+        <PartnerIcon name="users" size={15} strokeWidth={2} className="text-ink-3" />
+        {p.assinantes > 0 ? contagem(p.assinantes, 'assinante ativo', 'assinantes ativos') : 'Nenhum assinante ativo'}
+      </p>
 
-            <div className="flex flex-wrap gap-2">
-              {[
-                `${plano.max_lojas} loja(s)`,
-                `${plano.max_produtos} produto(s)`,
-                `${plano.max_entregadores} entregador(es)`,
-                ...(plano.tem_estoque ? ['Estoque'] : []),
-                ...(plano.tem_antecipacao ? ['Antecipação'] : []),
-              ].map((item) => (
-                <span
-                  key={item}
-                  className="text-[11px] bg-bg-2 text-ink-2 px-2.5 py-1 rounded-full font-medium"
-                >
-                  {item}
-                </span>
-              ))}
-            </div>
+      <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-5 text-[13px]">
+        <Limite rotulo="Lojas" valor={numero(p.max_lojas)} />
+        <Limite rotulo="Produtos" valor={numero(p.max_produtos)} />
+        <Limite rotulo="Entregadores" valor={numero(p.max_entregadores)} />
+        <Limite rotulo="Posts no Explorar" valor={p.max_posts === null ? 'Ilimitados' : numero(p.max_posts)} />
+      </dl>
 
-            {plano.stripe_price_id && (
-              <p className="text-[10px] text-ink-3 font-mono mt-3 truncate">
-                {plano.stripe_price_id}
-              </p>
+      <ul className="m-0 mt-5 flex list-none flex-wrap gap-1.5 p-0">
+        {recursos.map((r) => (
+          <li
+            key={r.rotulo}
+            className={cx(
+              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-semibold',
+              r.tem ? 'bg-bg-2 text-ink' : 'text-ink-3',
             )}
-          </div>
+          >
+            <PartnerIcon name={r.tem ? 'check' : 'minus'} size={12} strokeWidth={2.6} />
+            {!r.tem && <span className="sr-only">Sem </span>}
+            {r.rotulo}
+          </li>
         ))}
-      </div>
+      </ul>
 
-      {/* Novo plano */}
-      <div className="bg-bg border border-line rounded-lg p-6" style={{ boxShadow: 'var(--shadow-sm)' }}>
-        <div className="flex items-center gap-2 mb-5">
-          <Plus size={16} className="text-brick-dk" />
-          <h2 className="font-semibold text-ink">Novo plano</h2>
-        </div>
-        <FormularioPlano />
-      </div>
+      <p className="mt-auto truncate pt-5 font-mono text-[11px] text-ink-3" title={p.stripe_price_id ?? undefined}>
+        {p.stripe_price_id ?? 'Sem preço no Stripe'}
+      </p>
+    </li>
+  )
+}
+
+function Limite({ rotulo, valor }: { rotulo: string; valor: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-ink-3">{rotulo}</dt>
+      <dd className="mt-0.5 font-bold text-ink tabular-nums">{valor}</dd>
     </div>
   )
 }

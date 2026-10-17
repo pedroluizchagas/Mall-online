@@ -57,7 +57,7 @@ export async function reclassificarLoja(formData: FormData) {
   })
   if (errAud) return { erro: errAud.message }
 
-  revalidatePath('/admin/lojas-outros')
-  revalidatePath('/admin/adocao-templates')
+  // A contagem de "Outros" mora na moldura (badge) e na Visão geral.
+  revalidatePath('/admin', 'layout')
   return { sucesso: true }
 }
