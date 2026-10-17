@@ -51,8 +51,9 @@ export {
   ARQUETIPOS_SEM_VITRINE,
   resolveVitrine,
   getVitrineDoArquetipo,
+  getOpcoesDeVitrine,
 } from './vitrines'
-export type { Vitrine, VitrineCodigo, MoldeBarra } from './vitrines'
+export type { Vitrine, VitrineCodigo, MoldeBarra, OpcoesDeVitrine } from './vitrines'
 export { toCssVars, textoCssDasVars, RADIUS_PX } from './to-css-vars'
 export {
   DENSITY_SPACE_PX,

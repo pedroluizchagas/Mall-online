@@ -72,6 +72,23 @@ tinha. IDs são determinísticos (md5 do slug), então regerar não duplica.
 
 Storefront: `http://<slug>.mallevo.localhost:3002/`. Saguão: `http://mallevo.localhost:3002/`.
 
+### Miniaturas do seletor de vitrine
+
+O seletor de Minha Loja e o passo de estilo do onboarding mostram cada vitrine
+pela foto de VERDADE destas lojas-demo (`apps/web/public/vitrines/<codigo>.webp`,
+312×480, 12–25 kB). Regerar quando uma vitrine mudar de cara ou entrar vitrine
+nova — o teste `apps/web/components/dashboard/__tests__/escolha-vitrine.test.ts`
+cobra uma miniatura por vitrine da tabela:
+
+```bash
+supabase start && supabase db reset
+# storefront na 3002 contra o Supabase LOCAL (seção "Storefront contra o mesmo seed")
+pnpm vitrines:miniaturas      # scripts/miniaturas-vitrines.mjs (Chromium do Playwright)
+```
+
+O script recusa Supabase que não seja local e escolhe, por vitrine, a loja do
+bloco demo (fotos reais) antes da `forno-demo`.
+
 ## Consumer fora do mock (Fase 4)
 
 O app do consumidor roda sobre o mesmo seed, sem o dataset em memória:
@@ -93,9 +110,11 @@ home agrupa por piso com `agruparPorPiso` da lib (o mesmo do saguão web).
 
 ## O que o e2e cobre (`apps/web/e2e/vitrine.spec.ts`)
 
-- `/minha-loja`: painel "Vitrine ativada: Forno"; seção "Conteúdo da vitrine"
-  carrega o seed; editar o título, publicar e recarregar mantém o valor; o iframe
-  do preview carrega o storefront real vestindo o rascunho (wordmark = título).
+- `/minha-loja`: cartão "Sua vitrine" com "Vitrine Forno" publicada; trocar para
+  Smash vira rascunho ("Publique para valer na loja") e a miniatura carrega de
+  fato; seção "Conteúdo da vitrine" carrega o seed; editar o título, publicar e
+  recarregar mantém o valor; o iframe do preview carrega o storefront real
+  vestindo o rascunho (wordmark = título).
 - `/produtos/<margherita>`: bloco "Mídia e vitrine" com as 2 fotos da galeria,
   o recorte e a ficha do seed; adicionar uma linha e salvar persiste.
 

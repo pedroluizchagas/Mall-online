@@ -540,6 +540,17 @@ lib. O registro `components/vitrines/index.ts` é um `Record` **completo** das 1
 vitrines: vitrine nova na lib sem porte web quebra o typecheck e o teste-guarda
 `__tests__/registro.test.ts`. Sem vitrine elegível, cai no `Padrao`.
 
+No dashboard, o lojista escolhe pela VITRINE, não pela pele: Minha Loja
+(`components/dashboard/escolha-vitrine.tsx`) e o passo de estilo do onboarding
+usam `getOpcoesDeVitrine(categoria)` da lib — as vitrines que a categoria
+ativa, cada uma com a miniatura real tirada do storefront (`pnpm
+vitrines:miniaturas`, ver docs/dev/qa-local.md), e os estilos só de pele
+recolhidos. O `recomendado` dela é a primeira vitrine da categoria (em
+`acessorios-joias`, `construcao-ferramentas` e `oficinas-manutencao` o default
+de pele não tem vitrine ali, então a loja nasce com Serena/Gôndola); sem
+vitrine na categoria, o default de sempre. Vitrine nova também precisa da
+miniatura — o teste do web cobra.
+
 ### O vocabulário compartilhado (`components/vitrines/_base/`)
 
 | Peça | Papel |

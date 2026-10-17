@@ -75,5 +75,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
+  // `vitrines/`: miniaturas estáticas do seletor de Minha Loja — sem a
+  // exclusão, cada uma custaria uma ida ao Auth do Supabase.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api|vitrines/).*)'],
 }

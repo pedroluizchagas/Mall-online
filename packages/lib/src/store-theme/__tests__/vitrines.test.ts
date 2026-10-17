@@ -7,6 +7,7 @@ import { CATEGORIA_SLUG_TO_TEMPLATE } from '../../templates/mapping'
 import {
   ARQUETIPOS_SEM_VITRINE,
   VITRINES,
+  getOpcoesDeVitrine,
   getVitrineDoArquetipo,
   resolveVitrine,
 } from '../vitrines'
@@ -90,6 +91,56 @@ describe('resolveVitrine', () => {
     expect(getVitrineDoArquetipo('heritage')?.nome).toBe('Mesa')
     expect(getVitrineDoArquetipo('tech')).toBeNull()
     expect(getVitrineDoArquetipo(undefined)).toBeNull()
+  })
+})
+
+describe('getOpcoesDeVitrine — o que cada estilo rende na categoria', () => {
+  const todos = Object.keys(ARQUETIPOS).sort()
+
+  it.each(Object.keys(CATEGORIA_SLUG_TO_ARQUETIPO))(
+    '%s: cada estilo aparece uma vez, e só onde o gate concorda',
+    (categoria) => {
+      const { vitrines, soPele } = getOpcoesDeVitrine(categoria)
+      expect([...vitrines.map((v) => v.arquetipo), ...soPele].sort()).toEqual(todos)
+      for (const v of vitrines) expect(resolveVitrine(v.arquetipo, categoria)).toBe(v.codigo)
+      for (const a of soPele) expect(resolveVitrine(a, categoria)).toBeNull()
+    },
+  )
+
+  it('segue a ordem da sugestão: o default da categoria abre a lista', () => {
+    const comida = getOpcoesDeVitrine('alimentos-bebidas')
+    expect(comida.vitrines.map((v) => v.codigo)).toEqual([
+      'mesa', 'noir', 'torra', 'ritual', 'smash', 'horta', 'forno', 'feira',
+    ])
+    // Sugeridos sem vitrine aqui vêm antes dos demais estilos.
+    expect(comida.soPele.slice(0, 2)).toEqual(['market', 'soft'])
+  })
+
+  it('default sem vitrine na categoria cai em soPele, as vitrines seguem a sugestão', () => {
+    const joias = getOpcoesDeVitrine('acessorios-joias')
+    expect(joias.vitrines.map((v) => v.codigo)).toEqual(['serena', 'editorial'])
+    expect(joias.soPele[0]).toBe('noir')
+  })
+
+  it('recomenda a primeira vitrine; sem vitrine na categoria, o default de pele', () => {
+    expect(getOpcoesDeVitrine('alimentos-bebidas').recomendado).toBe('heritage')
+    expect(getOpcoesDeVitrine('acessorios-joias').recomendado).toBe('serene')
+    expect(getOpcoesDeVitrine('construcao-ferramentas').recomendado).toBe('market')
+    expect(getOpcoesDeVitrine('eletronicos-tecnologia').recomendado).toBe('tech')
+    // O recomendado de categoria com vitrine sempre veste uma.
+    for (const categoria of Object.keys(CATEGORIA_SLUG_TO_ARQUETIPO)) {
+      const { vitrines, recomendado } = getOpcoesDeVitrine(categoria)
+      if (vitrines.length > 0) expect(resolveVitrine(recomendado, categoria)).not.toBeNull()
+    }
+  })
+
+  it('categoria sem vitrine nenhuma, nula ou desconhecida → só pele', () => {
+    expect(getOpcoesDeVitrine('eletronicos-tecnologia').vitrines).toEqual([])
+    expect(getOpcoesDeVitrine(null).vitrines).toEqual([])
+    expect(getOpcoesDeVitrine(undefined).soPele).toHaveLength(todos.length)
+    expect(getOpcoesDeVitrine('categoria-nova').vitrines).toEqual([])
+    expect(getOpcoesDeVitrine(null).recomendado).toBeNull()
+    expect(getOpcoesDeVitrine('categoria-nova').recomendado).toBeNull()
   })
 })
 

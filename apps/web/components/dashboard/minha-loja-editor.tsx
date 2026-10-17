@@ -4,8 +4,8 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import {
   ARQUETIPOS,
   PALETAS,
-  RADIUS_STEPS_PX,
   getArquetipoSugestao,
+  getOpcoesDeVitrine,
   resolveTheme,
   type ArquetipoCodigo,
   normalizeStoreConteudo,
@@ -24,9 +24,10 @@ import { PageHeader } from '@/components/dashboard/page-header'
 import { StoreStatusToggle } from '@/components/dashboard/store-status-toggle'
 import { LinkPublicoBotao } from '@/components/dashboard/link-publico-botao'
 import { PreviewVitrine } from '@/components/dashboard/preview-vitrine'
-import { PainelVitrine } from '@/components/dashboard/painel-vitrine'
+import { EscolhaVitrine, type CategoriaDaLoja } from '@/components/dashboard/escolha-vitrine'
 import type { RascunhoPreview } from '@/lib/storefront-url'
 import { PartnerIcon } from '@/components/ui/partner-icon'
+import { cx } from '@/lib/cx'
 
 export interface LojaEditorInicial {
   nome: string
@@ -37,8 +38,8 @@ export interface LojaEditorInicial {
   theme: Record<string, unknown> | null
   ativo: boolean
   slug: string | null
-  /** Slug da categoria — sugere o arquétipo default no editor. */
-  categoriaSlug: string | null
+  /** Categoria (nicho) — decide as vitrines próprias e sugere o arquétipo. */
+  categoria: CategoriaDaLoja | null
   /** `stores.conteudo` cru (StoreConteudo v1) — voz da vitrine. */
   conteudo?: unknown | null
 }
@@ -65,10 +66,13 @@ interface Props {
 // ─── Editor principal ─────────────────────────────────────────────────────────
 
 export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
-  const presetInicial: ArquetipoCodigo =
+  const categoriaSlug = loja.categoria?.slug ?? null
+  const presetPublicado: ArquetipoCodigo | null =
     loja.theme && typeof loja.theme.preset === 'string' && loja.theme.preset in ARQUETIPOS
       ? (loja.theme.preset as ArquetipoCodigo)
-      : getArquetipoSugestao(loja.categoriaSlug).default
+      : null
+  const presetInicial: ArquetipoCodigo =
+    presetPublicado ?? getOpcoesDeVitrine(categoriaSlug).recomendado ?? getArquetipoSugestao(categoriaSlug).default
   const accentInicial =
     (loja.theme?.color as { accent?: string } | undefined)?.accent ?? null
   const paletaInicial =
@@ -89,6 +93,8 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
   const [bannerFile, setBannerFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  // Abaixo de 1280px editor e vitrine não cabem lado a lado: viram abas.
+  const [painel, setPainel] = useState<'editar' | 'vitrine'>('editar')
 
   const logoInputRef = useRef<HTMLInputElement>(null)
   const bannerInputRef = useRef<HTMLInputElement>(null)
@@ -139,18 +145,18 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
         ...(accent ? { color: { accent } } : {}),
       },
       conteudo: conteudoParaPayload(conteudo),
-      categoria: loja.categoriaSlug,
+      categoria: categoriaSlug,
     }),
-    [preset, paleta, accent, conteudo, loja.categoriaSlug],
+    [preset, paleta, accent, conteudo, categoriaSlug],
   )
   const produtoPreviewId = conteudo.destaques[0] ?? catalogo[0]?.id ?? null
   const temMidiaNaoPublicada = Boolean(logoFile || bannerFile || conteudo.galeriaNovas.length > 0)
+  const produtosComFoto = catalogo.filter((p) => p.foto_url).length
 
-  const sugestao = getArquetipoSugestao(loja.categoriaSlug)
-  const recomendados: ArquetipoCodigo[] = [sugestao.default, ...sugestao.alternativas]
-  const outros = (Object.keys(ARQUETIPOS) as ArquetipoCodigo[]).filter(
-    (c) => !recomendados.includes(c)
-  )
+  function escolherEstilo(codigo: ArquetipoCodigo) {
+    setPreset(codigo)
+    setPaleta(null)
+  }
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -219,11 +225,65 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
     setTimeout(() => setSaved(false), 2500)
   }
 
+  const botaoPublicar = (className?: string) => (
+    <button
+      onClick={handlePublicar}
+      disabled={saving}
+      className={cx(
+        'items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-60',
+        className,
+      )}
+      style={{
+        background: saved ? 'var(--ok)' : 'var(--brick)',
+        color: saved ? '#fff' : 'var(--brick-ink)',
+      }}
+    >
+      <PartnerIcon name="send" size={12} />
+      {saving ? (
+        'Publicando…'
+      ) : saved ? (
+        'Publicado!'
+      ) : (
+        <>
+          Publicar<span className="hidden sm:inline"> alterações</span>
+        </>
+      )}
+    </button>
+  )
+
   return (
-    <div className="flex" style={{ height: '100%' }}>
+    <div className="flex flex-col xl:flex-row">
+      {/* ── Abas (abaixo de 1280px): editor OU vitrine, publicar sempre à mão ── */}
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-line bg-canvas/90 px-4 py-2.5 backdrop-blur-md sm:px-6 xl:hidden">
+        <div className="flex gap-1 rounded-full bg-bg p-1 ring-1 ring-inset ring-line">
+          {(
+            [
+              ['editar', 'Editar', 'edit'],
+              ['vitrine', 'Ver vitrine', 'eye'],
+            ] as const
+          ).map(([valor, rotulo, icone]) => (
+            <button
+              key={valor}
+              type="button"
+              onClick={() => setPainel(valor)}
+              aria-pressed={painel === valor}
+              className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[12px] font-semibold transition-colors"
+              style={{
+                background: painel === valor ? 'var(--ink)' : 'transparent',
+                color: painel === valor ? 'var(--bg)' : 'var(--ink-2)',
+              }}
+            >
+              <PartnerIcon name={icone} size={14} strokeWidth={2} />
+              {rotulo}
+            </button>
+          ))}
+        </div>
+        {botaoPublicar('inline-flex shrink-0 whitespace-nowrap py-2')}
+      </div>
+
       {/* ── Painel esquerdo (editor) ──────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto min-w-0">
-        <div className="p-9 max-w-[720px]">
+      <div className={cx('min-w-0 flex-1', painel === 'vitrine' && 'hidden xl:block')}>
+        <div className="max-w-[720px] px-5 py-7 sm:p-9">
           <PageHeader
             titulo="Minha Loja"
             subtitulo="Personalize a vitrine que seus clientes verão."
@@ -236,73 +296,24 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
               <>
                 <StoreStatusToggle inicialAtivo={loja.ativo} />
                 <LinkPublicoBotao slug={loja.slug} />
-                <button
-                  onClick={handlePublicar}
-                  disabled={saving}
-                  className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold hover:opacity-90 transition-opacity disabled:opacity-60"
-                  style={{
-                    background: saved ? 'var(--ok)' : 'var(--brick)',
-                    color: saved ? '#fff' : 'var(--brick-ink)',
-                  }}
-                >
-                  <PartnerIcon name="send" size={12} />
-                  {saving ? 'Publicando…' : saved ? 'Publicado!' : 'Publicar alterações'}
-                </button>
+                {botaoPublicar('hidden xl:inline-flex')}
               </>
             }
           />
 
-          {/* ── ESTILO DA LOJA ───────────────────────────────── */}
-          <Secao titulo="ESTILO DA LOJA">
+          {/* ── VITRINE E ESTILO ─────────────────────────────── */}
+          <Secao titulo="VITRINE E ESTILO">
             <p className="text-xs text-ink-3 -mt-2 mb-3">
-              Sugeridos para a sua categoria — escolha o que combina com o tom da
-              sua marca. Você pode mudar quando quiser.
+              A vitrine é o layout da loja; o estilo, as cores e a tipografia. Escolha
+              pelo que combina com o tom da sua marca — dá para mudar quando quiser.
             </p>
-            <PainelVitrine
+            <EscolhaVitrine
               preset={preset}
-              categoriaSlug={loja.categoriaSlug}
-              aoEscolherEstilo={(p) => {
-                setPreset(p)
-                setPaleta(null)
-              }}
+              presetPublicado={presetPublicado}
+              categoria={loja.categoria}
+              produtosComFoto={produtosComFoto}
+              aoEscolher={escolherEstilo}
             />
-            <div className="space-y-3">
-              {recomendados.map((code) => (
-                <ArquetipoCard
-                  key={code}
-                  code={code}
-                  selected={preset === code}
-                  recomendado={code === sugestao.default}
-                  onSelect={() => {
-                    setPreset(code)
-                    setPaleta(null)
-                  }}
-                />
-              ))}
-            </div>
-            {outros.length > 0 && (
-              <>
-                <p
-                  className="text-[10px] uppercase font-semibold mt-5 mb-3"
-                  style={{ color: 'var(--ink-3)', letterSpacing: '0.14em' }}
-                >
-                  Outros estilos
-                </p>
-                <div className="space-y-3">
-                  {outros.map((code) => (
-                    <ArquetipoCard
-                      key={code}
-                      code={code}
-                      selected={preset === code}
-                      onSelect={() => {
-                        setPreset(code)
-                        setPaleta(null)
-                      }}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
           </Secao>
 
           {/* ── PALETA DO ESTILO ─────────────────────────────── */}
@@ -578,17 +589,13 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
       </div>
 
       {/* ── Painel direito: a loja real em preview ─────────────── */}
+      {/* Do lado do editor a partir de 1280px (celular cabe em 400px;
+          "Computador" ganha até 40% da largura); abaixo, é a aba "Ver vitrine". */}
       <div
-        className="flex-shrink-0 flex flex-col border-l overflow-y-auto"
-        style={{
-          // Celular cabe em 360px; "Computador" ganha até 46% da largura.
-          width: 'clamp(360px, 46vw, 720px)',
-          borderColor: 'var(--line)',
-          background: 'var(--bg-2)',
-          position: 'sticky',
-          top: 0,
-          maxHeight: 'calc(100vh - 24px)',
-        }}
+        className={cx(
+          'flex-col xl:sticky xl:top-0 xl:flex xl:max-h-[calc(100dvh-24px)] xl:w-[clamp(400px,40vw,720px)] xl:shrink-0 xl:self-start xl:overflow-y-auto xl:border-l xl:border-line xl:bg-bg-2',
+          painel === 'vitrine' ? 'flex' : 'hidden',
+        )}
       >
         <div className="p-5 flex flex-col flex-1">
           <p
@@ -665,132 +672,6 @@ function PaletaChip({
       >
         {nome}
       </span>
-    </button>
-  )
-}
-
-function ArquetipoCard({
-  code,
-  selected,
-  recomendado,
-  onSelect,
-}: {
-  code: ArquetipoCodigo
-  selected: boolean
-  recomendado?: boolean
-  onSelect: () => void
-}) {
-  const arq = ARQUETIPOS[code]
-  const t = arq.tokens
-  // Mini-tema do cartão: cores e forma vêm direto dos tokens do arquétipo.
-  const template = {
-    acento: t.color.accent,
-    bgTela: t.color.bg,
-    bgHeader: t.color.surface,
-    bgCard: t.color.surface,
-    linha: t.color.line,
-    textoPrimario: t.color.ink,
-    textoSecundario: t.color.inkMuted,
-  }
-  // Mini-preview (~40% do phone): raio reduzido proporcionalmente para que o
-  // DNA de forma do arquétipo (sharp/soft/round) apareça já na seleção.
-  const raioMini = Math.max(1, Math.round(RADIUS_STEPS_PX[t.shape.radius].md * 0.33))
-  return (
-    <button
-      onClick={onSelect}
-      className="w-full text-left rounded-2xl overflow-hidden transition-all hover:opacity-90"
-      style={{
-        border: `2px solid ${selected ? 'var(--ink)' : 'var(--line)'}`,
-      }}
-    >
-      <div className="flex">
-        {/* Mini UI preview */}
-        <div
-          className="flex-shrink-0 relative"
-          style={{ width: 132, background: template.bgTela, height: 100, overflow: 'hidden' }}
-        >
-          {/* Header strip */}
-          <div
-            style={{ height: 22, background: template.bgHeader, display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', borderBottom: `1px solid ${template.linha}` }}
-          >
-            <div
-              style={{ width: 14, height: 14, borderRadius: 4, background: template.acento, flexShrink: 0 }}
-            />
-            <div style={{ flex: 1, height: 5, borderRadius: 3, background: template.linha }} />
-            <div style={{ width: 14, height: 14, borderRadius: 14, background: template.linha }} />
-          </div>
-          {/* Content simulation */}
-          <div style={{ padding: '0 10px', marginTop: 8, position: 'relative' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, marginBottom: 7 }}>
-              <div
-                style={{
-                  width: 28, height: 28, borderRadius: raioMini,
-                  background: template.acento, flexShrink: 0,
-                }}
-              />
-              <div>
-                <div style={{ width: 50, height: 5, borderRadius: 3, background: template.textoPrimario, opacity: 0.7, marginBottom: 4 }} />
-                <div style={{ width: 34, height: 4, borderRadius: 3, background: template.textoSecundario, opacity: 0.6 }} />
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 4 }}>
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  style={{ height: 26, borderRadius: raioMini, background: i === 0 ? template.acento : template.bgCard, border: `1px solid ${template.linha}` }}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Nome + descrição + check */}
-        <div
-          className="flex-1 min-w-0 flex flex-col justify-between py-3 px-4"
-          style={{ background: selected ? 'var(--bg)' : 'var(--bg-2)' }}
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p
-                  className="text-sm font-bold truncate"
-                  style={{ color: 'var(--ink)' }}
-                >
-                  {arq.nome}
-                </p>
-                {recomendado && (
-                  <span
-                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
-                    style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
-                  >
-                    Recomendado
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-ink-3 mt-1 leading-snug line-clamp-2">
-                {arq.descricao}
-              </p>
-            </div>
-            <div
-              className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ background: selected ? 'var(--ink)' : 'var(--line-2)' }}
-            >
-              {selected && <PartnerIcon name="check" style={{ width: 12, height: 12, color: 'var(--brick)' }} strokeWidth={3} />}
-            </div>
-          </div>
-          <div className="flex gap-1 mt-2">
-            {arq.mood.map((m) => (
-              <span
-                key={m}
-                className="text-[9px] font-medium px-1.5 py-0.5 rounded-full"
-                style={{ background: 'var(--bg-3)', color: 'var(--ink-3)' }}
-              >
-                {m}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
     </button>
   )
 }

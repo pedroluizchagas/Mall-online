@@ -13,6 +13,7 @@
 import type { ArquetipoCodigo } from './types'
 import type { CategoriaSlug } from '../templates/mapping'
 import { ARQUETIPOS } from './presets'
+import { CATEGORIA_SLUG_TO_ARQUETIPO, getArquetipoSugestao } from './mapping'
 
 /**
  * Molde da barra de navegação inferior que a vitrine desenha (regra do
@@ -236,3 +237,41 @@ export function getVitrineDoArquetipo(
 export const ARQUETIPOS_SEM_VITRINE: readonly ArquetipoCodigo[] = (
   Object.keys(ARQUETIPOS) as ArquetipoCodigo[]
 ).filter((codigo) => !LISTA.some((v) => v.arquetipo === codigo))
+
+/**
+ * O que a escolha de estilo rende NESTA categoria, para o editor apresentar
+ * as opções pelo que o lojista ganha — não como 21 peles indistintas:
+ *  - `vitrines`: estilos que ativam vitrine própria aqui, na ordem da
+ *    sugestão da categoria (o default antes das alternativas);
+ *  - `soPele`: os demais estilos — cores, tipografia e forma sobre o layout
+ *    padrão —, os sugeridos para a categoria primeiro;
+ *  - `recomendado`: o que o editor destaca e o onboarding pré-seleciona — a
+ *    primeira vitrine da categoria, para a loja já nascer com layout próprio
+ *    (em joias, construção e oficinas o default de pele não tem vitrine ali);
+ *    sem vitrine na categoria, o default de sempre.
+ * Categoria nula ou desconhecida → nenhuma vitrine (o gate depende dela) e
+ * nenhuma recomendação.
+ */
+export interface OpcoesDeVitrine {
+  vitrines: readonly Vitrine[]
+  soPele: readonly ArquetipoCodigo[]
+  recomendado: ArquetipoCodigo | null
+}
+
+export function getOpcoesDeVitrine(categoriaSlug: string | null | undefined): OpcoesDeVitrine {
+  const { default: padrao, alternativas } = getArquetipoSugestao(categoriaSlug)
+  const sugeridos: ArquetipoCodigo[] = [padrao, ...alternativas]
+  const ordem = [
+    ...sugeridos,
+    ...(Object.keys(ARQUETIPOS) as ArquetipoCodigo[]).filter((c) => !sugeridos.includes(c)),
+  ]
+  const vitrines: Vitrine[] = []
+  const soPele: ArquetipoCodigo[] = []
+  for (const arquetipo of ordem) {
+    const codigo = resolveVitrine(arquetipo, categoriaSlug)
+    if (codigo) vitrines.push(VITRINES[codigo])
+    else soPele.push(arquetipo)
+  }
+  const conhecida = !!categoriaSlug && categoriaSlug in CATEGORIA_SLUG_TO_ARQUETIPO
+  return { vitrines, soPele, recomendado: conhecida ? (vitrines[0]?.arquetipo ?? padrao) : null }
+}

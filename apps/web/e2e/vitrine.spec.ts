@@ -31,8 +31,22 @@ test.describe('Minha Loja', () => {
     await page.goto('/minha-loja')
     await dispensarTutorial(page)
 
-    // Badge lê a mesma tabela VITRINES do consumer/storefront.
-    await expect(page.getByText('Vitrine Forno ativada')).toBeVisible()
+    // O cartão "Sua vitrine" lê a mesma tabela VITRINES do consumer/storefront.
+    await expect(page.getByText('Vitrine Forno', { exact: true })).toBeVisible()
+    await expect(page.getByText('Publicada', { exact: true })).toBeVisible()
+
+    // Vitrine-first: as vitrines do ramo aparecem com a miniatura de verdade;
+    // trocar de vitrine é rascunho até publicar. Volta ao Forno antes de
+    // gravar o resto (o wordmark abaixo é do Forno).
+    await page.getByRole('button', { name: /^Smash\b/ }).click()
+    await expect(page.getByText('Vitrine Smash', { exact: true })).toBeVisible()
+    await expect(page.getByText('Publique para valer na loja')).toBeVisible()
+    await page.getByRole('button', { name: /^Forno\b/ }).click()
+    await expect(page.getByText('Publicada', { exact: true })).toBeVisible()
+    // A miniatura carregou de fato (naturalWidth 0 = arquivo ausente/quebrado).
+    await expect
+      .poll(() => page.locator('img[src="/vitrines/forno.webp"]').first().evaluate((i: HTMLImageElement) => i.naturalWidth))
+      .toBeGreaterThan(0)
 
     // Seção nova, com o conteúdo carregado do banco. Não afirmamos o texto do
     // seed: este teste grava por cima, então fixá-lo faria a suíte passar uma

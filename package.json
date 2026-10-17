@@ -16,6 +16,7 @@
     "test": "turbo run test",
     "qa:local": "bash scripts/qa-local.sh",
     "seed:vitrines": "node scripts/gerar-seed-vitrines.mjs",
+    "vitrines:miniaturas": "node scripts/miniaturas-vitrines.mjs",
     "typecheck": "turbo run typecheck",
     "build": "turbo run build --filter=web --filter=storefront --filter=admin",
     "smoke:storefront": "bash scripts/smoke-storefront.sh"

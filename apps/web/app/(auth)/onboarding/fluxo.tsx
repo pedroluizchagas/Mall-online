@@ -8,6 +8,7 @@ import {
   RADIUS_STEPS_PX,
   formatarReais,
   getArquetipoSugestao,
+  getOpcoesDeVitrine,
   getPisosByCategoria,
   getTemplateBySlug,
   type ArquetipoCodigo,
@@ -233,7 +234,9 @@ export function FluxoOnboarding({ carregando, onFinalizar }: Props) {
         // Só re-semeia quando a categoria MUDOU, preservando escolha manual
         // de quem apenas voltou e confirmou a mesma categoria.
         if (dados.categoria_id !== categoriaId) {
-          setPreset(getArquetipoSugestao(categoriaSelecionada?.slug).default)
+          // A recomendação já é uma vitrine quando a categoria tem alguma.
+          const slug = categoriaSelecionada?.slug
+          setPreset(getOpcoesDeVitrine(slug).recomendado ?? getArquetipoSugestao(slug).default)
         }
         setDados((p) => ({ ...p, categoria_id: categoriaId }))
         return avancar()
@@ -1010,9 +1013,11 @@ function ConfirmacaoCategoria({ categoria }: { categoria: Categoria }) {
 }
 
 // ============================================================================
-// Etapa de estilo — a loja nasce vestida (StoreTheme). Sugestão por categoria
-// via getArquetipoSugestao; os 21 arquétipos ficam disponíveis. Mesma engine
-// (ARQUETIPOS/RADIUS_STEPS_PX) do editor /minha-loja e do storefront.
+// Etapa de estilo — a loja nasce vestida (StoreTheme). Primeiro as VITRINES
+// que a categoria ativa (getOpcoesDeVitrine, a mesma tabela do app e do
+// storefront), com a miniatura de verdade de cada uma; depois os estilos que
+// só vestem cores e tipografia sobre o layout padrão. Mesma lógica do editor
+// /minha-loja (components/dashboard/escolha-vitrine.tsx).
 // ============================================================================
 
 interface EscolhaEstiloProps {
@@ -1022,50 +1027,114 @@ interface EscolhaEstiloProps {
 }
 
 function EscolhaEstilo({ categoriaSlug, selecionado, onSelecionar }: EscolhaEstiloProps) {
-  const sugestao = getArquetipoSugestao(categoriaSlug)
-  const recomendados: ArquetipoCodigo[] = [sugestao.default, ...sugestao.alternativas]
-  const outros = (Object.keys(ARQUETIPOS) as ArquetipoCodigo[]).filter(
-    (c) => !recomendados.includes(c),
+  const { vitrines, soPele, recomendado } = getOpcoesDeVitrine(categoriaSlug)
+  const [verOutros, setVerOutros] = useState(
+    () => vitrines.length === 0 || (selecionado !== '' && soPele.includes(selecionado)),
   )
+  const outrosAbertos = vitrines.length === 0 || verOutros
 
   return (
     <div>
       <Eyebrow texto={`Passo 08 · ${TOTAL_ETAPAS}`} />
-      <Titulo>Escolha o estilo da sua loja.</Titulo>
-      <Subtitulo>
-        É a cara da sua vitrine: cores, formas e tipografia que os clientes verão no site e no
-        app. Sugerimos os que combinam com a sua categoria — e você pode refinar depois em
-        &ldquo;Minha Loja&rdquo;.
-      </Subtitulo>
-
-      <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {recomendados.map((codigo) => (
-          <CartaoEstilo
-            key={codigo}
-            codigo={codigo}
-            selecionado={selecionado === codigo}
-            recomendado={codigo === sugestao.default}
-            onSelecionar={() => onSelecionar(codigo)}
-          />
-        ))}
-      </div>
-
-      {outros.length > 0 && (
+      {vitrines.length > 0 ? (
         <>
-          <p className="mt-8 mb-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">
-            Outros estilos
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2">
-            {outros.map((codigo) => (
-              <CartaoEstilo
-                key={codigo}
-                codigo={codigo}
-                selecionado={selecionado === codigo}
-                onSelecionar={() => onSelecionar(codigo)}
-              />
-            ))}
+          <Titulo>Escolha a vitrine da sua loja.</Titulo>
+          <Subtitulo>
+            A vitrine é o layout que os clientes veem no site e no app; o estilo, as cores e a
+            tipografia. Estas foram desenhadas para o seu ramo — dá para trocar depois em
+            &ldquo;Minha Loja&rdquo;.
+          </Subtitulo>
+          <div className="mt-10 grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-5">
+            {vitrines.map((v) => {
+              const ativa = selecionado === v.arquetipo
+              return (
+                <button
+                  key={v.codigo}
+                  type="button"
+                  onClick={() => onSelecionar(v.arquetipo)}
+                  aria-pressed={ativa}
+                  className="group min-w-0 rounded-2xl text-left"
+                >
+                  <span
+                    className={`relative block overflow-hidden rounded-2xl border transition-all duration-300 ${
+                      ativa
+                        ? 'border-brick shadow-[0_0_30px_rgba(193,241,72,0.18)]'
+                        : 'border-white/[0.08] group-hover:border-white/25'
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/vitrines/${v.codigo}.webp`}
+                      alt=""
+                      width={312}
+                      height={480}
+                      loading="lazy"
+                      decoding="async"
+                      className="block aspect-[13/20] w-full object-cover"
+                    />
+                    {ativa && (
+                      <span className="absolute right-2 top-2 w-6 h-6 rounded-full bg-brick flex items-center justify-center">
+                        <PartnerIcon name="check" size={13} className="text-brick-ink" strokeWidth={3.5} />
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                    <span className={`text-sm font-semibold ${ativa ? 'text-white' : 'text-zinc-200'}`}>
+                      {v.nome}
+                    </span>
+                    {v.arquetipo === recomendado && (
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-brick text-brick-ink">
+                        Recomendado
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-zinc-500 line-clamp-2">
+                    {v.descricao}
+                  </span>
+                </button>
+              )
+            })}
           </div>
+          <p className="mt-4 text-[11px] text-zinc-500">
+            As fotos são de lojas de exemplo — a sua vitrine veste o seu nome, a sua logo e os seus produtos.
+          </p>
         </>
+      ) : (
+        <>
+          <Titulo>Escolha o estilo da sua loja.</Titulo>
+          <Subtitulo>
+            O seu ramo ainda não tem vitrine própria: o estilo veste o layout padrão com cores,
+            formas e tipografia que os clientes verão no site e no app. Dá para trocar depois em
+            &ldquo;Minha Loja&rdquo;.
+          </Subtitulo>
+        </>
+      )}
+
+      {vitrines.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setVerOutros((v) => !v)}
+          aria-expanded={outrosAbertos}
+          className="mt-10 flex w-full items-center justify-between gap-3 rounded-xl text-left"
+        >
+          <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">
+            Outros estilos <span className="normal-case tracking-normal">· só cores e tipografia ({soPele.length})</span>
+          </span>
+          <PartnerIcon name={outrosAbertos ? 'chevron-up' : 'chevron-down'} size={16} className="text-zinc-500" />
+        </button>
+      )}
+      {outrosAbertos && (
+        <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 ${vitrines.length > 0 ? 'mt-3' : 'mt-10'}`}>
+          {soPele.map((codigo) => (
+            <CartaoEstilo
+              key={codigo}
+              codigo={codigo}
+              selecionado={selecionado === codigo}
+              recomendado={codigo === recomendado}
+              onSelecionar={() => onSelecionar(codigo)}
+            />
+          ))}
+        </div>
       )}
     </div>
   )

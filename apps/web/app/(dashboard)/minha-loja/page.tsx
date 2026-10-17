@@ -11,15 +11,16 @@ export default async function PaginaMinhaLoja() {
 
   const { loja, tenant } = dados
 
-  // Slug da categoria → sugere o arquétipo (pele) no editor.
+  // Categoria (nicho) → decide quais estilos viram vitrine própria e sugere o
+  // arquétipo no editor; o nome aparece nos textos ("Vitrines para …").
   const { data: lojaCat } = await supabase
     .from('stores')
-    .select('conteudo, categoria:categories!stores_categoria_id_fkey(slug)')
+    .select('conteudo, categoria:categories!stores_categoria_id_fkey(slug, nome)')
     .eq('id', loja.id)
     .single()
-  const categoriaSlug =
-    (lojaCat as { categoria?: { slug?: string | null } | null } | null)?.categoria
-      ?.slug ?? null
+  const cat = (lojaCat as { categoria?: { slug?: string | null; nome?: string | null } | null } | null)
+    ?.categoria
+  const categoria = cat?.slug ? { slug: cat.slug, nome: cat.nome ?? cat.slug } : null
   const conteudo = (lojaCat as { conteudo?: unknown } | null)?.conteudo ?? null
 
   // Catálogo inteiro (leve) para o seletor de destaques do conteúdo.
@@ -42,7 +43,7 @@ export default async function PaginaMinhaLoja() {
         theme: (loja.theme as Record<string, unknown> | null) ?? null,
         ativo: loja.ativo ?? true,
         slug: loja.slug ?? null,
-        categoriaSlug,
+        categoria,
         conteudo,
       }}
       catalogo={(catalogoRaw ?? []) as { id: string; nome: string; foto_url: string | null }[]}

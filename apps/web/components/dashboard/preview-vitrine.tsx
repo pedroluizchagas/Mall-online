@@ -82,12 +82,16 @@ export function PreviewVitrine({
   // A troca de endereço vai pelo REF, não por `key`/prop: remontar o iframe a
   // cada debounce destruía a vitrine e piscava branco a cada tecla. Agora o
   // mesmo elemento navega e o "Atualizando…" some no `load`.
+  // O iframe nasce SEM endereço (inclusive no HTML do servidor) e o recebe
+  // aqui, já hidratado: com o `src` no SSR o storefront podia terminar de
+  // carregar antes do React ligar o `onLoad`, e o "Atualizando…" ficava preso
+  // sobre a vitrine para sempre.
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const srcInicial = useRef<string | null>(srcAlvo)
   useEffect(() => {
     const el = iframeRef.current
     if (!el || !src) return
     if (el.getAttribute('src') === src) return
+    setCarregando(true)
     el.setAttribute('src', src)
   }, [src])
 
@@ -108,8 +112,11 @@ export function PreviewVitrine({
   const ehTelefone = dispositivo !== 'computador'
   const larguraPainel = ehTelefone ? Math.min(340, larguraDisponivel) : larguraDisponivel
   const { largura, altura } = MOLDURA[dispositivo]
-  const escala = larguraPainel / largura
-  const alturaEscalada = Math.round(altura * escala)
+  // A escala sai da largura DENTRO da moldura: medida por fora, a borda
+  // comia 20px (celular) ou 12px (computador) da direita e da base da vitrine.
+  const borda = ehTelefone ? 10 : 6
+  const escala = (larguraPainel - 2 * borda) / largura
+  const alturaEscalada = Math.round(altura * escala) + 2 * borda
 
   return (
     <div ref={areaRef} className="flex w-full flex-col gap-4">
@@ -128,7 +135,7 @@ export function PreviewVitrine({
               type="button"
               onClick={() => setDispositivo(valor)}
               aria-pressed={dispositivo === valor}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold transition-colors"
+              className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-full px-3 text-[12px] font-semibold transition-colors"
               style={{
                 background: dispositivo === valor ? 'var(--ink)' : 'transparent',
                 color: dispositivo === valor ? 'var(--bg)' : 'var(--ink-2)',
@@ -152,7 +159,7 @@ export function PreviewVitrine({
               onClick={() => setTela(valor)}
               disabled={valor === 'produto' && !produtoId}
               aria-pressed={tela === valor}
-              className="h-8 rounded-full px-3 text-[12px] font-semibold transition-colors disabled:opacity-40"
+              className="h-8 whitespace-nowrap rounded-full px-3 text-[12px] font-semibold transition-colors disabled:opacity-40"
               style={{
                 background: tela === valor ? 'var(--ink)' : 'transparent',
                 color: tela === valor ? 'var(--bg)' : 'var(--ink-2)',
@@ -180,17 +187,20 @@ export function PreviewVitrine({
           <div
             className={
               ehTelefone
-                ? 'relative overflow-hidden rounded-[40px] border-[10px] shadow-xl'
-                : 'relative overflow-hidden rounded-xl border-[6px] shadow-xl'
+                ? 'relative overflow-hidden rounded-[40px] shadow-xl'
+                : 'relative overflow-hidden rounded-xl shadow-xl'
             }
             style={{
-              borderColor: 'var(--marquee)',
+              border: `${borda}px solid var(--marquee)`,
               background: 'var(--bg)',
               width: larguraPainel,
               height: alturaEscalada,
             }}
           >
-            {ehTelefone && (
+            {/* O notch só sobre a barra de status do app: no navegador do
+                celular a página começa abaixo dele, e desenhado ali ele
+                cobria o nome e a logo da loja. */}
+            {dispositivo === 'app' && (
               <div
                 aria-hidden
                 className="pointer-events-none absolute left-1/2 top-2 z-10 h-[18px] w-[92px] -translate-x-1/2 rounded-full"
@@ -200,9 +210,11 @@ export function PreviewVitrine({
             {src && (
               <iframe
                 ref={iframeRef}
-                src={srcInicial.current ?? undefined}
                 title="Preview da loja"
-                onLoad={() => setCarregando(false)}
+                // O `about:blank` de antes do endereço também dispara `load`.
+                onLoad={(e) => {
+                  if (e.currentTarget.getAttribute('src')) setCarregando(false)
+                }}
                 className="absolute left-0 top-0 origin-top-left border-0"
                 style={{ width: largura, height: altura, transform: `scale(${escala})` }}
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
