@@ -81,9 +81,15 @@ futura, fora de escopo agora.
 
 ### D6 — Provisionamento DNS inalterado
 
-`provisionTenantDomain` lê `process.env.VERCEL_PROJECT_ID` em runtime. Retarget
-para o novo projeto = trocar uma env var no `apps/web`. Sem mudança de lógica.
-Continua sendo chamado no Dashboard (onde está o onboarding).
+`provisionTenantDomain` lê `process.env.VERCEL_STOREFRONT_PROJECT_ID` em
+runtime — o id do projeto storefront, onde moram os subdomínios. Continua sendo
+chamado no Dashboard (onboarding, troca de slug e "Provisionar agora").
+
+> **2026-10-17:** até aqui a função lia `VERCEL_PROJECT_ID`, que no `apps/web`
+> nunca foi retargetado (passo 7 do Stage 4 ficou pendente): a troca de slug da
+> Drazzo ligou `drazzoo.mallevo.com.br` ao projeto do PAINEL e a loja e o
+> preview passaram a abrir o 404 dele. A variável agora é própria, sem reserva,
+> e "já em uso" só conta como sucesso se o domínio estiver no storefront.
 
 ## Riscos e mitigações
 

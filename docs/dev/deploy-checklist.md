@@ -87,8 +87,13 @@ openssl s_client -connect <slug>.mallevo.com.br:443 -servername <slug>.mallevo.c
 
 O onboarding faz isso sozinho (`provisionTenantDomain`: CNAME na Cloudflare +
 domínio na Vercel, com `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ZONE_ID`,
-`VERCEL_TOKEN` e `VERCEL_PROJECT_ID` no projeto `mall-online-web`), e trocar o
-slug em Configurações reprovisiona antes de gravar. Sintoma de quem esqueceu:
+`VERCEL_TOKEN` e `VERCEL_STOREFRONT_PROJECT_ID` — o id do `storefront-mallevo`
+— no projeto `mall-online-web`), e trocar o slug em Configurações reprovisiona
+antes de gravar. Sem `VERCEL_STOREFRONT_PROJECT_ID` o provisionamento falha de
+propósito: até 2026-10-17 ele lia `VERCEL_PROJECT_ID`, que no painel aponta
+para o próprio painel, e a troca de slug prendia o subdomínio lá (a loja abria
+o 404 do painel). Conferir com `vercel domains inspect mallevo.com.br`: só
+`app.mallevo.com.br` pode estar no `mall-online-web`. Sintoma de quem esqueceu:
 "Secure Connection Failed" — é hostname sem certificado, não bug da aplicação.
 Diagnóstico: `getent hosts` (DNS resolve?) → `openssl s_client` (`unexpected
 eof` = sem certificado) → `vercel domains inspect mallevo.com.br`.

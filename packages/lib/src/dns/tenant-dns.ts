@@ -33,17 +33,40 @@ function vercelAddUrl(projectId: string, teamId?: string): string {
   return teamId ? `${base}?teamId=${teamId}` : base
 }
 
-function vercelRemoveUrl(projectId: string, domain: string, teamId?: string): string {
+function vercelDomainUrl(projectId: string, domain: string, teamId?: string): string {
   const base = `${VERCEL_BASE}/v9/projects/${projectId}/domains/${domain}`
   return teamId ? `${base}?teamId=${teamId}` : base
+}
+
+/**
+ * Os subdomínios das lojas moram no projeto do STOREFRONT na Vercel — é ele
+ * que serve `<slug>.mallevo.com.br`. Ligado a outro projeto, a loja e o
+ * preview de Minha Loja abrem a página daquele projeto: em 2026-10-17 a troca
+ * de slug da Drazzo pôs `drazzoo.mallevo.com.br` no projeto do PAINEL, porque
+ * `VERCEL_PROJECT_ID` apontava para ele. Por isso a variável é própria (o
+ * mesmo nome de scripts/vercel-backfill-store-domains.mjs) e não tem reserva.
+ */
+function projetoDoStorefront(): string | null {
+  return process.env.VERCEL_STOREFRONT_PROJECT_ID || null
 }
 
 export async function provisionTenantDomain(slug: string): Promise<ProvisionResult> {
   const sanitized = sanitizeSlug(slug)
   const domain = `${sanitized}.mallevo.com.br`
   const zoneId = process.env.CLOUDFLARE_ZONE_ID!
-  const projectId = process.env.VERCEL_PROJECT_ID!
+  const projectId = projetoDoStorefront()
   const teamId = process.env.VERCEL_TEAM_ID || undefined
+
+  // Sem o projeto do storefront não há onde ligar o domínio: falha antes de
+  // criar qualquer registro, em vez de cair no projeto errado.
+  if (!projectId) {
+    return {
+      success: false,
+      domain,
+      error: 'VERCEL_STOREFRONT_PROJECT_ID não configurado',
+      step: 'vercel',
+    }
+  }
 
   try {
     // Step 1: Cloudflare — create CNAME (or reuse existing)
@@ -109,6 +132,23 @@ export async function provisionTenantDomain(slug: string): Promise<ProvisionResu
       }
     }
 
+    // "Já em uso" só é sucesso se o domínio estiver NESTE projeto. Em outro
+    // (o do painel), a loja continuaria abrindo a página errada — e antes isso
+    // passava como provisionado.
+    if (alreadyInUse) {
+      const noStorefront = await fetch(vercelDomainUrl(projectId, domain, teamId), {
+        headers: vercelHeaders(),
+      })
+      if (!noStorefront.ok) {
+        return {
+          success: false,
+          domain,
+          error: `${domain} está ligado a outro projeto da Vercel; mova-o para o projeto do storefront`,
+          step: 'vercel',
+        }
+      }
+    }
+
     return { success: true, domain, cloudflareId }
   } catch (err) {
     return {
@@ -124,7 +164,7 @@ export async function deprovisionTenantDomain(slug: string): Promise<void> {
   const sanitized = sanitizeSlug(slug)
   const domain = `${sanitized}.mallevo.com.br`
   const zoneId = process.env.CLOUDFLARE_ZONE_ID!
-  const projectId = process.env.VERCEL_PROJECT_ID!
+  const projectId = projetoDoStorefront()
   const teamId = process.env.VERCEL_TEAM_ID || undefined
 
   await Promise.allSettled([
@@ -142,9 +182,12 @@ export async function deprovisionTenantDomain(slug: string): Promise<void> {
         })
       }
     })(),
-    fetch(vercelRemoveUrl(projectId, domain, teamId), {
-      method: 'DELETE',
-      headers: vercelHeaders(),
-    }),
+    // Sem o projeto do storefront, não remove de projeto nenhum (nunca do errado).
+    projectId
+      ? fetch(vercelDomainUrl(projectId, domain, teamId), {
+          method: 'DELETE',
+          headers: vercelHeaders(),
+        })
+      : Promise.resolve(),
   ])
 }

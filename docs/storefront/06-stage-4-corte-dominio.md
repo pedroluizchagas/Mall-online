@@ -31,8 +31,9 @@ janela de baixo tráfego. CNAMEs Cloudflare NÃO mudam (apontam
    `apps/web/app/loja/[slug]/page.tsx`. Remover
    `*.mallevo.com.br`/`*.mallevo.localhost` de `apps/web/next.config.mjs`
    `allowedOrigins`. Deploy web.
-7. **(Env)** Copiar Project ID do storefront → atualizar `VERCEL_PROJECT_ID`
+7. **(Env)** Copiar Project ID do storefront → `VERCEL_STOREFRONT_PROJECT_ID`
    no projeto web (provisionamento de novos tenants roda lá — D6). Redeploy web.
+   (Era `VERCEL_PROJECT_ID`; ficou sem fazer até 2026-10-17 — ver D6.)
 8. **(Verificar)** Provisionar tenant de teste novo pelo Dashboard
    ponta-a-ponta; confirmar CNAME no Cloudflare + domínio anexado ao **projeto
    storefront**.
@@ -51,7 +52,7 @@ confirmado estável.
 - [ ] `app.`/`admin.` intactos durante e depois.
 - [ ] `apps/web/middleware.ts` sem bloco de subdomínio, com token refresh/onboarding intactos.
 - [ ] Stub `loja/[slug]` removido; `allowedOrigins` do web limpo.
-- [ ] `VERCEL_PROJECT_ID` do web aponta para projeto storefront.
+- [ ] `VERCEL_STOREFRONT_PROJECT_ID` do web aponta para projeto storefront.
 - [ ] Tenant novo provisionado e-2-e aponta para storefront.
 
 ## Notas
