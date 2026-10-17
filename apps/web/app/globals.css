@@ -197,6 +197,10 @@ textarea {
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
+}
+/* Os 6px são para quem não tem raio (link, texto). Em `:where()` não vencem
+   o `rounded-*`: campo e pílula não mudam de forma ao ganhar foco. */
+:where(:focus-visible) {
   border-radius: 6px;
 }
 :focus:not(:focus-visible) {

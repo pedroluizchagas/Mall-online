@@ -231,7 +231,7 @@ export function TutorialOverlay() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 8, opacity: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="relative w-full max-w-md overflow-hidden rounded-[30px] bg-bg shadow-lg outline-none"
+          className="relative w-full max-w-md overflow-hidden rounded-[30px] bg-bg shadow-lg outline-none focus-visible:outline-none"
         >
           {/* Marquise do tutorial: o assunto do passo, aceso. */}
           <div className="sobre-escuro grao relative isolate overflow-hidden bg-marquee px-8 pb-12 pt-7 text-white">

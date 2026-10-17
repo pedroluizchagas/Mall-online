@@ -247,7 +247,7 @@ export function PainelPedidosRealtime({ pedidosIniciais }: { pedidosIniciais: Pe
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar #pedido, cliente, telefone, bairro"
-              className="h-full w-full rounded-full bg-bg pl-10 pr-4 text-[13.5px] text-ink outline-none ring-1 ring-inset ring-line transition-shadow placeholder:text-ink-4 focus:ring-2 focus:ring-ink"
+              className="h-full w-full rounded-full bg-bg pl-10 pr-4 text-[13.5px] text-ink outline-none focus-visible:outline-none ring-1 ring-inset ring-line transition-shadow placeholder:text-ink-4 focus:ring-2 focus:ring-ink"
             />
           </label>
           <button

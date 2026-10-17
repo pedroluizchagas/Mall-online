@@ -205,7 +205,7 @@ function Campo({
           id={id}
           required
           className={cx(
-            'h-[52px] w-full rounded-[16px] bg-bg pl-11 pr-4 text-[15px] text-ink outline-none ring-1 ring-inset ring-line-2 transition-[box-shadow] duration-200 placeholder:text-ink-4',
+            'h-[52px] w-full rounded-[16px] bg-bg pl-11 pr-4 text-[15px] text-ink outline-none focus-visible:outline-none ring-1 ring-inset ring-line-2 transition-[box-shadow] duration-200 placeholder:text-ink-4',
             'focus:ring-2 focus:ring-ink',
           )}
           {...input}

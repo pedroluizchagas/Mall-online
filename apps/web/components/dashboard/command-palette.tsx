@@ -127,7 +127,7 @@ export function CommandPalette({ comandos }: { comandos: Comando[] }) {
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Ir para… (páginas, ações)"
-            className="flex-1 border-none bg-transparent text-[15px] text-white outline-none placeholder:text-[color:var(--m-ink-3)]"
+            className="flex-1 border-none bg-transparent text-[15px] text-white outline-none focus-visible:outline-none placeholder:text-[color:var(--m-ink-3)]"
           />
           <kbd className="rounded-full bg-[color:var(--m-glass-2)] px-2 py-0.5 font-mono text-[10.5px] text-[color:var(--m-ink-2)]">
             esc

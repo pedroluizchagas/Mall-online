@@ -145,13 +145,16 @@ export default async function LayoutDashboard({
             )}
           </main>
         </div>
-
-        <CommandPalette comandos={comandos} />
-        <AtalhosTeclado comandos={comandos} />
-        <ToastBoasVindas />
-        <TutorialGate tutorialVisto={tenant.tutorial_template_visto ?? false} />
-        <Toaster />
       </div>
+
+      {/* Camadas globais moram fora da moldura (`isolate`): os diálogos nascem
+          no body (components/ui/portal) e estas precisam ficar acima deles —
+          o toast de erro com o diálogo aberto, a busca ⌘K por cima de tudo. */}
+      <CommandPalette comandos={comandos} />
+      <AtalhosTeclado comandos={comandos} />
+      <ToastBoasVindas />
+      <TutorialGate tutorialVisto={tenant.tutorial_template_visto ?? false} />
+      <Toaster />
     </TemplateProvider>
   )
 }

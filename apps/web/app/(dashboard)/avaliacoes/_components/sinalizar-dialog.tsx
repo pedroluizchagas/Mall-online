@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { sinalizarAvaliacao, removerSinalizacao } from '../actions'
 import { showToast } from '@/components/ui/toast'
 import { PartnerIcon } from '@/components/ui/partner-icon'
+import { Portal } from '@/components/ui/portal'
 
 const BTN_SECUNDARIO =
   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border hover:bg-bg-2 transition-colors disabled:opacity-50'
@@ -58,51 +59,53 @@ export function SinalizarDialog({ reviewId, sinalizada }: { reviewId: string; si
       </button>
 
       {aberto && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="sinalizar-titulo"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(15,15,13,0.45)' }}
-          onClick={() => !pending && setAberto(false)}
-        >
+        <Portal>
           <div
-            className="rounded-2xl shadow-xl max-w-md w-full p-5"
-            style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
-            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="sinalizar-titulo"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(15,15,13,0.45)' }}
+            onClick={() => !pending && setAberto(false)}
           >
-            <h2 id="sinalizar-titulo" className="font-semibold text-ink text-base">Sinalizar avaliação</h2>
-            <p className="text-xs text-ink-3 mt-1.5 leading-relaxed">
-              Use quando a avaliação for ofensiva, contiver spam ou fugir das diretrizes (até 500 caracteres).
-            </p>
-            <textarea
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              rows={3}
-              maxLength={500}
-              placeholder="Motivo da sinalização"
-              className="w-full mt-3 border rounded-[14px] px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-ink"
-              style={{ borderColor: 'var(--line)' }}
-              disabled={pending}
-            />
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setAberto(false)}
+            <div
+              className="rounded-2xl shadow-xl max-w-md w-full p-5"
+              style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 id="sinalizar-titulo" className="font-semibold text-ink text-base">Sinalizar avaliação</h2>
+              <p className="text-xs text-ink-3 mt-1.5 leading-relaxed">
+                Use quando a avaliação for ofensiva, contiver spam ou fugir das diretrizes (até 500 caracteres).
+              </p>
+              <textarea
+                value={motivo}
+                onChange={(e) => setMotivo(e.target.value)}
+                rows={3}
+                maxLength={500}
+                placeholder="Motivo da sinalização"
+                className="w-full mt-3 border rounded-[14px] px-3 py-2 text-sm bg-bg focus:outline-none focus:ring-2 focus:ring-ink"
+                style={{ borderColor: 'var(--line)' }}
                 disabled={pending}
-                className="px-4 py-2 rounded-full text-sm font-semibold hover:bg-bg-2 transition-colors"
-                style={{ color: 'var(--ink-2)' }}
-              >Cancelar</button>
-              <button
-                type="button"
-                onClick={enviar}
-                disabled={pending || motivo.trim().length < 3}
-                className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50 transition-opacity"
-                style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
-              >{pending ? 'Enviando...' : 'Sinalizar'}</button>
+              />
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAberto(false)}
+                  disabled={pending}
+                  className="px-4 py-2 rounded-full text-sm font-semibold hover:bg-bg-2 transition-colors"
+                  style={{ color: 'var(--ink-2)' }}
+                >Cancelar</button>
+                <button
+                  type="button"
+                  onClick={enviar}
+                  disabled={pending || motivo.trim().length < 3}
+                  className="px-4 py-2 rounded-full text-sm font-bold disabled:opacity-50 transition-opacity"
+                  style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+                >{pending ? 'Enviando...' : 'Sinalizar'}</button>
+              </div>
             </div>
           </div>
-        </div>
+        </Portal>
       )}
     </>
   )

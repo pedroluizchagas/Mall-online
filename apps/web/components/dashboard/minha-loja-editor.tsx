@@ -384,7 +384,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     placeholder="Nome da sua loja"
-                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none focus-visible:outline-none transition-colors"
                     style={{
                       border: '1px solid var(--line-2)',
                       background: 'var(--bg)',
@@ -403,7 +403,7 @@ export function MinhaLojaEditor({ loja, catalogo = [] }: Props) {
                     value={tagline}
                     onChange={(e) => setTagline(e.target.value)}
                     placeholder="Uma frase que descreve sua loja"
-                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl text-sm outline-none focus-visible:outline-none transition-colors"
                     style={{
                       border: '1px solid var(--line-2)',
                       background: 'var(--bg)',

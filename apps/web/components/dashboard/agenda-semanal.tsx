@@ -10,6 +10,7 @@ import type {
 } from '@/lib/actions/agenda'
 import { criarBloqueio, excluirBloqueio } from '@/lib/actions/agenda'
 import { PartnerIcon } from '@/components/ui/partner-icon'
+import { Portal } from '@/components/ui/portal'
 
 interface Props {
   storeId: string
@@ -392,134 +393,136 @@ export function AgendaSemanal({
       )}
 
       {modalAberto && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          style={{ background: 'rgba(0,0,0,0.45)' }}
-          onClick={() => setModalAberto(false)}
-        >
+        <Portal>
           <div
-            className="w-full max-w-md rounded-2xl p-5 space-y-4"
-            style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            style={{ background: 'rgba(0,0,0,0.45)' }}
+            onClick={() => setModalAberto(false)}
           >
-            <div>
-              <h2 className="font-display text-xl m-0">Novo bloqueio</h2>
-              <p className="text-xs text-ink-3">
-                Reserve um intervalo da agenda. Útil para folgas, almoços ou feriados.
-              </p>
-            </div>
-
-            {erroForm && (
-              <div
-                className="px-3 py-2 rounded-xl text-sm"
-                style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
-              >
-                {erroForm}
-              </div>
-            )}
-
-            <form
-              action={aoSubmeterBloqueio}
-              className="space-y-3"
+            <div
+              className="w-full max-w-md rounded-2xl p-5 space-y-4"
+              style={{ background: 'var(--bg)', border: '1px solid var(--line)' }}
+              onClick={(e) => e.stopPropagation()}
             >
               <div>
-                <label className="block text-xs font-medium text-ink-2 mb-1">Profissional</label>
-                <select
-                  name="staff_id"
-                  className="w-full border rounded-xl px-4 py-2 text-sm bg-bg"
-                  style={{ borderColor: 'var(--line)' }}
-                  defaultValue="todos"
+                <h2 className="font-display text-xl m-0">Novo bloqueio</h2>
+                <p className="text-xs text-ink-3">
+                  Reserve um intervalo da agenda. Útil para folgas, almoços ou feriados.
+                </p>
+              </div>
+
+              {erroForm && (
+                <div
+                  className="px-3 py-2 rounded-xl text-sm"
+                  style={{ background: 'var(--err-lt)', color: 'var(--err)' }}
                 >
-                  <option value="todos">Loja inteira (todos)</option>
-                  {staff.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.nome}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  {erroForm}
+                </div>
+              )}
 
-              <div className="grid grid-cols-2 gap-3">
+              <form
+                action={aoSubmeterBloqueio}
+                className="space-y-3"
+              >
                 <div>
-                  <label className="block text-xs font-medium text-ink-2 mb-1">Início</label>
+                  <label className="block text-xs font-medium text-ink-2 mb-1">Profissional</label>
+                  <select
+                    name="staff_id"
+                    className="w-full border rounded-xl px-4 py-2 text-sm bg-bg"
+                    style={{ borderColor: 'var(--line)' }}
+                    defaultValue="todos"
+                  >
+                    <option value="todos">Loja inteira (todos)</option>
+                    {staff.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-ink-2 mb-1">Início</label>
+                    <input
+                      type="date"
+                      name="inicio_data"
+                      required
+                      defaultValue={hojeYmd}
+                      className="w-full border rounded-xl px-3 py-2 text-sm bg-bg"
+                      style={{ borderColor: 'var(--line)' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-ink-2 mb-1">Hora</label>
+                    <input
+                      type="time"
+                      name="inicio_hora"
+                      required
+                      defaultValue="12:00"
+                      className="w-full border rounded-xl px-3 py-2 text-sm bg-bg"
+                      style={{ borderColor: 'var(--line)' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-ink-2 mb-1">Fim</label>
+                    <input
+                      type="date"
+                      name="fim_data"
+                      required
+                      defaultValue={hojeYmd}
+                      className="w-full border rounded-xl px-3 py-2 text-sm bg-bg"
+                      style={{ borderColor: 'var(--line)' }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-ink-2 mb-1">Hora</label>
+                    <input
+                      type="time"
+                      name="fim_hora"
+                      required
+                      defaultValue="13:00"
+                      className="w-full border rounded-xl px-3 py-2 text-sm bg-bg"
+                      style={{ borderColor: 'var(--line)' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-ink-2 mb-1">Motivo</label>
                   <input
-                    type="date"
-                    name="inicio_data"
-                    required
-                    defaultValue={hojeYmd}
-                    className="w-full border rounded-xl px-3 py-2 text-sm bg-bg"
+                    type="text"
+                    name="motivo"
+                    maxLength={200}
+                    placeholder="Ex: Almoço"
+                    className="w-full border rounded-xl px-4 py-2 text-sm bg-bg"
                     style={{ borderColor: 'var(--line)' }}
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-ink-2 mb-1">Hora</label>
-                  <input
-                    type="time"
-                    name="inicio_hora"
-                    required
-                    defaultValue="12:00"
-                    className="w-full border rounded-xl px-3 py-2 text-sm bg-bg"
-                    style={{ borderColor: 'var(--line)' }}
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-ink-2 mb-1">Fim</label>
-                  <input
-                    type="date"
-                    name="fim_data"
-                    required
-                    defaultValue={hojeYmd}
-                    className="w-full border rounded-xl px-3 py-2 text-sm bg-bg"
-                    style={{ borderColor: 'var(--line)' }}
-                  />
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setModalAberto(false)}
+                    className="px-3 py-1.5 text-sm text-ink-3 hover:text-ink-2"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-full text-sm font-bold"
+                    style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
+                  >
+                    Adicionar bloqueio
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-ink-2 mb-1">Hora</label>
-                  <input
-                    type="time"
-                    name="fim_hora"
-                    required
-                    defaultValue="13:00"
-                    className="w-full border rounded-xl px-3 py-2 text-sm bg-bg"
-                    style={{ borderColor: 'var(--line)' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-ink-2 mb-1">Motivo</label>
-                <input
-                  type="text"
-                  name="motivo"
-                  maxLength={200}
-                  placeholder="Ex: Almoço"
-                  className="w-full border rounded-xl px-4 py-2 text-sm bg-bg"
-                  style={{ borderColor: 'var(--line)' }}
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setModalAberto(false)}
-                  className="px-3 py-1.5 text-sm text-ink-3 hover:text-ink-2"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-full text-sm font-bold"
-                  style={{ background: 'var(--brick)', color: 'var(--brick-ink)' }}
-                >
-                  Adicionar bloqueio
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
+        </Portal>
       )}
     </div>
   )
